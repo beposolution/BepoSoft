@@ -143,13 +143,12 @@ const BasicTable = () => {
         <React.Fragment>
             <div className="page-content">
                 <div className="container-fluid">
-                    <Breadcrumbs title="Tables" breadcrumbItem="Basic Tables" />
+                    <Breadcrumbs title="Tables" breadcrumbItem="CREDIT SALES REPORT" />
 
                     <Row>
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
-                                    <CardTitle className="h4 text-center">CREDIT SALES REPORT</CardTitle>
 
                                     <Row className="mb-4">
                                         <Col md={3}>

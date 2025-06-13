@@ -111,20 +111,17 @@ const BasicTable = () => {
         XLSX.writeFile(workbook, "Sales_Report.xlsx");
     };
 
-    document.title = "Basic Tables | Skote - Vite React Admin & Dashboard Template";
+    document.title = "Beposoft | Sales Report";
 
     return (
         <React.Fragment>
             <div className="page-content">
                 <div className="container-fluid">
-                    <Breadcrumbs title="Tables" breadcrumbItem="Basic Tables" />
+                    <Breadcrumbs title="Tables" breadcrumbItem="STATE SALES REPORTS" />
                     <Row>
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
-                                    <CardTitle className="h4 text-center mt-4 mb-4" style={{ borderBottom: "2px solid #007bff", paddingBottom: "10px" }}>
-                                        STATE SALES REPORTS
-                                    </CardTitle>
 
                                     <Row className="mb-3">
                                         <Col md={3}>

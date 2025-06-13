@@ -1,0 +1,41 @@
+.table-status-pending {
+    color: red;
+}
+.table-status-approved {
+    color: blue;
+}
+.table-status-shipped {
+    color: yellow;
+}
+.table-status-processing {
+    color: orange;
+}
+.table-status-completed {
+    color: green;
+}
+.table-status-cancelled {
+    color: gray;
+}
+.table-row:hover {
+    background-color: #f0f0f0; /* Light gray on hover */
+}
+
+.table {
+    width: 100%; /* Ensure the table takes full width */
+}
+
+.table th, .table td {
+    text-align: center; /* Center align text horizontally */
+    vertical-align: middle; /* Center align text vertically */
+}
+
+.table-row {
+    transition: background-color 0.3s; /* Add a transition for hover effect */
+}
+
+.table-row:hover {
+    background-color: #f0f0f0; /* Light gray on hover */
+}
+.table-row:hover .table-status {
+    color: #007bff; /* Change status color on hover */
+}

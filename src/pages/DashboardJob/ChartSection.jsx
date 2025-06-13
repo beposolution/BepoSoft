@@ -1,0 +1,443 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardBody, Col, Row } from 'reactstrap';
+import ReactApexChart from "react-apexcharts"
+import axios from 'axios';
+//import components
+import { JobWidgetCharts } from './JobCharts';
+// import { cryptoReports } from '../../common/data'
+import { useNavigate } from "react-router-dom";
+
+
+
+const ChartSection = () => {
+    const [chartsData, setChartsData] = useState();
+    const [loading, setLoading] = useState(true);
+    const token = localStorage.getItem("token")
+    const [role, setRole] = useState(null)
+    const [orders, setOrders] = useState([]);
+    const [userData, setUserData] = useState();
+    const [proforma, setProforma] = useState([]);
+    const [uniqueProforma, setUniqueProforma] = useState([]);
+    const [grvCount, setGrvCount] = useState([]);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const role = localStorage.getItem("active");
+        setRole(role);
+        console.log("Role:", role);
+    }, []);
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}profile/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setUserData(response?.data?.data?.family);
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+            }
+        };
+        fetchUserData();
+    }, []);
+
+    useEffect(() => {
+        const fetchOrdersData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}orders/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setOrders(response?.data?.results || []);
+            } catch (error) {
+                console.error('Error fetching order data:', error);
+            }
+        };
+        fetchOrdersData();
+    }, []);
+
+
+    useEffect(() => {
+        const fetchChartData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}dashboard/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setChartsData(response?.data?.data);
+                setLoading(false);
+            } catch (error) {
+                console.error('Error fetching chart data:', error);
+                setLoading(false);
+            }
+        };
+        fetchChartData();
+    }, []);
+
+    useEffect(() => {
+        const fetchProformaData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}perfoma/invoices/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setProforma(response?.data?.data);
+            } catch (error) {
+                console.log("Error fetching proforma data", error);
+            }
+        };
+        fetchProformaData();
+    }, []);
+
+    useEffect(() => {
+        const fetchUniqueProformaData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}performa/invoice/staff/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setUniqueProforma(response?.data?.data);
+            } catch (error) {
+                console.log("Error fetching proforma data", error);
+            }
+        };
+        fetchUniqueProformaData();
+    }, []);
+
+    useEffect(() => {
+        const fetchGRVCount = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}grv/data/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setGrvCount(response?.data?.data);
+            } catch (error) {
+                console.log("Error fetching GRV count", error);
+            }
+        };
+        fetchGRVCount();
+    }, []);
+
+    if (loading) {
+        return <p>Loading...</p>;
+    }
+
+    const todayBills = chartsData.find(item => item.title === "Today Bills");
+    const waitingForConfirmation = chartsData.find(item => item.title === "Waiting For Confirmation");
+    const shipped = chartsData.find(item => item.title === "Shipped");
+    const proformaInvoices = chartsData.find(item => item.title === "Proforma Invoices");
+    const goodsReturn = chartsData.find(item => item.title === "Goods Return");
+    const grvWaitingForConfirmation = chartsData.find(item => item.title === "GRV waiting for confirmation");
+    const waitingForApproval = chartsData.find(item => item.title === "Waiting For Approval");
+
+    const invoiceApprovedCount = orders.filter(order => order.status === "Invoice Approved").length;
+
+    const proformaCountAdmin = proforma?.length || 0;
+    const uniqueProformaCount = uniqueProforma?.length || 0;
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // Destructure from orders
+    const familyIds = orders.map(order => order.family_id);
+    const orderDates = orders.map(order => order.order_date);
+    const shippedOrdersToday = orders.filter(
+        order => order.status === "Shipped" && order.order_date === today
+    ).length;
+    const shippedOrdersTodayStaff = orders.filter(
+        order =>
+            order.status === "Shipped" &&
+            order.order_date === today &&
+            order.family_id === userData
+    ).length;
+
+    const waitingForApprovalStaff = orders.filter(
+        order => order.status === "Invoice Created" && order.family_id === userData
+    ).length;
+
+    // from grv/data api
+    const pendingGRVCount = grvCount.filter(item => item.status === "pending" && item.family === userData).length;
+
+    // Filter orders where family_id matches userData AND order_date matches today
+    const userFamilyTodayOrderCount = orders.filter(
+        order => order.family_id === userData && order.order_date === today
+    ).length;
+
+    return (
+        <React.Fragment>
+
+            <Row>
+                {(role === "warehouse" || role === "Warehouse Admin") && (
+                    <>
+                        <Col lg={3} style={{ cursor: "pointer" }}>
+                            <Card className="mini-stats-wid" onClick={() => navigate("/Orders/")}>
+                                <CardBody>
+                                    <div className="d-flex">
+                                        <div className="flex-grow-1">
+                                            <p className="text-muted fw-medium">Waiting For Packing</p>
+                                            <h4 className="mb-0"></h4>
+                                        </div>
+
+                                    </div>
+                                </CardBody>
+
+                            </Card>
+                        </Col>
+                        <Col lg={3} style={{ cursor: "pointer" }}>
+                            <Card className="mini-stats-wid" onClick={() => navigate("/Orders2")}>
+                                <CardBody>
+                                    <div className="d-flex">
+                                        <div className="flex-grow-1">
+                                            <p className="text-muted fw-medium">Waiting For Shipping</p>
+                                            <h4 className="mb-0"></h4>
+                                        </div>
+
+                                    </div>
+                                </CardBody>
+
+                            </Card>
+                        </Col>
+                    </>
+                )}
+
+                {(role === "ADMIN" || role === "BDM") && (
+                    <Col lg={3}>
+                        <div style={{ cursor: "pointer" }}
+                            onClick={() => navigate("/dashboard/todaysbill-details")}>
+                            <Card className="mini-stats-wid">
+                                <CardBody>
+                                    <div className="d-flex">
+                                        <div className="flex-grow-1">
+                                            <p className="text-muted fw-medium">Todays Bill</p>
+                                            <h4 className="mb-0"> {role === "ADMIN" ? (todayBills?.order || 0) : userFamilyTodayOrderCount}</h4>
+                                        </div>
+                                        <div className="flex-shrink-0 align-self-center">
+                                            {/* Optional Chart */}
+                                        </div>
+                                    </div>
+                                </CardBody>
+                                <div className="card-body border-top py-3">
+                                    <p className="mb-0">
+                                        <span className="badge badge-soft-success me-2">
+                                            <i className="bx bx-trending-up align-bottom me-1 text-success"></i> {todayBills?.percentageValue}
+                                        </span>
+                                        Increase last month
+                                    </p>
+                                </div>
+                            </Card>
+                        </div>
+                    </Col>
+                )}
+
+                {(role === "ADMIN") && (
+                    <Col lg={3} style={{ cursor: "pointer" }}
+                        onClick={() => navigate("/dashboard/waitingforconfirmation-details")}>
+                        <Card className="mini-stats-wid">
+                            <CardBody>
+                                <div className="d-flex">
+                                    <div className="flex-grow-1">
+                                        <p className="text-muted fw-medium">Waiting For Confirmation</p>
+                                        <h4 className="mb-0">{invoiceApprovedCount}</h4>
+                                    </div>
+                                    <div className="flex-shrink-0 align-self-center">
+                                        {/* Optional Chart */}
+                                    </div>
+                                </div>
+                            </CardBody>
+                            <div className="card-body border-top py-3">
+                                <p className="mb-0">
+                                    <span className="badge badge-soft-success me-2">
+                                        <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{waitingForConfirmation?.percentageValue || 0}
+                                    </span>
+                                    Increase last month
+                                </p>
+                            </div>
+                        </Card>
+                    </Col>
+                )}
+
+                {(role === "ADMIN" || role === "BDM") && (
+                    <Col lg={3}>
+                        <div style={{ cursor: "pointer" }}
+                            onClick={() => navigate("/dashboard/shipped-details")}>
+                            <Card className="mini-stats-wid">
+                                <CardBody>
+                                    <div className="d-flex">
+                                        <div className="flex-grow-1">
+                                            <p className="text-muted fw-medium">Shipped</p>
+                                            <h4 className="mb-0"> {role === "ADMIN" ? (shippedOrdersToday) : shippedOrdersTodayStaff}</h4>
+                                        </div>
+                                        <div className="flex-shrink-0 align-self-center">
+                                            {/* Optional Chart */}
+                                        </div>
+                                    </div>
+                                </CardBody>
+                                <div className="card-body border-top py-3">
+                                    <p className="mb-0">
+                                        <span className="badge badge-soft-success me-2">
+                                            <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{shipped?.percentageValue || 0}
+                                        </span>
+                                        Increase last month
+                                    </p>
+                                </div>
+                            </Card>
+                        </div>
+                    </Col>
+                )}
+
+                {(role === "ADMIN" || role === "BDM") && (
+                    <Col lg={3}>
+                        <div style={{ cursor: "pointer" }}
+                            onClick={() => navigate("/perfoma/invoices/")}>
+                            <Card className="mini-stats-wid">
+                                <CardBody>
+                                    <div className="d-flex">
+                                        <div className="flex-grow-1">
+                                            <p className="text-muted fw-medium">Proforma Invoices</p>
+                                            <h4 className="mb-0">{role === "ADMIN" ? (proformaCountAdmin) : uniqueProformaCount}</h4>
+                                        </div>
+                                        <div className="flex-shrink-0 align-self-center">
+                                            {/* Optional Chart */}
+                                        </div>
+                                    </div>
+                                </CardBody>
+                                <div className="card-body border-top py-3">
+                                    <p className="mb-0">
+                                        <span className="badge badge-soft-success me-2">
+                                            <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{proformaInvoices?.percentageValue || 0}
+                                        </span>
+                                        Increase last month
+                                    </p>
+                                </div>
+                            </Card>
+                        </div>
+                    </Col>
+                )}
+
+                {(role === "ADMIN") && (
+                    <Col lg={3} style={{ cursor: "pointer" }}
+                        onClick={() => navigate("/beposoft/grv/view/")}>
+                        <Card className="mini-stats-wid">
+                            <CardBody>
+                                <div className="d-flex">
+                                    <div className="flex-grow-1">
+                                        <p className="text-muted fw-medium">Goods Return</p>
+                                        <h4 className="mb-0">{goodsReturn?.order || 0}</h4>
+                                    </div>
+                                    <div className="flex-shrink-0 align-self-center">
+                                        {/* Optional Chart */}
+                                    </div>
+                                </div>
+                            </CardBody>
+                            <div className="card-body border-top py-3">
+                                <p className="mb-0">
+                                    <span className="badge badge-soft-success me-2">
+                                        <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{goodsReturn?.percentageValue || 0}
+                                    </span>
+                                    Increase last month
+                                </p>
+                            </div>
+                        </Card>
+                    </Col>
+                )}
+
+                {(role === "ADMIN" || role === "BDM") && (
+                    <Col lg={3}>
+                        <div style={{ cursor: "pointer" }}
+                            onClick={() => navigate("/dashboard/grvwaitingforconfirmation-details")}>
+                            <Card className="mini-stats-wid">
+                                <CardBody>
+                                    <div className="d-flex">
+                                        <div className="flex-grow-1">
+                                            <p className="text-muted fw-medium">GRV waiting for confirmation</p>
+                                            <h4 className="mb-0">{role === "ADMIN" ? (grvWaitingForConfirmation?.order) : pendingGRVCount}</h4>
+                                        </div>
+                                        <div className="flex-shrink-0 align-self-center">
+                                            {/* Optional Chart */}
+                                        </div>
+                                    </div>
+                                </CardBody>
+                                <div className="card-body border-top py-3">
+                                    <p className="mb-0">
+                                        <span className="badge badge-soft-success me-2">
+                                            <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{grvWaitingForConfirmation?.percentageValue || 0}
+                                        </span>
+                                        Increase last month
+                                    </p>
+                                </div>
+                            </Card>
+                        </div>
+                    </Col>
+                )}
+
+                {(role === "ADMIN" || role === "BDM") && (
+                    <Col lg={3}>
+                        <div style={{ cursor: "pointer" }}
+                            onClick={() => navigate("/dashboard/waitingforapproval-details")}>
+                            <Card className="mini-stats-wid">
+                                <CardBody>
+                                    <div className="d-flex">
+                                        <div className="flex-grow-1">
+                                            <p className="text-muted fw-medium">Waiting For Approval</p>
+                                            <h4 className="mb-0">{role === "ADMIN" ? (waitingForApproval?.order) : waitingForApprovalStaff}</h4>
+                                        </div>
+                                        <div className="flex-shrink-0 align-self-center">
+                                            {/* Optional Chart */}
+                                        </div>
+                                    </div>
+                                </CardBody>
+                                <div className="card-body border-top py-3">
+                                    <p className="mb-0">
+                                        <span className="badge badge-soft-success me-2">
+                                            <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{waitingForApproval?.percentageValue}
+                                        </span>
+                                        Increase last month
+                                    </p>
+                                </div>
+                            </Card>
+                        </div>
+                    </Col>
+                )}
+                {(role === "BDO") && (
+                    <Col lg={3}>
+                        <div style={{ cursor: "pointer" }}
+                            onClick={() => navigate("/managed/family/order/")}>
+                            <Card className="mini-stats-wid">
+                                <CardBody>
+                                    <div className="d-flex">
+                                        <div className="flex-grow-1">
+                                            <p className="text-muted fw-medium">ORDERS</p>
+                                        </div>
+                                        <div className="flex-shrink-0 align-self-center">
+                                            {/* Optional Chart */}
+                                        </div>
+                                    </div>
+                                </CardBody>
+                                <div className="card-body border-top py-3">
+                                </div>
+                            </Card>
+                        </div>
+                    </Col>
+                )}
+                {(role === "BDO") && (
+                    <Col lg={3}>
+                        <div style={{ cursor: "pointer" }}
+                            onClick={() => navigate("/all/staff/customers/")}>
+                            <Card className="mini-stats-wid">
+                                <CardBody>
+                                    <div className="d-flex">
+                                        <div className="flex-grow-1">
+                                            <p className="text-muted fw-medium">CUSTOMERS</p>
+                                        </div>
+                                        <div className="flex-shrink-0 align-self-center">
+                                            {/* Optional Chart */}
+                                        </div>
+                                    </div>
+                                </CardBody>
+                                <div className="card-body border-top py-3">
+                                </div>
+                            </Card>
+                        </div>
+                    </Col>
+                )}
+            </Row>
+        </React.Fragment>
+    );
+}
+
+export default ChartSection;

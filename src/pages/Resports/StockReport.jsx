@@ -74,26 +74,31 @@ const BasicTable = () => {
         setFilteredData(filtered);
     };
 
-    // Export data to Excel
     const exportToExcel = () => {
-        const worksheet = XLSX.utils.json_to_sheet(filteredData);
+        const dataToExport = filteredData.map((item, index) => ({
+            "#": index + 1,
+            "Name": item.name,
+            "Stock": item.stock,
+            "Selling Price": item.selling_price,
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Product Stock Report");
 
-        // Trigger a download
         XLSX.writeFile(workbook, "Product_Stock_Report.xlsx");
     };
+
 
     return (
         <React.Fragment>
             <div className="page-content">
                 <div className="container-fluid">
-                    <Breadcrumbs title="Tables" breadcrumbItem="Filtered Tables" />
+                    <Breadcrumbs title="Tables" breadcrumbItem="PRODUCT STOCK REPORT" />
                     <Row>
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
-                                    <CardTitle className="h4">Product Stock Report</CardTitle>
                                     <div className="d-flex mb-3">
                                         <Input
                                             type="text"
@@ -102,7 +107,7 @@ const BasicTable = () => {
                                             onChange={handleSearch}
                                             className="me-3"
                                         />
-                                        <Button color="primary" onClick={exportToExcel}>
+                                        <Button color="success" onClick={exportToExcel}>
                                             Export to Excel
                                         </Button>
                                     </div>

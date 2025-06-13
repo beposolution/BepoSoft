@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Table, Row, Col, Card, CardBody, Input, Button } from "reactstrap";
 import axios from "axios";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import * as XLSX from "xlsx";
 
 const AverageAmountReport = () => {
     const [warehouseData, setWarehouseData] = useState([]);
@@ -63,6 +64,21 @@ const AverageAmountReport = () => {
         // eslint-disable-next-line
     }, [warehouseData, startDate, endDate]);
 
+    const exportToExcel = () => {
+        const exportData = filteredData.map((item, index) => ({
+            "#": index + 1,
+            "Date": item.postoffice_date,
+            "Parcel Service": item.parcel_service,
+            "Average Amount (₹)": item.averageAmount,
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Parcel Report");
+
+        XLSX.writeFile(workbook, "Parcel_Service_Report.xlsx");
+    };
+
     return (
         <div className="page-content">
             <div className="container-fluid">
@@ -73,7 +89,7 @@ const AverageAmountReport = () => {
                             <CardBody>
                                 {/* Date Range Picker */}
                                 <Row className="mb-3">
-                                    <Col sm={4}>
+                                    <Col sm={3}>
                                         <Input
                                             type="date"
                                             value={startDate}
@@ -81,7 +97,7 @@ const AverageAmountReport = () => {
                                             placeholder="Start Date"
                                         />
                                     </Col>
-                                    <Col sm={4}>
+                                    <Col sm={3}>
                                         <Input
                                             type="date"
                                             value={endDate}
@@ -89,10 +105,16 @@ const AverageAmountReport = () => {
                                             placeholder="End Date"
                                         />
                                     </Col>
-                                    <Col sm={4}>
+                                    <Col sm={3}>
                                         <Button color="primary" onClick={handleSearch}>
                                             Search
                                         </Button>
+                                    </Col >
+                                    <Col sm={3}>
+                                        <Button color="success" onClick={exportToExcel} className="ms-2">
+                                            Export to Excel
+                                        </Button>
+
                                     </Col>
                                 </Row>
 

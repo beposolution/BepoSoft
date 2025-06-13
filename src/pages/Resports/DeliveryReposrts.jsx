@@ -6,8 +6,9 @@ import {
     Col,
     Card,
     CardBody,
-    CardTitle,
+    Button,
 } from "reactstrap";
+import * as XLSX from "xlsx";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Link, useParams } from "react-router-dom";
 
@@ -40,6 +41,23 @@ const BasicTable = () => {
         fetchOrders();
     }, [token]);
 
+    const exportToExcel = () => {
+        const data = orders.map((order, index) => ({
+            "#": index + 1,
+            "Date": order.shipped_date,
+            "Total Box Delivered": order.total_boxes,
+            "Total Volume Wt. (KG)": order.total_volume_weight,
+            "Total Actual Wt. (KG)": order.total_weight,
+            "Total Delivery Charge": order.total_shipping_charge,
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Delivery Reports");
+
+        XLSX.writeFile(workbook, "Delivery_Reports.xlsx");
+    };
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -49,7 +67,9 @@ const BasicTable = () => {
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
-
+                                    <Button color="success" className="mb-3" onClick={exportToExcel}>
+                                        Export to Excel
+                                    </Button>
                                     <div className="table-responsive">
                                         {loading ? (
                                             <div className="d-flex justify-content-center">

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Input, Table, Container, Row, Col, Label, Form } from "reactstrap";
+import { Input, Table, Container, Row, Col, Label, Form, Button } from "reactstrap";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import * as XLSX from "xlsx";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
@@ -136,6 +137,23 @@ const BankModule = () => {
         setBankList(filtered);
     };
 
+    const exportToExcel = () => {
+        const exportData = banklist.map((customer, index) => ({
+            "#": index + 1,
+            "Name": customer?.name,
+            "Opening Balance (₹)": customer?.open_balance,
+            "Credit (₹)": customer?.credit,
+            "Debit (₹)": customer?.debit,
+            "Closing Balance (₹)": customer?.closingBalance,
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Finance Report");
+
+        XLSX.writeFile(workbook, "Finance_Report.xlsx");
+    };
+
     return (
         <React.Fragment>
             <div className="page-content mb-3">
@@ -177,6 +195,9 @@ const BankModule = () => {
                                         Apply Filters
                                     </button>
                                 </div>
+                                <Button color="success" onClick={exportToExcel}>
+                                    Export to Excel
+                                </Button>
                             </Col>
                         </Row>
                     </Form>
@@ -210,7 +231,7 @@ const BankModule = () => {
                     </tbody>
                 </Table>
             </div>
-            
+
         </React.Fragment>
     );
 };

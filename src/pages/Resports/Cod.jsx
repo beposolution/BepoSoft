@@ -7,14 +7,13 @@ import {
     Card,
     CardBody,
     CardTitle,
+    Button,
     Input,
     FormGroup
 } from "reactstrap";
-
-// Import Breadcrumb
+import * as XLSX from "xlsx";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 
-// Debounce hook for search input
 const useDebounce = (value, delay) => {
     const [debouncedValue, setDebouncedValue] = useState(value);
 
@@ -32,20 +31,20 @@ const useDebounce = (value, delay) => {
 };
 
 const BasicTable = () => {
-    const [data, setData] = useState([]); 
+    const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [staffFilter, setStaffFilter] = useState(""); 
-    const [familyFilter, setFamilyFilter] = useState(""); 
-    const [allStaffs, setAllStaffs] = useState([]); 
-    const [allFamilies, setAllFamilies] = useState([]); 
-    const [searchTerm, setSearchTerm] = useState(""); 
+    const [staffFilter, setStaffFilter] = useState("");
+    const [familyFilter, setFamilyFilter] = useState("");
+    const [allStaffs, setAllStaffs] = useState([]);
+    const [allFamilies, setAllFamilies] = useState([]);
+    const [searchTerm, setSearchTerm] = useState("");
 
 
-    const debouncedSearchTerm = useDebounce(searchTerm, 500); 
+    const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
     // Fetch data using Axios
     useEffect(() => {
-        const token = localStorage.getItem('token');  
+        const token = localStorage.getItem('token');
 
         // Fetch all staff data
         axios.get(`${import.meta.env.VITE_APP_KEY}staffs/`, {
@@ -81,12 +80,12 @@ const BasicTable = () => {
                     Authorization: `Bearer ${token}`
                 },
                 params: {
-                    staff: staffFilter,  
-                    family: familyFilter,  
+                    staff: staffFilter,
+                    family: familyFilter,
                 }
             })
                 .then((response) => {
-                    setData(response.data); 
+                    setData(response.data);
                     setLoading(false);
                 })
                 .catch((error) => {
@@ -95,8 +94,8 @@ const BasicTable = () => {
                 });
         };
 
-        fetchData(); 
-    }, [staffFilter, familyFilter]); 
+        fetchData();
+    }, [staffFilter, familyFilter]);
 
 
     const filteredData = data.filter((item) => {
@@ -110,17 +109,39 @@ const BasicTable = () => {
         );
     });
 
+    const exportToExcel = () => {
+        const data = filteredData.map((item, index) => {
+            const totalAmount = item.orders.reduce((sum, order) => sum + order.total_amount, 0);
+            const paidAmount = item.orders.reduce((sum, order) => sum + order.total_paid_amount, 0);
+            const pendingAmount = item.orders.reduce((sum, order) => sum + order.balance_amount, 0);
+
+            return {
+                "No": index + 1,
+                "Date": item.date,
+                "Total Orders": item.orders.length,
+                "Total Amount": totalAmount.toFixed(2),
+                "Paid Amount": paidAmount.toFixed(2),
+                "Pending Amount": pendingAmount.toFixed(2),
+            };
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "COD Sales Report");
+
+        XLSX.writeFile(workbook, "COD_Sales_Report.xlsx");
+    };
+
     return (
         <React.Fragment>
             <div className="page-content">
                 <div className="container-fluid">
-                    <Breadcrumbs title="Tables" breadcrumbItem="Basic Tables" />
+                    <Breadcrumbs title="Tables" breadcrumbItem="COD SALES REPORTS" />
 
                     <Row>
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
-                                    <CardTitle className="h4 text-center">CREDIT SALES REPORT</CardTitle>
 
                                     {/* Search Fields */}
                                     <Row className="mb-4">
@@ -169,6 +190,11 @@ const BasicTable = () => {
                                                 />
                                             </FormGroup>
                                         </Col>
+                                        <Col md={4}>
+                                            <Button color="success" onClick={exportToExcel}>
+                                                Export to Excel
+                                            </Button>
+                                        </Col>
                                     </Row>
 
                                     {loading ? (
@@ -192,14 +218,14 @@ const BasicTable = () => {
                                                         <tr key={index}>
                                                             <th scope="row">{index + 1}</th>
                                                             <td>{item.date}</td>
-                                                            <td>{item.orders.length}</td> 
+                                                            <td>{item.orders.length}</td>
                                                             <td>{item.orders.reduce((acc, order) => acc + order.total_amount, 0)}</td> {/* Total amount for the entire date */}
                                                             <td>
                                                                 {item.orders.reduce((acc, order) => acc + order.total_paid_amount, 0)}
-                                                            </td> 
+                                                            </td>
                                                             <td>
                                                                 {item.orders.reduce((acc, order) => acc + order.balance_amount, 0)}
-                                                            </td> 
+                                                            </td>
                                                             <td>
                                                                 <a href={`/COD/sales/resport/${item.date}/`} style={{ color: "#007bff", textDecoration: "none", fontWeight: "bold" }}>View</a>
                                                             </td>

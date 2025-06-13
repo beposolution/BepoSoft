@@ -6,8 +6,9 @@ import {
     Col,
     Card,
     CardBody,
-    CardTitle,
+    Button,
 } from "reactstrap";
+import * as XLSX from "xlsx";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 
 const BasicTable = () => {
@@ -83,6 +84,29 @@ const BasicTable = () => {
         return amount;
     };
 
+    const exportToExcel = () => {
+        const data = salesData.map((sale, index) => ({
+            "#": index + 1,
+            "Name": sale.name,
+            "Invoice Bill": sale.total_orders_count,
+            "Invoice Amount": sale.total_amount,
+            "Delivered Bill": getOrderCountByStatus(sale, "Delivered"),
+            "Delivered Amount": getOrderAmountByStatus(sale, "Delivered"),
+            "Cancelled Bill": getOrderCountByStatus(sale, "Cancelled"),
+            "Cancelled Amount": getOrderAmountByStatus(sale, "Cancelled"),
+            "Return Bill": getOrderCountByStatus(sale, "Return"),
+            "Return Amount": getOrderAmountByStatus(sale, "Return"),
+            "Rejected Bill": getOrderCountByStatus(sale, "Rejected"),
+            "Rejected Amount": getOrderAmountByStatus(sale, "Rejected"),
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "State Wise Report");
+
+        XLSX.writeFile(workbook, "State_Wise_Sales_Report.xlsx");
+    };
+
 
     // Meta title
     document.title = "STATE WISE SALES REPORT | BEPOSOFT";
@@ -97,10 +121,9 @@ const BasicTable = () => {
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
-                                    <CardTitle className="h4 text-center mt-4 mb-4" style={{ borderBottom: "2px solid #007bff", paddingBottom: "10px" }}>
-                                        SALES REPORTS
-                                    </CardTitle>
-
+                                    <Button color="success" className="mb-3" onClick={exportToExcel}>
+                                        Export to Excel
+                                    </Button>
 
                                     <div className="table-responsive">
                                         <Table

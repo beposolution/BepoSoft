@@ -118,15 +118,15 @@ const ChartSection = () => {
         return <p>Loading...</p>;
     }
 
-    const todayBills = chartsData.find(item => item.title === "Today Bills");
-    const waitingForConfirmation = chartsData.find(item => item.title === "Waiting For Confirmation");
-    const shipped = chartsData.find(item => item.title === "Shipped");
-    const proformaInvoices = chartsData.find(item => item.title === "Proforma Invoices");
-    const goodsReturn = chartsData.find(item => item.title === "Goods Return");
-    const grvWaitingForConfirmation = chartsData.find(item => item.title === "GRV waiting for confirmation");
-    const waitingForApproval = chartsData.find(item => item.title === "Waiting For Approval");
+    const todayBills = chartsData?.find(item => item?.title === "Today Bills");
+    const waitingForConfirmation = chartsData?.find(item => item?.title === "Waiting For Confirmation");
+    const shipped = chartsData?.find(item => item?.title === "Shipped");
+    const proformaInvoices = chartsData?.find(item => item?.title === "Proforma Invoices");
+    const goodsReturn = chartsData?.find(item => item?.title === "Goods Return");
+    const grvWaitingForConfirmation = chartsData?.find(item => item?.title === "GRV waiting for confirmation");
+    const waitingForApproval = chartsData?.find(item => item?.title === "Waiting For Approval");
 
-    const invoiceApprovedCount = orders.filter(order => order.status === "Invoice Approved").length;
+    const invoiceApprovedCount = orders?.filter(order => order?.status === "Invoice Approved")?.length;
 
     const proformaCountAdmin = proforma?.length || 0;
     const uniqueProformaCount = uniqueProforma?.length || 0;
@@ -134,29 +134,29 @@ const ChartSection = () => {
     const today = new Date().toISOString().split('T')[0];
 
     // Destructure from orders
-    const familyIds = orders.map(order => order.family_id);
-    const orderDates = orders.map(order => order.order_date);
-    const shippedOrdersToday = orders.filter(
-        order => order.status === "Shipped" && order.order_date === today
-    ).length;
-    const shippedOrdersTodayStaff = orders.filter(
+    const familyIds = orders?.map(order => order.family_id);
+    const orderDates = orders?.map(order => order.order_date);
+    const shippedOrdersToday = orders?.filter(
+        order => order?.status === "Shipped" && order.order_date === today
+    )?.length;
+    const shippedOrdersTodayStaff = orders?.filter(
         order =>
-            order.status === "Shipped" &&
-            order.order_date === today &&
-            order.family_id === userData
+            order?.status === "Shipped" &&
+            order?.order_date === today &&
+            order?.family_id === userData
     ).length;
 
-    const waitingForApprovalStaff = orders.filter(
-        order => order.status === "Invoice Created" && order.family_id === userData
+    const waitingForApprovalStaff = orders?.filter(
+        order => order?.status === "Invoice Created" && order?.family_id === userData
     ).length;
 
     // from grv/data api
-    const pendingGRVCount = grvCount.filter(item => item.status === "pending" && item.family === userData).length;
+    const pendingGRVCount = grvCount?.filter(item => item?.status === "pending" && item?.family === userData)?.length;
 
     // Filter orders where family_id matches userData AND order_date matches today
-    const userFamilyTodayOrderCount = orders.filter(
-        order => order.family_id === userData && order.order_date === today
-    ).length;
+    const userFamilyTodayOrderCount = orders?.filter(
+        order => order?.family_id === userData && order?.order_date === today
+    )?.length;
 
     return (
         <React.Fragment>
@@ -345,7 +345,12 @@ const ChartSection = () => {
                                     <div className="d-flex">
                                         <div className="flex-grow-1">
                                             <p className="text-muted fw-medium">GRV waiting for confirmation</p>
-                                            <h4 className="mb-0">{role === "ADMIN" ? (grvWaitingForConfirmation?.order) : pendingGRVCount}</h4>
+                                            <h4 className="mb-0">
+                                                {role === "ADMIN"
+                                                    ? (grvWaitingForConfirmation?.order)
+                                                    : (pendingGRVCount)}
+                                            </h4>
+
                                         </div>
                                         <div className="flex-shrink-0 align-self-center">
                                             {/* Optional Chart */}

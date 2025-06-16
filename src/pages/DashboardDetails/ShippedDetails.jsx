@@ -24,7 +24,6 @@ const ShippedDetails = () => {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setUserData(response?.data?.data?.family);
-                console.log("User Data:", response?.data?.data);
             } catch (error) {
                 console.error('Error fetching user data:', error);
             }

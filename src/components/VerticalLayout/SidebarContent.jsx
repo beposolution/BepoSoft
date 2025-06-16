@@ -539,7 +539,7 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/daily/good/movment/">{props.t("Daily Good Movment")}</Link>
                   </li>
-                  
+
                 </ul>
               </li>
             ) : null}
@@ -650,6 +650,9 @@ const SidebarContent = (props) => {
                   </li>
                   <li>
                     <Link to="/order/postoffice/">{props.t("Post Office Report")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/calllog/reports/">{props.t("Call Log Report")}</Link>
                   </li>
                 </ul>
               </li>

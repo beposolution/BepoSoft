@@ -17,7 +17,7 @@
     "@babel/runtime": "7.23.5",
     "@ckeditor/ckeditor5-build-classic": "40.1.0",
     "@ckeditor/ckeditor5-react": "^6.2.0",
-    "@ckeditor/ckeditor5-watchdog": "^44.2.0",
+    "@ckeditor/ckeditor5-watchdog": "^44.3.0",
     "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",
     "@fortawesome/fontawesome-svg-core": "^6.6.0",

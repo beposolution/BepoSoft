@@ -354,6 +354,7 @@ import WaitingForConfirmationDetails from "../pages/DashboardDetails/WaitingForC
 import UpdateExpense from "../pages/Expense/UpdateExpense";
 import OrderList2 from "../pages/Order/OrderList2";
 import PerfomaOrder from "../pages/PerfomaInvoive/PerfomaOrder";
+import CallLogReport from "../pages/Resports/CallLogReport";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -542,6 +543,7 @@ const authProtectedRoutes = [
 
 
   { path: "/sales/reports/", component: <Salesreport /> },
+  { path: "/calllog/reports/", component: <CallLogReport /> },
   { path: "/sales/view/:date/data/", component: <InvoiceDatas /> },
   { path: "/sales/resport/:id/staff/:date/:name/", component: <StaffOrders /> },
   { path: "/credit/sale/", component: <CreditSales /> },

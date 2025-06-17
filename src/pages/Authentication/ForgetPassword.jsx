@@ -28,7 +28,7 @@ import { userForgetPassword } from "../../store/actions";
 
 // import images
 import profile from "../../assets/images/profile-img.png";
-import logo from "../../assets/images/logo.svg";
+import logo from "../../../src/logo.png";
 import lightlogo from "../../assets/images/logo-light.svg";
 
 const ForgetPasswordPage = (props) => {
@@ -77,12 +77,12 @@ const ForgetPasswordPage = (props) => {
           <Row className="justify-content-center">
             <Col md={8} lg={6} xl={5}>
               <Card className="overflow-hidden">
-                <div className="bg-primary-subtlebg-soft-primary">
+                <div className="bg-primary-subtle">
                   <Row>
                     <Col xs={7}>
                       <div className="text-primary p-4">
                         <h5 className="text-primary">Welcome Back !</h5>
-                        <p>Sign in to continue to Skote.</p>
+                        <p>Forgot your password.</p>
                       </div>
                     </Col>
                     <Col className="col-5 align-self-end">
@@ -181,8 +181,7 @@ const ForgetPasswordPage = (props) => {
                   </Link>{" "}
                 </p>
                 <p>
-                  © {new Date().getFullYear()} Skote. Crafted with{" "}
-                  <i className="mdi mdi-heart text-danger" /> by Themesbrand
+                  © {new Date().getFullYear()} Bepositive.
                 </p>
               </div>
             </Col>

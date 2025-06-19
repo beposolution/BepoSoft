@@ -45,13 +45,13 @@ const Login = (props) => {
     enableReinitialize: true,
 
     initialValues: {
-      email: '',
+      username: '',
       password: '',
     },
 
 
     validationSchema: Yup.object({
-      email: Yup.string().email('Invalid email address').required('Please Enter Your Email'),
+      username: Yup.string().required('Please Enter Your Username'),
       password: Yup.string().required('Please Enter Your Password'),
     }),
 
@@ -178,20 +178,20 @@ const Login = (props) => {
                       {error && <Alert color="danger">{error}</Alert>}
 
                       <div className="mb-3">
-                        <Label className="form-label">Email</Label>
+                        <Label className="form-label">Username</Label>
                         <Input
-                          name="email"
+                          name="username"
                           className="form-control"
-                          placeholder="Enter email"
-                          type="email"
+                          placeholder="Enter Your Username"
+                          type="text"
                           onChange={validation.handleChange}
                           onBlur={validation.handleBlur}
-                          value={validation.values.email}
-                          invalid={validation.touched.email && validation.errors.email}
+                          value={validation.values.username}
+                          invalid={validation.touched.username && validation.errors.username}
                         />
-                        {validation.touched.email && validation.errors.email ? (
+                        {validation.touched.username && validation.errors.username ? (
                           <FormFeedback type="invalid">
-                            {validation.errors.email}
+                            {validation.errors.username}
                           </FormFeedback>
                         ) : null}
                       </div>
@@ -214,21 +214,6 @@ const Login = (props) => {
                           </FormFeedback>
                         ) : null}
                       </div>
-
-                      <div className="form-check">
-                        <input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="customControlInline"
-                        />
-                        <label
-                          className="form-check-label"
-                          htmlFor="customControlInline"
-                        >
-                          Remember me
-                        </label>
-                      </div>
-
                       <div className="mt-3 d-grid">
                         <button
                           className="btn btn-primary btn-block"

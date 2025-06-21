@@ -49,21 +49,15 @@ const BankModule = () => {
         const token = localStorage.getItem("token");
         axios
             .get(`${import.meta.env.VITE_APP_KEY}finance-report/`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: { Authorization: `Bearer ${token}` },
             })
             .then((response) => {
-                setBankModule(response.data.data);
-                // Show all data with calculated columns by default
-                const processed = response.data.data.map((customer) => {
-                    const credit = calculateCredit(customer.payments, {});
-                    const debit = calculateDebit(customer.banks, {});
-                    const closingBalance = calculateClosingBalance(customer.open_balance, credit, debit);
-                    return { ...customer, credit, debit, closingBalance };
-                });
-                setBankList(processed);
+                setBankModule(response.data.data); // Keep full dataset
                 setLoading(false);
+
+                // Apply default filter for today's date
+                const today = new Date();
+                applyFilters(response.data.data, today);
             })
             .catch((err) => {
                 if (err.response && err.response.status === 401) {
@@ -77,61 +71,89 @@ const BankModule = () => {
             });
     }, []);
 
+
     const calculateCredit = (payments, dateFilter) => {
         if (!payments || payments.length === 0) return 0;
 
-        // Filter payments by selected date or date range
-        const filteredPayments = payments.filter((payment) => {
+        return payments.reduce((total, payment) => {
             const paymentDate = new Date(payment.received_at).toISOString().split('T')[0];
-            if (dateFilter.start && dateFilter.end) {
-                // Date range
-                return paymentDate >= dateFilter.start && paymentDate <= dateFilter.end;
-            } else if (dateFilter.date) {
-                // Single date
-                return paymentDate === dateFilter.date;
-            }
-            return true; // Default case
-        });
+            const { start, end, date, before } = dateFilter;
 
-        return filteredPayments.reduce((total, payment) => total + parseFloat(payment.amount), 0);
+            const isInRange = start && end && paymentDate >= start && paymentDate <= end;
+            const isExact = date && paymentDate === date;
+            const isBefore = before && paymentDate < before;
+
+            if (isInRange || isExact || isBefore) {
+                return total + parseFloat(payment.amount);
+            }
+            return total;
+        }, 0);
     };
 
     const calculateDebit = (banks, dateFilter) => {
         if (!banks || banks.length === 0) return 0;
 
-        // Filter banks by selected date or date range
-        const filteredBanks = banks.filter((bank) => {
+        return banks.reduce((total, bank) => {
             const expenseDate = new Date(bank.expense_date).toISOString().split('T')[0];
-            if (dateFilter.start && dateFilter.end) {
-                // Date range
-                return expenseDate >= dateFilter.start && expenseDate <= dateFilter.end;
-            } else if (dateFilter.date) {
-                // Single date
-                return expenseDate === dateFilter.date;
-            }
-            return true; // Default case
-        });
+            const { start, end, date, before } = dateFilter;
 
-        return filteredBanks.reduce((total, bank) => total + parseFloat(bank.amount), 0);
+            const isInRange = start && end && expenseDate >= start && expenseDate <= end;
+            const isExact = date && expenseDate === date;
+            const isBefore = before && expenseDate < before;
+
+            if (isInRange || isExact || isBefore) {
+                return total + parseFloat(bank.amount);
+            }
+            return total;
+        }, 0);
     };
 
     const calculateClosingBalance = (openBalance, credit, debit) => {
         return parseFloat(openBalance) + credit - debit;
     };
 
-    const applyFilters = () => {
-        const dateFilter = {
-            date: selectedDate ? selectedDate.toISOString().split('T')[0] : null,
-            start: startDate ? startDate.toISOString().split('T')[0] : null,
-            end: endDate ? endDate.toISOString().split('T')[0] : null,
-        };
+    const applyFilters = (rawData = bankmodule, filterDate = selectedDate, range = dateRange) => {
+        const [start, end] = range && range[0] && range[1] ? range : [null, null];
 
-        // Filter data based on selected date(s)
-        const filtered = bankmodule.map((customer) => {
+        const formatDate = (d) => new Date(d).toISOString().split("T")[0];
+        const selectedDay = filterDate ? formatDate(filterDate) : null;
+        const selectedStart = start ? formatDate(start) : null;
+        const selectedEnd = end ? formatDate(end) : null;
+
+        const dateFilter = {};
+        if (selectedStart && selectedEnd) {
+            dateFilter.start = selectedStart;
+            dateFilter.end = selectedEnd;
+        } else if (selectedDay) {
+            dateFilter.date = selectedDay;
+        }
+
+        const filtered = rawData.map((customer) => {
+            // Step 1: Get all credit/debit BEFORE the selected date or start of range
+            const priorCredit = calculateCredit(customer.payments, {
+                before: selectedStart || selectedDay,
+            });
+            const priorDebit = calculateDebit(customer.banks, {
+                before: selectedStart || selectedDay,
+            });
+
+            // Step 2: Calculate correct OPB
+            const openingBalance = parseFloat(customer.open_balance || 0) + priorCredit - priorDebit;
+
+            // Step 3: Get credit & debit for selected day or range
             const credit = calculateCredit(customer.payments, dateFilter);
             const debit = calculateDebit(customer.banks, dateFilter);
-            const closingBalance = calculateClosingBalance(customer.open_balance, credit, debit);
-            return { ...customer, credit, debit, closingBalance };
+
+            // Step 4: Calculate CLB
+            const closingBalance = openingBalance + credit - debit;
+
+            return {
+                ...customer,
+                open_balance: openingBalance,
+                credit,
+                debit,
+                closingBalance,
+            };
         });
 
         setBankList(filtered);
@@ -140,12 +162,22 @@ const BankModule = () => {
     const exportToExcel = () => {
         const exportData = banklist.map((customer, index) => ({
             "#": index + 1,
-            "Name": customer?.name,
+            Name: customer?.name,
             "Opening Balance (₹)": customer?.open_balance,
             "Credit (₹)": customer?.credit,
             "Debit (₹)": customer?.debit,
             "Closing Balance (₹)": customer?.closingBalance,
         }));
+
+        // Add totals as last row
+        exportData.push({
+            "#": "",
+            Name: "Total",
+            "Opening Balance (₹)": total.open_balance,
+            "Credit (₹)": total.credit,
+            "Debit (₹)": total.debit,
+            "Closing Balance (₹)": total.closingBalance,
+        });
 
         const worksheet = XLSX.utils.json_to_sheet(exportData);
         const workbook = XLSX.utils.book_new();
@@ -153,6 +185,17 @@ const BankModule = () => {
 
         XLSX.writeFile(workbook, "Finance_Report.xlsx");
     };
+
+    const total = banklist.reduce(
+        (acc, customer) => {
+            acc.open_balance += parseFloat(customer.open_balance || 0);
+            acc.credit += parseFloat(customer.credit || 0);
+            acc.debit += parseFloat(customer.debit || 0);
+            acc.closingBalance += parseFloat(customer.closingBalance || 0);
+            return acc;
+        },
+        { open_balance: 0, credit: 0, debit: 0, closingBalance: 0 }
+    );
 
     return (
         <React.Fragment>
@@ -187,13 +230,14 @@ const BankModule = () => {
                             </Col>
                             <Col md={4}>
                                 <div className="mb-3">
-                                    <button
+                                    <Button
                                         type="button"
                                         className="btn btn-primary mt-4"
-                                        onClick={applyFilters}
+                                        onClick={() => applyFilters(bankmodule, selectedDate, dateRange)}
                                     >
                                         Apply Filters
-                                    </button>
+                                    </Button>
+
                                 </div>
                                 <Button color="success" onClick={exportToExcel}>
                                     Export to Excel
@@ -222,13 +266,84 @@ const BankModule = () => {
                             <tr key={customer?.id}>
                                 <th scope="row">{index + 1}</th>
                                 <td>{customer?.name}</td>
-                                <td>{Number(customer?.open_balance)?.toLocaleString("en-IN", { style: "currency", currency: "INR" })}</td>
-                                <td>{Number(customer?.credit)?.toLocaleString("en-IN", { style: "currency", currency: "INR" })}</td>
-                                <td>{Number(customer?.debit)?.toLocaleString("en-IN", { style: "currency", currency: "INR" })}</td>
-                                <td>{Number(customer?.closingBalance)?.toLocaleString("en-IN", { style: "currency", currency: "INR" })}</td>
+                                <td>
+                                    {isNaN(customer?.open_balance) || customer?.open_balance == null
+                                        ? "-"
+                                        : (customer?.open_balance < 0 ? "- " : "") +
+                                        Math.abs(customer?.open_balance).toLocaleString("en-IN", {
+                                            style: "currency",
+                                            currency: "INR",
+                                            minimumFractionDigits: 2,
+                                        })}
+                                </td>
+                                <td>
+                                    {isNaN(customer?.credit) || customer?.credit == null
+                                        ? "-"
+                                        : (customer?.credit < 0 ? "- " : "") +
+                                        Math.abs(customer?.credit).toLocaleString("en-IN", {
+                                            style: "currency",
+                                            currency: "INR",
+                                            minimumFractionDigits: 2,
+                                        })}
+                                </td>
+                                <td>
+                                    {isNaN(customer?.debit) || customer?.debit == null
+                                        ? "-"
+                                        : (customer?.debit < 0 ? "- " : "") +
+                                        Math.abs(customer?.debit).toLocaleString("en-IN", {
+                                            style: "currency",
+                                            currency: "INR",
+                                            minimumFractionDigits: 2,
+                                        })}
+                                </td>
+
+                                {/* Closing Balance */}
+                                <td>
+                                    {isNaN(customer?.closingBalance) || customer?.closingBalance == null
+                                        ? "-"
+                                        : (customer?.closingBalance < 0 ? "- " : "") +
+                                        Math.abs(customer?.closingBalance).toLocaleString("en-IN", {
+                                            style: "currency",
+                                            currency: "INR",
+                                            minimumFractionDigits: 2,
+                                        })}
+                                </td>
                             </tr>
                         ))}
                     </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colSpan="2">Total</th>
+                            <th>
+                                {total.open_balance.toLocaleString("en-IN", {
+                                    style: "currency",
+                                    currency: "INR",
+                                    minimumFractionDigits: 2,
+                                })}
+                            </th>
+                            <th style={{ color: "green" }}>
+                                {total.credit.toLocaleString("en-IN", {
+                                    style: "currency",
+                                    currency: "INR",
+                                    minimumFractionDigits: 2,
+                                })}
+                            </th>
+                            <th style={{ color: "red" }}>
+                                {total.debit.toLocaleString("en-IN", {
+                                    style: "currency",
+                                    currency: "INR",
+                                    minimumFractionDigits: 2,
+                                })}
+                            </th>
+                            <th style={{ color: "blue" }}>
+                                {total.closingBalance.toLocaleString("en-IN", {
+                                    style: "currency",
+                                    currency: "INR",
+                                    minimumFractionDigits: 2,
+                                })}
+                            </th>
+                        </tr>
+                    </tfoot>
                 </Table>
             </div>
 

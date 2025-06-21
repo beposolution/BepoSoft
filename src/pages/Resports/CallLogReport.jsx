@@ -16,12 +16,15 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 const CallLogReport = () => {
     const [callLog, setCallLog] = useState([]);
     const [staffData, setStaffData] = useState([]);
+    const [familyData, setFamilyData] = useState([]);
     const token = localStorage.getItem("token")
     const [filterDate, setFilterDate] = useState("");
     const [filterStartTime, setFilterStartTime] = useState("");
     const [filterEndTime, setFilterEndTime] = useState("");
     const [filteredCallLog, setFilteredCallLog] = useState([]);
-
+    const [selectedFamily, setSelectedFamily] = useState("");
+    const [filterStartDate, setFilterStartDate] = useState("");
+    const [filterEndDate, setFilterEndDate] = useState("");
 
     useEffect(() => {
         const fetchCallLogData = async () => {
@@ -43,12 +46,26 @@ const CallLogReport = () => {
                 const response = await axios.get(`${import.meta.env.VITE_APP_KEY}staffs/`, {
                     headers: { Authorization: `Bearer${token}` }
                 });
-                setStaffData(response.data.data);
+                setStaffData(response?.data?.data);
             } catch (error) {
                 console.error("Error fetching staff data", error)
             }
         };
         fetchStaffData();
+    }, [])
+
+    useEffect(() => {
+        const fetchFamilyData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}familys/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setFamilyData(response?.data?.data)
+            } catch (error) {
+                console.error("Error fetching family data.", error)
+            }
+        };
+        fetchFamilyData();
     }, [])
 
     const staffMap = staffData.reduce((acc, staff) => {
@@ -61,29 +78,82 @@ const CallLogReport = () => {
     }, [callLog]);
 
     const applyFilters = () => {
-        if (!filterDate || !filterStartTime || !filterEndTime) {
-            alert("Please select date, start time, and end time");
+        if (!filterDate && !filterStartTime && !filterEndTime && !selectedFamily && !filterStartDate && !filterEndDate) {
+            setFilteredCallLog(callLog);
             return;
         }
 
-        const startDateTime = new Date(`${filterDate}T${filterStartTime}`);
-        const endDateTime = new Date(`${filterDate}T${filterEndTime}`);
+        // Validate time filters if any date/time part is selected
+        const dateFiltersSelected = filterDate || filterStartTime || filterEndTime;
+        if (dateFiltersSelected) {
+            if (!filterDate || !filterStartTime || !filterEndTime) {
+                alert("Please select date, start time, and end time");
+                return;
+            }
+            const filterStartDateTime = new Date(`${filterDate}T${filterStartTime}`);
+            const filterEndDateTime = new Date(`${filterDate}T${filterEndTime}`);
 
-        if (startDateTime >= endDateTime) {
-            alert("Start time must be before end time.");
+            if (filterStartDateTime >= filterEndDateTime) {
+                alert("Start time must be before end time.");
+                return;
+            }
+
+            let filtered = callLog.filter(item => {
+                if (!item.start_time || !item.end_time) return false;
+
+                const itemStart = new Date(item.start_time);
+                const itemEnd = new Date(item.end_time);
+
+                if (isNaN(itemStart) || isNaN(itemEnd)) return false;
+
+                const timeMatch = itemStart >= filterStartDateTime && itemEnd <= filterEndDateTime;
+                const familyMatch = selectedFamily ? item.family_name === Number(selectedFamily) : true;
+
+                return timeMatch && familyMatch;
+            });
+
+            // Apply date range filter on top if selected
+            if (filterStartDate && filterEndDate) {
+                const startDate = new Date(filterStartDate);
+                const endDate = new Date(filterEndDate);
+
+                if (startDate > endDate) {
+                    alert("Start date must be before or equal to End date.");
+                    return;
+                }
+
+                filtered = filtered.filter(item => {
+                    const callDate = new Date(item.call_date);
+                    return callDate >= startDate && callDate <= endDate;
+                });
+            }
+
+            setFilteredCallLog(filtered);
             return;
         }
 
-        const filtered = callLog.filter(item => {
-            if (!item.start_time || !item.end_time) return false;
+        // No time filter but family or date range filter may be selected
+        let filtered = callLog;
 
-            const itemStart = new Date(item.start_time);
-            const itemEnd = new Date(item.end_time);
+        if (selectedFamily) {
+            filtered = filtered.filter(item => item.family_name === Number(selectedFamily));
+        }
 
-            if (isNaN(itemStart) || isNaN(itemEnd)) return false;
+        if (filterStartDate && filterEndDate) {
+            const startDate = new Date(filterStartDate);
+            const endDate = new Date(filterEndDate);
 
-            return itemStart < endDateTime && itemEnd > startDateTime;
-        });
+            if (startDate > endDate) {
+                alert("Start date must be before or equal to End date.");
+                return;
+            }
+
+            filtered = filtered.filter(item => {
+                const callDate = new Date(item.call_date);
+                return callDate >= startDate && callDate <= endDate;
+            });
+        }
+
         setFilteredCallLog(filtered);
     };
 
@@ -103,7 +173,7 @@ const CallLogReport = () => {
         const staffAggregation = {};
 
         let grandTotalCallDuration = 0;
-        let grandTotalActiveCalls = 0;  
+        let grandTotalActiveCalls = 0;
         let grandTotalBills = 0;
         let grandTotalCalls = 0;
 
@@ -184,6 +254,14 @@ const CallLogReport = () => {
         XLSX.writeFile(workbook, "Call_Log.xlsx");
     };
 
+    const totalCallDurationSeconds = filteredCallLog.reduce(
+        (total, item) => total + (item.call_duration_seconds || 0),
+        0
+    );
+
+    const totalMinutes = Math.floor(totalCallDurationSeconds / 60);
+    const totalSeconds = totalCallDurationSeconds % 60;
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -194,7 +272,7 @@ const CallLogReport = () => {
                             <Card>
                                 <CardBody>
                                     <Row className="mb-3">
-                                        <Col md={3}>
+                                        <Col>
                                             <Label>Date</Label>
                                             <Input type="date" value={filterDate} onChange={onDateChange} />
                                         </Col>
@@ -206,6 +284,43 @@ const CallLogReport = () => {
                                             <Label>End Time</Label>
                                             <Input type="time" value={filterEndTime} onChange={onEndTimeChange} />
                                         </Col>
+                                        <Col >
+                                            <Label>Family Name</Label>
+                                            <Input
+                                                type="select"
+                                                value={selectedFamily}
+                                                onChange={(e) => setSelectedFamily(e.target.value)}
+                                            >
+                                                <option value="">All</option>
+                                                {familyData.map((family) => (
+                                                    <option key={family.id} value={family.id}>
+                                                        {family.name}
+                                                    </option>
+                                                ))}
+                                            </Input>
+                                        </Col>
+                                        <Col>
+                                            <Label>Time Period</Label>
+                                            <Row>
+                                                <Col className="mb-1">
+                                                    <Input
+                                                        placeholder="Start Date"
+                                                        type="date"
+                                                        value={filterStartDate}
+                                                        onChange={(e) => setFilterStartDate(e.target.value)}
+                                                    />
+                                                </Col>
+                                                <Col>
+                                                    <Input
+                                                        placeholder="End Date"
+                                                        type="date"
+                                                        value={filterEndDate}
+                                                        onChange={(e) => setFilterEndDate(e.target.value)}
+                                                    />
+                                                </Col>
+                                            </Row>
+                                        </Col>
+
                                     </Row>
                                     <Row className="mb-3">
                                         <Col md={12} className="text-center">
@@ -257,6 +372,15 @@ const CallLogReport = () => {
                                                 )}
                                             </tbody>
                                         </Table>
+                                    </div>
+                                    <div>
+                                        <Row className="mt-3">
+                                            <Col className="text-right">
+                                                <h5>
+                                                    <strong>Total Call Duration:</strong> {totalMinutes}m {totalSeconds}s
+                                                </h5>
+                                            </Col>
+                                        </Row>
                                     </div>
                                 </CardBody>
                             </Card>

@@ -36,9 +36,6 @@ const FormLayouts = () => {
     const [companys, setCompany] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    console.log("products", cartProducts)
-
-
 
     const [cartTotalAmount, setCartTotalAmount] = useState(0);
     const [cartTotalDiscount, setCartTotalDiscount] = useState(0);
@@ -160,7 +157,6 @@ const FormLayouts = () => {
 
                     if (statesResponse.status === 200) {
                         setStates(statesResponse.data.data);
-                        console.log(statesResponse.data.data)
                     }
                     if (familyResponse.status === 200) {
                         setFamilys(familyResponse.data.data);
@@ -185,7 +181,6 @@ const FormLayouts = () => {
                     }
                     if (companyResponse.status === 200) {
                         setCompany(companyResponse.data.data);
-                        console.log(companyResponse.data.data)
 
                         if (companyResponse.data.data.length > 0 && !formik.values.company) {
                             formik.setFieldValue("company", companyResponse.data.data[0].id);
@@ -297,7 +292,6 @@ const FormLayouts = () => {
                 },
                 body: JSON.stringify(updatedFields)
             });
-
             if (response.ok) {
                 const updatedProduct = await response.json();
             } else {
@@ -308,7 +302,39 @@ const FormLayouts = () => {
         }
     };
 
-    // Function to handle changes in description, discount, or quantity
+    const handleUpdateEntireCart = async () => {
+        try {
+            for (const product of cartProducts) {
+                await updateCartProduct(product.id, {
+                    quantity: product.quantity,
+                    price: product.price,
+                    discount: product.discount,
+                    note: product.note,
+                });
+            }
+            toast.success("Cart updated successfully!");
+
+            // Fetch updated cart data from backend here:
+            await fetchCartProducts();  // Your function to reload cart from server
+
+        } catch (error) {
+            toast.error("Failed to update the cart.");
+        }
+    };
+
+
+    // Function to handle changes in description, discount, price or quantity
+    const handlePriceChange = (index, newPrice) => {
+        const updatedCartProducts = [...cartProducts];
+        updatedCartProducts[index].price = parseFloat(newPrice) || 0;
+        setCartProducts(updatedCartProducts);
+
+        updateCartProduct(updatedCartProducts[index].id, {
+            price: parseFloat(newPrice) || 0
+        });
+    };
+
+
     const handleDescriptionChange = (index, newDescription) => {
         const updatedCartProducts = [...cartProducts];
         updatedCartProducts[index].note = newDescription;
@@ -642,7 +668,6 @@ const FormLayouts = () => {
                                                 ADD PRODUCTS
                                             </Button>
                                         </div>
-
                                         <div>
                                             <Row>
                                                 <Col xl={12}>
@@ -701,7 +726,13 @@ const FormLayouts = () => {
                                                                                             className="input-sm"
                                                                                         />
                                                                                     </td>
-                                                                                    <td>₹{(product.price || 0) - (product.discount || 0)}</td>
+                                                                                    <td>
+                                                                                        <Input
+                                                                                            type="text"
+                                                                                            value={product.price}
+                                                                                            onChange={(e) => handlePriceChange(index, e.target.value)}
+                                                                                        />
+                                                                                    </td>
                                                                                     <td>
                                                                                         <Input
                                                                                             type="number"
@@ -717,6 +748,11 @@ const FormLayouts = () => {
                                                                                             onClick={() => handleRemoveProduct(product.id)}
                                                                                         >
                                                                                             Remove
+                                                                                        </Button>
+                                                                                    </td>
+                                                                                    <td>
+                                                                                        <Button className="btn btn-primary" onClick={handleUpdateEntireCart}>
+                                                                                            Update
                                                                                         </Button>
                                                                                     </td>
                                                                                 </tr>
@@ -745,7 +781,6 @@ const FormLayouts = () => {
                                                     </Card>
                                                 </Col>
                                             </Row>
-
                                             <Row className="mt-4">
 
                                                 <Col md={6}>
@@ -833,9 +868,6 @@ const FormLayouts = () => {
                                                 </Col>
                                             </Row>
                                         </div>
-
-
-
                                         <div className="w-5">
                                             <Button color="primary" type="submit" className="mt-4 w-100" disabled={isLoading}>
                                                 {isLoading ? "creating....." : "Create Order"}

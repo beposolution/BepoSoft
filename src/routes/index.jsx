@@ -106,7 +106,7 @@ import ChartsKnob from "../pages/Charts/charts-knob";
 import ReCharts from "../pages/Charts/ReCharts";
 
 // // Maps
-import MapsGoogle from "../pages/Maps/MapsGoogle";
+// import MapsGoogle from "../pages/Maps/MapsGoogle";
 
 // //Icons
 import IconBoxicons from "../pages/Icons/IconBoxicons";
@@ -159,7 +159,7 @@ import UiOffCanvas from "../pages/Ui/UiOffCanvas";
 import UiGeneral from "../pages/Ui/UiGeneral";
 import UiGrid from "../pages/Ui/UiGrid";
 import UiImages from "../pages/Ui/UiImages";
-import UiLightbox from "../pages/Ui/UiLightbox";
+// import UiLightbox from "../pages/Ui/UiLightbox";
 import UiModal from "../pages/Ui/UiModal/index";
 
 
@@ -355,6 +355,9 @@ import UpdateExpense from "../pages/Expense/UpdateExpense";
 import OrderList2 from "../pages/Order/OrderList2";
 import PerfomaOrder from "../pages/PerfomaInvoive/PerfomaOrder";
 import CallLogReport from "../pages/Resports/CallLogReport";
+import AdvanceReceipt from "../pages/Receipts/AdvanceReceipt";
+import OtherReceipt from "../pages/Receipts/OtherReceipt";
+import OrderReceipt from "../pages/Receipts/OrderReceipt";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -417,6 +420,11 @@ const authProtectedRoutes = [
   { path: "/product/:id/Images/", component: <Images /> },
   { path: "/add/products/bulk/", component: <BulkProduct /> },
   { path: "/warehouse/waitingproducts/", component: <WaitingProducts /> },
+
+  // Receipts
+  { path: "/advance/receipt/", component: <AdvanceReceipt /> },
+  { path: "/other/receipt/", component: <OtherReceipt /> },
+  { path: "/order/receipt/", component: <OrderReceipt /> },
 
   // company
 
@@ -603,7 +611,7 @@ const authProtectedRoutes = [
   { path: "/tables-datatable", component: <DatatableTables /> },
 
   //   // Maps
-  { path: "/maps-google", component: <MapsGoogle /> },
+  // { path: "/maps-google", component: <MapsGoogle /> },
 
   //   // Forms
   { path: "/form-elements", component: <FormElements /> },
@@ -635,7 +643,7 @@ const authProtectedRoutes = [
   { path: "/ui-general", component: <UiGeneral /> },
   { path: "/ui-grid", component: <UiGrid /> },
   { path: "/ui-images", component: <UiImages /> },
-  { path: "/ui-lightbox", component: <UiLightbox /> },
+  // { path: "/ui-lightbox", component: <UiLightbox /> },
   { path: "/ui-modals", component: <UiModal /> },
   { path: "/ui-progressbars", component: <UiProgressbar /> },
   { path: "/ui-tabs-accordions", component: <UiTabsAccordions /> },

@@ -70,9 +70,15 @@ const BasicTable = () => {
 
 
     const handleAddOrUpdateAttribute = async (e) => {
+        console.log("Sending data to update:", {
+            id: editingAttribute.id,
+            value: newAttribute,
+            attribute: newAttributeValue
+        });
+
         e.preventDefault();
         const apiUrl = editingAttribute
-            ? `${import.meta.env.VITE_APP_KEY}product/attribute/${editingAttribute.id}/values/`
+            ? `${import.meta.env.VITE_APP_KEY}product/attribute/${editingAttribute.id}/update/`
             : `${import.meta.env.VITE_APP_KEY}add/product/attribute/values/`;
 
         const method = editingAttribute ? "PUT" : "POST";
@@ -91,6 +97,8 @@ const BasicTable = () => {
             });
 
             if (!response.ok) {
+                const errorDetails = await response.text();
+                console.error("Server responded with error:", errorDetails);
                 throw new Error(`Failed to ${editingAttribute ? "update" : "add"} attribute`);
             }
 
@@ -144,16 +152,14 @@ const BasicTable = () => {
 
     // Handle Edit Action
     const handleEditAttribute = (attribute) => {
-        setEditingAttribute(attribute); // Set the current attribute being edited
-        setNewAttribute(attribute.name); // Pre-fill the input with the current name
-        setNewAttributeValue(attribute.value); // Pre-fill the value
-        setShowForm(true); // Show the form to edit
+        setEditingAttribute(attribute); // Save the full object for ID and update
+        setNewAttribute(attribute.value); // The value is what you're editing (e.g., "Red", "Large")
+        setNewAttributeValue(attribute.attribute); // This is the attribute ID (e.g., 1 for Color)
+        setShowForm(true);
     };
 
     document.title = "Beposoft | Product Attribute Values";
 
-
-    console.log("attribute information..:", attributes);
 
     return (
         <React.Fragment>
@@ -196,7 +202,7 @@ const BasicTable = () => {
                                                                         onClick={() => handleEditAttribute(attribute)}
                                                                         className="me-2"
                                                                     >
-                                                                        <FaEdit /> {/* Edit Icon */}
+                                                                        <FaEdit />
                                                                     </Button>
                                                                 </td>
                                                                 {/* <td>

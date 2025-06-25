@@ -468,13 +468,30 @@ const FormLayouts = () => {
                                             <Col md={8}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="customer">Customer</Label>
-                                                    <Input
+                                                    <input
                                                         type="text"
                                                         placeholder="Search Customer..."
                                                         value={searchTerm}
                                                         onChange={handleSearchChange}
                                                         className="form-control"
                                                     />
+                                                    {searchTerm && filteredCustomers.length > 0 && (
+                                                        <ul className="customer-dropdown" style={{ border: '1px solid #ccc', maxHeight: '150px', overflowY: 'auto', marginTop: 0, paddingLeft: 0 }}>
+                                                            {filteredCustomers.map(customer => (
+                                                                <li
+                                                                    key={customer.id}
+                                                                    style={{ listStyle: 'none', padding: '8px', cursor: 'pointer' }}
+                                                                    onClick={() => {
+                                                                        formik.setFieldValue('customer', customer.id);
+                                                                        setSearchTerm(customer.name); // Show selected customer's name in input
+                                                                        handleCustomerChange({ target: { value: customer.id } });
+                                                                    }}
+                                                                >
+                                                                    {customer.name}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    )}
                                                     <Input
                                                         type="select"
                                                         name="customer"
@@ -486,10 +503,7 @@ const FormLayouts = () => {
                                                         invalid={formik.touched.customer && formik.errors.customer ? true : false}
                                                     >
                                                         <option value="">Select a Customer...</option>
-                                                        {(role === "BDO"
-                                                            ? filteredOrders
-                                                            : filteredCustomers
-                                                        ).map((custo) => (
+                                                        {filteredCustomers.map((custo) => (
                                                             <option key={custo.id} value={custo.id}>
                                                                 {custo.name}
                                                             </option>
@@ -617,124 +631,124 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
                                         </Row>
-                                    
-                                    <div className="mb-3">
-                                        <Button color="primary" onClick={toggleModal}>
-                                            ADD PRODUCTS
-                                        </Button>
-                                    </div>
 
-                                    <div>
-                                        <Row>
-                                            <Col xl={12}>
-                                                <Card>
-                                                    <CardBody>
-                                                        <CardTitle className="h4">ORDER PRODUCTS</CardTitle>
-                                                        <div className="table-responsive">
-                                                            <Table className="table-custom mb-0 table-bordered table-hover">
-                                                                <thead>
-                                                                    <tr>
-                                                                        <th>#</th>
-                                                                        <th>IMAGE</th>
-                                                                        <th>NAME</th>
-                                                                        <th>RATE</th>
-                                                                        <th>TAX</th>
+                                        <div className="mb-3">
+                                            <Button color="primary" onClick={toggleModal}>
+                                                ADD PRODUCTS
+                                            </Button>
+                                        </div>
 
-                                                                        <th>DESCRIPTION</th>
-                                                                        <th>SIZE</th>
-                                                                        <th>DISCOUNT</th>
-                                                                        <th>PRICE</th>
-                                                                        <th>QUANTITY</th>
-                                                                        <th>TOTAL</th>
-                                                                        <th>ACTION</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                    {cartProducts.length > 0 ? (
-                                                                        cartProducts.map((product, index) => (
-                                                                            <tr key={product.id || index}>
-                                                                                <td>{index + 1}</td>
-                                                                                <td>
-                                                                                    <img
-                                                                                        src={`${import.meta.env.VITE_APP_IMAGE}/${product.image}`}
-                                                                                        alt={product.name || "Product image"}
-                                                                                        style={{ width: "50px", height: "50px" }}
-                                                                                    />
-                                                                                </td>
-                                                                                <td>{product.name || "Unknown Product"}</td>
-                                                                                <td>₹ {product.exclude_price || 0}</td>
-                                                                                <td>{product.tax || 0} %</td>
-                                                                                <td>
-                                                                                    <Input
-                                                                                        type="text"
-                                                                                        value={product.note || ""}
-                                                                                        onChange={(e) => handleDescriptionChange(index, e.target.value)}
-                                                                                        style={{ width: "100%" }}
-                                                                                    />
-                                                                                </td>
-                                                                                <td>{product.size || "N/A"}</td>
-                                                                                <td>
-                                                                                    <Input
-                                                                                        type="number"
-                                                                                        value={product.discount || 0}
-                                                                                        min="0"
-                                                                                        onChange={(e) => handleDiscountChange(index, e.target.value)}
-                                                                                        className="input-sm"
-                                                                                    />
-                                                                                </td>
-                                                                                <td>₹{(product.price || 0) - (product.discount || 0)}</td>
-                                                                                <td>
-                                                                                    <Input
-                                                                                        type="number"
-                                                                                        value={product.quantity || 1}
-                                                                                        onChange={(e) => handleQuantityChange(index, e.target.value)}
-                                                                                        className="input-sm"
-                                                                                    />
-                                                                                </td>
-                                                                                <td>₹{(((product.price || 0) * (product.quantity || 1)) - ((product.discount || 0) * (product.quantity || 1))).toFixed(2)}</td>
-                                                                                <td>
-                                                                                    <Button
-                                                                                        className="btn-remove"
-                                                                                        onClick={() => handleRemoveProduct(product.id)}
-                                                                                    >
-                                                                                        Remove
-                                                                                    </Button>
+                                        <div>
+                                            <Row>
+                                                <Col xl={12}>
+                                                    <Card>
+                                                        <CardBody>
+                                                            <CardTitle className="h4">ORDER PRODUCTS</CardTitle>
+                                                            <div className="table-responsive">
+                                                                <Table className="table-custom mb-0 table-bordered table-hover">
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th>#</th>
+                                                                            <th>IMAGE</th>
+                                                                            <th>NAME</th>
+                                                                            <th>RATE</th>
+                                                                            <th>TAX</th>
+
+                                                                            <th>DESCRIPTION</th>
+                                                                            <th>SIZE</th>
+                                                                            <th>DISCOUNT</th>
+                                                                            <th>PRICE</th>
+                                                                            <th>QUANTITY</th>
+                                                                            <th>TOTAL</th>
+                                                                            <th>ACTION</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        {cartProducts.length > 0 ? (
+                                                                            cartProducts.map((product, index) => (
+                                                                                <tr key={product.id || index}>
+                                                                                    <td>{index + 1}</td>
+                                                                                    <td>
+                                                                                        <img
+                                                                                            src={`${import.meta.env.VITE_APP_IMAGE}/${product.image}`}
+                                                                                            alt={product.name || "Product image"}
+                                                                                            style={{ width: "50px", height: "50px" }}
+                                                                                        />
+                                                                                    </td>
+                                                                                    <td>{product.name || "Unknown Product"}</td>
+                                                                                    <td>₹ {product.exclude_price || 0}</td>
+                                                                                    <td>{product.tax || 0} %</td>
+                                                                                    <td>
+                                                                                        <Input
+                                                                                            type="text"
+                                                                                            value={product.note || ""}
+                                                                                            onChange={(e) => handleDescriptionChange(index, e.target.value)}
+                                                                                            style={{ width: "100%" }}
+                                                                                        />
+                                                                                    </td>
+                                                                                    <td>{product.size || "N/A"}</td>
+                                                                                    <td>
+                                                                                        <Input
+                                                                                            type="number"
+                                                                                            value={product.discount || 0}
+                                                                                            min="0"
+                                                                                            onChange={(e) => handleDiscountChange(index, e.target.value)}
+                                                                                            className="input-sm"
+                                                                                        />
+                                                                                    </td>
+                                                                                    <td>₹{(product.price || 0) - (product.discount || 0)}</td>
+                                                                                    <td>
+                                                                                        <Input
+                                                                                            type="number"
+                                                                                            value={product.quantity || 1}
+                                                                                            onChange={(e) => handleQuantityChange(index, e.target.value)}
+                                                                                            className="input-sm"
+                                                                                        />
+                                                                                    </td>
+                                                                                    <td>₹{(((product.price || 0) * (product.quantity || 1)) - ((product.discount || 0) * (product.quantity || 1))).toFixed(2)}</td>
+                                                                                    <td>
+                                                                                        <Button
+                                                                                            className="btn-remove"
+                                                                                            onClick={() => handleRemoveProduct(product.id)}
+                                                                                        >
+                                                                                            Remove
+                                                                                        </Button>
+                                                                                    </td>
+                                                                                </tr>
+                                                                            ))
+                                                                        ) : (
+                                                                            <tr>
+                                                                                <td colSpan="10" className="text-center">
+                                                                                    No products selected.
                                                                                 </td>
                                                                             </tr>
-                                                                        ))
-                                                                    ) : (
-                                                                        <tr>
-                                                                            <td colSpan="10" className="text-center">
-                                                                                No products selected.
-                                                                            </td>
-                                                                        </tr>
-                                                                    )}
-                                                                </tbody>
+                                                                        )}
+                                                                    </tbody>
 
-                                                            </Table>
-                                                        </div>
+                                                                </Table>
+                                                            </div>
 
-                                                        {/* AddProduct Modal */}
-                                                        <AddProduct
-                                                            ProductsFetch={fetchCartProducts}
-                                                            isOpen={modalOpen}
-                                                            toggle={toggleModal}
-                                                            onSelectProduct={handleProductSelect}
-                                                        />
-                                                    </CardBody>
-                                                </Card>
-                                            </Col>
-                                        </Row>
+                                                            {/* AddProduct Modal */}
+                                                            <AddProduct
+                                                                ProductsFetch={fetchCartProducts}
+                                                                isOpen={modalOpen}
+                                                                toggle={toggleModal}
+                                                                onSelectProduct={handleProductSelect}
+                                                            />
+                                                        </CardBody>
+                                                    </Card>
+                                                </Col>
+                                            </Row>
 
 
 
 
 
 
-                                        <Row className="mt-4">
+                                            <Row className="mt-4">
 
-                                            <Col md={6}>
-                                                {/* <Card className="mb-3">
+                                                <Col md={6}>
+                                                    {/* <Card className="mb-3">
                                                         <CardBody>
                                                             <Label for="payment_status">Payment Status *</Label>
                                                             <Input
@@ -800,43 +814,43 @@ const FormLayouts = () => {
                                                             ) : null}
                                                         </CardBody>
                                                     </Card> */}
-                                            </Col>
+                                                </Col>
 
 
-                                            <Col md={6}>
-                                                <Card>
-                                                    <CardBody>
-                                                        <h6 className="border-bottom pb-2">Total: <span className="float-end">₹&nbsp;{cartTotalAmount.toFixed(2)}</span></h6>
-                                                        <h6 className="border-bottom pb-2">Advance Paid: <span className="float-end">₹0.00</span></h6>
-                                                        <h6 className="border-bottom pb-2">Total Discount: <span className="float-end">₹&nbsp;{cartTotalDiscount.toFixed(2)}</span></h6>
-                                                        <h6 className="border-bottom pb-2">Shipping Charge: <span className="float-end">₹0.00</span></h6>
-                                                        <h6 className="border-bottom pb-2">Total Cart Discount: <span className="float-end">₹0.00</span></h6>
-                                                        <h6 className="font-weight-bold">Net Amount: <span className="float-end">₹&nbsp;{finalAmount.toFixed(2)}</span></h6>
+                                                <Col md={6}>
+                                                    <Card>
+                                                        <CardBody>
+                                                            <h6 className="border-bottom pb-2">Total: <span className="float-end">₹&nbsp;{cartTotalAmount.toFixed(2)}</span></h6>
+                                                            <h6 className="border-bottom pb-2">Advance Paid: <span className="float-end">₹0.00</span></h6>
+                                                            <h6 className="border-bottom pb-2">Total Discount: <span className="float-end">₹&nbsp;{cartTotalDiscount.toFixed(2)}</span></h6>
+                                                            <h6 className="border-bottom pb-2">Shipping Charge: <span className="float-end">₹0.00</span></h6>
+                                                            <h6 className="border-bottom pb-2">Total Cart Discount: <span className="float-end">₹0.00</span></h6>
+                                                            <h6 className="font-weight-bold">Net Amount: <span className="float-end">₹&nbsp;{finalAmount.toFixed(2)}</span></h6>
 
-                                                    </CardBody>
-                                                </Card>
-                                            </Col>
-                                        </Row>
-                                    </div>
-
-
-
-                                    <div className="w-5">
-                                        <Button color="primary" type="submit" className="mt-4 w-100">
-                                            {isLoading ? "Creating..." : "Create Performa Invoice"}
-                                        </Button>
-                                    </div>
+                                                        </CardBody>
+                                                    </Card>
+                                                </Col>
+                                            </Row>
+                                        </div>
 
 
-                                </Form>
-                            </CardBody>
-                        </Card>
-                    </Col>
-                </Row>
-                <ToastContainer />
 
-            </Container>
-        </div>
+                                        <div className="w-5">
+                                            <Button color="primary" type="submit" className="mt-4 w-100">
+                                                {isLoading ? "Creating..." : "Create Performa Invoice"}
+                                            </Button>
+                                        </div>
+
+
+                                    </Form>
+                                </CardBody>
+                            </Card>
+                        </Col>
+                    </Row>
+                    <ToastContainer />
+
+                </Container>
+            </div>
         </React.Fragment >
     );
 };

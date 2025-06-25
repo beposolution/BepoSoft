@@ -1,37 +1,28 @@
 import PropTypes from "prop-types";
 import React, { useEffect, useRef } from "react";
-
-// //Import Scrollbar
 import SimpleBar from "simplebar-react";
-
-// MetisMenu
 import MetisMenu from "metismenujs";
 import { Link, useLocation } from "react-router-dom";
 import withRouter from "../Common/withRouter";
-
-//i18n
 import { withTranslation } from "react-i18next";
 import { useCallback } from "react";
-
-import { FaUsers } from 'react-icons/fa';
-import { FaUserTie } from "react-icons/fa";
-import { BiCheckDouble } from "react-icons/bi";
+import { FaUsers, FaUserTie, FaWarehouse } from 'react-icons/fa';
+import { AiFillProduct } from "react-icons/ai";
+import { BiCheckDouble, BiSolidBank } from "react-icons/bi";
 import { BsArrowRightSquareFill } from "react-icons/bs";
 import { LuCircleCheckBig } from "react-icons/lu";
-import { GiBassetHoundHead } from "react-icons/gi";
-import { MdOutlineVideogameAsset } from "react-icons/md";
+import { GiBassetHoundHead, GiExpense } from "react-icons/gi";
+import { TbReportSearch } from "react-icons/tb";
+import { MdOutlineVideogameAsset, MdLocalFireDepartment, MdAssignmentReturn, MdDetails } from "react-icons/md";
 import { IoMdInformationCircleOutline } from "react-icons/io";
-
-
-
+import { FaReceipt } from "react-icons/fa6";
+import { GrOrganization } from "react-icons/gr";
+import { RiOrderPlayLine } from "react-icons/ri";
 
 
 const SidebarContent = (props) => {
   const ref = useRef();
   const path = useLocation();
-
-
-
 
   const activateParentDropdown = useCallback((item) => {
     item.classList.add("active");
@@ -70,7 +61,6 @@ const SidebarContent = (props) => {
     scrollElement(item);
     return false;
   }, []);
-
 
   useEffect(() => {
     const role = localStorage.getItem("active")
@@ -160,7 +150,6 @@ const SidebarContent = (props) => {
     }
   }
 
-
   const [role, setRole] = React.useState(localStorage.getItem("active"));
 
   // Listen for changes in localStorage
@@ -176,7 +165,6 @@ const SidebarContent = (props) => {
     };
   }, []);
 
-
   return (
     <React.Fragment>
       <SimpleBar className="h-100" ref={ref}>
@@ -190,9 +178,6 @@ const SidebarContent = (props) => {
               </Link>
 
             </li>
-
-            {/* <li className="menu-title">{props.t("Apps")}</li> */}
-
             <li>
               <Link to="/dashboard/" className=" ">
                 <i className="bx bx-calendar"></i>
@@ -231,14 +216,10 @@ const SidebarContent = (props) => {
 
             ) : null}
 
-
-
-
-
             {role === 'BDO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
-                  <FaUserTie size={17} style={{ marginRight: '6px' }} />
+                  <AiFillProduct size={17} style={{ marginRight: '6px' }} />
                   <span>{props.t("Customers")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
@@ -272,7 +253,7 @@ const SidebarContent = (props) => {
             {role === 'BDO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
-                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <RiOrderPlayLine size={20} style={{ marginRight: '8px' }} />
                   <span>{props.t("Order")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
@@ -289,7 +270,7 @@ const SidebarContent = (props) => {
             {role === 'BDM' ? (
               <li>
                 <Link to="/#" className="has-arrow">
-                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <RiOrderPlayLine size={20} style={{ marginRight: '8px' }} />
                   <span>{props.t("Order")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
@@ -307,7 +288,7 @@ const SidebarContent = (props) => {
             {role === 'ADMIN' || role === 'ACCOUNTS' || role === 'IT' ? (
               <li>
                 <Link to="/#" className="has-arrow">
-                  <FaUserTie size={17} style={{ marginRight: '6px' }} />
+                  <AiFillProduct size={17} style={{ marginRight: '6px' }} />
                   <span>{props.t("purchase")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
@@ -386,7 +367,7 @@ const SidebarContent = (props) => {
 
               <li>
                 <Link to="/#" className="has-arrow">
-                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <MdLocalFireDepartment size={20} style={{ marginRight: '8px' }} />
                   <span>{props.t("Department")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
@@ -435,7 +416,7 @@ const SidebarContent = (props) => {
 
               <li>
                 <Link to="/#" className="has-arrow">
-                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <RiOrderPlayLine size={20} style={{ marginRight: '8px' }} />
                   <span>{props.t("Order")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
@@ -472,7 +453,7 @@ const SidebarContent = (props) => {
 
               <li>
                 <Link to="/#" className="has-arrow">
-                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <BiSolidBank size={20} style={{ marginRight: '8px' }} />
                   <span>{props.t("Bank")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
@@ -489,7 +470,7 @@ const SidebarContent = (props) => {
 
               <li>
                 <Link to="/#" className="has-arrow">
-                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <GrOrganization size={20} style={{ marginRight: '8px' }} />
                   <span>{props.t("Company")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
@@ -506,7 +487,7 @@ const SidebarContent = (props) => {
 
               <li>
                 <Link to="/#" className="has-arrow">
-                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <MdAssignmentReturn size={20} style={{ marginRight: '8px' }} />
                   <span>{props.t("GRV")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
@@ -526,7 +507,7 @@ const SidebarContent = (props) => {
 
               <li>
                 <Link to="/#" className="has-arrow">
-                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <MdDetails size={20} style={{ marginRight: '8px' }} />
                   <span>{props.t("DELIVERY NOTES")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
@@ -577,7 +558,7 @@ const SidebarContent = (props) => {
                 {/* Expense Section */}
                 <li>
                   <Link to="/#" className="has-arrow">
-                    <FaUsers size={20} style={{ marginRight: '8px' }} />
+                    <GiExpense size={20} style={{ marginRight: '8px' }} />
                     <span>{props.t("Expense")}</span>
                   </Link>
                   <ul className="sub-menu" aria-expanded="false">
@@ -599,7 +580,7 @@ const SidebarContent = (props) => {
                 {/* Warehouse Section */}
                 <li>
                   <Link to="/#" className="has-arrow">
-                    <FaUsers size={20} style={{ marginRight: '8px' }} />
+                    <FaWarehouse size={20} style={{ marginRight: '8px' }} />
                     <span>{props.t("Warehouse")}</span>
                   </Link>
                   <ul className="sub-menu" aria-expanded="false">
@@ -612,11 +593,31 @@ const SidebarContent = (props) => {
               </>
             )}
 
+            {role === 'ADMIN' || role === 'ACCOUNTS' ? (
+              <li>
+                <Link className="has-arrow" to="/#">
+                  <FaReceipt size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("Receipts")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li>
+                    <Link to="/order/receipt/">{props.t("Order Receipt")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/other/receipt/">{props.t("Other Receipt")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/advance/receipt/">{props.t("Advance Receipt")}</Link>
+                  </li>
+                </ul>
+              </li>
+            ) : null}
+
             {role === 'ADMIN' || role === 'ACCOUNTS' || role === 'IT' ? (
 
               <li>
                 <Link to="/#" className="has-arrow">
-                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <TbReportSearch size={20} style={{ marginRight: '8px' }} />
                   <span>{props.t("Reports")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">

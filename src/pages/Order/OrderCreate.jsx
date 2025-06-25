@@ -486,13 +486,30 @@ const FormLayouts = () => {
                                             <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="customer">Customer</Label>
-                                                    <Input
+                                                    <input
                                                         type="text"
                                                         placeholder="Search Customer..."
                                                         value={searchTerm}
                                                         onChange={handleSearchChange}
                                                         className="form-control"
                                                     />
+                                                    {searchTerm && filteredCustomers.length > 0 && (
+                                                        <ul className="customer-dropdown" style={{ border: '1px solid #ccc', maxHeight: '150px', overflowY: 'auto', marginTop: 0, paddingLeft: 0 }}>
+                                                            {filteredCustomers.map(customer => (
+                                                                <li
+                                                                    key={customer.id}
+                                                                    style={{ listStyle: 'none', padding: '8px', cursor: 'pointer' }}
+                                                                    onClick={() => {
+                                                                        formik.setFieldValue('customer', customer.id);
+                                                                        setSearchTerm(customer.name); // Show selected customer's name in input
+                                                                        handleCustomerChange({ target: { value: customer.id } });
+                                                                    }}
+                                                                >
+                                                                    {customer.name}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    )}
                                                     <Input
                                                         type="select"
                                                         name="customer"

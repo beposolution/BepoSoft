@@ -152,7 +152,11 @@ const BasicTable = () => {
                                                             <th scope="row">{index + 1}</th>
                                                             <td><Link to={`/order/${order?.id}/items/`}>{order?.invoice}</Link></td>
                                                             <td>{order?.manage_staff} ({order?.family})</td>
-                                                            <td>{order?.customer?.name}</td>
+                                                            <td>
+                                                                <Link to={`/customer/${order?.customer?.id}/ledger/`}>
+                                                                    {order?.customer?.name}
+                                                                </Link>
+                                                            </td>
                                                             <td>{order?.status}</td>
                                                             <td>{order?.total_amount}</td>
                                                             <td>

@@ -15,19 +15,31 @@ const BasicTable = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
-
+    const [warehouseID, setWarehouseID] = useState(null)
     const token = localStorage.getItem('token');
-    const navigate = useNavigate();
+    const navigate = useNavigate(); 
 
     useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}profile/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setWarehouseID(response?.data?.data?.warehouse_id);
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+            }
+        };
+        fetchUserData();
+    }, []);
+
+    useEffect(() => {
+        if (!token || !warehouseID) return; // wait until both exist
+        console.log("Fetching products from:", `${import.meta.env.VITE_APP_KEY}warehouse/products/${warehouseID}/`);
+
         const fetchProducts = async () => {
             try {
-                if (!token) {
-                    navigate('/login');
-                    return;
-                }
-
-                const response = await fetch(`${import.meta.env.VITE_APP_KEY}products/`, {
+                const response = await fetch(`${import.meta.env.VITE_APP_KEY}warehouse/products/${warehouseID}/`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -35,36 +47,22 @@ const BasicTable = () => {
                     }
                 });
 
-                if (response.status === 401) {
-                    localStorage.removeItem('token');
-                    navigate('/login');
-                    return;
-                }
-
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
 
                 const data = await response.json();
-
-                if (data && Array.isArray(data.data)) {
-                    setProducts(data.data);
-                    setFilteredProducts(data.data);
-                } else {
-                    setError("No data found or unexpected response structure");
-                }
-
-                setLoading(false);
+                setProducts(data.data);
+                setFilteredProducts(data.data);
             } catch (err) {
                 setError(err.message || "Unknown error occurred");
+            } finally {
                 setLoading(false);
             }
         };
 
         fetchProducts();
-    }, [token, navigate]);
-
-    console.log("products", products);
+    }, [token, warehouseID]); // only runs when warehouseID is available
 
     const handleSearchChange = (e) => {
         setSearchTerm(e.target.value);
@@ -77,8 +75,6 @@ const BasicTable = () => {
         );
         setFilteredProducts(filtered);
     };
-
-
 
 
 
@@ -95,10 +91,10 @@ const BasicTable = () => {
             console.error("Unknown product type");
         }
     };
-    
+
 
     const handleViewProduct = (productId, productType) => {
-        navigate(`/ecommerce-product-detail/${productId}/${productType}/`); 
+        navigate(`/ecommerce-product-detail/${productId}/${productType}/`);
     };
 
     const onClickDelete = async (productId) => {
@@ -127,8 +123,6 @@ const BasicTable = () => {
     };
 
     document.title = "Product Tables | Beposoft";
-
-    console.log("filterd products..:",filteredProducts);
 
     return (
         <React.Fragment>
@@ -197,13 +191,11 @@ const BasicTable = () => {
                                                             <tr key={product.id} className="text-center">
                                                                 <th scope="row">{index + 1}</th>
                                                                 <td>
-                                                                <img
-    src={`${import.meta.env.VITE_APP_IMAGE}${product.image || (product.images && `${import.meta.env.VITE_APP_IMAGE}/${product.images[0]?.image}`) || 'fallback-image-url'}`}
-    alt={product.name}
-    style={{ width: "60px", height: "60px", objectFit: "cover", borderRadius: "5px" }}
-/>
-
-
+                                                                    <img
+                                                                        src={`${import.meta.env.VITE_APP_IMAGE}${product.image || (product.images && `${import.meta.env.VITE_APP_IMAGE}/${product.images[0]?.image}`) || 'fallback-image-url'}`}
+                                                                        alt={product.name}
+                                                                        style={{ width: "60px", height: "60px", objectFit: "cover", borderRadius: "5px" }}
+                                                                    />
                                                                 </td>
 
                                                                 <td style={{ cursor: 'pointer' }} onClick={() => handleProductClick(product.id, product.type)}>

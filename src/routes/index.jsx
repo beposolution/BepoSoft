@@ -358,6 +358,10 @@ import CallLogReport from "../pages/Resports/CallLogReport";
 import AdvanceReceipt from "../pages/Receipts/AdvanceReceipt";
 import OtherReceipt from "../pages/Receipts/OtherReceipt";
 import OrderReceipt from "../pages/Receipts/OrderReceipt";
+import ReceiptList from "../pages/Receipts/ReceiptList";
+import AdvanceReceiptList from "../pages/Receipts/AdvanceReceiptList";
+import OrderReceiptList from "../pages/Receipts/OrderReceiptList";
+import OtherReceiptList from "../pages/Receipts/OtherReceiptList";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -425,6 +429,10 @@ const authProtectedRoutes = [
   { path: "/advance/receipt/", component: <AdvanceReceipt /> },
   { path: "/other/receipt/", component: <OtherReceipt /> },
   { path: "/order/receipt/", component: <OrderReceipt /> },
+  { path: "/all/receipt/", component: <ReceiptList /> },
+  { path: "/advance/receipt/view/", component: <AdvanceReceiptList /> },
+  { path: "/other/receipt/view/", component: <OtherReceiptList /> },
+  { path: "/order/receipt/view/", component: <OrderReceiptList /> },
 
   // company
 

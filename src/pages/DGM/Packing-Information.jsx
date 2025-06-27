@@ -152,7 +152,7 @@ const FormRepeater = () => {
                                                         <FormGroup>
                                                             <Label htmlFor="weight">Weight (g)</Label>
                                                             <Input
-                                                                type="text"
+                                                                type="number"
                                                                 id="weight"
                                                                 value={formRow.weight}
                                                                 onChange={(e) => handleInputChange(formRow.id, 'weight', e.target.value)}
@@ -166,7 +166,7 @@ const FormRepeater = () => {
                                                         <FormGroup>
                                                             <Label htmlFor="length">Length</Label>
                                                             <Input
-                                                                type="text"
+                                                                type="number"
                                                                 id="length"
                                                                 value={formRow.length}
                                                                 onChange={(e) => handleInputChange(formRow.id, 'length', e.target.value)}
@@ -175,12 +175,11 @@ const FormRepeater = () => {
                                                             />
                                                         </FormGroup>
                                                     </Col>
-
                                                     <Col sm={12} md={6} lg={3} className="mb-3">
                                                         <FormGroup>
                                                             <Label htmlFor="breadth">Breadth</Label>
                                                             <Input
-                                                                type="text"
+                                                                type="number"
                                                                 id="breadth"
                                                                 value={formRow.breadth}
                                                                 onChange={(e) => handleInputChange(formRow.id, 'breadth', e.target.value)}
@@ -189,12 +188,11 @@ const FormRepeater = () => {
                                                             />
                                                         </FormGroup>
                                                     </Col>
-
                                                     <Col sm={12} md={6} lg={3} className="mb-3">
                                                         <FormGroup>
                                                             <Label htmlFor="height">Height</Label>
                                                             <Input
-                                                                type="text"
+                                                                type="number"
                                                                 id="height"
                                                                 value={formRow.height}
                                                                 onChange={(e) => handleInputChange(formRow.id, 'height', e.target.value)}
@@ -247,7 +245,6 @@ const FormRepeater = () => {
                                                                 className="form-control"
                                                             >
                                                                 <option value="">select status</option>
-                                                                <option value="Packing under Progress">Packing under Progress</option>
                                                                 <option value="Ready To Ship">Ready To Ship</option>
                                                                 <option value="Packed">Packed</option>
                                                                 <option value="Shipped">Shipped</option>

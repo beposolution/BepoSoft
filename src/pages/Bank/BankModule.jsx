@@ -52,12 +52,12 @@ const BankModule = () => {
                 headers: { Authorization: `Bearer ${token}` },
             })
             .then((response) => {
-                setBankModule(response.data.data); // Keep full dataset
+                setBankModule(response?.data?.bank_data); // Keep full dataset
                 setLoading(false);
 
                 // Apply default filter for today's date
                 const today = new Date();
-                applyFilters(response.data.data, today);
+                applyFilters(response?.data?.data, today);
             })
             .catch((err) => {
                 if (err.response && err.response.status === 401) {

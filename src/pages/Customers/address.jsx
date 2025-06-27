@@ -401,7 +401,7 @@ const FormLayouts = () => {
                                                     <th>ZIP CODE</th>
                                                     <th>Email</th>
                                                     <th>State</th>
-                                                    <th>Delete</th>
+                                                    {/* <th>Delete</th> */}
                                                     <th>Update</th>
 
                                                 </tr>
@@ -416,9 +416,9 @@ const FormLayouts = () => {
                                                         <td>{address.zipcode}</td>
                                                         <td>{address.email}</td>
                                                         <td>{address.state}</td>
-                                                        <td>
+                                                        {/* <td>
                                                             <i className="bx bxs-trash-alt" style={{ fontSize: '1.5rem' }} onClick={() => handleDeleteAddress(address.id)}></i>
-                                                        </td>
+                                                        </td> */}
                                                         <td>
                                                             <i className="bx bx-edit-alt" style={{ fontSize: '1.5rem', cursor: 'pointer' }} onClick={() => handleEditAddress(address)}></i>
                                                         </td>

@@ -9,13 +9,15 @@ const AdvanceReceipt = () => {
     const [banks, setBanks] = useState([]);
     const token = localStorage.getItem("token")
     const [isLoading, setIsLoading] = useState(false);
+    const [customers, setCustomers] = useState([]);
 
     const [formData, setFormData] = useState({
         bank: '',
         amount: '',
         received_at: '',
         transactionID: '',
-        remark: ''
+        remark: '',
+        customer: ''
     });
 
     const handleChange = (e) => {
@@ -38,6 +40,7 @@ const AdvanceReceipt = () => {
                     amount: '',
                     received_at: '',
                     transactionID: '',
+                    customer: '',
                     remark: ''
                 });
             }
@@ -67,6 +70,22 @@ const AdvanceReceipt = () => {
             }
         };
         fetchbanks();
+    }, []);
+
+    useEffect(() => {
+        const fetchCustomers = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}customers/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (response.status === 200) {
+                    setCustomers(response?.data?.data);
+                }
+            } catch (error) {
+                console.error('Error fetching bank data:', error);
+            }
+        };
+        fetchCustomers();
     }, []);
 
     return (
@@ -106,13 +125,24 @@ const AdvanceReceipt = () => {
                                             </Col>
                                         </Row>
                                         <Row>
-                                            <Col md={6}>
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label>Customers</Label>
+                                                    <Input type="select" name="customer" value={formData.customer} onChange={handleChange}>
+                                                        <option value="">Select Customers</option>
+                                                        {customers.map((customer) => (
+                                                            <option key={customer.id} value={customer.id}>{customer.name}</option>
+                                                        ))}
+                                                    </Input>
+                                                </div>
+                                            </Col>
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label>Transaction ID</Label>
                                                     <Input type="text" name="transactionID" value={formData.transactionID} onChange={handleChange} />
                                                 </div>
                                             </Col>
-                                            <Col md={6}>
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label>Remarks</Label>
                                                     <Input type="text" name="remark" value={formData.remark} onChange={handleChange} />

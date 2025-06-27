@@ -16,7 +16,7 @@ import {
     FormFeedback,
 } from 'reactstrap';
 
-const UpdateInformationPage = () => {
+const UpdateInformationPage = ({ refreshData }) => {
     const token = localStorage.getItem("token");
     const { id } = useParams();
     const [customerAddresses, setCustomerAddresses] = useState([]);
@@ -44,9 +44,12 @@ const UpdateInformationPage = () => {
                         },
                     }
                 );
-                toast.success("Order information updated successfully!"); 
+                toast.success("Order information updated successfully!");
+                if (refreshData) {
+                    refreshData();
+                }
             } catch (error) {
-                toast.error("Error updating order!",error);
+                toast.error("Error updating order!", error);
                 // Optionally, handle the error or display an error message
             }
         },

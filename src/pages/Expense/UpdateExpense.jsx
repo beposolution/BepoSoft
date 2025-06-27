@@ -47,6 +47,7 @@ const UpdateExpense = () => {
                     emi_details: matchedExpense?.loan ? String(matchedExpense.loan) : "",
                     transaction_id: matchedExpense?.transaction_id || "",
                     description: matchedExpense?.description || "",
+                    amount: matchedExpense?.amount || "",
                 });
             } catch (error) {
                 console.error("Error fetching expense data:", error);
@@ -351,6 +352,12 @@ const UpdateExpense = () => {
                                             <div className="mb-3">
                                                 <Label>Date</Label>
                                                 <input type="date" className="form-control" name="date" value={formData.date || ""} onChange={handleChange} />
+                                            </div>
+                                        </Col>
+                                        <Col lg={4}>
+                                            <div className="mb-3">
+                                                <Label>Amount</Label>
+                                                <input type="text" className="form-control" name="amount" value={formData.amount} onChange={handleChange} />
                                             </div>
                                         </Col>
                                     </Row>

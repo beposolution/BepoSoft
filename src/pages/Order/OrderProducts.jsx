@@ -9,17 +9,14 @@ import AddProduct from "./AddCreatedOrderProducts";
 import Information from "./information"
 import Paymentrecipent from "./PaymentRecipt"
 import { useNavigate } from "react-router-dom";
-
-
-// Import Breadcrumb
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { isDisabled } from "@testing-library/user-event/dist/cjs/utils/index.js";
 
 const FormLayouts = () => {
 
     // meta title
-    document.title = "Form Layouts | Skote - Vite React Admin & Dashboard Template";
-    const { id } = useParams(); 
+    document.title = "BEPOSOFT | ORDER PRODUCTS";
+    const { id } = useParams();
     const [orderItems, setOrderItems] = React.useState([]);
     const [successMessage, setSuccessMessage] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
@@ -32,7 +29,9 @@ const FormLayouts = () => {
     const [TaxAmount, setTaxAmount] = useState(0);
     const [shippingCharge, setShippingCharge] = useState(0);
     const [paymentReceipts, setpaymentReceipts] = useState("");
-
+    const [familyData, setFamilyData] = useState([]);
+    const [companyData, setCompanyData] = useState([]);
+    const token = localStorage.getItem('token');
     const [modal, setModal] = useState(false);
     const toggleReciptModal = () => setIsOpen(!isOpen);
     const [isOpen, setIsOpen] = useState(false);
@@ -40,13 +39,23 @@ const FormLayouts = () => {
     const [banks, setBanks] = useState([]);
     const [selectedBank, setSelectedBank] = useState('');
     const [isAddDisabled, setIsAddDisabled] = useState(false);
-
+    const [isOrderFetched, setIsOrderFetched] = useState(false);
+    const [customerId, setCustomerId] = useState([]);
+    const [ledgerData, setLedgerData] = useState({});
+    const [closingBalance, setClosingBalance] = useState(0);
 
     const navigate = useNavigate();
 
     const handleNameClick = (updateId) => {
         navigate(`/customer/${updateId}/edit/`);
     };
+
+    useEffect(() => {
+        if (familyData.length && !isOrderFetched) {
+            fetchOrderData();
+            setIsOrderFetched(true);
+        }
+    }, [familyData, isOrderFetched]);
 
     const [bankDetails, setBankDetails] = useState({
         name: "",
@@ -84,16 +93,11 @@ const FormLayouts = () => {
             company: "",
             cod_amount: "",
             shipping_mode: "",
+            family: "",
+            payment_status: "",
             check: ""
         },
         validationSchema: Yup.object({
-            invoice: Yup.string().required("This field is required"),
-            status: Yup.string().required("Please Enter Your Email"),
-            manage_staff: Yup.string().required("This field is required"),
-            order_date: Yup.string(),
-            cod_amount: Yup.string(),
-            shipping_mode: Yup.string(),
-            check: Yup.string().required("This field is required"),
         }),
 
         onSubmit: async (values) => {
@@ -102,6 +106,14 @@ const FormLayouts = () => {
                     cod_amount: values.cod_amount,
                     shipping_mode: values.shipping_mode,
                     order_date: values.order_date,
+                    payment_status: values.payment_status,
+                    family: values.family !== "" ? parseInt(values.family) : null,
+                    company: parseInt(values.company),
+                    invoice: values.invoice,
+                    status: values.status,
+                    manage_staff: values.manage_staff,
+                    check: values.check,
+                    bank: selectedBank,
                 };
 
                 const response = await fetch(`${import.meta.env.VITE_APP_KEY}orders/update/${id}/`, {
@@ -114,7 +126,9 @@ const FormLayouts = () => {
                         cod_amount: values.cod_amount,
                         shipping_mode: values.shipping_mode,
                         order_date: values.order_date,
-
+                        payment_status: values.payment_status,
+                        family: values.family !== "" ? parseInt(values.family) : null,
+                        company: values.company,
                     }),
                 });
 
@@ -162,7 +176,6 @@ const FormLayouts = () => {
 
                 const data = await response.json();
                 setBanks(data.data);
-
             } catch (error) {
                 console.error("Error fetching banks:", error);
             }
@@ -171,8 +184,98 @@ const FormLayouts = () => {
         fetchBanks();
     }, []);
 
+    useEffect(() => {
+        const fetchFamilyData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}familys/`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                setFamilyData(response?.data?.data)
+            } catch (error) {
+                console.error("Error fetching family data.", error)
+            }
+        };
+        fetchFamilyData();
+    }, [])
+
+    useEffect(() => {
+        const fetchCompanyData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}company/data/`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                setCompanyData(response?.data?.data)
+            } catch (error) {
+                console.error("Error fetching family data.", error)
+            }
+        };
+        fetchCompanyData();
+    }, [])
+
+    useEffect(() => {
+        if (!customerId) return;
+
+        const fetchLedger = async () => {
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}customer/${customerId}/ledger/`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        },
+                    }
+                );
+                setLedgerData(response?.data);
+            } catch (error) {
+                console.error("Error fetching ledger data:", error);
+            }
+        };
+
+        fetchLedger();
+    }, [customerId]);
+
+    useEffect(() => {
+        if (ledgerData) {
+            let totalAdvanceAmount = 0;
+            let totalReceivedAmount = 0;
+            let totalLedgerAmount = 0;
+
+            if (Array.isArray(ledgerData.data?.advance_receipts)) {
+                const advanceReceipts = ledgerData.data.advance_receipts;
+
+                for (let i = 0; i < advanceReceipts.length; i++) {
+                    totalAdvanceAmount += parseFloat(advanceReceipts[i]?.amount || 0);
+                }
+            }
+
+            if (Array.isArray(ledgerData.data?.ledger)) {
+                const ledgerEntries = ledgerData.data.ledger;
+
+                for (let i = 0; i < ledgerEntries.length; i++) {
+                    const payments = Array.isArray(ledgerEntries[i]?.recived_payment)
+                        ? ledgerEntries[i].recived_payment
+                        : [];
+
+                    for (let j = 0; j < payments.length; j++) {
+                        totalReceivedAmount += parseFloat(payments[j]?.amount || 0);
+                    }
+
+                    totalLedgerAmount += parseFloat(ledgerEntries[i]?.total_amount || 0);
+                }
+            }
+            const grandTotal = totalAdvanceAmount + totalReceivedAmount;
+            const closingBalance = grandTotal - totalLedgerAmount;
+            setClosingBalance(closingBalance);
+        }
+    }, [ledgerData]);
+
+
     // Fetch order data when component mounts or id changes
-    const fetchOrderData = async () => {
+    const fetchOrderData = async () => {      // should not be undefined
         try {
             const url = `${import.meta.env.VITE_APP_KEY}order/${id}/items/`;
             const response = await fetch(url, {
@@ -188,20 +291,22 @@ const FormLayouts = () => {
             const data = await response.json();
 
             if (data.order) {
+                const selectedFamily = familyData.find(f => f.name.trim().toLowerCase() === data.order.family.trim().toLowerCase());
                 formik.setValues({
                     invoice: data.order.invoice || "",
                     status: data.order.status || "",
                     manage_staff: data.order.manage_staff || "",
                     order_date: data.order.order_date || "",
-                    company: data.order.company || "",
+                    company: data.order.company.id || "",
                     shipping_mode: data.order.shipping_mode || "",
                     cod_amount: data.order.cod_amount || "",
                     check: data.order.check || false,
-                    family: data.order.family || "",
+                    family: selectedFamily ? String(selectedFamily.id) : "",
                     shipping_charge: data.order.shipping_charge || "",
-
+                    payment_status: data.order.payment_status || "",
                 });
-                setOrderItems(data.items || []);
+                setCustomerId(data?.order?.customer?.id || null);
+                setOrderItems(data?.items || []);
                 setShippingAddress({
                     name: data.order.billing_address?.name || "",
                     address: data.order.billing_address?.address || "",
@@ -227,12 +332,13 @@ const FormLayouts = () => {
 
                 });
                 setBankDetails({
+                    id: data.order.bank?.id || "",
                     name: data.order.bank?.name || "",
                     accountNumber: data.order.bank?.account_number || "",
                     ifscCode: data.order.bank?.ifsc_code || "",
                     Branch: data.order.bank?.branch || "",
-
                 });
+                setSelectedBank(data.order.bank?.id || "");
 
                 setpaymentReceipts(data.order.payment_receipts)
                 setShippingCharge(data.order.shipping_charge || 0);
@@ -259,8 +365,6 @@ const FormLayouts = () => {
         setTotalAmount(total);
     };
 
-
-
     const calculateTotalDiscountAmount = (items) => {
         const totalDiscount = items.reduce((sum, item) => {
             const itemDiscount = item.quantity * item.discount;
@@ -269,8 +373,6 @@ const FormLayouts = () => {
         setTotalDiscountAmount(totalDiscount);
     };
 
-
-
     const calculateTotalNetPrice = (items) => {
         const totalNetPrice = items.reduce((sum, item) => {
             const itemTotal = item.rate * item.quantity;
@@ -278,7 +380,6 @@ const FormLayouts = () => {
         }, 0);
         settotalNetPrice(totalNetPrice);
     };
-
 
     const calculateNetAmountBeforTax = (items) => {
         const totalNetPricebeforTax = items.reduce((sum, item) => {
@@ -298,8 +399,6 @@ const FormLayouts = () => {
         setTaxAmount(totalTaxAmount);
     };
 
-
-
     useEffect(() => {
         fetchOrderData();
     }, [id]);
@@ -315,7 +414,6 @@ const FormLayouts = () => {
                 },
             });
 
-
             if (!response.ok) {
                 throw new Error('Failed to remove item');
             }
@@ -329,7 +427,6 @@ const FormLayouts = () => {
             alert('Failed to remove item');
         }
     };
-
 
     const updateCartProduct = async (productId, updateData) => {
         const token = localStorage.getItem("token"); // Retrieve token directly here
@@ -382,14 +479,12 @@ const FormLayouts = () => {
         updateCartProduct(productId, updateData);
     };
 
-
-
     const handleSubmit = async () => {
         const payload = {
             shipping_charge: shippingCharge,
             total_amount: totalAmount + shippingCharge,
+            bank: selectedBank ? parseInt(selectedBank) : null,
         };
-
         try {
             const response = await fetch(`${import.meta.env.VITE_APP_KEY}shipping/${id}/order/`, {
                 method: "PUT",
@@ -399,13 +494,11 @@ const FormLayouts = () => {
                 },
                 body: JSON.stringify(payload),
             });
-
             if (response.ok) {
                 const data = await response.json();
                 setSuccessMessage("Form submitted successfully!");
             } else {
                 const errorData = await response.json();
-                console.error("Error response data:", errorData);
                 setErrorMessage("Failed to submit the form. Please check your input and try again.");
             }
         } catch (error) {
@@ -459,7 +552,7 @@ const FormLayouts = () => {
 
                                     <Form onSubmit={formik.handleSubmit}>
                                         <Row>
-                                            <Col md={3}>
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-invoice-Input">INVOICE NO</Label>
                                                     <Input
@@ -482,8 +575,7 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
-
-                                            <Col md={3}>
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-email-Input">STATUS</Label>
                                                     <Input
@@ -506,7 +598,7 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
-                                            <Col md={3}>
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-manage_staff-Input">CREATED BY</Label>
                                                     <Input
@@ -530,8 +622,9 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
-
-                                            <Col lg={3}>
+                                        </Row>
+                                        <Row>
+                                            <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Inputorder_date">CREATED AT</Label>
                                                     <Input
@@ -554,10 +647,52 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
+                                            <Col lg={4}>
+                                                <div className="mb-3">
+                                                    <Label>Payment Method</Label>
+                                                    <select
+                                                        type="select"
+                                                        className="form-control"
+                                                        name="payment_status"
+                                                        value={formik.values.payment_status}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                    >
+                                                        <option>Select Payment Method</option>
+                                                        <option value="paid">Paid</option>
+                                                        <option value="COD">COD</option>
+                                                        <option value="credit">Credit</option>
+                                                    </select>
+                                                </div>
+                                            </Col>
+                                            <Col lg={4}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-InputZip">FAMILY</Label>
+                                                    <select
+                                                        type="select"
+                                                        name="family"
+                                                        className="form-control"
+                                                        id="formrow-Inputfamily"
+                                                        placeholder="Enter Your family Code"
+                                                        value={formik.values.family?.toString() || ""}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                    >
+                                                        <option>Select Family</option>
+                                                        {familyData.map((sta) => (
+                                                            <option key={sta.id} value={String(sta.id)}>{sta.name}</option>
+                                                        ))}
+                                                    </select>
+                                                    {
+                                                        formik.errors.family && formik.touched.family ? (
+                                                            <FormFeedback type="invalid">{formik.errors.family}</FormFeedback>
+                                                        ) : null
+                                                    }
+                                                </div>
+                                            </Col>
                                         </Row>
-
                                         <Row>
-                                            <Col lg={3}>
+                                            <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Inputcompany">COMPANY</Label>
                                                     <select
@@ -569,19 +704,19 @@ const FormLayouts = () => {
                                                         onBlur={formik.handleBlur}
                                                         invalid={formik.touched.company && formik.errors.company ? true : false}
                                                     >
-
-                                                        <option value="MICHEAL IMPORT EXPORT PVT LTD">MICHEAL IMPORT EXPORT PVT LTD</option>
-                                                        <option value="BEPOSITIVE RACING PVT LTD">BEPOSITIVE RACING PVT LTD</option>
+                                                        <option>Select Company</option>
+                                                        {companyData.map((sta) => (
+                                                            <option key={sta.id} value={sta.id}>
+                                                                {sta.name}
+                                                            </option>
+                                                        ))}
                                                     </select>
                                                     {formik.errors.company && formik.touched.company && (
                                                         <span className="text-danger">{formik.errors.company}</span>
                                                     )}
                                                 </div>
                                             </Col>
-
-
-
-                                            <Col lg={3}>
+                                            <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-InputZip">SHIPING MODE</Label>
                                                     <Input
@@ -604,32 +739,7 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
-
-                                            <Col lg={3}>
-                                                <div className="mb-3">
-                                                    <Label htmlFor="formrow-InputZip">FAMILY</Label>
-                                                    <Input
-                                                        type="text"
-                                                        name="family"
-                                                        className="form-control"
-                                                        id="formrow-Inputfamily"
-                                                        placeholder="Enter Your family Code"
-                                                        value={formik.values.family}
-                                                        onChange={formik.handleChange}
-                                                        onBlur={formik.handleBlur}
-                                                        invalid={
-                                                            formik.touched.family && formik.errors.family ? true : false
-                                                        }
-                                                    />
-                                                    {
-                                                        formik.errors.family && formik.touched.family ? (
-                                                            <FormFeedback type="invalid">{formik.errors.family}</FormFeedback>
-                                                        ) : null
-                                                    }
-                                                </div>
-                                            </Col>
-
-                                            <Col lg={3}>
+                                            <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-InputZip">COD CHARGE</Label>
                                                     <Input
@@ -653,7 +763,6 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
                                         </Row>
-
                                         <div className="mb-3">
                                             <div className="form-check">
                                                 <Input
@@ -688,8 +797,6 @@ const FormLayouts = () => {
                                         </div>
                                     </Form>
                                 </CardBody>
-
-
                                 <div style={{ display: "flex", justifyContent: "space-between", padding: "20px", gap: "20px", backgroundColor: "#f5f5f5" }}>
                                     {/* Billing Address Card */}
                                     <div style={{
@@ -720,7 +827,6 @@ const FormLayouts = () => {
                                         </div>
 
                                     </div>
-
                                     {/* Shipping Address Card */}
                                     <div style={{
                                         flex: "1",
@@ -742,7 +848,6 @@ const FormLayouts = () => {
                                         </div>
                                     </div>
                                 </div>
-
                                 <Col xl={12}>
                                     <Card className="bordered-card">
                                         <CardBody>
@@ -819,7 +924,6 @@ const FormLayouts = () => {
                                                                 </td>
                                                             </tr>
                                                         ))}
-
                                                         {/* Total Row */}
                                                         <tr className="total-row">
                                                             <td colSpan="3" className="text-end font-weight-bold">Totals:</td>
@@ -835,8 +939,6 @@ const FormLayouts = () => {
                                                             <td className="font-weight-bold">
                                                                 {orderItems.reduce((acc, item) => acc + parseInt(item.quantity), 0)}
                                                             </td>
-
-
                                                             <td className="font-weight-bold">
                                                                 {orderItems.reduce((acc, item) => acc + parseInt(item.rate - item.discount), 0)}
                                                             </td>
@@ -850,11 +952,7 @@ const FormLayouts = () => {
                                                             </td>
                                                             <td></td>
                                                         </tr>
-
                                                     </tbody>
-
-
-
                                                 </Table>
                                                 <div className="container mt-5">
                                                     {/* Invoice Header */}
@@ -874,8 +972,36 @@ const FormLayouts = () => {
                                                                         <td style={{ fontWeight: "500" }}>{bankDetails.accountNumber}</td>
                                                                     </tr>
                                                                     <tr>
-                                                                        <th scope="row" className="text-dark" style={{ backgroundColor: "#f1f3f5", fontWeight: "bold" }}>Bank Name</th>
-                                                                        <td style={{ fontWeight: "500" }}>{bankDetails.name}</td>
+                                                                        <th scope="row" className="text-dark" style={{ backgroundColor: "#f1f3f5", fontWeight: "bold" }}>
+                                                                            Bank Name
+                                                                        </th>
+                                                                        <td style={{ fontWeight: "500" }}>
+                                                                            <select
+                                                                                className="form-select"
+                                                                                value={selectedBank}
+                                                                                onChange={(e) => {
+                                                                                    const selectedId = parseInt(e.target.value);
+                                                                                    setSelectedBank(selectedId);
+                                                                                    const selected = banks.find((b) => b.id === selectedId);
+                                                                                    if (selected) {
+                                                                                        setBankDetails({
+                                                                                            id: selected.id,
+                                                                                            name: selected.name,
+                                                                                            accountNumber: selected.account_number,
+                                                                                            ifscCode: selected.ifsc_code,
+                                                                                            Branch: selected.branch,
+                                                                                        });
+                                                                                    }
+                                                                                }}
+                                                                            >
+                                                                                <option value="">Select a bank</option>
+                                                                                {banks.map((bank) => (
+                                                                                    <option key={bank.id} value={bank.id}>
+                                                                                        {bank.name}
+                                                                                    </option>
+                                                                                ))}
+                                                                            </select>
+                                                                        </td>
                                                                     </tr>
                                                                     <tr>
                                                                         <th scope="row" className="text-dark" style={{ backgroundColor: "#f1f3f5", fontWeight: "bold" }}>Bank IFSC</th>
@@ -888,7 +1014,6 @@ const FormLayouts = () => {
                                                                 </tbody>
                                                             </Table>
                                                         </div>
-
                                                         {/* Summary Section */}
                                                         <div className="col-md-6 mb-4">
                                                             <h5 className="mb-3" style={{ fontWeight: "600", color: "#333" }}>Billing Summary</h5>
@@ -931,9 +1056,6 @@ const FormLayouts = () => {
                                                     </div>
                                                 </div>
                                             </div>
-
-
-
                                             <style jsx>{`
                                                 .bordered-card {
                                                     border-radius: 8px;
@@ -948,23 +1070,19 @@ const FormLayouts = () => {
                                                     vertical-align: middle;
                                                 }
                                             `}</style>
-                                            <div className="mb-3 mt-3">
+                                            {/* <div className="mb-3 mt-3">
                                                 <Button color="primary" disabled={isAddDisabled} onClick={toggleModal}>
                                                     Add Products
                                                 </Button>
-                                            </div>
+                                            </div> */}
 
                                             <div className="mb-3 mt-3" style={{ textAlign: "right" }}>
                                                 <Button type="submit" color="primary" disabled={isAddDisabled} onClick={handleSubmit}>
                                                     Submit
                                                 </Button>
                                             </div>
-
                                         </CardBody>
-
-
                                     </Card>
-
                                     <style jsx>{`
                                         .bordered-card {
                                             border-radius: 8px;
@@ -986,27 +1104,20 @@ const FormLayouts = () => {
                                         }
                                     `}</style>
                                 </Col>
-
                                 <AddProduct
                                     isOpen={modalOpen}
                                     toggle={toggleModal}
                                 />
-
                             </Card>
                         </Col>
-
-
                         <Col xl={12}>
-                            <Paymentrecipent />
-
-                            <Information />
-
+                            <Paymentrecipent closingBalance={closingBalance} />
+                            <Information refreshData={fetchOrderData} />
                             <Row>
                                 <Col xl={12}>
                                     <Card>
                                         <CardBody>
                                             <CardTitle className="mb-4">DOWNLOAD BILLS AND INVOICE</CardTitle>
-
                                             <Row>
                                                 <Col md={4}>
                                                     <div className="d-flex align-items-center mb-3">
@@ -1019,7 +1130,6 @@ const FormLayouts = () => {
                                                         </button>
                                                     </div>
                                                 </Col>
-
                                                 <Col md={4}>
                                                     <div className="d-flex align-items-center mb-3">
                                                         <button
@@ -1031,7 +1141,6 @@ const FormLayouts = () => {
                                                         </button>
                                                     </div>
                                                 </Col>
-
                                                 <Col md={4}>
                                                     <div className="d-flex align-items-center mb-3">
                                                         <button
@@ -1050,7 +1159,6 @@ const FormLayouts = () => {
                             </Row>
                         </Col>
                     </Row>
-
                 </Container>
             </div >
         </React.Fragment >

@@ -32,15 +32,14 @@ const FormLayouts = () => {
     const [selectedProducts, setSelectedProducts] = useState([]);
     const [orderProducts, setOrderProducts] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [orderid , setOrderId] = useState(null);
+    const [orderid, setOrderId] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
     const date = new Date();
 
     const currentDate = date.toISOString().split('T')[0]; // This will give you the date in "YYYY-MM-DD" format
 
     // Format the current time as HH:mm:ss
     const currentTime = date.toTimeString().split(' ')[0];
-
-
 
     // Fetch orders on component mount
     useEffect(() => {
@@ -79,8 +78,7 @@ const FormLayouts = () => {
         }
     };
 
-
-    const FetchReturnProducts = async(id) => {
+    const FetchReturnProducts = async (id) => {
 
         toggleModal();
 
@@ -98,7 +96,6 @@ const FormLayouts = () => {
             console.log("error fetching products");
         }
     }
-
 
     const toggleModal = () => setModal(!modal);
 
@@ -125,7 +122,7 @@ const FormLayouts = () => {
             status: "pending",
             note: product.note || "",
             date: currentDate,  // Add current date
-            time: currentTime, 
+            time: currentTime,
         }));
 
         setLoading(true);
@@ -161,8 +158,18 @@ const FormLayouts = () => {
         },
     });
 
+    const filteredOrders = orders.filter((order) => {
+        const term = searchTerm.toLowerCase();
+        const invoice = order.invoice?.toLowerCase() || "";
+        const staff = order.manage_staff?.toLowerCase() || "";
+        const amount = String(order.total_amount || "").toLowerCase();
 
-    console.log("order detailsss", orders);
+        return (
+            invoice.includes(term) ||
+            staff.includes(term) ||
+            amount.includes(term)
+        );
+    });
 
     return (
         <React.Fragment>
@@ -178,35 +185,76 @@ const FormLayouts = () => {
                                         <Row>
                                             <Col md={4}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="order">Select Orders</Label>
+                                                    <Label htmlFor="order">Select Order</Label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Search Orders..."
+                                                        value={searchTerm}
+                                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                                        className="form-control"
+                                                    />
+
+                                                    {searchTerm && filteredOrders.length > 0 && (
+                                                        <ul
+                                                            className="order-dropdown"
+                                                            style={{
+                                                                border: '1px solid #ccc',
+                                                                maxHeight: '150px',
+                                                                overflowY: 'auto',
+                                                                marginTop: 0,
+                                                                paddingLeft: 0,
+                                                                backgroundColor: 'white',
+                                                                position: 'absolute',
+                                                                zIndex: 1000,
+                                                                width: '100%',
+                                                            }}
+                                                        >
+                                                            {filteredOrders.map(order => (
+                                                                <li
+                                                                    key={order.id}
+                                                                    style={{ listStyle: 'none', padding: '8px', cursor: 'pointer' }}
+                                                                    onClick={() => {
+                                                                        setSearchTerm(`Order #${order.invoice || "N/A"}`);
+                                                                        setSelectedOrder(order);
+                                                                        formik.setFieldValue("order", order.id);
+
+                                                                        formik.setValues({
+                                                                            order: order.id,
+                                                                            invoice: order.invoice || "",
+                                                                            order_date: order.order_date || "",
+                                                                            billing_address: order.billing_address?.address || "",
+                                                                            manage_staff: order.manage_staff || "",
+                                                                        });
+                                                                    }}
+                                                                >
+                                                                    {`Order #${order.invoice || "N/A"} - ${order.manage_staff || "No Staff"} - ₹${order.total_amount || "No Amount"}`}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    )}
+
                                                     <Input
                                                         type="select"
                                                         name="order"
+                                                        className="form-control mt-2"
                                                         id="order"
                                                         value={formik.values.order}
                                                         onChange={handleOrderChange}
                                                         onBlur={formik.handleBlur}
-                                                        invalid={
-                                                            formik.touched.order &&
-                                                            formik.errors.order
-                                                        }
                                                     >
-                                                        <option value="">Choose Orders</option>
-                                                        {orders.map((order) => (
-                                                            <option
-                                                                key={order.id}
-                                                                value={order.id}
-                                                            >
+                                                        <option value="">Choose Order</option>
+                                                        {orders.map(order => (
+                                                            <option key={order.id} value={order.id}>
                                                                 {`Order #${order.invoice || "N/A"} - ${order.manage_staff || "No Staff"} - ₹${order.total_amount || "No Amount"}`}
                                                             </option>
                                                         ))}
                                                     </Input>
-                                                    {formik.touched.order &&
-                                                        formik.errors.order ? (
+
+                                                    {formik.touched.order && formik.errors.order && (
                                                         <FormFeedback type="invalid">
                                                             {formik.errors.order}
                                                         </FormFeedback>
-                                                    ) : null}
+                                                    )}
                                                 </div>
                                             </Col>
                                             <Col md={3}>
@@ -265,9 +313,9 @@ const FormLayouts = () => {
                                         </Row>
                                     </Form>
                                     <Button color="primary" onClick={() => {
-                                        if (selectedOrder){
+                                        if (selectedOrder) {
                                             FetchReturnProducts(selectedOrder.id);
-                                        } else{
+                                        } else {
                                             return alert("Please select an order first");
                                         }
                                     }}>

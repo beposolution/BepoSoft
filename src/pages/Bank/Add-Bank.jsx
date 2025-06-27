@@ -7,7 +7,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 const FormLayouts = () => {
-    document.title = "Form Layouts | Skote - Vite React Admin & Dashboard Template";
+    document.title = "BEPOSOFT | Add Bank";
 
     const [message, setMessage] = useState(null); // For success or error message
     const [messageType, setMessageType] = useState(null); // For determining success or error message type
@@ -16,7 +16,7 @@ const FormLayouts = () => {
     const navigate = useNavigate();
 
     const formik = useFormik({
-        
+
         initialValues: {
             name: "",
             account_number: "",
@@ -62,10 +62,10 @@ const FormLayouts = () => {
                 if (error.response && error.response.status === 401) {
                     // Clear invalid token
                     localStorage.removeItem("token");
-                    
+
                     // Show message (optional)
                     alert("Your session has expired. Please log in again.");
-                    
+
                     // Redirect to login page
                     navigate("/login");
                 } else {
@@ -81,12 +81,12 @@ const FormLayouts = () => {
         <React.Fragment>
             <div className="page-content">
                 <Container fluid={true}>
-                    <Breadcrumbs title="Forms" breadcrumbItem="Form Layouts" />
+                    <Breadcrumbs title="Forms" breadcrumbItem="ADD BANK" />
                     <Row>
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
-                                    <CardTitle className="mb-4">Form Grid Layout</CardTitle>
+                                    <CardTitle className="mb-4">ADD BANK</CardTitle>
 
                                     {/* Display success or error message */}
                                     {message && (

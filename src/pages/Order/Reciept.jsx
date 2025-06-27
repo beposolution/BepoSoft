@@ -23,7 +23,7 @@ const getCurrentDate = () => {
     return `${year}-${month}-${day}`;
 };
 
-const ReceiptFormPage = ({ toggleReciptModal }) => {
+const ReceiptFormPage = ({ toggleReciptModal, refreshParentData }) => {
     const { id } = useParams();
     const navigate = useNavigate();  // Hook to navigate
     const [creatorName, setCreatorName] = useState('');
@@ -80,15 +80,8 @@ const ReceiptFormPage = ({ toggleReciptModal }) => {
             if (response.status === 200 || response.status === 201) {
                 alert('Receipt and order items updated successfully');
                 resetForm();
-                toggleReciptModal();  // Close the modal on success
-
-                // Navigate to another page (e.g., order details page)
-                // navigate(`/order/${id}/details`, {
-                //     state: {
-                //         updatedOrderItems,  // Pass the updated order items as state
-                //         receiptDetails: response.data // Pass the receipt details if needed
-                //     }
-                // });
+                toggleReciptModal();
+                await refreshParentData();
             } else {
                 throw new Error('Unexpected response status');
             }

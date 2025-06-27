@@ -5,14 +5,14 @@ import axios from 'axios';
 import Receipt from "./Reciept";
 
 
-const ReceiptFormPage = () => {
+const ReceiptFormPage = ({ closingBalance }) => {
     const { id } = useParams();
     const [packing, setPacking] = useState([]);
-    const [paymentRecipts, setPaymentRecipts] = useState([]); // Store order items
-    const [orderItems, setOrderItems] = useState([]); // Store order items
+    const [paymentRecipts, setPaymentRecipts] = useState([]);
+    const [orderItems, setOrderItems] = useState([]);
     const [totalAmount, setTotalAmount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false); // For handling form submission state
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
     const [boxDetails, setBoxDetails] = useState({
         actual_weight: "",
@@ -22,9 +22,6 @@ const ReceiptFormPage = () => {
     const [selectedBoxId, setSelectedBoxId] = useState(null);
     const [isAddDisabled, setIsAddDisabled] = useState(false);
 
-
-
-
     useEffect(() => {
         const role = localStorage.getItem("active");
         if (role === "BDM" || role === "BDO" || role === "Warehouse Admin") {
@@ -32,14 +29,12 @@ const ReceiptFormPage = () => {
         }
     }, []);
 
-    // Toggle modal visibility
     const toggleModal = () => setIsOpen(!isOpen);
 
     const productModal = (id) => {
-        setSelectedBoxId(id); // Set the ID
-        setModalOpen(true); // Open the modal
+        setSelectedBoxId(id);
+        setModalOpen(true);
     };
-
 
     const handleChange = (e) => {
 
@@ -71,10 +66,9 @@ const ReceiptFormPage = () => {
                     },
                 }
             )
-
             if (response.status === 200 || response.status === 201) {
                 alert("Warehouse details updated successfully!");
-                setModalOpen(false); // Close modal after success
+                setModalOpen(false);
                 setBoxDetails("");
             };
         } catch (error) {
@@ -84,7 +78,7 @@ const ReceiptFormPage = () => {
     };
 
     useEffect(() => {
-        if (!id) return; // Prevent API call if id is undefined
+        if (!id) return;
         fetchData();
     }, [id]);
 
@@ -92,16 +86,10 @@ const ReceiptFormPage = () => {
         try {
             const token = localStorage.getItem("token");
             const headers = { Authorization: `Bearer ${token}` };
-
-            // Fetch order items
             const orderItemsResponse = await axios.get(`${import.meta.env.VITE_APP_KEY}order/${id}/items/`, {
                 headers,
             });
-
-
-            // Update state with fetched data
             const { order } = orderItemsResponse.data;
-
             setPaymentRecipts(order.recived_payment || []);
             setTotalAmount(order.total_amount || 0);
             setPacking(order.warehouse || {});
@@ -122,11 +110,8 @@ const ReceiptFormPage = () => {
                 { ...values, received_at: formattedDate, id },
                 { headers }
             );
-
             if (response.status === 200 || response.status === 201) {
                 alert("Receipt added successfully");
-
-                // Reset form and close modal
                 resetForm();
                 toggleModal();
                 await fetchData();
@@ -150,11 +135,9 @@ const ReceiptFormPage = () => {
     };
     const calculateReceiptTotal = (receipts) => {
         return receipts.reduce((sum, receipt) => {
-            return sum + Number(receipt.amount || 0); // Safely parse amount to a number
+            return sum + Number(receipt.amount || 0);
         }, 0);
     };
-
-
 
     return (
         <Card>
@@ -162,9 +145,7 @@ const ReceiptFormPage = () => {
                 <CardTitle className="mb-4 p-2 text-uppercase border-bottom border-primary">
                     <i className="bi bi-info-circle me-2"></i> INFORMATION
                 </CardTitle>
-
                 <Row>
-                    {/* Invoice Payment Status */}
                     <Col md={4} className="d-flex flex-column p-3" style={{ borderRight: "1px solid black" }}>
                         <h5>INVOICE PAYMENT STATUS</h5>
                         {paymentRecipts && paymentRecipts.length > 0 ? (
@@ -182,8 +163,6 @@ const ReceiptFormPage = () => {
                             </p>
                         )}
                     </Col>
-
-                    {/* Customer Ledger */}
                     <Col md={4} className="d-flex flex-column p-3" style={{ borderRight: "1px solid black" }}>
                         <h5>CUSTOMER LEDGER</h5>
                         <div
@@ -194,14 +173,27 @@ const ReceiptFormPage = () => {
                                 fontWeight: "bold",
                             }}
                         >
-                            Ledger debited:{" "}
-                            <span style={{ color: "#dc3545" }}>
-                                ${Number(totalAmount - calculateReceiptTotal(paymentRecipts)).toFixed(2)}
-                            </span>
+                            {closingBalance > 0 ? (
+                                <>
+                                    Customer Ledger Credit:{" "}
+                                    <span style={{ color: "green" }}>${closingBalance.toFixed(2)}</span>
+                                    <br />
+                                    Balance Payment Amount: <span style={{ color: "blue" }}>$0.00</span>
+                                </>
+                            ) : closingBalance < 0 ? (
+                                <>
+                                    Ledger Debited:{" "}
+                                    <span style={{ color: "#dc3545" }}>${Math.abs(closingBalance).toFixed(2)}</span>
+                                </>
+                            ) : (
+                                <>
+                                    Customer Ledger Credit: <span>$0.00</span>
+                                    <br />
+                                    Ledger Debited: <span>$0.00</span>
+                                </>
+                            )}
                         </div>
                     </Col>
-
-                    {/* Action Section */}
                     <Col md={4} className="d-flex flex-column p-3">
                         <h5>ACTION</h5>
                         <button
@@ -214,36 +206,18 @@ const ReceiptFormPage = () => {
                         </button>
                     </Col>
                 </Row>
-
-
-
                 <Modal isOpen={isOpen} toggle={toggleModal} size="lg">
                     <ModalHeader toggle={toggleModal}>Receipt Against Invoice Generate</ModalHeader>
                     <ModalBody>
-                        <Receipt handleSubmit={handleSubmit} isSubmitting={isSubmitting} toggleReciptModal={toggleModal} />
+                        <Receipt handleSubmit={handleSubmit} isSubmitting={isSubmitting} toggleReciptModal={toggleModal} refreshParentData={fetchData} />
                     </ModalBody>
                 </Modal>
-
-
                 <Modal isOpen={modalOpen} toggle={() => setModalOpen(false)} size="sm" className="modal-dialog-centered">
                     <ModalHeader toggle={() => setModalOpen(false)}>
                         Edit Shipping Details for Box ID: {selectedBoxId}
                     </ModalHeader>
                     <ModalBody>
                         <form onSubmit={handleFormSubmit}>
-                            {/* Shipping Charge */}
-                            {/* <div className="mb-3">
-                <label className="form-label">Shipping Charge</label>
-                <input
-                    type="number"
-                    className="form-control"
-                    onChange={handleChange}
-                    name="shipping_charge"
-                    placeholder="Enter shipping charge"
-                />
-            </div> */}
-
-                            {/* Actual Weight */}
                             <div className="mb-3">
                                 <label className="form-label">Actual Weight</label>
                                 <input
@@ -255,8 +229,6 @@ const ReceiptFormPage = () => {
                                     placeholder="Enter actual weight"
                                 />
                             </div>
-
-                            {/* Post Office Amount */}
                             <div className="mb-3">
                                 <label className="form-label">Post Office Amount</label>
                                 <input
@@ -267,8 +239,6 @@ const ReceiptFormPage = () => {
                                     placeholder="Enter post office amount"
                                 />
                             </div>
-
-                            {/* Date Option */}
                             <div className="mb-3">
                                 <label className="form-label">Date</label>
                                 <input
@@ -278,17 +248,12 @@ const ReceiptFormPage = () => {
                                     onChange={handleChange}
                                 />
                             </div>
-
-                            {/* Submit Button */}
                             <div className="text-center">
                                 <button type="submit" className="btn btn-primary">Save</button>
                             </div>
                         </form>
                     </ModalBody>
                 </Modal>
-
-
-
                 <Row>
                     <Col xl={12}>
                         <Card>
@@ -327,7 +292,6 @@ const ReceiptFormPage = () => {
                                     </Table>
                                 </div>
                             </CardBody>
-
                             <Row>
                                 <Col xl={6}>
                                     <Card>
@@ -373,7 +337,6 @@ const ReceiptFormPage = () => {
                                         </CardBody>
                                     </Card>
                                 </Col>
-
                                 <Col xl={6}>
                                     <Card>
                                         <CardBody>
@@ -386,7 +349,6 @@ const ReceiptFormPage = () => {
                                                             <th>BOX</th>
                                                             <th>PARCEL SERVICE</th>
                                                             <th>TRACKING ID</th>
-                                                            <th>DELIVERY CHARGE</th>
                                                             <th>ParcelAmount</th>
                                                             <th>Edit</th>
                                                         </tr>
@@ -399,13 +361,10 @@ const ReceiptFormPage = () => {
                                                                     <td>{packedItems.box}</td>
                                                                     <td>{packedItems.parcel_service || 'N/A'}</td>
                                                                     <td>{packedItems.tracking_id || 'N/A'}</td>
-                                                                    <td>{packedItems.shipping_charge || 'N/A'}</td>
-
-                                                                    {/* Conditionally render the parcel amount field */}
                                                                     {packedItems.parcel_amount ? (
                                                                         <td>{packedItems.parcel_amount}</td>
                                                                     ) : (
-                                                                        <td>N/A</td> // Show 'N/A' if there's no parcel_amount
+                                                                        <td>N/A</td>
                                                                     )}
 
                                                                     <th>
@@ -419,7 +378,6 @@ const ReceiptFormPage = () => {
                                                             </tr>
                                                         )}
                                                     </tbody>
-
                                                 </Table>
                                             </div>
                                         </CardBody>

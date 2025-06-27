@@ -18,7 +18,6 @@ const BasicTable = () => {
     const [error, setError] = useState(null);
     const token = localStorage.getItem("token");
 
-
     document.title = "DELIVERY REPORTS | BEPOSOFT";
 
     useEffect(() => {
@@ -48,7 +47,7 @@ const BasicTable = () => {
             "Total Box Delivered": order.total_boxes,
             "Total Volume Wt. (KG)": order.total_volume_weight,
             "Total Actual Wt. (KG)": order.total_weight,
-            "Total Delivery Charge": order.total_shipping_charge,
+            "Total Delivery Charge": order.total_parcel_amount,
         }));
 
         const worksheet = XLSX.utils.json_to_sheet(data);
@@ -100,7 +99,7 @@ const BasicTable = () => {
                                                             <td>{order.total_boxes}</td>
                                                             <td>{order.total_volume_weight} KG</td>
                                                             <td>{order.total_weight} KG</td>
-                                                            <td>{order.total_shipping_charge}</td>
+                                                            <td>{order.total_parcel_amount}</td>
                                                             <td>
                                                                 <Link to={`/delivery/${order.shipped_date}/reports/`} className="btn btn-primary btn-sm">
                                                                     View Details
@@ -121,7 +120,7 @@ const BasicTable = () => {
                                                             {orders.reduce((sum, order) => sum + (Number(order.total_weight) || 0), 0)} KG
                                                         </td>
                                                         <td>
-                                                            {orders.reduce((sum, order) => sum + (Number(order.total_shipping_charge) || 0), 0)}
+                                                            {orders.reduce((sum, order) => sum + (Number(order.total_parcel_amount) || 0), 0)}
                                                         </td>
                                                         <td></td>
                                                     </tr>

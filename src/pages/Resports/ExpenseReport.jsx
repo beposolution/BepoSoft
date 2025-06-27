@@ -104,7 +104,7 @@ const BasicTable = () => {
         const exportData = filteredData.map((item) => ({
             "Date": item.expense_date,
             "Description": item.description,
-            "Purpose of Payment": item.purpose_of_payment,
+            "Purpose of Payment": item.purpose_of_pay,
             "Amount": item.amount,
             "Paid By": item.payed_by.name,
             "Company": item.company.name,
@@ -122,13 +122,13 @@ const BasicTable = () => {
     };
 
     // meta title
-    document.title = "Basic Tables | Skote - Vite React Admin & Dashboard Template";
+    document.title = "BEPOSOFT | EXPENSE REPORT";
 
     return (
         <React.Fragment>
             <div className="page-content">
                 <div className="container-fluid">
-                    <Breadcrumbs title="Tables" breadcrumbItem="Basic Tables" />
+                    <Breadcrumbs title="Tables" breadcrumbItem="EXPENSE REPORT" />
 
                     <Row>
                         <Col xl={12}>
@@ -209,7 +209,7 @@ const BasicTable = () => {
                                                             <th scope="row">{index + 1}</th>
                                                             <td>{item.expense_date}</td>
                                                             <td>{item.description}</td>
-                                                            <td>{item.purpose_of_payment}</td>
+                                                            <td>{item.purpose_of_pay}</td>
                                                             <td>{item.amount}</td>
                                                             <td>{item.payed_by.name}</td>
                                                             <td>{item.company.name}</td>
@@ -237,7 +237,7 @@ const BasicTable = () => {
                                 <div>
                                     <p><strong>Date:</strong> {selectedRow.expense_date}</p>
                                     <p><strong>Description:</strong> {selectedRow.description}</p>
-                                    <p><strong>Purpose of Payment:</strong> {selectedRow.purpose_of_payment}</p>
+                                    <p><strong>Purpose of Payment:</strong> {selectedRow.purpose_of_pay}</p>
                                     <p><strong>Amount:</strong> {selectedRow.amount}</p>
                                     <p><strong>Paid By:</strong> {selectedRow.added_by}</p>
                                     <p><strong>Company:</strong> {selectedRow.company.name}</p>

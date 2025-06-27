@@ -26,14 +26,34 @@ const BasicTable = () => {
     const [error, setError] = useState(null);
     const name = localStorage.getItem('name');
     document.title = `${name} Ledger | Beposoft`;
-
+    const [advanceReceipts, setAdvanceReceipts] = useState([])
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [companyFilter, setCompanyFilter] = useState("");
     const [companys, setCompany] = useState([]);
-
+    const [banks, setBanks] = useState([]);
 
     const tableRef = useRef(null);
+
+    useEffect(() => {
+        const fetchBanks = async () => {
+            const token = localStorage.getItem("token");
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}banks/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (response.status === 200) setBanks(response.data.data);
+            } catch (error) {
+                console.error("Error fetching banks:", error);
+            }
+        }
+        fetchBanks();
+    }, []);
+
+    const bankIdToName = banks.reduce((acc, bank) => {
+        acc[bank.id] = bank.name;
+        return acc;
+    }, {});
 
     useEffect(() => {
         const fetchLedgerData = async () => {
@@ -59,7 +79,8 @@ const BasicTable = () => {
 
                 // Set the fetched data into the state
                 setOrders(ledgerResponse.data.data);
-                setFilteredOrders(ledgerResponse.data.data);
+                setFilteredOrders(ledgerResponse.data.data.ledger || []);
+                setAdvanceReceipts(ledgerResponse.data.data.advance_receipts);
                 setLoading(false);
 
             } catch (error) {
@@ -84,6 +105,7 @@ const BasicTable = () => {
     };
 
     const exportToExcel = () => {
+        // Prepare ledger and payment rows
         const data = filteredOrders.flatMap((order, orderIndex) => [
             {
                 '#': orderIndex + 1,
@@ -96,15 +118,28 @@ const BasicTable = () => {
             ...order.recived_payment.map((receipt, index) => ({
                 '#': `${orderIndex + 1}.${index + 1}`,
                 'DATE': receipt.received_at,
-                'INVOICE': receipt.bank,
+                'INVOICE': receipt.bank, // You can map bank ID here if needed similarly
                 'PARTICULAR': 'Payment received',
                 'DEBIT (₹)': "-",
                 'CREDIT (₹)': parseFloat(receipt.amount || 0).toFixed(2)
             }))
         ]);
 
+        // Prepare advance receipts rows with bank name mapping
+        const advanceData = advanceReceipts.map((advance, index) => ({
+            '#': `A${index + 1}`,
+            'DATE': advance.received_at,
+            'INVOICE': bankIdToName[advance.bank] || advance.bank, // Map bank ID to name
+            'PARTICULAR': 'Advance Receipt',
+            'DEBIT (₹)': "-",
+            'CREDIT (₹)': parseFloat(advance.amount || 0).toFixed(2)
+        }));
+
+        // Combine all data rows
+        const allData = [...data, ...advanceData];
+
         // Append Grand Total and Closing Balance
-        data.push(
+        allData.push(
             {
                 '#': '',
                 'DATE': '',
@@ -118,15 +153,17 @@ const BasicTable = () => {
                 'DATE': '',
                 'INVOICE': '',
                 'PARTICULAR': 'Closing Balance',
-                'DEBIT (₹)': closingBalance.toFixed(2),
-                'CREDIT (₹)': '',
+                'DEBIT (₹)': closingBalance > 0 ? closingBalance.toFixed(2) : '',
+                'CREDIT (₹)': closingBalance < 0 ? Math.abs(closingBalance).toFixed(2) : '',
             }
         );
 
-        const worksheet = XLSX.utils.json_to_sheet(data);
+        // Generate worksheet and workbook
+        const worksheet = XLSX.utils.json_to_sheet(allData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Ledger");
 
+        // Save file
         XLSX.writeFile(workbook, `${name}_Ledger.xlsx`);
     };
 
@@ -165,17 +202,21 @@ const BasicTable = () => {
         pdf.save(`${name}_Ledger.pdf`);
     };
 
-
-
-
-
     const totalDebit = filteredOrders.reduce((total, order) => total + order.total_amount, 0);
-    const totalCredit = filteredOrders.reduce(
-        (total, order) =>
-            total + order.recived_payment.reduce((sum, receipt) => sum + parseFloat(receipt.amount || 0), 0),
+    const totalCredit = filteredOrders.reduce((total, order) => {
+        const recivedSum = order.recived_payment.reduce(
+            (sum, receipt) => sum + parseFloat(receipt.amount || 0),
+            0
+        );
+        return total + recivedSum;
+    }, 0) + advanceReceipts.reduce(
+        (sum, receipt) => sum + parseFloat(receipt.amount || 0),
         0
     );
     const closingBalance = totalDebit - totalCredit;
+
+    const closingBalanceDebit = closingBalance > 0 ? closingBalance : 0;
+    const closingBalanceCredit = closingBalance < 0 ? Math.abs(closingBalance) : 0;
 
     if (loading) {
         return <p>Loading...</p>;
@@ -262,27 +303,42 @@ const BasicTable = () => {
                                             <tbody>
                                                 {filteredOrders.map((order, orderIndex) => (
                                                     <React.Fragment key={order.id}>
+                                                        {/* Order row */}
                                                         <tr>
                                                             <th scope="row">{orderIndex + 1}</th>
                                                             <td>{order.order_date}</td>
                                                             <td>
-                                                                <a href={`/order/${order.id}/items/`} target="_blank" rel="noopener noreferrer">{order.invoice}/{order.company}</a>
+                                                                <a href={`/order/${order.id}/items/`} target="_blank" rel="noopener noreferrer">
+                                                                    {order.invoice}/{order.company}
+                                                                </a>
                                                             </td>
-                                                            <td style={{ color: 'red' }}>Goods Sale</td>
+                                                            <td style={{ color: "red" }}>Goods Sale</td>
                                                             <td>{order.total_amount.toFixed(2)}</td>
                                                             <td>-</td>
                                                         </tr>
+
+                                                        {/* recived_payment rows */}
                                                         {order.recived_payment.map((receipt, index) => (
                                                             <tr key={receipt.id}>
                                                                 <th scope="row">{`${orderIndex + 1}.${index + 1}`}</th>
                                                                 <td>{receipt.received_at}</td>
                                                                 <td>{receipt.bank}</td>
-                                                                <td style={{ color: 'green' }}>Payment received</td>
+                                                                <td style={{ color: "green" }}>Payment received</td>
                                                                 <td>-</td>
                                                                 <td>{parseFloat(receipt.amount || 0).toFixed(2)}</td>
                                                             </tr>
                                                         ))}
                                                     </React.Fragment>
+                                                ))}
+                                                {advanceReceipts.map((advance, index) => (
+                                                    <tr key={`advance-${advance.id}`}>
+                                                        <th scope="row">{`A${index + 1}`}</th>
+                                                        <td>{advance.received_at}</td>
+                                                        <td>{bankIdToName[advance.bank] || advance.bank}</td>
+                                                        <td style={{ color: "blue" }}>Advance Receipt</td>
+                                                        <td>-</td>
+                                                        <td>{parseFloat(advance.amount || 0).toFixed(2)}</td>
+                                                    </tr>
                                                 ))}
                                                 <tr>
                                                     <td colSpan="3" className="text-right" style={{ fontWeight: 'bold' }}>
@@ -296,7 +352,12 @@ const BasicTable = () => {
                                                     <td colSpan="4" className="text-right" style={{ fontWeight: 'bold' }}>
                                                         Closing Balance
                                                     </td>
-                                                    <td style={{ fontWeight: 'bold' }}>{closingBalance.toFixed(2)}</td>
+                                                    <td style={{ fontWeight: 'bold' }}>
+                                                        {closingBalanceDebit ? closingBalanceDebit.toFixed(2) : ''}
+                                                    </td>
+                                                    <td style={{ fontWeight: 'bold' }}>
+                                                        {closingBalanceCredit ? closingBalanceCredit.toFixed(2) : ''}
+                                                    </td>
                                                 </tr>
                                             </tbody>
                                         </Table>

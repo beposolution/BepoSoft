@@ -71,7 +71,7 @@ const BasicTable = () => {
 
     const handleAddOrUpdateAttribute = async (e) => {
         console.log("Sending data to update:", {
-            id: editingAttribute.id,
+            id: editingAttribute ? editingAttribute.id : null,
             value: newAttribute,
             attribute: newAttributeValue
         });
@@ -236,18 +236,7 @@ const BasicTable = () => {
                                     {showForm && (
                                         <Form onSubmit={handleAddOrUpdateAttribute} className="mt-4">
                                             <FormGroup>
-                                                <Label for="attributeName">Attribute Name</Label>
-                                                <Input
-                                                    type="text"
-                                                    id="attributeName"
-                                                    value={newAttribute}
-                                                    onChange={(e) => setNewAttribute(e.target.value)}
-                                                    placeholder="Enter attribute name"
-                                                    required
-                                                />
-                                            </FormGroup>
-                                            <FormGroup>
-                                                <Label for="attributeValue">Attribute Value</Label>
+                                                <Label for="attributeValue">Attribute Name</Label>
                                                 <Input
                                                     type="select"
                                                     id="attributeValue"
@@ -255,17 +244,24 @@ const BasicTable = () => {
                                                     onChange={(e) => setNewAttributeValue(e.target.value)}
                                                     required
                                                 >
-                                                    <option value="">Select an Attribute Value</option>
-                                                    {availableAttributes && availableAttributes.length > 0 ? ( // Safe check for availableAttributes
-                                                        availableAttributes.map((option) => (
-                                                            <option key={option.id} value={option.id}>
-                                                                {option.name}
-                                                            </option>
-                                                        ))
-                                                    ) : (
-                                                        <option disabled>No options available</option>
-                                                    )}
+                                                    <option value="">Select an Attribute Name</option>
+                                                    {availableAttributes.map((option) => (
+                                                        <option key={option.id} value={option.id}>
+                                                            {option.name}
+                                                        </option>
+                                                    ))}
                                                 </Input>
+                                            </FormGroup>
+                                            <FormGroup>
+                                                <Label for="attributeName">Attribute Value</Label>
+                                                <Input
+                                                    type="text"
+                                                    id="attributeName"
+                                                    value={newAttribute}
+                                                    onChange={(e) => setNewAttribute(e.target.value)}
+                                                    placeholder="Enter attribute value"
+                                                    required
+                                                />
                                             </FormGroup>
                                             <Button type="submit" color="success">
                                                 {editingAttribute ? "Update Attribute" : "Add Attribute"}

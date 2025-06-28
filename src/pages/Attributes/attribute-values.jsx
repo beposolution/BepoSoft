@@ -176,36 +176,80 @@ const BasicTable = () => {
                                     ) : error ? (
                                         <p className="text-danger">Error: {error}</p>
                                     ) : (
-                                        <div className="table-responsive">
-                                            <Table className="table mb-0">
-                                                <thead>
-                                                    <tr>
-                                                        <th>ID</th>
-                                                        <th>Attribute Name</th>
-                                                        <th>Attribute Value</th>
-                                                        <th>Update</th>
-                                                        {/* <th>Delete</th> */}
+                                        <>
+                                            <div className="mb-3">
+                                                {/* Add/Update Attribute Button */}
+                                                <Button color="primary" onClick={() => setShowForm(!showForm)} className="mt-4">
+                                                    {showForm ? "Cancel" : editingAttribute ? "Edit Attribute" : "Add Attribute"}
+                                                </Button>
 
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {attributes && attributes.length > 0 ? ( // Safe check before accessing .length
-                                                        attributes.map((attribute, index) => (
-                                                            <tr key={index}>
-                                                                <td>{index + 1}</td>
-                                                                <td>{attributeLookup[attribute?.attribute] || ""}</td>
-                                                                <td>{attribute?.value || ""}</td>
+                                                {/* Show Add/Update Attribute Form */}
+                                                {showForm && (
+                                                    <Form onSubmit={handleAddOrUpdateAttribute} className="mt-4">
+                                                        <FormGroup>
+                                                            <Label for="attributeValue">Attribute Name</Label>
+                                                            <Input
+                                                                type="select"
+                                                                id="attributeValue"
+                                                                value={newAttributeValue}
+                                                                onChange={(e) => setNewAttributeValue(e.target.value)}
+                                                                required
+                                                            >
+                                                                <option value="">Select an Attribute Name</option>
+                                                                {availableAttributes.map((option) => (
+                                                                    <option key={option.id} value={option.id}>
+                                                                        {option.name}
+                                                                    </option>
+                                                                ))}
+                                                            </Input>
+                                                        </FormGroup>
+                                                        <FormGroup>
+                                                            <Label for="attributeName">Attribute Value</Label>
+                                                            <Input
+                                                                type="text"
+                                                                id="attributeName"
+                                                                value={newAttribute}
+                                                                onChange={(e) => setNewAttribute(e.target.value)}
+                                                                placeholder="Enter attribute value"
+                                                                required
+                                                            />
+                                                        </FormGroup>
+                                                        <Button type="submit" color="success">
+                                                            {editingAttribute ? "Update Attribute" : "Add Attribute"}
+                                                        </Button>
+                                                    </Form>
+                                                )}
+                                            </div>
+                                            <div className="table-responsive">
+                                                <Table className="table mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>ID</th>
+                                                            <th>Attribute Name</th>
+                                                            <th>Attribute Value</th>
+                                                            <th>Update</th>
+                                                            {/* <th>Delete</th> */}
 
-                                                                <td>
-                                                                    <Button
-                                                                        color="info"
-                                                                        onClick={() => handleEditAttribute(attribute)}
-                                                                        className="me-2"
-                                                                    >
-                                                                        <FaEdit />
-                                                                    </Button>
-                                                                </td>
-                                                                {/* <td>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {attributes && attributes.length > 0 ? ( // Safe check before accessing .length
+                                                            attributes.map((attribute, index) => (
+                                                                <tr key={index}>
+                                                                    <td>{index + 1}</td>
+                                                                    <td>{attributeLookup[attribute?.attribute] || ""}</td>
+                                                                    <td>{attribute?.value || ""}</td>
+
+                                                                    <td>
+                                                                        <Button
+                                                                            color="info"
+                                                                            onClick={() => handleEditAttribute(attribute)}
+                                                                            className="me-2"
+                                                                        >
+                                                                            <FaEdit />
+                                                                        </Button>
+                                                                    </td>
+                                                                    {/* <td>
                                                                     <Button
                                                                         color="danger"
                                                                         onClick={() => handleDeleteAttribute(attribute.id)}
@@ -213,60 +257,19 @@ const BasicTable = () => {
                                                                         <FaTrashAlt /> 
                                                                     </Button>
                                                                 </td> */}
+                                                                </tr>
+                                                            ))
+                                                        ) : (
+                                                            <tr>
+                                                                <td colSpan="3" className="text-center">
+                                                                    No attributes available
+                                                                </td>
                                                             </tr>
-                                                        ))
-                                                    ) : (
-                                                        <tr>
-                                                            <td colSpan="3" className="text-center">
-                                                                No attributes available
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </tbody>
-                                            </Table>
-                                        </div>
-                                    )}
-
-                                    {/* Add/Update Attribute Button */}
-                                    <Button color="primary" onClick={() => setShowForm(!showForm)} className="mt-4">
-                                        {showForm ? "Cancel" : editingAttribute ? "Edit Attribute" : "Add Attribute"}
-                                    </Button>
-
-                                    {/* Show Add/Update Attribute Form */}
-                                    {showForm && (
-                                        <Form onSubmit={handleAddOrUpdateAttribute} className="mt-4">
-                                            <FormGroup>
-                                                <Label for="attributeValue">Attribute Name</Label>
-                                                <Input
-                                                    type="select"
-                                                    id="attributeValue"
-                                                    value={newAttributeValue}
-                                                    onChange={(e) => setNewAttributeValue(e.target.value)}
-                                                    required
-                                                >
-                                                    <option value="">Select an Attribute Name</option>
-                                                    {availableAttributes.map((option) => (
-                                                        <option key={option.id} value={option.id}>
-                                                            {option.name}
-                                                        </option>
-                                                    ))}
-                                                </Input>
-                                            </FormGroup>
-                                            <FormGroup>
-                                                <Label for="attributeName">Attribute Value</Label>
-                                                <Input
-                                                    type="text"
-                                                    id="attributeName"
-                                                    value={newAttribute}
-                                                    onChange={(e) => setNewAttribute(e.target.value)}
-                                                    placeholder="Enter attribute value"
-                                                    required
-                                                />
-                                            </FormGroup>
-                                            <Button type="submit" color="success">
-                                                {editingAttribute ? "Update Attribute" : "Add Attribute"}
-                                            </Button>
-                                        </Form>
+                                                        )}
+                                                    </tbody>
+                                                </Table>
+                                            </div>
+                                        </>
                                     )}
                                 </CardBody>
                             </Card>

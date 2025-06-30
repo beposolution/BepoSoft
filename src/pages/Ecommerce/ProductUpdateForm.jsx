@@ -573,7 +573,7 @@ const EcommerenceAddProduct = () => {
                                             </Col>
                                             <Col lg={3}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-InputImage">Upload Image</Label>
+                                                    <Label htmlFor="formrow-InputImage">Upload Image (File size should be less than 100kb)</Label>
                                                     <Input
                                                         type="file"
                                                         name="image"

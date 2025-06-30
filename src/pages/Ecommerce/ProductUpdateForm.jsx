@@ -36,7 +36,7 @@ const EcommerenceAddProduct = () => {
             size: '',
             image: null,
             groupID: '',
-            landing_cost:'',
+            landing_cost: '',
         },
         validationSchema: yup.object().shape({
             name: yup.string().required('Please Enter Your Product Name'),
@@ -186,7 +186,7 @@ const EcommerenceAddProduct = () => {
         const rate = parseFloat(purchase_rate) || 0;
         const taxValue = parseFloat(tax) || 0;
         const calculatedLandingCost = rate + (rate * taxValue / 100);
-        formik.setFieldValue("landing_cost", calculatedLandingCost.toFixed(2)); 
+        formik.setFieldValue("landing_cost", calculatedLandingCost.toFixed(2));
     }, [formik.values.purchase_rate, formik.values.tax]);
 
     return (
@@ -327,7 +327,7 @@ const EcommerenceAddProduct = () => {
                                                     }
                                                 </div>
                                             </Col>
-                                         
+
                                         </Row>
 
                                         <Row>
@@ -479,7 +479,7 @@ const EcommerenceAddProduct = () => {
                                                 </div>
                                             </Col>
                                             <Col lg={3}>
-                                                   <div className="mb-3">
+                                                <div className="mb-3">
                                                     <Label htmlFor="formrow-InputCity">Stock</Label>
                                                     <Input
                                                         type="text"
@@ -504,7 +504,7 @@ const EcommerenceAddProduct = () => {
 
 
                                             <Col lg={3}>
-<div className="mb-3">
+                                                <div className="mb-3">
                                                     <Label htmlFor="formrow-InputCity">Color</Label>
                                                     <Input
                                                         type="text"
@@ -525,96 +525,96 @@ const EcommerenceAddProduct = () => {
                                                         ) : null
                                                     }
                                                 </div>
-</Col>
+                                            </Col>
 
                                         </Row>
 
                                         <Row>
-                                        <Col lg={3}>
-                                        <div className="mb-3">
-    <Label htmlFor="formrow-InputState">Family</Label>
-    <select
-    name="family"
-    id="formrow-InputState"
-    className="form-control"
-    value={formik.values.family.map(String)} // Convert values to string
-    onChange={(e) => {
-        const options = Array.from(e.target.selectedOptions, (option) => option.value);
-        formik.setFieldValue('family', options); // Update Formik values dynamically
-    }}
-    onBlur={formik.handleBlur}
-    multiple // Enable multiple selections
->
-    {/* Default Placeholder */}
-    {formik.values.family.length === 0 && (
-        <option disabled value="">
-            Select Family
-        </option>
-    )}
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-InputState">Family</Label>
+                                                    <select
+                                                        name="family"
+                                                        id="formrow-InputState"
+                                                        className="form-control"
+                                                        value={formik.values.family.map(String)} // Convert values to string
+                                                        onChange={(e) => {
+                                                            const options = Array.from(e.target.selectedOptions, (option) => option.value);
+                                                            formik.setFieldValue('family', options); // Update Formik values dynamically
+                                                        }}
+                                                        onBlur={formik.handleBlur}
+                                                        multiple // Enable multiple selections
+                                                    >
+                                                        {/* Default Placeholder */}
+                                                        {formik.values.family.length === 0 && (
+                                                            <option disabled value="">
+                                                                Select Family
+                                                            </option>
+                                                        )}
 
-    {/* Render Family Options & Ensure Pre-selection */}
-    {families.map((family) => (
-        <option 
-            key={family.id} 
-            value={family.id.toString()} 
-            selected={formik.values.family.includes(family.id.toString())} // Pre-select matching family IDs
-        >
-            {family.name}
-        </option>
-    ))}
-</select>
+                                                        {/* Render Family Options & Ensure Pre-selection */}
+                                                        {families.map((family) => (
+                                                            <option
+                                                                key={family.id}
+                                                                value={family.id.toString()}
+                                                                selected={formik.values.family.includes(family.id.toString())} // Pre-select matching family IDs
+                                                            >
+                                                                {family.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
 
 
-    {/* Validation Error Message */}
-    {formik.errors.family && formik.touched.family ? (
-        <span className="text-danger">{formik.errors.family}</span>
-    ) : null}
-</div>     
-</Col>
-         <Col lg={3}>
-                                            <div className="mb-3">
-        <Label htmlFor="formrow-InputImage">Upload Image</Label>
-        <Input
-            type="file"
-            name="image"
-            className={`form-control ${formik.touched.image && formik.errors.image ? 'is-invalid' : ''}`}
-            id="formrow-InputImage"
-            onChange={(event) => {
-                const file = event.currentTarget.files[0];
+                                                    {/* Validation Error Message */}
+                                                    {formik.errors.family && formik.touched.family ? (
+                                                        <span className="text-danger">{formik.errors.family}</span>
+                                                    ) : null}
+                                                </div>
+                                            </Col>
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-InputImage">Upload Image</Label>
+                                                    <Input
+                                                        type="file"
+                                                        name="image"
+                                                        className={`form-control ${formik.touched.image && formik.errors.image ? 'is-invalid' : ''}`}
+                                                        id="formrow-InputImage"
+                                                        onChange={(event) => {
+                                                            const file = event.currentTarget.files[0];
 
-                if (file) {
-                    formik.setFieldValue("image", file);
+                                                            if (file) {
+                                                                formik.setFieldValue("image", file);
 
-                    // Ensure FileReader reads the image correctly
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                        setImagePreview(reader.result); // Set preview image
-                    };
-                    reader.onerror = (error) => {
-                        console.error("Error reading file:", error);
-                    };
-                    reader.readAsDataURL(file);
-                }
-            }}
-            onBlur={formik.handleBlur}
-            accept="image/*"
-        />
-        {formik.errors.image && formik.touched.image && (
-            <FormFeedback className="d-block">{formik.errors.image}</FormFeedback>
-        )}
-    </div>
+                                                                // Ensure FileReader reads the image correctly
+                                                                const reader = new FileReader();
+                                                                reader.onload = () => {
+                                                                    setImagePreview(reader.result); // Set preview image
+                                                                };
+                                                                reader.onerror = (error) => {
+                                                                    console.error("Error reading file:", error);
+                                                                };
+                                                                reader.readAsDataURL(file);
+                                                            }
+                                                        }}
+                                                        onBlur={formik.handleBlur}
+                                                        accept="image/*"
+                                                    />
+                                                    {formik.errors.image && formik.touched.image && (
+                                                        <FormFeedback className="d-block">{formik.errors.image}</FormFeedback>
+                                                    )}
+                                                </div>
 
-    {/* Display Image Preview */}
-    {imagePreview && (
-        <div className="image-preview mt-2">
-            <img 
-                src={`${import.meta.env.VITE_APP_IMAGE}${imagePreview}`}  
-                alt="Preview" 
-                style={{ width: '50%', height: 'auto', borderRadius: '5px', border: '1px solid #ddd', padding: '5px' }} 
-            />
-        </div>
-    )}
-                                                
+                                                {/* Display Image Preview */}
+                                                {imagePreview && (
+                                                    <div className="image-preview mt-2">
+                                                        <img
+                                                            src={imagePreview}
+                                                            alt="Preview"
+                                                            style={{ width: '50%', height: 'auto', borderRadius: '5px', border: '1px solid #ddd', padding: '5px' }}
+                                                        />
+                                                    </div>
+                                                )}
+
                                             </Col>
                                         </Row>
                                         <div className="d-flex flex-wrap gap-2">

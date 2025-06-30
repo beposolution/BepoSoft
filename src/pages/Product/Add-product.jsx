@@ -8,7 +8,7 @@ import axios from 'axios'; // Ensure axios is imported
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 
 const FormLayouts = () => {
-    document.title = "Form Layouts | Skote - Vite React Admin & Dashboard Template";
+    document.title = "Beposoft | Add Products";
 
     const [family, setFamily] = useState([]);
     const [successMessage, setSuccessMessage] = useState(""); // State for success message
@@ -461,7 +461,7 @@ const FormLayouts = () => {
                                         <Row>
                                             <Col lg={3}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-InputImage">Upload Image</Label>
+                                                    <Label htmlFor="formrow-InputImage">Upload Image (File size should be less than 100kb)</Label>
                                                     <Input
                                                         type="file"
                                                         name="image"

@@ -27,8 +27,23 @@ const BasicTable = () => {
     const [prevPage, setPrevPage] = useState(null);
     const token = localStorage.getItem("token");
     const [role, setRole] = useState(null);
+    const [userData, setUserData] = useState("");
 
     document.title = "Orders | Beposoft";
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}profile/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setUserData(response?.data?.data?.family_name);
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+            }
+        };
+        fetchUserData();
+    }, []);
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -37,7 +52,7 @@ const BasicTable = () => {
 
     useEffect(() => {
         if (token && role) fetchOrders(`${import.meta.env.VITE_APP_KEY}orders/`);
-    }, [token, role]);
+    }, [token, role, userData]);
 
     const fetchOrders = async (url) => {
         if (!url) return;
@@ -46,14 +61,14 @@ const BasicTable = () => {
             const response = await axios.get(url, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-
+            
             if (role === "Warehouse Admin" || role === "warehouse") {
                 const filterOrders = response.data.results.filter(
                     order => order.status === "To Print"
                 );
                 setOrders(filterOrders);
             } else if (role === "BDM") {
-                const filterOrders = response.data.results.filter(order => order.family === "Cycling")
+                const filterOrders = response.data.results.filter(order => order.family === userData)
                 setOrders(filterOrders);
             }
             else {

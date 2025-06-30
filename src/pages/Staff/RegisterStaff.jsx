@@ -8,15 +8,10 @@ import React, { useState, useEffect } from "react";
 import Select from 'react-select';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-// Import Breadcrumb
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 
 const FormLayouts = () => {
-    // Meta title
     document.title = "Staff Registration | Beposoft";
-
-    // State declarations
     const [department, setDepartment] = useState([]);
     const [supervisor, setSupervisor] = useState([]);
     const [familys, setFamilys] = useState([]);
@@ -26,10 +21,9 @@ const FormLayouts = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
-    const token = localStorage.getItem("token"); // Token fetching
+    const token = localStorage.getItem("token");
     const [warehouseDetails, setWarehouseDetails] = useState([]);
 
-    // Formik setup
     const formik = useFormik({
         initialValues: {
             name: "",
@@ -60,7 +54,6 @@ const FormLayouts = () => {
             warehouse_id: ""
         },
         validationSchema: Yup.object({
-            // Basic Info
             name: Yup.string().required("This field is required"),
             username: Yup.string().required("Please enter a username"),
             email: Yup.string()
@@ -70,8 +63,6 @@ const FormLayouts = () => {
                 .matches(/^[0-9]+$/, "Phone number must be digits only")
                 .min(10, "Phone number must be at least 10 digits")
                 .required("Please enter a phone number"),
-
-            // Password Validation
             password: Yup.string()
                 .min(8, "Password must be at least 8 characters long")
                 .matches(/[a-z]/, "Password must contain at least one lowercase letter")
@@ -79,8 +70,6 @@ const FormLayouts = () => {
                 .matches(/[0-9]/, "Password must contain at least one number")
                 .matches(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character")
                 .required("Password is required"),
-
-            // Employment Info
             join_date: Yup.date().required("Join date is required"),
             date_of_birth: Yup.date().required("Date of birth is required"),
             confirmation_date: Yup.date()
@@ -93,18 +82,13 @@ const FormLayouts = () => {
             department_id: Yup.string().required("Please select a department"),
             supervisor_id: Yup.string().required("Please select a supervisor"),
             warehouse_id: Yup.string().required("Please choose Warehouse"),
-
-            // Signature
             signatur_up: Yup.string().required("Signature is required"),
-
-            // Marital and Personal Info
             marital_status: Yup.string().required("Please select marital status"),
             country: Yup.string().required("This field is required"),
             state: Yup.string().required("This field is required"),
             allocated_states: Yup.array()
                 .nullable(true)
                 .required("This field is required"),
-
             approval_status: Yup.string().required("This field is required"),
             gender: Yup.string().required("This field is required"),
         }),
@@ -118,13 +102,11 @@ const FormLayouts = () => {
                     if (key === "signatur_up" && values[key]) {
                         formData.append(key, values[key]);
                     } else if (key === "allocated_states") {
-                        // Always send, even if empty
                         if (Array.isArray(values[key]) && values[key].length > 0) {
                             values[key].forEach(val => {
                                 formData.append('allocated_states', val);
                             });
                         } else {
-                            // Send an empty value to indicate no states selected
                             formData.append('allocated_states', '');
                         }
                     } else if (key === "image" && values[key]) {
@@ -171,14 +153,12 @@ const FormLayouts = () => {
                         theme: "colored",
                     });
                 }
-            } catch (err) {
-                console.log("Error:", err);
+            } catch (error) {
+                const message =
+                    error.response?.data?.message || "Something went wrong. Please try again.";
+                toast.error(message);
             }
         }
-
-
-
-
     });
 
     useEffect(() => {
@@ -242,12 +222,6 @@ const FormLayouts = () => {
         setSelectedStates(selectedOptions); // Ensure the select component updates
     };
 
-    console.log("Formik allocated_states before submission:", formik.values.allocated_states);
-
-
-
-
-
     const fetchWarehouse = async () => {
         try {
             const token = localStorage.getItem("token");
@@ -268,12 +242,9 @@ const FormLayouts = () => {
         }
     };
 
-
-
     useEffect(() => {
         fetchWarehouse()
     }, []);
-
 
     return (
         <React.Fragment>

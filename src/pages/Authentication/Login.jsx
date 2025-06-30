@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import withRouter from "../../components/Common/withRouter";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // redux
 import { useSelector, useDispatch } from "react-redux";
@@ -12,8 +13,6 @@ import { createSelector } from "reselect";
 // Formik validation
 import * as Yup from "yup";
 import { useFormik } from "formik";
-
-// reactstrap components
 import {
   Row,
   Col,
@@ -26,21 +25,14 @@ import {
   FormFeedback,
   Label,
 } from "reactstrap";
-
-// actions
 import { loginUser, socialLogin } from "../../store/actions";
-
-// import images
 import profile from "../../assets/images/profile-img.png";
 import logo from "../../../src/logo.png";
 import lightlogo from "../../assets/images/logo-light.svg";
 
 const Login = (props) => {
-  // meta title
   document.title = "Beposoft | Authentication";
   const dispatch = useDispatch();
-
-
   const validation = useFormik({
     enableReinitialize: true,
 
@@ -49,16 +41,13 @@ const Login = (props) => {
       password: '',
     },
 
-
     validationSchema: Yup.object({
       username: Yup.string().required('Please Enter Your Username'),
       password: Yup.string().required('Please Enter Your Password'),
     }),
 
-
     onSubmit: async (values) => {
       try {
-        // Using axios method for login
         const response = await axios.post(`${import.meta.env.VITE_APP_KEY}login/`, values, {
           headers: {
             'Content-Type': 'application/json',
@@ -66,30 +55,32 @@ const Login = (props) => {
         });
 
         const data = response.data;
+        console.log('Login API response:', response.data);
 
         if (data.status === 'success') {
-          // Handle successful login
           console.log('Login successful:', data);
           localStorage.setItem('token', data.token);
           localStorage.setItem('active', data.active);
           localStorage.setItem('name', data.name);
           localStorage.setItem('warehouseId', data.warehouse_id || '');
 
-          // Dispatch the loginUser action with the token and navigate
           dispatch(loginUser({
             token: data.token,
             active: data.active,
             name: data.name,
           }, props.router.navigate));
 
-          // Navigate to the dashboard
           props.router.navigate('/dashboard');
         } else {
-          // Handle the error case
           toast.error(data.message || 'Login failed. Please try again.');
           console.error('Login failed:', data.message);
         }
       } catch (error) {
+        const errorMsg =
+          error.response?.data?.message ||
+          error.message ||
+          "Something went wrong. Please try again.";
+        toast.error(errorMsg);
         console.error('Error during login:', error);
       }
     },
@@ -176,7 +167,6 @@ const Login = (props) => {
                       }}
                     >
                       {error && <Alert color="danger">{error}</Alert>}
-
                       <div className="mb-3">
                         <Label className="form-label">Username</Label>
                         <Input
@@ -195,7 +185,6 @@ const Login = (props) => {
                           </FormFeedback>
                         ) : null}
                       </div>
-
                       <div className="mb-3">
                         <Label className="form-label">Password</Label>
                         <Input
@@ -228,6 +217,7 @@ const Login = (props) => {
               </Card>
             </Col>
           </Row>
+          <ToastContainer />
         </Container>
       </div>
     </React.Fragment>

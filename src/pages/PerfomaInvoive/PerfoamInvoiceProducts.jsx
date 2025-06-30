@@ -483,6 +483,11 @@ const FormLayouts = () => {
         }
     };
 
+    const handleDownloadPerformaInvoice = () => {
+        const addressurl = `${import.meta.env.VITE_APP_IMAGE}/performainvoice/${invoice}/`;
+        window.open(addressurl, "_blank");
+    }
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -1236,19 +1241,13 @@ const FormLayouts = () => {
 
                                                 <Col md={4}>
                                                     <div className="d-flex align-items-center mb-3">
-                                                        <Link
-                                                            to={`/generate/perfoma/invoice/${invoice}/`}
-                                                            className="btn btn-primary px-4 py-2 w-100" // Bootstrap button styles
-                                                            style={{
-                                                                fontWeight: 'bold',
-                                                                textDecoration: 'none',
-                                                                borderRadius: '5px',
-                                                                backgroundColor: '#007bff',
-                                                                color: '#ffffff'
-                                                            }}
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-secondary w-100"
+                                                            onClick={() => handleDownloadPerformaInvoice()}
                                                         >
-                                                            Perfoma Invoice Details
-                                                        </Link>
+                                                            Download Invoice
+                                                        </button>
                                                     </div>
                                                 </Col>
 

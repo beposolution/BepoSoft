@@ -17,10 +17,10 @@ import {
     FormGroup,
     Label
 } from "reactstrap";
-import * as XLSX from "xlsx";  // Import XLSX
-
-// Import Breadcrumb
+import * as XLSX from "xlsx";  
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const BasicTable = () => {
     const [data, setData] = useState([]);
@@ -47,7 +47,7 @@ const BasicTable = () => {
                 setLoading(false);
             })
             .catch((error) => {
-                console.error("There was an error fetching the data!", error);
+                toast.error("There was an error fetching the data!");
                 setLoading(false);
             });
     }, []);

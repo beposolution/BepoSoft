@@ -38,7 +38,6 @@ const BasicTable = () => {
                         Authorization: `Bearer ${token}`,
                     },
                 });
-                console.log("Orders Response:", ordersResponse.data);
 
                 const ordersArray = Array.isArray(ordersResponse.data)
                     ? ordersResponse.data
@@ -54,7 +53,6 @@ const BasicTable = () => {
                 setOrders(filteredOrders);
             } catch (error) {
                 setError("Error fetching data. Please try again later.");
-                console.error("Error fetching data:", error);
             } finally {
                 setLoading(false);
             }

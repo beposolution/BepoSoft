@@ -47,7 +47,6 @@ const FormValidations = () => {
       zip: Yup.string().required("Please Enter Your Zip"),
     }),
     onSubmit: (values) => {
-      // console.log("values", values);
     }
   });
 

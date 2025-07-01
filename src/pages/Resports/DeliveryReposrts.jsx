@@ -11,6 +11,8 @@ import {
 import * as XLSX from "xlsx";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Link, useParams } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const BasicTable = () => {
     const [orders, setOrders] = useState([]);
@@ -31,7 +33,7 @@ const BasicTable = () => {
                 setOrders(response.data);
             } catch (error) {
                 setError("Error fetching orders data. Please try again later.");
-                console.error("Error fetching orders data:", error);
+                toast.error("Error fetching orders data:");
             } finally {
                 setLoading(false);
             }

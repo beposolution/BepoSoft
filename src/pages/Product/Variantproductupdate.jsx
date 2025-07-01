@@ -5,9 +5,8 @@ import Select from 'react-select';
 import * as Yup from 'yup';
 import { useFormik } from "formik";
 import { useParams } from "react-router-dom";
-
-
-//Import Breadcrumb
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 
 const FormLayouts = () => {
@@ -55,7 +54,7 @@ const FormLayouts = () => {
                 setFamilies(familyData);
                 setFamilyOptions(options); // This will not cause re-renders now
             } catch (error) {
-                console.error("Error fetching family data:", error);
+                toast.error("Error fetching family data:");
             }
         };
 
@@ -67,7 +66,7 @@ const FormLayouts = () => {
     useEffect(() => {
         const fetchProductData = async () => {
             if (!id) {
-                console.error("No ID found in the URL.");
+                toast.error("No ID found in the URL.");
                 return;
             }
 
@@ -99,7 +98,7 @@ const FormLayouts = () => {
                     setSelectedFamilies(selectedFamilies.filter(Boolean)); // Filter out unmatched IDs
                 }
             } catch (error) {
-                console.error("Error fetching product data:", error.message);
+                toast.error("Error fetching product data:");
             }
         };
 
@@ -172,15 +171,11 @@ const FormLayouts = () => {
                         },
                     }
                 );
-                console.log("Update successful:", response.data);
             } catch (error) {
-                console.error("Error updating product:", error.response ? error.response.data : error.message);
+                toast.error("Error updating product:");
             }
         }
     });
-
-
-
 
     return (
         <React.Fragment>
@@ -194,7 +189,6 @@ const FormLayouts = () => {
                                     <CardTitle className="mb-4">Form Grid Layout</CardTitle>
 
                                     <Form onSubmit={(e) => {
-                                        console.log("Form submitted"); // Debugging log
                                         formik.handleSubmit(e);
                                     }}>
                                         <div className="mb-3">

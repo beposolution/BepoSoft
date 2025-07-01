@@ -9,8 +9,8 @@ import {
     CardSubtitle,
 } from "reactstrap";
 import axios from "axios";
-
-// Import Breadcrumb
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 
 const   BasicTable = () => {
@@ -32,7 +32,7 @@ const   BasicTable = () => {
                 });
                 setTableData(response.data.data); // Assuming API returns an array of objects
             } catch (error) {
-                console.error("Error fetching data:", error);
+                toast.error("Error fetching data:");
             }
         };
 
@@ -62,7 +62,7 @@ const   BasicTable = () => {
                 setTableData(updatedData);
             }
         } catch (error) {
-            console.error("Error updating data:", error);
+            toast.error("Error updating data:");
         }
     };
 

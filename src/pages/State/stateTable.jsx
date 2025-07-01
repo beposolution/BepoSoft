@@ -4,11 +4,11 @@ import axios from 'axios';
 import {
     Modal, ModalHeader, ModalBody, ModalFooter, Button, Input, Label, Form
 } from "reactstrap";
-import { FaEdit, FaTrash } from 'react-icons/fa'; // Importing icons for edit and delete
-
-// Import components
+import { FaEdit, FaTrash } from 'react-icons/fa'; 
 import Breadcrumbs from '../../components/Common/Breadcrumb';
 import TableContainer from '../../components/Common/TableContainer';
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const StateTable = () => {
     const [data, setData] = useState([]);
@@ -97,9 +97,8 @@ const StateTable = () => {
             await axios.delete(`${import.meta.env.VITE_APP_KEY}state/update/${id}/`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            console.log("Delete successful");
         } catch (error) {
-            console.error("Delete failed:", error);
+            toast.error("Delete failed");
             setError(error.message || "Failed to delete customer");
             setData(originalData); // Revert the UI if deletion fails
         }
@@ -129,7 +128,7 @@ const StateTable = () => {
                     throw new Error("Failed to add state");
                 }
             } catch (error) {
-                console.error("Add state failed:", error);
+                toast.error("Add state failed");
                 setError(error.message || "Failed to add state");
             }
         } else {
@@ -143,7 +142,7 @@ const StateTable = () => {
                 await fetchData();
                 toggleModal();
             } catch (error) {
-                console.error("Update failed:", error);
+                toast.error("Update failed");
                 setError(error.message || "Failed to update customer");
             }
         }

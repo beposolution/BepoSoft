@@ -48,7 +48,6 @@ const Login = () => {
           localStorage.setItem('token', token);
           localStorage.setItem('active', active);
           localStorage.setItem('name', name);
-          console.log(response)
 
           // Show success message
           setMessage({ type: 'success', text: 'Login successful!' });
@@ -61,7 +60,6 @@ const Login = () => {
         }
       } catch (error) {
         // Handle errors
-        console.error("Login failed:", error);
         setMessage({ type: 'danger', text: 'An error occurred. Please try again.' });
       }
     }

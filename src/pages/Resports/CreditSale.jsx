@@ -12,9 +12,9 @@ import {
     FormGroup,
     Button,
 } from "reactstrap";
-
-// Import Breadcrumb
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Debounce hook for search input
 const useDebounce = (value, delay) => {
@@ -51,7 +51,7 @@ const BasicTable = () => {
         const apiKey = import.meta.env.VITE_APP_KEY;
 
         if (!apiKey) {
-            console.error("API key is missing");
+            toast.error("API key is missing");
             return;
         }
 
@@ -81,7 +81,7 @@ const BasicTable = () => {
                 setData(salesResponse.data);
                 setLoading(false);
             } catch (error) {
-                console.error("Error fetching data:", error);
+                toast.error("Error fetching data:");
                 alert("Failed to fetch data. Please try again later.");
                 setLoading(false);
             }

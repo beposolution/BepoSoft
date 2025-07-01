@@ -18,8 +18,6 @@ const BasicTable = () => {
     const { id, date } = useParams(); // Use useParams to get staffID and order_date from the URL
     const token = localStorage.getItem("token");
 
-    console.log("staff Id", id, date);
-
     document.title = "Orders | Beposoft";
 
     useEffect(() => {
@@ -39,7 +37,6 @@ const BasicTable = () => {
                 setOrders(filteredOrders);
             } catch (error) {
                 setError("Error fetching orders data. Please try again later.");
-                console.error("Error fetching orders data:", error);
             } finally {
                 setLoading(false);
             }

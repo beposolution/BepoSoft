@@ -108,7 +108,6 @@ const FormLayouts = () => {
                     });
                 }
             } catch (error) {
-                console.error("Error saving data:", error);
                 setIsLoading(false);
                 setError((prevError) => ({
                     ...prevError,

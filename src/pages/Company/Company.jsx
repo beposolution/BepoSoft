@@ -57,7 +57,6 @@ const CompanyForm = () => {
                     resetForm();
                 })
                 .catch((error) => {
-                    console.error("Error submitting form:", error);
                     
                     let errorMsg = "There was an error submitting the form."; // Default message
                 

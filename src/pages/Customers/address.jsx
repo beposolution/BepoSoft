@@ -76,7 +76,6 @@ const FormLayouts = () => {
             } catch (error) {
                 setMessage("Failed to submit the form. Please try again.");
                 setMessageType("danger");
-                console.error(error);
             }
         }
     });
@@ -98,7 +97,6 @@ const FormLayouts = () => {
                     alert('Failed to delete the address. Please try again.');
                 }
             } catch (error) {
-                console.error("There was an error deleting the address:", error);
                 alert('Error deleting the address. Please try again.');
             }
         }
@@ -160,7 +158,6 @@ const FormLayouts = () => {
                 alert('Address updated successfully!');
             }
         } catch (error) {
-            console.error("Error updating the address:", error);
             alert('Failed to update the address. Please try again.');
         }
     };

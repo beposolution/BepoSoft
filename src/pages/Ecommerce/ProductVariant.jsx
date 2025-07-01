@@ -128,7 +128,6 @@ const VariantProductCreateForm = () => {
             alert("Item deleted successfully.");
         } catch (err) {
             setError("Failed to delete item. Please try again.");
-            console.error("Delete error:", err);
         }
     };
 
@@ -212,7 +211,6 @@ const VariantProductCreateForm = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("formData:", formData);
 
         const formDataToSend = new FormData();
         formDataToSend.append('product', formData.product);
@@ -257,7 +255,6 @@ const VariantProductCreateForm = () => {
             }
 
             const data = await response.json();
-            console.log(data); // Debug the response to check its structure
             setStockData(data.products.variantIDs); // Ensure that variantIDs are being correctly set
         } catch (err) {
             setError(err.message || "An error occurred while fetching stock data");

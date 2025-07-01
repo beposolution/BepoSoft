@@ -12,10 +12,10 @@ import {
     FormGroup,
     Button,
 } from "reactstrap";
-import * as XLSX from "xlsx"; // Import xlsx library
-
-// Import Breadcrumb
+import * as XLSX from "xlsx"; 
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const BasicTable = () => {
     document.title = "Filtered Tables | Skote - Vite React Admin & Dashboard Template";
@@ -54,7 +54,7 @@ const BasicTable = () => {
             );
             setStaffs(uniqueStaffs);
         } catch (error) {
-            console.error("Error fetching data:", error);
+            toast.error("Error fetching data");
         }
     };
 

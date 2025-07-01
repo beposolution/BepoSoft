@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Table, Row, Col, Card, CardBody, FormGroup, Label, Input } from "reactstrap";
 import { useParams } from "react-router-dom";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const BasicTable = () => {
     document.title = "Basic Tables | Skote - Vite React Admin & Dashboard Template";
@@ -89,10 +91,10 @@ const BasicTable = () => {
 
                     setData(processedData);
                 } else {
-                    console.error("Failed to fetch data:", result.message);
+                    toast.error("Failed to fetch data:");
                 }
             } catch (error) {
-                console.error("Error fetching data:", error);
+                toast.error("Error fetching data:");
             }
         };
 
@@ -114,10 +116,10 @@ const BasicTable = () => {
                 if (data.message === "State list successfully retrieved") {
                     setStates(data.data);
                 } else {
-                    console.error("Failed to fetch states:", data.message);
+                    toast.error("Failed to fetch states");
                 }
             } catch (error) {
-                console.error("Error fetching states:", error);
+                toast.error("Error fetching states");
             }
         };
 
@@ -139,10 +141,10 @@ const BasicTable = () => {
                 if (data.status === "success") {
                     setCompanies(data.data);
                 } else {
-                    console.error("Failed to fetch companies:", data.message);
+                    toast.error("Failed to fetch companies:");
                 }
             } catch (error) {
-                console.error("Error fetching companies:", error);
+                toast.error("Error fetching companies:");
             }
         };
 

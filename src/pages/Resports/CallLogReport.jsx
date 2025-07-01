@@ -12,6 +12,8 @@ import {
     Label,
 } from "reactstrap";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const CallLogReport = () => {
     const [callLog, setCallLog] = useState([]);
@@ -34,7 +36,7 @@ const CallLogReport = () => {
                 });
                 setCallLog(response?.data)
             } catch (error) {
-                console.error("error fetching call log", error)
+                toast.error("error fetching call log")
             }
         };
         fetchCallLogData();
@@ -48,7 +50,7 @@ const CallLogReport = () => {
                 });
                 setStaffData(response?.data?.data);
             } catch (error) {
-                console.error("Error fetching staff data", error)
+                toast.error("Error fetching staff data")
             }
         };
         fetchStaffData();
@@ -62,7 +64,7 @@ const CallLogReport = () => {
                 });
                 setFamilyData(response?.data?.data)
             } catch (error) {
-                console.error("Error fetching family data.", error)
+                toast.error("Error fetching family data.")
             }
         };
         fetchFamilyData();

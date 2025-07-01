@@ -20,6 +20,8 @@ import {
 import { useFormik } from "formik";
 import axios from "axios";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const token = localStorage.getItem("token");
 
@@ -53,7 +55,7 @@ const FormLayouts = () => {
                 });
                 setOrders(response.data?.results);
             } catch (error) {
-                console.error(error.response?.data || error.message);
+                toast.error(error.response?.data || error.message);
             }
         };
 
@@ -88,12 +90,11 @@ const FormLayouts = () => {
                     Authorization: `Bearer ${token}`,
                 }
             });
-            console.log("response from products", response);
             if (response.status === 200) {
                 setOrderProducts(response.data?.items);
             }
         } catch (error) {
-            console.log("error fetching products");
+            toast.error("error fetching products");
         }
     }
 
@@ -135,10 +136,8 @@ const FormLayouts = () => {
             });
 
             alert("Invoice saved successfully!");
-            console.log(response.data);
             setSelectedProducts([]); // Clear the selected products after saving
         } catch (error) {
-            console.error(error.response?.data || error.message);
             alert("Error saving invoice. Please try again.");
         } finally {
             setLoading(false);
@@ -154,7 +153,6 @@ const FormLayouts = () => {
             order_date: "",
         },
         onSubmit: (values) => {
-            console.log("Form submitted:", values);
         },
     });
 

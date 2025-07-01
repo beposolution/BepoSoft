@@ -5,6 +5,8 @@ import { Row, Col, FormGroup, Label, Input, Button } from 'reactstrap';
 import { FaUniversity, FaIdBadge, FaUserPlus } from 'react-icons/fa';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const validationSchema = Yup.object({
     received_at: Yup.date().required('Date is required'),
@@ -47,7 +49,7 @@ const ReceiptFormPage = ({ toggleReciptModal, refreshParentData }) => {
                 const orderItemsResponse = await axios.get(`${import.meta.env.VITE_APP_KEY}order/${id}/items/`, { headers });
                 setOrderItems(orderItemsResponse.data.items);  // Fetch order items here
             } catch (error) {
-                console.error('Error fetching data', error);
+                toast.error('Error fetching data');
             }
         };
 
@@ -87,13 +89,10 @@ const ReceiptFormPage = ({ toggleReciptModal, refreshParentData }) => {
             }
         } catch (error) {
             if (error.response) {
-                console.error('Server responded with an error:', error.response);
                 alert(`Failed to submit form: ${error.response.data.message || 'Please try again later.'}`);
             } else if (error.request) {
-                console.error('Network error:', error.request);
                 alert('Network error: Please check your internet connection and try again.');
             } else {
-                console.error('Error:', error.message);
                 alert('Failed to submit form. Please try again.');
             }
         } finally {

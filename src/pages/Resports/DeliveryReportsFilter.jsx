@@ -3,6 +3,8 @@ import axios from "axios";
 import { Table, Row, Col, Card, CardBody, CardTitle } from "reactstrap";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Link, useParams } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const BasicTable = () => {
     const [orders, setOrders] = useState([]);
@@ -19,7 +21,6 @@ const BasicTable = () => {
                 const response = await axios.get(`${import.meta.env.VITE_APP_KEY}deliverylist/report/${date}/`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-                console.log("Orders Response:", response.data);
 
                 // ✅ Extracting warehouse data correctly
                 if (response.data && response.data.data) {
@@ -31,7 +32,7 @@ const BasicTable = () => {
 
             } catch (error) {
                 setError("Error fetching orders data. Please try again later.");
-                console.error("Error fetching orders data:", error);
+                toast.error("Error fetching orders data:");
             } finally {
                 setLoading(false);
             }

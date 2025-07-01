@@ -29,7 +29,7 @@ const BasicTable = () => {
             setWarehouseData(response.data.order.warehouse);
             setEditableData(response.data.order.warehouse);
         })
-        .catch(error => console.error("Error fetching warehouse data:", error));
+        .catch(error => toast.error("Error fetching warehouse data:"));
     }, [id, token]);
 
     useEffect(() => {
@@ -37,7 +37,7 @@ const BasicTable = () => {
             headers: { Authorization: `Bearer ${token}` }
         })
         .then(response => setParcelServices(response.data.data))
-        .catch(error => console.error("Error fetching parcel services:", error));
+        .catch(error => toast.error("Error fetching parcel services:"));
     }, [token]);
 
     useEffect(() => {
@@ -45,14 +45,12 @@ const BasicTable = () => {
             headers: { Authorization: `Bearer ${token}` }
         })
         .then(response => setStaffs(response.data.data))
-        .catch(error => console.error("Error fetching staff data:", error));
+        .catch(error => toast.error("Error fetching staff data:"));
     }, [token]);
 
     const handleInputChange = (e, index, field) => {
         const newData = [...editableData];
         newData[index][field] = e.target.value;
-
-        console.log("newdata information",newData);
         setEditableData(newData);
     };
 
@@ -91,7 +89,6 @@ const BasicTable = () => {
             const response = await axios.delete(`${import.meta.env.VITE_APP_KEY}warehouse/detail/${updatedItem.id}/`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-                console.log("response", response)
             // ✅ Check if the response status is 200 (successful deletion)
             if (response.status === 200) {
                 toast.success("Box deleted successfully!");
@@ -100,7 +97,6 @@ const BasicTable = () => {
                 toast.error("Failed to delete the box.");
             }
         } catch (error) {
-            console.error("❌ Error deleting box:", error.response ? error.response.data : error.message);
             toast.error("Error deleting the box. Try again.");
         }
     };
@@ -128,9 +124,6 @@ const BasicTable = () => {
             toast.error("Error sending sms. Try again.");
         }
     }
-
-    console.log("editable by", editableData);
-    console.log("parcel service", parcelServices);
 
     return (
         <div className="page-content">

@@ -48,7 +48,6 @@ const OrderReceipt = () => {
                 setSelectedOrderId('');
             }
         } catch (error) {
-            console.error("Error creating order receipt:", error);
             toast.error("Failed to create order receipt");
         } finally {
             setIsLoading(false);
@@ -65,7 +64,7 @@ const OrderReceipt = () => {
                     setBanks(response?.data?.data);
                 }
             } catch (error) {
-                console.error("Error fetching banks:", error);
+                toast.error("Error fetching banks:");
             }
         };
         fetchBanks();
@@ -81,7 +80,7 @@ const OrderReceipt = () => {
                     setOrder(response?.data?.results);
                 }
             } catch (error) {
-                console.error("Error fetching banks:", error);
+                toast.error("Error fetching banks:");
             }
         };
         fetchOrders();

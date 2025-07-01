@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Col, Row, Label, Input, Container, Button, Table, Modal, ModalHeader, ModalBody, ModalFooter } from "reactstrap";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const AddWarehousePage = () => {
   const [warehouseData, setWarehouseData] = useState({
@@ -34,7 +36,6 @@ const AddWarehousePage = () => {
           },
         }
       );
-      console.log("Warehouse added successfully", response);
 
       // Optimistically update the warehouse list in state
       setWarehouseDetails((prev) => [
@@ -48,7 +49,7 @@ const AddWarehousePage = () => {
       // Clear the input fields
       setWarehouseData({ name: "", location: "" });
     } catch (error) {
-      console.error("Error adding warehouse:", error);
+      toast.error("Error adding warehouse");
     }
   };
 
@@ -61,9 +62,8 @@ const AddWarehousePage = () => {
         },
       });
       setWarehouseDetails(res?.data || []);
-      console.log(res?.data, "warehouse response");
     } catch (error) {
-      console.log(error);
+      toast.error(error);
     }
   };
 
@@ -108,7 +108,6 @@ const AddWarehousePage = () => {
           },
         }
       );
-      console.log('Warehouse updated successfully', response);
 
       setWarehouseDetails((prev) =>
         prev.map((warehouse) =>
@@ -119,7 +118,7 @@ const AddWarehousePage = () => {
       setModal(false);
       setSelectedWarehouse(null);
     } catch (error) {
-      console.error('Error updating warehouse:', error);
+      error.error('Error updating warehouse');
     }
   };
 

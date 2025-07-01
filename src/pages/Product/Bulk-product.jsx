@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 const API_BASE_URL = import.meta.env.VITE_APP_KEY;
 const token = localStorage.getItem("token");
 
@@ -23,7 +26,7 @@ const OrdersComponent = () => {
         setStates(response.data.data); // Store states in state variable
       }
     } catch (error) {
-      console.error("Error fetching states:", error);
+      toast.error("Error fetching states:");
     }
   };
 
@@ -36,7 +39,7 @@ const OrdersComponent = () => {
 
       processOrders(orders);
     } catch (error) {
-      console.error("Error fetching Shopify orders:", error);
+      toast.error("Error fetching Shopify orders:");
     }
   };
 
@@ -99,11 +102,10 @@ const OrdersComponent = () => {
       );
 
       if (response.status === 201) {
-        console.log("Customer created:", response.data);
         return response.data.data.id;
       }
     } catch (error) {
-      console.error("Error creating customer:", error);
+      toast.error("Error creating customer:");
     }
     return null;
   };
@@ -129,11 +131,10 @@ const OrdersComponent = () => {
       );
 
       if (response.status === 200) {
-        console.log("Address added:", response.data);
         return response.data.data.id;
       }
     } catch (error) {
-      console.error("Error adding shipping address:", error);
+      toast.error("Error adding shipping address:");
     }
     return null;
   };
@@ -148,7 +149,7 @@ const OrdersComponent = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } catch (error) {
-        console.error("Error adding to cart:", error);
+        toast.error("Error adding to cart:");
       }
     }
   };
@@ -177,10 +178,8 @@ const OrdersComponent = () => {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      console.log("Order created successfully");
     } catch (error) {
-      console.error("Error creating order:", error);
+      toast.error("Error creating order:");
     }
   };
 

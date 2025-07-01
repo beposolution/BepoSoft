@@ -10,6 +10,8 @@ import {
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Link } from "react-router-dom";
 import axios from 'axios';
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const BasicTable = () => {
     const [orders, setOrders] = useState([]);
@@ -41,7 +43,6 @@ const BasicTable = () => {
                 setOrders(data.data);
             } catch (error) {
                 setError("Error fetching orders data. Please try again later.");
-                console.error("Error fetching orders data:", error);
             } finally {
                 setLoading(false);
             }
@@ -57,7 +58,7 @@ const BasicTable = () => {
                 });
                 setPerfomaInvoice(response?.data?.data);
             } catch (error) {
-                console.log("Error fetching proforma data", error);
+                toast.error("Error fetching proforma data");
             }
         };
         fetchPerformaInvoices();

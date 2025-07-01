@@ -10,6 +10,8 @@ import logoLight from "../../assets/images/logo-light.png";
 import { getInvoiceDetail as onGetInvoiceDetail } from "../../store/invoices/actions";
 import { useSelector, useDispatch } from "react-redux";
 import { createSelector } from "reselect";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const InvoiceDetail = (props) => {
     document.title = "Invoice Detail | beposoft";
@@ -84,7 +86,6 @@ const InvoiceDetail = (props) => {
             }
 
             const data = await response.json();
-            console.log("Fetched data:", data);
 
             if (data) {
                 setOrders({
@@ -99,7 +100,7 @@ const InvoiceDetail = (props) => {
                 setBankDetails(data.bank);
             }
         } catch (error) {
-            console.error("Error fetching order data:", error);
+            toast.error("Error fetching order data:");
         }
     };
 

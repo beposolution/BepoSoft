@@ -4,6 +4,8 @@ import {
     Row, Col, Card, CardBody, Form, Label, Input, Button, Container, FormGroup, Modal, ModalBody, ModalFooter
 } from "reactstrap";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const FormRepeater = () => {
     document.title = "Form Repeater | Skote - Vite React Admin & Dashboard Template";
@@ -38,7 +40,7 @@ const FormRepeater = () => {
             });
             setStaffs(response.data.data);
         } catch (error) {
-            console.error("Error fetching staffs:", error);
+            toast.error("Error fetching staffs:");
         }
     };
 
@@ -112,7 +114,6 @@ const FormRepeater = () => {
 
             fetchData();
         } catch (error) {
-            console.error("Error during form submission:", error.response ? error.response.data : error.message);
             setErrorMessage("Error during form submission. Please try again.");
             setSuccessMessage("");
         }

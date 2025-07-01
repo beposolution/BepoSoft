@@ -14,9 +14,8 @@ import {
 } from "reactstrap";
 import { useNavigate } from "react-router-dom";
 import { Dropdown, DropdownButton } from 'react-bootstrap';
-
-
-//Import Breadcrumb
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 
 const BasicTable = () => {
@@ -42,7 +41,7 @@ const BasicTable = () => {
                 );
                 setCustomers(response.data.data);
             } catch (error) {
-                console.error("Error fetching customers:", error);
+                toast.error("Error fetching customers");
             }
         };
 

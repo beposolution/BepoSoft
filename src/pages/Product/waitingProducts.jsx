@@ -2,7 +2,8 @@ import React, { Fragment, useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
-
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const WaitingProducts = () => {
     const warehouseId = localStorage.getItem('warehouseId');
@@ -34,9 +35,8 @@ const WaitingProducts = () => {
                     product.variantIDs.some(variant => variant.approval_status === "Disapproved")
                 );
                 setWaitingProducts(disapprovedProducts);
-                console.log("Waiting products fetched:", disapprovedProducts);
             } catch (error) {
-                console.log("Error fetching waiting products:", error);
+                toast.error("Error fetching waiting products:");
             }
         };
 
@@ -57,13 +57,11 @@ const WaitingProducts = () => {
             alert("Product approved successfully.");
             window.location.reload();
         } catch (error) {
-            console.log("Error approving product:", error);
             alert("Failed to approve product.");
         }
     };
 
     const handleView = (product) => {
-        console.log("Viewing product variants:", product.variantIDs);
         setSelectedVariants(product.variantIDs);
         setShowModal(true);
     };
@@ -89,7 +87,6 @@ const WaitingProducts = () => {
             setShowModal(false);
 
         } catch (error) {
-            console.log("Error approving variant:", error);
             alert("Failed to approve variant.");
         }
     };

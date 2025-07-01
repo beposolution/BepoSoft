@@ -17,6 +17,8 @@ import axios from "axios";
 import * as XLSX from "xlsx"; // For Excel export
 import jsPDF from "jspdf"; // For PDF export
 import html2canvas from "html2canvas"; // For capturing the table as an image
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const BasicTable = () => {
     const { id } = useParams();
@@ -44,7 +46,7 @@ const BasicTable = () => {
                 });
                 if (response.status === 200) setBanks(response.data.data);
             } catch (error) {
-                console.error("Error fetching banks:", error);
+                toast.error("Error fetching banks:");
             }
         }
         fetchBanks();
@@ -84,7 +86,6 @@ const BasicTable = () => {
                 setLoading(false);
 
             } catch (error) {
-                console.error("Error fetching ledger data:", error);
                 setError("Failed to fetch ledger data.");
                 setLoading(false);
             }

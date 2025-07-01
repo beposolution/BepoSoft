@@ -16,6 +16,8 @@ import {
     Label
 } from "reactstrap";
 import { useNavigate } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const BasicTable = () => {
     const [data, setData] = useState([]);
@@ -43,7 +45,7 @@ const BasicTable = () => {
                 });
                 setUserData(response?.data?.data?.family_name);
             } catch (error) {
-                console.error('Error fetching user data:', error);
+                toast.error('Error fetching user data:', error);
             }
         };
         fetchUserData();

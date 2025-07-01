@@ -3,6 +3,8 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Card, CardBody, Col, Input, Label, Row, Button, Form } from "reactstrap";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const UpdateExpense = () => {
     const { id } = useParams(); // Get expense ID from URL
@@ -50,7 +52,7 @@ const UpdateExpense = () => {
                     amount: matchedExpense?.amount || "",
                 });
             } catch (error) {
-                console.error("Error fetching expense data:", error);
+                toast.error("Error fetching expense data:");
             }
         };
         fetchExpense();
@@ -64,7 +66,7 @@ const UpdateExpense = () => {
                 });
                 setUserData(response?.data?.data?.name);
             } catch (error) {
-                console.error('Error fetching user data:', error);
+                toast.error('Error fetching user data:');
             }
         };
         fetchUserData();
@@ -119,7 +121,6 @@ const UpdateExpense = () => {
                 setPurposeOfPayment(Array.isArray(fetchPurposeOfPayment?.data) ? fetchPurposeOfPayment?.data : []);
 
             } catch (error) {
-                console.error("Error fetching data:", error);
                 alert("An error occurred while fetching the data.");
             }
         };
@@ -177,7 +178,7 @@ const UpdateExpense = () => {
             } else {
                 alert("Failed to update expense.");
             }
-            console.error(error);
+            toast.error(error);
         }
     };
 

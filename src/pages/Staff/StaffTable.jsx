@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PropTypes from 'prop-types';
-import axios from 'axios'; // Import axios
-
-// Import components
+import axios from 'axios'; 
 import Breadcrumbs from '../../components/Common/Breadcrumb';
 import TableContainer from '../../components/Common/TableContainer';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate for redirection
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const DatatableTables = () => {
     const [data, setData] = useState([]); // State to store user data
@@ -98,7 +98,7 @@ const DatatableTables = () => {
         if (staff && staff.id) {
             navigate(`/edit/staffs/${staff.id}/`);
         } else {
-            console.error('Staff ID is undefined');
+            toast.error('Staff ID is undefined');
         }
     };
 

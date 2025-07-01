@@ -6,8 +6,8 @@ import {
     Card,
     CardBody,
 } from "reactstrap";
-
-// Import Breadcrumb
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import axios from "axios";
 
@@ -27,7 +27,7 @@ const BasicTable = () => {
                 });
                 setCompanies(response.data.data);
             } catch (error) {
-                console.error("Error fetching companies data:", error);
+                toast.error("Error fetching companies data:");
             } finally {
                 setLoading(false);
             }

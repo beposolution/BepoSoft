@@ -3,6 +3,8 @@ import { Table, Row, Col, Card, CardBody, Input, Button } from "reactstrap";
 import axios from "axios";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import * as XLSX from "xlsx";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const AverageAmountReport = () => {
     const [warehouseData, setWarehouseData] = useState([]);
@@ -31,7 +33,7 @@ const AverageAmountReport = () => {
                 });
                 setWarehouseData(warehouses);
             } catch (error) {
-                console.error("Error fetching warehouse data:", error);
+                toast.error("Error fetching warehouse data:");
             }
         };
 

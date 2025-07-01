@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardBody, Col, Row } from 'reactstrap';
 import ReactApexChart from "react-apexcharts"
 import axios from 'axios';
-//import components
 import { JobWidgetCharts } from './JobCharts';
 // import { cryptoReports } from '../../common/data'
 import { useNavigate } from "react-router-dom";
-
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 
 const ChartSection = () => {
@@ -24,7 +24,6 @@ const ChartSection = () => {
     useEffect(() => {
         const role = localStorage.getItem("active");
         setRole(role);
-        console.log("Role:", role);
     }, []);
 
     useEffect(() => {
@@ -35,7 +34,7 @@ const ChartSection = () => {
                 });
                 setUserData(response?.data?.data?.family);
             } catch (error) {
-                console.error('Error fetching user data:', error);
+                toast.error('Error fetching user data:');
             }
         };
         fetchUserData();
@@ -49,7 +48,7 @@ const ChartSection = () => {
                 });
                 setOrders(response?.data?.results || []);
             } catch (error) {
-                console.error('Error fetching order data:', error);
+                toast.error('Error fetching order data:');
             }
         };
         fetchOrdersData();
@@ -65,7 +64,7 @@ const ChartSection = () => {
                 setChartsData(response?.data?.data);
                 setLoading(false);
             } catch (error) {
-                console.error('Error fetching chart data:', error);
+                toast.error('Error fetching chart data:');
                 setLoading(false);
             }
         };
@@ -80,7 +79,7 @@ const ChartSection = () => {
                 });
                 setProforma(response?.data?.data);
             } catch (error) {
-                console.log("Error fetching proforma data", error);
+                toast.error("Error fetching proforma data");
             }
         };
         fetchProformaData();
@@ -94,7 +93,7 @@ const ChartSection = () => {
                 });
                 setUniqueProforma(response?.data?.data);
             } catch (error) {
-                console.log("Error fetching proforma data", error);
+                toast.error("Error fetching proforma data");
             }
         };
         fetchUniqueProformaData();
@@ -108,7 +107,7 @@ const ChartSection = () => {
                 });
                 setGrvCount(response?.data?.data);
             } catch (error) {
-                console.log("Error fetching GRV count", error);
+                toast.error("Error fetching GRV count");
             }
         };
         fetchGRVCount();

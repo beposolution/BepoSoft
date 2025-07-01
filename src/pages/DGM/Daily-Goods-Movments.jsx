@@ -3,6 +3,8 @@ import axios from "axios";
 import { Table, Row, Col, Card, CardBody, CardTitle, Input, Button } from "reactstrap";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { useNavigate } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const BasicTable = () => {
     const [data, setData] = useState([]);
@@ -24,7 +26,7 @@ const BasicTable = () => {
                 setFilteredData(response.data); // Initially, show all data
             })
             .catch(error => {
-                console.error("There was an error fetching the data!", error);
+                toast.error("There was an error fetching the data!");
             });
     }, []);
 

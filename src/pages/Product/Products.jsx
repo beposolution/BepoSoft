@@ -4,6 +4,9 @@ import { Table, Row, Col, Card, CardBody, CardTitle, UncontrolledDropdown, Dropd
 import { FaSearch } from 'react-icons/fa';
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { useNavigate } from 'react-router-dom';
+import Paginations from "../../components/Common/Pagination";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const truncateText = (text, length) => {
     return text.length > length ? `${text.substring(0, length)}...` : text;
@@ -17,7 +20,9 @@ const BasicTable = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [warehouseID, setWarehouseID] = useState(null)
     const token = localStorage.getItem('token');
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
+    const [currentPage, setCurrentPage] = useState(1);
+    const perPageData = 10;
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -27,7 +32,7 @@ const BasicTable = () => {
                 });
                 setWarehouseID(response?.data?.data?.warehouse_id);
             } catch (error) {
-                console.error('Error fetching user data:', error);
+                toast.error('Error fetching user data:');
             }
         };
         fetchUserData();
@@ -35,7 +40,6 @@ const BasicTable = () => {
 
     useEffect(() => {
         if (!token || !warehouseID) return; // wait until both exist
-        console.log("Fetching products from:", `${import.meta.env.VITE_APP_KEY}warehouse/products/${warehouseID}/`);
 
         const fetchProducts = async () => {
             try {
@@ -76,8 +80,6 @@ const BasicTable = () => {
         setFilteredProducts(filtered);
     };
 
-
-
     const handleEditVie = (productId) => {
         navigate(`/ecommerce-product-edit/${productId}/`);
     };
@@ -88,10 +90,9 @@ const BasicTable = () => {
         } else if (productType === "variant") {
             navigate(`/ecommerce-product-variant/${productId}/${productType}/`);
         } else {
-            console.error("Unknown product type");
+            toast.error("Unknown product type");
         }
     };
-
 
     const handleViewProduct = (productId, productType) => {
         navigate(`/ecommerce-product-detail/${productId}/${productType}/`);
@@ -121,6 +122,10 @@ const BasicTable = () => {
             setError(err.message || "Failed to delete product");
         }
     };
+
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const currentProducts = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
 
     document.title = "Product Tables | Beposoft";
 
@@ -187,7 +192,7 @@ const BasicTable = () => {
                                                 </thead>
                                                 <tbody>
                                                     {filteredProducts.length > 0 ? (
-                                                        filteredProducts.map((product, index) => (
+                                                        currentProducts.map((product, index) => (
                                                             <tr key={product.id} className="text-center">
                                                                 <th scope="row">{index + 1}</th>
                                                                 <td>
@@ -245,6 +250,15 @@ const BasicTable = () => {
                                             </Table>
                                         </div>
                                     )}
+                                    <Paginations
+                                        perPageData={perPageData}
+                                        data={filteredProducts}
+                                        currentPage={currentPage}
+                                        setCurrentPage={setCurrentPage}
+                                        isShowingPageLength={true}
+                                        paginationDiv="col-sm"
+                                        paginationClass="pagination pagination-rounded justify-content-end mt-3"
+                                    />
                                 </CardBody>
                             </Card>
                         </Col>

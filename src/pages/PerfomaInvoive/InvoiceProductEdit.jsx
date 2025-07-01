@@ -16,6 +16,9 @@ import {
     DropdownMenu,
     DropdownItem
 } from "reactstrap";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 
 const AddProduct = ({ isOpen, toggle, onSelectProduct, onCartUpdate }) => {
     const [products, setProducts] = useState([]);
@@ -148,7 +151,7 @@ const AddProduct = ({ isOpen, toggle, onSelectProduct, onCartUpdate }) => {
                 onCartUpdate();
             }
         } catch (error) {
-            console.error("Failed to add product to cart", error);
+            toast.error("Failed to add product to cart");
         }
     };
 

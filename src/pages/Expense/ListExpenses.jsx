@@ -3,6 +3,8 @@ import { Table, Row, Col, Card, CardBody, CardTitle, Input, Button } from "react
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const BasicTable = () => {
     const [expenses, setExpenses] = useState([]);
@@ -26,7 +28,7 @@ const BasicTable = () => {
                 })
                 setPurposeOfPayment(fetchPurposeOfPayment.data);
             } catch (error) {
-                console.error("Error fetching purpose of payment:", error);
+                toast.error("Error fetching purpose of payment:");
             }
             fetchPayments();
         }
@@ -51,7 +53,7 @@ const BasicTable = () => {
                 setExpenses(data.data);
                 setFilteredExpenses(data.data);
             } catch (error) {
-                console.error("Error fetching expense data:", error);
+                toast.error("Error fetching expense data:");
             }
         };
 

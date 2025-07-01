@@ -6,9 +6,9 @@ import * as Yup from 'yup';
 import { useFormik } from "formik";
 import React, { useState, useEffect } from "react";
 import { toast, ToastContainer } from 'react-toastify';
-
-// Import Breadcrumb
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const FormLayouts = () => {
     // Meta title
@@ -103,9 +103,8 @@ const FormLayouts = () => {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setUserData(response?.data?.data?.family_name);
-                console.log("User Data:", response.data.data);
             } catch (error) {
-                console.error('Error fetching user data:', error);
+                toast.error('Error fetching user data:');
             }
         };
         fetchUserData();
@@ -129,7 +128,7 @@ const FormLayouts = () => {
                         setMatchedStaffs([]);
                     }
                 } catch (error) {
-                    console.error("Error fetching or matching staff:", error);
+                    toast.error("Error fetching or matching staff");
                     setMatchedStaffs([]);
                 }
             };
@@ -160,7 +159,7 @@ const FormLayouts = () => {
                             const tokenPayload = JSON.parse(window.atob(token.split('.')[1]));
                             loggedInStaffId = tokenPayload.id;
                         } catch (error) {
-                            console.error("Error parsing token", error);
+                            toast.error("Error parsing token");
                         }
                         const filteredStaffs = ManagedResponse.data.data.filter(
                             (staff) => staff.id === loggedInStaffId

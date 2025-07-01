@@ -42,7 +42,7 @@ const OtherReceipt = () => {
                 });
             }
         } catch (error) {
-            console.error("Error creating receipt:", error);
+            toast.error("Error creating receipt:");
             if (error.response?.data) {
                 toast.error("Failed to create receipt: " + JSON.stringify(error.response.data));
             } else {
@@ -63,7 +63,7 @@ const OtherReceipt = () => {
                     setBanks(response?.data?.data);
                 }
             } catch (error) {
-                console.error('Error fetching bank data:', error);
+                toast.error('Error fetching bank data:');
             }
         };
         fetchbanks();

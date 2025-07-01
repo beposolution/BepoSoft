@@ -3,7 +3,8 @@ import { Card, Col, Container, Row, CardBody, CardTitle, Label, Form, Input, For
 import * as Yup from 'yup';
 import { useFormik } from "formik";
 import axios from "axios";
-// Import Breadcrumb
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 
 const FormLayouts = () => {
@@ -41,17 +42,17 @@ const FormLayouts = () => {
         }),
 
         onSubmit: (values) => {
-            axios.post(`${import.meta.env.VITE_APP_KEY}company/data/`,values,{
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        }
-                    }
-                )
+            axios.post(`${import.meta.env.VITE_APP_KEY}company/data/`, values, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                }
+            }
+            )
                 .then((response) => {
-                    console.log("Response from API:", response);
+                    toast.success("Company data submitted successfully!");
                 })
                 .catch((error) => {
-                    console.error("There was an error!", error);
+                    toast.error("There was an error!");
                 });
         },
     });

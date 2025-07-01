@@ -38,7 +38,6 @@ const FormLayouts = () => {
     }),
 
     onSubmit: (values) => {
-      // console.log("value", values.password);
     },
   });
 
@@ -63,7 +62,6 @@ const FormLayouts = () => {
     }),
 
     onSubmit: (values) => {
-      // console.log("value", values.password);
     },
   });
 
@@ -83,7 +81,6 @@ const FormLayouts = () => {
     }),
 
     onSubmit: (values) => {
-      // console.log("value", values.password);
     },
   });
 
@@ -101,7 +98,6 @@ const FormLayouts = () => {
     }),
 
     onSubmit: (values) => {
-      // console.log("value", values.password);
     },
   });
 
@@ -121,7 +117,6 @@ const FormLayouts = () => {
     }),
 
     onSubmit: (values) => {
-      // console.log("value", values.password);
     },
   });
 

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 
 const LiabilityManagement = () => {
   const [liabilities, setLiabilities] = useState([]);
@@ -17,7 +20,7 @@ const LiabilityManagement = () => {
         });
         setLiabilities(response.data.liabilities || []);
       } catch (err) {
-        console.error("Error fetching liabilities:", err);
+        toast.error("Failed to load liabilities");
         setError("Failed to load liabilities");
       } finally {
         setLoading(false);
@@ -32,8 +35,8 @@ const LiabilityManagement = () => {
 
   return (
     <div className="container mt-4">
-      <h2 style={{paddingTop:"50px"}} className="text-center mb-4">Liability Management</h2>
-      
+      <h2 style={{ paddingTop: "50px" }} className="text-center mb-4">Liability Management</h2>
+
       {loading ? (
         <p className="text-center">Loading liabilities...</p>
       ) : error ? (
@@ -65,6 +68,7 @@ const LiabilityManagement = () => {
           <h5>Total Pending Amount: <strong>₹{totalPendingAmount.toFixed(2)}</strong></h5>
         </div>
       )}
+      <ToastContainer />
     </div>
   );
 };

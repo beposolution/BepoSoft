@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 
 const AssetManagement = () => {
   const [categories, setCategories] = useState([]);
@@ -21,7 +24,7 @@ const AssetManagement = () => {
         );
         setCategories(response.data.assets || []);
       } catch (err) {
-        console.error("Error fetching assets:", err);
+        toast.error("Failed to load assets");
         setError("Failed to load assets");
       } finally {
         setLoading(false);
@@ -132,6 +135,7 @@ const AssetManagement = () => {
             <h5>Total Quantity: <strong>{totalOverallQuantity}</strong></h5>
             <h5>Total Price: <strong>₹{totalOverallPrice.toFixed(2)}</strong></h5>
           </div>
+          <ToastContainer />
         </>
       )}
     </div>

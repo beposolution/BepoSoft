@@ -54,7 +54,6 @@ const FormLayouts = () => {
                     setMessage("Bank account added successfully!");
                     setMessageType("success");
                 } else {
-                    console.error("Error: " + response.data.message);
                     setMessage(response.data.message || "Something went wrong. Please try again.");
                     setMessageType("error");
                 }
@@ -69,7 +68,6 @@ const FormLayouts = () => {
                     // Redirect to login page
                     navigate("/login");
                 } else {
-                    console.error("Error posting data:", error);
                     setMessage("Something went wrong. Please try again.");
                     setMessageType("error");
                 }

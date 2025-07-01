@@ -144,7 +144,6 @@ const CommentItem = ({
   onAddReply,
 }) => {
   const user = comment["user"];
-  console.log("user review", comment);
 
   const [replyText, setReplyText] = useState("");
 
@@ -263,12 +262,10 @@ const Reviews = ({
   const onLikeUnlikeReply = (commentId, replyId) => {
     dispatch(onLikeReply(commentId, productId, replyId));
   };
-  console.log("comments", comments);
   return (
     <div className="mt-5">
       <h5 className="mb-4">Reviews :</h5>
       {(comments || [])?.map((comment, k) => {
-        console.log("==============", comment);
         return (
           <CommentItem
             comment={comment}

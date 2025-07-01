@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import axios from 'axios';
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Card, CardBody, Col, Row, Table, CardTitle, Spinner, Input, Button } from "reactstrap";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const OtherReceipt = () => {
     const [receipts, setReceipts] = useState({})
@@ -18,7 +20,7 @@ const OtherReceipt = () => {
                 });
                 setReceipts(response?.data);
             } catch (error) {
-                console.error('Error fetching order data:', error);
+                toast.error('Error fetching order data:');
             } finally {
                 setLoading(false);
             }
@@ -36,7 +38,7 @@ const OtherReceipt = () => {
                     setBanks(response?.data?.data);
                 }
             } catch (error) {
-                console.error('Error fetching bank data:', error);
+                toast.error('Error fetching bank data:');
             }
         };
         fetchbanks();
@@ -52,7 +54,7 @@ const OtherReceipt = () => {
                     setCustomers(response?.data?.data);
                 }
             } catch (error) {
-                console.error('Error fetching bank data:', error);
+                toast.error('Error fetching bank data:');
             }
         };
         fetchCustomers();

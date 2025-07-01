@@ -216,7 +216,6 @@ const FormLayouts = () => {
 
     const handleMultiChange = (selectedOptions) => {
         const selectedValues = selectedOptions ? selectedOptions.map(option => option.value) : [];
-        console.log("Selected allocated_states IDs:", selectedValues);
 
         formik.setFieldValue("allocated_states", selectedValues); // Update Formik state
         setSelectedStates(selectedOptions); // Ensure the select component updates
@@ -234,11 +233,9 @@ const FormLayouts = () => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-
-            console.log("Response:", res?.data);
             setWarehouseDetails(res.data || []);
         } catch (error) {
-            console.error("Error fetching warehouse data:", error);
+            toast.error("Error fetching warehouse data:");
         }
     };
 
@@ -893,7 +890,6 @@ const FormLayouts = () => {
 
                                         </Row>
                                         <div className="mb-3">
-                                            {console.log("Formik values:", formik.values)}
                                             <Button type="submit" color="primary" disabled={formik.isSubmitting}>
                                                 {formik.isSubmitting ? "Submitting..." : "Submit"}
                                             </Button>

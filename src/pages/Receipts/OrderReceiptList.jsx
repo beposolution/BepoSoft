@@ -28,7 +28,7 @@ const OrderReceiptList = () => {
                     setCustomer(response?.data?.data);
                 }
             } catch (error) {
-                console.error("Error fetching banks:", error);
+                toast.error("Error fetching banks:");
             }
         };
         fetchCustomers();
@@ -44,7 +44,7 @@ const OrderReceiptList = () => {
                     setOrder(response?.data?.results);
                 }
             } catch (error) {
-                console.error("Error fetching banks:", error);
+                toast.error("Error fetching banks:");
             }
         };
         fetchOrders();
@@ -60,7 +60,7 @@ const OrderReceiptList = () => {
                     setBanks(response.data.data);
                 }
             } catch (error) {
-                console.error("Error fetching banks:", error);
+                toast.error("Error fetching banks:");
             }
         };
         fetchBanks();
@@ -73,7 +73,7 @@ const OrderReceiptList = () => {
             });
             setReceipts(response?.data);
         } catch (error) {
-            console.error('Error fetching order data:', error);
+            toast.error('Error fetching order data:');
         } finally {
             setLoading(false);
         }
@@ -104,7 +104,7 @@ const OrderReceiptList = () => {
             setSelectedOrderId(data.order);
             setCustomerId(data.customer)
         } catch (error) {
-            console.error("Error fetching receipt details:", error);
+            toast.error("Error fetching receipt details:");
         } finally {
             setModalLoading(false);
         }
@@ -138,7 +138,6 @@ const OrderReceiptList = () => {
                 fetchReceiptData();
             }
         } catch (error) {
-            console.error("Update failed:", error);
             toast.error("Failed to update receipt.");
         }
     };

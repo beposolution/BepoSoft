@@ -15,8 +15,8 @@ import * as Yup from 'yup';
 import axios from "axios";
 import { useFormik } from "formik";
 import { useParams } from "react-router-dom";
-
-//Import Breadcrumb
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 
 const FormLayouts = () => {
@@ -78,7 +78,6 @@ const FormLayouts = () => {
         
 
         onSubmit: async (values) => {
-            console.log("Calling API with values:", values);
             try {
                 const response = await fetch(
                     `${import.meta.env.VITE_APP_KEY}product/update/${id}/`,
@@ -104,7 +103,6 @@ const FormLayouts = () => {
                     alert("Failed to update product.");
                 }
             } catch (error) {
-                console.error("Error updating product:", error);
                 alert("An error occurred while updating the product.");
             }
         }         
@@ -152,7 +150,7 @@ const FormLayouts = () => {
                     check: fetchedProductData.check || "",
                 });
             } catch (error) {
-                console.error("Error fetching product data:", error);
+                toast.error("Error fetching product data:");
             }
         };
 
@@ -184,21 +182,13 @@ const FormLayouts = () => {
                     );
                 }
             } catch (error) {
-                console.error("Error fetching family data:", error);
+                toast.error("Error fetching family data:");
             }
         };
 
 
         fetchFamilyData();
     }, [id, token, productData]); // Add productData as a dependency
-
-
-
-    
-
-
-
-
 
     return (
         <React.Fragment>

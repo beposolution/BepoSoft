@@ -68,8 +68,6 @@ const FormLayouts = () => {
     const handleImageChange = (e) => {
         const files = Array.from(e.target.files);
 
-        console.log("product imagesss",files);
-
         const imagesWithPreview = files.map((file) => ({
             file,
             preview: URL.createObjectURL(file),
@@ -83,8 +81,6 @@ const FormLayouts = () => {
         setSelectedImages((prevImages) => prevImages.filter((_, i) => i !== index));
     };
 
-    console.log("selectedImages",selectedImages);
-
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -95,8 +91,6 @@ const FormLayouts = () => {
         selectedImages.forEach((image) => {
             formData.append("images", image.file); 
         });
-
-        console.log("formData",formData);   
 
         try {
             const response = await fetch(`${import.meta.env.VITE_APP_KEY}image/add/${id}/`, {
@@ -125,9 +119,6 @@ const FormLayouts = () => {
     if (error) {
         return <p>Error: {error}</p>;
     }
-
-                                                  
-    console.log("images..:",images);
 
     return (
         <React.Fragment>

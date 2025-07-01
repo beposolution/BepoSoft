@@ -40,13 +40,12 @@ const Emi = () => {
                     },
                 });
 
-                console.log("Form submitted successfully:", response.data);
                 toast.success("EMI details submitted successfully");
 
                 resetForm();
                 setEmiSchedule([]); // Clear the EMI schedule after submission
             } catch (error) {
-                console.error("Error submitting form:", error);
+                toast.error("Error submitting form:");
             }
         },
     });

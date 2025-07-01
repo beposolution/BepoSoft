@@ -31,7 +31,6 @@ const Warehouseorders = () => {
                 setOrders(response.data?.results);
             } catch (error) {
                 setError("Error fetching orders data. Please try again later.");
-                console.error("Error fetching orders data:", error);
             } finally {
                 setLoading(false);
             }
@@ -40,8 +39,6 @@ const Warehouseorders = () => {
         fetchOrders();
     }, [token]);
 
-
-    console.log("orderlist page in warehouse...:", orders);
 
     // Status color based on status type
     const getStatusColor = (status) => {

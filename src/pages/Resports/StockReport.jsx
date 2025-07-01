@@ -9,10 +9,10 @@ import {
     Input,
     Button,
 } from "reactstrap";
-import * as XLSX from "xlsx"; // Import xlsx library
-
-// Import Breadcrumb
+import * as XLSX from "xlsx"; 
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const BasicTable = () => {
     document.title = "Filtered Tables | Skote - Vite React Admin & Dashboard Template";
@@ -28,7 +28,6 @@ const BasicTable = () => {
     const fetchData = async () => {
         try {
             const url = `${import.meta.env.VITE_APP_KEY}product/stock/report/`;
-            console.log("Fetching data from:", url);
 
             const response = await fetch(url, {
                 method: "GET",
@@ -49,10 +48,10 @@ const BasicTable = () => {
                 setTableData(data.data);
                 setFilteredData(data.data); // Initialize filtered data
             } else {
-                console.error("Unexpected response structure:", data);
+                toast.error("Unexpected response structure");
             }
         } catch (error) {
-            console.error("Error fetching data:", error);
+            toast.error("Error fetching data");
         } finally {
             setLoading(false); // Ensure loading state is updated
         }

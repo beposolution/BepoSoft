@@ -3,6 +3,8 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Card, CardBody, Col, Row, Table } from "reactstrap";
 import axios from 'axios';
 import { Link } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const TodaysBillDetails = () => {
     const [orders, setOrders] = useState([]);
@@ -24,9 +26,8 @@ const TodaysBillDetails = () => {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setUserData(response?.data?.data?.family);
-                console.log("User Data:", response?.data?.data);
             } catch (error) {
-                console.error('Error fetching user data:', error);
+                toast.error('Error fetching user data:');
             }
         };
         fetchUserData();
@@ -39,9 +40,8 @@ const TodaysBillDetails = () => {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setOrders(response?.data?.results || []);
-                console.log("Orders Data:", response?.data?.results);
             } catch (error) {
-                console.error('Error fetching order data:', error);
+                toast.error('Error fetching order data:');
             }
         };
         fetchOrdersData();

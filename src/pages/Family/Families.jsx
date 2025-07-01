@@ -4,9 +4,7 @@ import axios from 'axios';
 import {
     Modal, ModalHeader, ModalBody, ModalFooter, Button, Input, Label, Form
 } from "reactstrap";
-import { FaEdit, FaTrash } from 'react-icons/fa'; // Importing icons for edit and delete
-
-// Import components
+import { FaEdit, FaTrash } from 'react-icons/fa'; 
 import Breadcrumbs from '../../components/Common/Breadcrumb';
 import TableContainer from '../../components/Common/TableContainer';
 
@@ -97,9 +95,7 @@ const FamilyTable = () => {
             await axios.delete(`${import.meta.env.VITE_APP_KEY}family/update/${id}/`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            console.log("Delete successful");
         } catch (error) {
-            console.error("Delete failed:", error);
             setError(error.message || "Failed to delete customer");
             setData(originalData); // Revert the UI if deletion fails
         }
@@ -125,7 +121,6 @@ const FamilyTable = () => {
                 await fetchData();
                 toggleModal();
             } catch (error) {
-                console.error("Add state failed:", error);
                 setError(error.message || "Failed to add state");
             }
         } else {
@@ -139,7 +134,6 @@ const FamilyTable = () => {
                 await fetchData();
                 toggleModal();
             } catch (error) {
-                console.error("Update failed:", error);
                 setError(error.message || "Failed to update customer");
             }
         }

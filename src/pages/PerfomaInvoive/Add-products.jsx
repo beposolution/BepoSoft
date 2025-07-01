@@ -10,6 +10,8 @@ import {
     Spinner,
     Collapse,
 } from "reactstrap";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const AddProduct = ({ isOpen, toggle, ProductsFetch }) => {
     const [products, setProducts] = useState([]); // Initialize products state with an empty array
@@ -48,7 +50,6 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch }) => {
             }
 
         } catch (error) {
-            console.error("Error fetching products:", error); // Log error to console
             setError(error.message || "An error occurred while fetching products.");
         } finally {
             setLoading(false);
@@ -99,7 +100,7 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch }) => {
                 alert("Product added to cart successfully!");
             }
         } catch (error) {
-            console.error("Failed to add product to cart", error);
+            toast.error("Failed to add product to cart", error);
         }
     };
 

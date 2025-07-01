@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Table, Row, Col, Card, CardBody, CardTitle, Button, Form, FormGroup, Input, Label } from "reactstrap";
 import { FaEdit, FaTrashAlt } from "react-icons/fa"; // Import icons for edit and delete
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const BasicTable = () => {
     const [attributes, setAttributes] = useState([]); // Ensure attributes is an array
@@ -70,11 +72,6 @@ const BasicTable = () => {
 
 
     const handleAddOrUpdateAttribute = async (e) => {
-        console.log("Sending data to update:", {
-            id: editingAttribute ? editingAttribute.id : null,
-            value: newAttribute,
-            attribute: newAttributeValue
-        });
 
         e.preventDefault();
         const apiUrl = editingAttribute
@@ -98,7 +95,7 @@ const BasicTable = () => {
 
             if (!response.ok) {
                 const errorDetails = await response.text();
-                console.error("Server responded with error:", errorDetails);
+                toast.error("Server responded with error:");
                 throw new Error(`Failed to ${editingAttribute ? "update" : "add"} attribute`);
             }
 

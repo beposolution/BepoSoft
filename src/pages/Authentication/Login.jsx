@@ -55,10 +55,8 @@ const Login = (props) => {
         });
 
         const data = response.data;
-        console.log('Login API response:', response.data);
 
         if (data.status === 'success') {
-          console.log('Login successful:', data);
           localStorage.setItem('token', data.token);
           localStorage.setItem('active', data.active);
           localStorage.setItem('name', data.name);
@@ -73,7 +71,6 @@ const Login = (props) => {
           props.router.navigate('/dashboard');
         } else {
           toast.error(data.message || 'Login failed. Please try again.');
-          console.error('Login failed:', data.message);
         }
       } catch (error) {
         const errorMsg =
@@ -81,7 +78,6 @@ const Login = (props) => {
           error.message ||
           "Something went wrong. Please try again.";
         toast.error(errorMsg);
-        console.error('Error during login:', error);
       }
     },
   });
@@ -102,8 +98,6 @@ const Login = (props) => {
   const socialResponse = (type) => {
     signIn(type);
   };
-
-  console.log(`${import.meta.env.VITE_APP_KEY}login/`);
 
   return (
     <React.Fragment>

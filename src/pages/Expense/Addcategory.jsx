@@ -4,9 +4,7 @@ import axios from 'axios';
 import {
     Modal, ModalHeader, ModalBody, ModalFooter, Button, Input, Label, Form
 } from "reactstrap";
-import { FaEdit, FaTrash } from 'react-icons/fa'; // Importing icons for edit and delete
-
-// Import components
+import { FaEdit, FaTrash } from 'react-icons/fa';
 import Breadcrumbs from '../../components/Common/Breadcrumb';
 import TableContainer from '../../components/Common/TableContainer';
 
@@ -97,9 +95,7 @@ const CategoryTable = () => {
     //         await axios.delete(`${import.meta.env.VITE_APP_IMAGE}/update/delete/assetcategory/${id}`, {
     //             headers: { 'Authorization': `Bearer ${token}` }
     //         });
-    //         console.log("Delete successful");
     //     } catch (error) {
-    //         console.error("Delete failed:", error);
     //         setError(error.message || "Failed to delete customer");
     //         setData(originalData); // Revert the UI if deletion fails
     //     }
@@ -126,7 +122,6 @@ const CategoryTable = () => {
                     window.location.reload();
                 });
             } catch (error) {
-                console.error("Add state failed:", error);
                 setError(error.message || "Failed to add state");
             }
         } else {
@@ -138,7 +133,6 @@ const CategoryTable = () => {
                 setData(data.map(customer => customer.id === selectedCustomer.id ? response.data : customer));
                 toggleModal();
             } catch (error) {
-                console.error("Update failed:", error);
                 setError(error.message || "Failed to update customer");
             }
         }
@@ -161,7 +155,6 @@ const CategoryTable = () => {
                 }
             } catch (error) {
                 setError(error.message || "Failed to fetch data");
-                console.log("error", error);
             } finally {
                 setLoading(false);
             }

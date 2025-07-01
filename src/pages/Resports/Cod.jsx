@@ -13,6 +13,8 @@ import {
 } from "reactstrap";
 import * as XLSX from "xlsx";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const useDebounce = (value, delay) => {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -56,7 +58,7 @@ const BasicTable = () => {
                 setAllStaffs(response.data.data);
             })
             .catch((error) => {
-                console.error("There was an error fetching staff data!", error);
+                toast.error("There was an error fetching staff data!");
             });
 
         // Fetch all family data
@@ -69,7 +71,7 @@ const BasicTable = () => {
                 setAllFamilies(response.data.data);
             })
             .catch((error) => {
-                console.error("There was an error fetching family data!", error);
+                toast.error("There was an error fetching family data!");
             });
 
 
@@ -89,7 +91,7 @@ const BasicTable = () => {
                     setLoading(false);
                 })
                 .catch((error) => {
-                    console.error("There was an error fetching the data!", error);
+                    toast.error("There was an error fetching the data!");
                     setLoading(false);
                 });
         };

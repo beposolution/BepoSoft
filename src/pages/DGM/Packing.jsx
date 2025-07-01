@@ -21,9 +21,8 @@ import {
     DropdownItem,
     Form,
 } from "reactstrap";
-
-
-
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 
 const FormLayouts = () => {
@@ -72,7 +71,7 @@ const FormLayouts = () => {
                 setOrderData(response.data.order);
                 setSelectedStatus(response.data.order?.status || ""); 
             } catch (error) {   
-                console.error("Error fetching order data:", error);
+                toast.error("Error fetching order data:");
             } finally {
                 setLoading(false);
             }
@@ -93,7 +92,6 @@ const FormLayouts = () => {
             })
             alert("Status updated successfully");
         } catch (error) {
-            console.error("Error updating status:", error);
             alert("Failed to update status");
         }
     };
@@ -106,12 +104,6 @@ const FormLayouts = () => {
     const billingAddress = orderData?.customer;
     const shippingAddress = orderData?.billing_address; 
     const warehouseData = orderData?.warehouse;
-
-
-    console.log("warehoissssssss", warehouseData);
-
-
-    console.log("order data,", orderData?.items);
 
     return (
         <React.Fragment>

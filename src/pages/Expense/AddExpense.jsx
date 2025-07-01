@@ -5,6 +5,8 @@ import { useFormik } from "formik";
 import axios from "axios";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { init } from "echarts";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const FormLayouts = () => {
     document.title = "Form Layouts | Skote - Vite React Admin & Dashboard Template";
@@ -29,7 +31,7 @@ const FormLayouts = () => {
                 });
                 setUserData(response?.data?.data?.name);
             } catch (error) {
-                console.error('Error fetching user data:', error);
+                toast.error('Error fetching user data:');
             }
         };
         fetchUserData();
@@ -88,7 +90,6 @@ const FormLayouts = () => {
 
 
             } catch (error) {
-                console.error("Error fetching data:", error);
                 alert("An error occurred while fetching the data.");
             }
         };
@@ -197,7 +198,6 @@ const FormLayouts = () => {
                 resetForm();
 
             } catch (error) {
-                console.error("Error submitting form:", error);
                 setErrorMessage("An error occurred while submitting the form.");
                 setSuccessMessage('');
             }

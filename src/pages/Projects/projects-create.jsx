@@ -81,7 +81,6 @@ const ProjectsCreate = () => {
       projectImage: Yup.string().required("Please Select Image"),
     }),
     onSubmit: (values) => {
-      // console.log(values);
     }
   });
   

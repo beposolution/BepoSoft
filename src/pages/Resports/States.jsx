@@ -10,6 +10,8 @@ import {
 } from "reactstrap";
 import * as XLSX from "xlsx";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const BasicTable = () => {
     const [salesData, setSalesData] = useState([]);
@@ -24,11 +26,10 @@ const BasicTable = () => {
                 },
             })
             .then((response) => {
-                console.log("state/wise/report response:", response.data);
                 setSalesData(response.data.data);
             })
             .catch((error) => {
-                console.error("There was an error fetching the data:", error);
+                toast.error("There was an error fetching the data");
             });
     }, []);
 

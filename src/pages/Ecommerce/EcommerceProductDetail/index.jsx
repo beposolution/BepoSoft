@@ -43,7 +43,6 @@ const EcommerceProductDetail = props => {
   const { product, productComments } = useSelector(EcommerceProductsProperties);
 
   const [comments, setComments] = useState([]);
-  console.log("productComments", productComments);
   useEffect(() => {
     if (productComments) {
       setComments(productComments);

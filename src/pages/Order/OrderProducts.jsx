@@ -11,6 +11,8 @@ import Paymentrecipent from "./PaymentRecipt"
 import { useNavigate } from "react-router-dom";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { isDisabled } from "@testing-library/user-event/dist/cjs/utils/index.js";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const FormLayouts = () => {
 
@@ -140,7 +142,6 @@ const FormLayouts = () => {
 
                 setSuccessMessage("Form submitted successfully!");
             } catch (error) {
-                console.error("Error submitting form data:", error);
                 setErrorMessage("Failed to submit the form. Please try again.");
                 setSuccessMessage("");
             }
@@ -177,7 +178,7 @@ const FormLayouts = () => {
                 const data = await response.json();
                 setBanks(data.data);
             } catch (error) {
-                console.error("Error fetching banks:", error);
+                toast.error("Error fetching banks:");
             }
         };
 
@@ -194,7 +195,7 @@ const FormLayouts = () => {
                 });
                 setFamilyData(response?.data?.data)
             } catch (error) {
-                console.error("Error fetching family data.", error)
+                toast.error("Error fetching family data.")
             }
         };
         fetchFamilyData();
@@ -210,7 +211,7 @@ const FormLayouts = () => {
                 });
                 setCompanyData(response?.data?.data)
             } catch (error) {
-                console.error("Error fetching family data.", error)
+                toast.error("Error fetching family data.")
             }
         };
         fetchCompanyData();
@@ -231,7 +232,7 @@ const FormLayouts = () => {
                 );
                 setLedgerData(response?.data);
             } catch (error) {
-                console.error("Error fetching ledger data:", error);
+                toast.error("Error fetching ledger data:");
             }
         };
 
@@ -351,7 +352,7 @@ const FormLayouts = () => {
 
             }
         } catch (error) {
-            console.error("Error fetching order data:", error);
+            toast.error("Error fetching order data:");
         }
     };
 
@@ -423,7 +424,6 @@ const FormLayouts = () => {
             // Optionally show success message or notification
             alert('Item removed successfully');
         } catch (error) {
-            console.error('Error removing item:', error);
             alert('Failed to remove item');
         }
     };
@@ -502,7 +502,6 @@ const FormLayouts = () => {
                 setErrorMessage("Failed to submit the form. Please check your input and try again.");
             }
         } catch (error) {
-            console.error("Error submitting form data:", error);
             setErrorMessage("An unexpected error occurred. Please try again later.");
             setSuccessMessage("");
         }

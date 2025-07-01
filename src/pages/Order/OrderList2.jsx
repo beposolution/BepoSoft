@@ -57,7 +57,6 @@ const OrderList2 = () => {
             }
         } catch (error) {
             setError("Error fetching orders data. Please try again later.");
-            console.error("Error fetching orders data:", error);
         } finally {
             setLoading(false);
         }

@@ -24,7 +24,7 @@ const OtherReceiptList = () => {
                     setBanks(response.data.data);
                 }
             } catch (error) {
-                console.error("Error fetching banks:", error);
+                toast.error("Error fetching banks:");
             }
         };
         fetchBanks();
@@ -37,7 +37,7 @@ const OtherReceiptList = () => {
             });
             setReceipts(response?.data);
         } catch (error) {
-            console.error('Error fetching order data:', error);
+            toast.error('Error fetching order data:');
         } finally {
             setLoading(false);
         }
@@ -66,7 +66,7 @@ const OtherReceiptList = () => {
                 received_at: data.received_at
             });
         } catch (error) {
-            console.error("Error fetching receipt details:", error);
+            toast.error("Error fetching receipt details:");
         } finally {
             setModalLoading(false);
         }
@@ -98,7 +98,6 @@ const OtherReceiptList = () => {
                 fetchReceiptData();
             }
         } catch (error) {
-            console.error("Update failed:", error);
             toast.error("Failed to update receipt.");
         }
     };

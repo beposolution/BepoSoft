@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Card, Col, Container, Row, CardBody, CardTitle, Label, Form, Input, FormFeedback, Alert } from "reactstrap";
 import * as Yup from 'yup';
 import { useFormik } from "formik";
-import axios from 'axios'; // Ensure axios is imported
-
-// Import Breadcrumb
+import axios from 'axios'; 
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const FormLayouts = () => {
     document.title = "Beposoft | Add Products";
@@ -93,7 +93,7 @@ const FormLayouts = () => {
                 setErrorMessage('');
                 formik.resetForm();
             } catch (error) {
-                console.error('Error submitting form:', error);
+                toast.error('Error submitting form:');
                 setErrorMessage("Error submitting form. Please try again.");
                 setSuccessMessage('');
             } finally {
@@ -112,9 +112,8 @@ const FormLayouts = () => {
                     },
                 });
                 setFamily(response.data.data);
-                console.log(response.data.data)
             } catch (error) {
-                console.error('Error fetching product families:', error);
+                toast.error('Error fetching product families:');
             }
         };
 
@@ -130,9 +129,8 @@ const FormLayouts = () => {
                     },
                 });
                 setWarehouseDetails(response.data);
-                console.log(response.data)
             } catch (error) {
-                console.error('Error fetching warehosue:', error);
+                toast.error('Error fetching warehosue:');
             }
         };
 
@@ -479,7 +477,7 @@ const FormLayouts = () => {
                                                                     setImagePreview(reader.result); // Set preview image
                                                                 };
                                                                 reader.onerror = (error) => {
-                                                                    console.error("Error reading file:", error);
+                                                                    toast.error("Error reading file:");
                                                                 };
                                                                 reader.readAsDataURL(file);
                                                             }

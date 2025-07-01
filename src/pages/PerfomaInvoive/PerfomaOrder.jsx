@@ -5,7 +5,8 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import axios from "axios";
 import { useFormik } from "formik";
 import * as Yup from 'yup';
-import { toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const PerfomaOrder = () => {
     const { invoice } = useParams();
@@ -51,7 +52,6 @@ const PerfomaOrder = () => {
                     resetForm();
                 }
             } catch (error) {
-                console.error("Order creation failed", error);
                 toast.error("Failed to create order");
             }
         },
@@ -88,7 +88,7 @@ const PerfomaOrder = () => {
 
             fetchOrderData();
         } catch (error) {
-            console.error("Error adding to cart:", error);
+            toast.error("Error adding to cart:");
             alert("Error adding product to cart.");
         }
     };
@@ -123,7 +123,7 @@ const PerfomaOrder = () => {
             alert("All items added to cart successfully!");
             fetchOrderData(); // Refresh data
         } catch (error) {
-            console.error("Error adding invoice items to cart:", error);
+            toast.error("Error adding invoice items to cart:");
             alert("Some items could not be added to cart.");
         }
     };
@@ -149,7 +149,7 @@ const PerfomaOrder = () => {
             setOrders(data);
 
         } catch (error) {
-            console.error("Error fetching order data:", error);
+            toast.error("Error fetching order data:");
         }
     };
 
@@ -171,7 +171,7 @@ const PerfomaOrder = () => {
             setBanks(data.data);
 
         } catch (error) {
-            console.error("Error fetching banks:", error);
+            toast.error("Error fetching banks:");
         }
     };
 

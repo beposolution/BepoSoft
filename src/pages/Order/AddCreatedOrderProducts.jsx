@@ -16,6 +16,8 @@ import {
     DropdownMenu,
     DropdownItem
 } from "reactstrap";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const AddProduct = ({ isOpen, toggle, onSelectProduct, onCartUpdate }) => {
     const [products, setProducts] = useState([]);
@@ -117,24 +119,17 @@ const AddProduct = ({ isOpen, toggle, onSelectProduct, onCartUpdate }) => {
         };
 
         // Log the product ID and quantity
-        console.log("Product ID:", product.id);
-        console.log("Quantity:", quantity[product.id] || 1);
 
         // If the product is a variant, add the variant ID
         if (variant) {
             cartItem.variant = variant.id;
              // Include the variant ID
 
-            // Log the variant ID
-            console.log("Variant ID:", variant.id);
 
             // If the product has a size variant selected, include the size ID
             const selectedSizeForVariant = selectedSize[variant.id];
             if (selectedSizeForVariant) {
                 cartItem.size = selectedSizeForVariant.id; // Include the size ID if selected
-
-                // Log the selected size ID
-                console.log("Selected Size ID:", selectedSizeForVariant.id);
             }
         }
 
@@ -155,7 +150,7 @@ const AddProduct = ({ isOpen, toggle, onSelectProduct, onCartUpdate }) => {
                 onCartUpdate();
             }
         } catch (error) {
-            console.error("Failed to add product to cart", error);
+            toast.error("Failed to add product to cart");
         }
     };
 

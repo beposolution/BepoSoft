@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 
 const TotalComponyAssets = () => {
   const [categories, setCategories] = useState([]);
@@ -20,8 +23,8 @@ const TotalComponyAssets = () => {
         });
         setLiabilities(response.data.liabilities || []);
       } catch (err) {
-        console.error("Error fetching liabilities:", err);
-        setError("Failed to load liabilities");
+        toast.error("Failed to load company assets");
+        setError("Failed to load company assets");
       } finally {
         setLoading(false);
       }
@@ -46,7 +49,7 @@ const TotalComponyAssets = () => {
         );
         setCategories(response.data.assets || []);
       } catch (err) {
-        console.error("Error fetching assets:", err);
+        toast.error("Error fetching assets:");
         setError("Failed to load assets");
       } finally {
         setLoading(false);
@@ -73,7 +76,7 @@ const TotalComponyAssets = () => {
   });
 
   return (
-    <div style={{ marginTop: "80px", paddingBottom:"5rem" }} className="container">
+    <div style={{ marginTop: "80px", paddingBottom: "5rem" }} className="container">
       <div
         className="card mb-4"
         style={{
@@ -93,7 +96,7 @@ const TotalComponyAssets = () => {
               <>
                 <h5>Total Liability: <strong>₹{totalPendingAmount.toFixed(2)}</strong></h5>
                 <h5>
-                  Capital: <strong style={{color: "green"}}>₹{(totalOverallPrice - totalPendingAmount).toFixed(2)}</strong>
+                  Capital: <strong style={{ color: "green" }}>₹{(totalOverallPrice - totalPendingAmount).toFixed(2)}</strong>
                 </h5>
               </>
             )}
@@ -207,6 +210,7 @@ const TotalComponyAssets = () => {
           </div>
         )}
       </div>
+      <ToastContainer />
     </div>
   );
 };

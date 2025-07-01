@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Breadcrumbs from "../../components/Common/Breadcrumb";
-import { ToastContainer, toast } from "react-toastify";
 import { Card, Col, Container, Row, CardBody, CardTitle, Table, Spinner, Input, Modal, ModalHeader, ModalBody, Label, ModalFooter, Button } from "reactstrap";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const AdvanceReceiptList = () => {
     const [receipts, setReceipts] = useState([])
@@ -26,7 +27,7 @@ const AdvanceReceiptList = () => {
                     setCustomer(response?.data?.data);
                 }
             } catch (error) {
-                console.error("Error fetching banks:", error);
+                toast.error("Error fetching banks:");
             }
         };
         fetchCustomers();
@@ -42,7 +43,7 @@ const AdvanceReceiptList = () => {
                     setBanks(response.data.data);
                 }
             } catch (error) {
-                console.error("Error fetching banks:", error);
+                toast.error("Error fetching banks:");
             }
         };
         fetchBanks();
@@ -55,7 +56,7 @@ const AdvanceReceiptList = () => {
             });
             setReceipts(response?.data);
         } catch (error) {
-            console.error('Error fetching order data:', error);
+            toast.error('Error fetching order data:');
         } finally {
             setLoading(false);
         }
@@ -85,7 +86,7 @@ const AdvanceReceiptList = () => {
             });
             setCustomerId(data.customer)
         } catch (error) {
-            console.error("Error fetching receipt details:", error);
+            toast.error("Error fetching receipt details:");
         } finally {
             setModalLoading(false);
         }
@@ -118,7 +119,6 @@ const AdvanceReceiptList = () => {
                 fetchReceiptData();
             }
         } catch (error) {
-            console.error("Update failed:", error);
             toast.error("Failed to update receipt.");
         }
     };

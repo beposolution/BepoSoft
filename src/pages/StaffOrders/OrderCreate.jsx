@@ -9,6 +9,8 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { Link } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const FormLayouts = () => {
     // Meta title
@@ -88,7 +90,7 @@ const FormLayouts = () => {
                     toast.error("Failed to create order");
                 }
             } catch (error) {
-                console.error("Error saving data:", error);
+                toast.error("Error saving data");
                 setError((prevError) => ({
                     ...prevError,
                     submitError: "Failed to save data",
@@ -125,7 +127,7 @@ const FormLayouts = () => {
                 });
                 setUserData(response?.data?.data?.family_name);
             } catch (error) {
-                console.error('Error fetching user data:', error);
+                toast.error('Error fetching user data');
             }
         };
         fetchUserData();

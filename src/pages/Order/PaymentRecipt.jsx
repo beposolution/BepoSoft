@@ -3,6 +3,8 @@ import { Row, Col, Card, CardBody, CardTitle, Table, Modal, ModalHeader, ModalBo
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import Receipt from "./Reciept";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 
 const ReceiptFormPage = ({ closingBalance }) => {
@@ -72,7 +74,6 @@ const ReceiptFormPage = ({ closingBalance }) => {
                 setBoxDetails("");
             };
         } catch (error) {
-            console.error("Error submitting form:", error);
             alert("Failed to update warehouse details.");
         }
     };
@@ -94,7 +95,7 @@ const ReceiptFormPage = ({ closingBalance }) => {
             setTotalAmount(order.total_amount || 0);
             setPacking(order.warehouse || {});
         } catch (error) {
-            console.error("Error fetching data:", error);
+            toast.error("Error fetching data:");
         }
     };
 
@@ -120,13 +121,10 @@ const ReceiptFormPage = ({ closingBalance }) => {
             }
         } catch (error) {
             if (error.response) {
-                console.error("Server responded with an error:", error.response);
                 alert(`Failed to submit form: ${error.response.data.message || "Please try again later."}`);
             } else if (error.request) {
-                console.error("Network error:", error.request);
                 alert("Network error: Please check your internet connection and try again.");
             } else {
-                console.error("Error:", error.message);
                 alert("Failed to submit form. Please try again.");
             }
         } finally {

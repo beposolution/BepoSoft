@@ -10,11 +10,8 @@ import {
     CardTitle,
 } from "reactstrap";
 import { useNavigate } from "react-router-dom";
-
-
-
-
-
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const EmiDetails = () => {
 
@@ -34,12 +31,10 @@ const EmiDetails = () => {
                     Authorization: `Bearer ${token}`
                 }
             })
-
-            console.log(emiResponse.data.data);
             setDetails(emiResponse.data.data);
         }
         catch(error){
-            console.error("Error fetching data:", error);   
+            toast.error("Error fetching data:");   
         }
 
     }
@@ -50,7 +45,6 @@ const EmiDetails = () => {
     }, []);
 
     const ViewDetails = (id) => {
-        console.log("id is", id);
         navigate(`/emi-fulldetails/${id}/`);
     }
     

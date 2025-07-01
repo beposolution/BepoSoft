@@ -5,6 +5,8 @@ import * as yup from "yup";
 import { useFormik } from "formik";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { useParams } from 'react-router-dom';
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const EcommerenceAddProduct = () => {
     document.title = "Add Product | Skote - Vite React Admin & Dashboard Template";
@@ -17,9 +19,6 @@ const EcommerenceAddProduct = () => {
     const [messageType, setMessageType] = useState(null);
 
     const token = localStorage.getItem('token');
-
-
-
 
     const formik = useFormik({
         initialValues: {
@@ -94,7 +93,6 @@ const EcommerenceAddProduct = () => {
             } catch (error) {
                 setMessage(error.message || 'Error updating product');
                 setMessageType('error');
-                console.error('Error updating product:', error);
             }
         },
     });
@@ -122,10 +120,10 @@ const EcommerenceAddProduct = () => {
                 if (response.data && response.data.data) {
                     setFamilyOptions(response.data.data); // Assuming response.data.data contains family options
                 } else {
-                    console.error('Unexpected family data format:', response.data);
+                    toast.error('Unexpected family data format:');
                 }
             } catch (error) {
-                console.error('Error fetching family data:', error.response || error.message || error);
+                toast.error('Error fetching family data:');
             }
         };
 
@@ -137,8 +135,6 @@ const EcommerenceAddProduct = () => {
                     },
                 });
                 const productData = await response.json();
-
-                console.log("product idd", productData);
 
                 if (response.ok && productData) {
                     formik.setValues({
@@ -161,10 +157,10 @@ const EcommerenceAddProduct = () => {
                         setImagePreview(productData.data.image);
                     }
                 } else {
-                    console.error('Error fetching product data:', productData.message);
+                    toast.error('Error fetching product data:');
                 }
             } catch (error) {
-                console.error('Error fetching product data:', error);
+                toast.error('Error fetching product data:');
             }
         };
 
@@ -591,7 +587,7 @@ const EcommerenceAddProduct = () => {
                                                                     setImagePreview(reader.result); // Set preview image
                                                                 };
                                                                 reader.onerror = (error) => {
-                                                                    console.error("Error reading file:", error);
+                                                                    toast.error("Error reading file:");
                                                                 };
                                                                 reader.readAsDataURL(file);
                                                             }

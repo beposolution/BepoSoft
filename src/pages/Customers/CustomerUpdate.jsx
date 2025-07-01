@@ -5,6 +5,9 @@ import * as Yup from 'yup';
 import { useFormik } from "formik";
 import axios from 'axios';
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 
 const FormLayouts = () => {
     const { id } = useParams();
@@ -23,7 +26,7 @@ const FormLayouts = () => {
                 });
                 setUserData(response?.data?.data?.family_name);
             } catch (error) {
-                console.error('Error fetching user data:', error);
+                toast.error('Error fetching user data:');
             }
         };
         fetchUserData();
@@ -39,7 +42,7 @@ const FormLayouts = () => {
                 });
                 setManagers(response.data.data);
             } catch (error) {
-                console.error("Error fetching managers:", error);
+                toast.error("Error fetching managers:");
             }
         };
 
@@ -52,7 +55,7 @@ const FormLayouts = () => {
                 });
                 setStates(response.data.data);
             } catch (error) {
-                console.error("Error fetching states:", error);
+                toast.error("Error fetching states:");
             }
         };
 
@@ -73,7 +76,7 @@ const FormLayouts = () => {
                     });
                     setCustomerData(response.data.data);
                 } catch (error) {
-                    console.error("Error fetching customer data:", error);
+                    toast.error("Error fetching customer data:");
                 }
             }
         };
@@ -124,7 +127,6 @@ const FormLayouts = () => {
                     ...values,
                     manager: values.manager, // Send the manager's ID
                 };
-                console.log("Submitting payload:", payload);
                 const response = await axios.put(
                     `${import.meta.env.VITE_APP_KEY}customer/update/${id}/`,
                     payload,
@@ -137,7 +139,6 @@ const FormLayouts = () => {
                 );
                 alert("Customer data saved successfully!");
             } catch (error) {
-                console.error("Error saving customer data:", error);
                 alert("Failed to save customer data.");
             }
         },

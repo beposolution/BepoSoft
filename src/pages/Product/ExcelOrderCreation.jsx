@@ -59,10 +59,8 @@ const ExcelOrderCreation = () => {
         },
       });
 
-      console.log("Upload success:", response.data);
       alert("File uploaded successfully!");
     } catch (error) {
-      console.error("Upload error:", error);
       alert("File upload failed!");
     }
   };

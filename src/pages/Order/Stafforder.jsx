@@ -8,6 +8,8 @@ import axios from 'axios';
 import AddProduct from "./AddCreatedOrderProducts";
 import Information from "./information"
 import Paymentrecipent from "./PaymentRecipt"
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 
 // Import Breadcrumb
@@ -124,11 +126,9 @@ const FormLayouts = () => {
                 }
 
                 const data = await response.json();
-                console.log("Response:", data);
 
                 setSuccessMessage("Form submitted successfully!");
             } catch (error) {
-                console.error("Error submitting form data:", error);
                 setErrorMessage("Failed to submit the form. Please try again.");
                 setSuccessMessage("");
             }
@@ -165,7 +165,7 @@ const FormLayouts = () => {
                 setBanks(data.data);
 
             } catch (error) {
-                console.error("Error fetching banks:", error);
+                toast.error("Error fetching banks:");
             }
         };
 
@@ -191,7 +191,6 @@ const FormLayouts = () => {
             }
 
             const data = await response.json();
-            console.log("Fetched data:", data);
 
             if (data.order) {
                 formik.setValues({
@@ -250,7 +249,7 @@ const FormLayouts = () => {
 
             }
         } catch (error) {
-            console.error("Error fetching order data:", error);
+            toast.error("Error fetching order data:");
         }
     };
 
@@ -335,7 +334,6 @@ const FormLayouts = () => {
             // Optionally show success message or notification
             alert('Item removed successfully');
         } catch (error) {
-            console.error('Error removing item:', error);
             alert('Failed to remove item');
         }
     };
@@ -412,15 +410,12 @@ const FormLayouts = () => {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log("Response:", data);
                 setSuccessMessage("Form submitted successfully!");
             } else {
                 const errorData = await response.json();
-                console.error("Error response data:", errorData);
                 setErrorMessage("Failed to submit the form. Please check your input and try again.");
             }
         } catch (error) {
-            console.error("Error submitting form data:", error);
             setErrorMessage("An unexpected error occurred. Please try again later.");
             setSuccessMessage("");
         }
@@ -434,9 +429,6 @@ const FormLayouts = () => {
         window.open(pdfUrl, "_blank");
 
     }
-    console.log("order-itemss", orderItems)
-
-
     return (
         <React.Fragment>
             <div className="page-content">

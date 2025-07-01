@@ -10,6 +10,8 @@ import Information from "./information"
 import Paymentrecipent from "./PaymentRecipt"
 import ReactDOM from 'react-dom';
 import Modal from 'react-modal';
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 
 // Import Breadcrumb
@@ -41,10 +43,6 @@ const OrderwarehouseConform = () => {
     const currentDate = new Date().toISOString().split("T")[0];
     const [banks, setBanks] = useState([]);
     const [selectedBank, setSelectedBank] = useState('');
-
-    // const {id} = useParams();
-
-    console.log(id);
 
     // Toggle modal visibility
 
@@ -166,7 +164,7 @@ const OrderwarehouseConform = () => {
                 setBanks(data.data);
 
             } catch (error) {
-                console.error("Error fetching banks:", error);
+                toast.error("Error fetching banks:");
             }
         };
 
@@ -249,7 +247,7 @@ const OrderwarehouseConform = () => {
 
             }
         } catch (error) {
-            console.error("Error fetching order data:", error);
+            toast.error("Error fetching order data:");
         }
     };
 
@@ -327,9 +325,8 @@ const OrderwarehouseConform = () => {
                             },
                         }
                     );
-                    console.log("Order status updated:", response.data);
                 } catch (error) {
-                    console.error("Error updating order status:", error);
+                    toast.error("Error updating order status:");
                 }
             };
     
@@ -359,7 +356,6 @@ const OrderwarehouseConform = () => {
             // Optionally show success message or notification
             alert('Item removed successfully');
         } catch (error) {
-            console.error('Error removing item:', error);
             alert('Failed to remove item');
         }
     };
@@ -436,15 +432,12 @@ const OrderwarehouseConform = () => {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log("Response:", data);
                 setSuccessMessage("Form submitted successfully!");
             } else {
                 const errorData = await response.json();
-                console.error("Error response data:", errorData);
                 setErrorMessage("Failed to submit the form. Please check your input and try again.");
             }
         } catch (error) {
-            console.error("Error submitting form data:", error);
             setErrorMessage("An unexpected error occurred. Please try again later.");
             setSuccessMessage("");
         }
@@ -458,8 +451,6 @@ const OrderwarehouseConform = () => {
         window.open(pdfUrl, "_blank");
  
     }
-    console.log(orderItems)
-
 
     return (
         <React.Fragment>

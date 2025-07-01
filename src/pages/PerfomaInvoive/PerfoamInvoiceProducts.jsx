@@ -6,10 +6,8 @@ import * as Yup from 'yup';
 import { useFormik } from "formik";
 import axios from 'axios';
 import AddProduct from "./InvoiceProductEdit";
-// import Receipt from "./Reciept";
-// import Information from "./information"
-
-// Import Breadcrumb
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 
 const FormLayouts = () => {
@@ -113,10 +111,8 @@ const FormLayouts = () => {
                 }
 
                 const data = await response.json();
-                console.log("Response:", data);
                 setSuccessMessage("Form submitted successfully!");
             } catch (error) {
-                console.error("Error submitting form data:", error);
                 setErrorMessage("Failed to submit the form. Please try again.")
                 setSuccessMessage("");
             }
@@ -144,7 +140,7 @@ const FormLayouts = () => {
                 setBanks(data.data);
 
             } catch (error) {
-                console.error("Error fetching banks:", error);
+                toast.error("Error fetching banks:");
             }
         };
 
@@ -170,7 +166,6 @@ const FormLayouts = () => {
             }
 
             const data = await response.json();
-            console.log("Fetched data:", data);
 
             if (data) {
                 formik.setValues({
@@ -227,7 +222,7 @@ const FormLayouts = () => {
                 calculateTaxAmount(data.perfoma_items || []);
             }
         } catch (error) {
-            console.error("Error fetching order data:", error);
+            toast.error("Error fetching order data:");
         }
     };
 
@@ -308,7 +303,6 @@ const FormLayouts = () => {
             // Optionally show success message or notification
             alert('Item removed successfully');
         } catch (error) {
-            console.error('Error removing item:', error);
             alert('Failed to remove item');
         }
     };
@@ -389,15 +383,12 @@ const FormLayouts = () => {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log("Response:", data);
                 setSuccessMessage("Form submitted successfully!");
             } else {
                 const errorData = await response.json();
-                console.error("Error response data:", errorData);
                 setErrorMessage("Failed to submit the form. Please check your input and try again.");
             }
         } catch (error) {
-            console.error("Error submitting form data:", error);
             setErrorMessage("An unexpected error occurred. Please try again later.");
             setSuccessMessage("");
         }
@@ -426,7 +417,6 @@ const FormLayouts = () => {
             remarks: Yup.string().max(300, "Remarks can't exceed 300 characters"),
         }),
         onSubmit: async (values) => {
-            console.log("Form Values Submitted:", values);
             setLoading(true); // Start loading
             try {
                 const response = await axios.post(
@@ -439,12 +429,9 @@ const FormLayouts = () => {
                         },
                     }
                 );
-
-                console.log("Receipt saved:", response.data);
                 alert("Receipt saved successfully!");
                 toggleReciptModal(); // Close modal after saving
             } catch (error) {
-                console.error("Error saving receipt:", error);
                 alert("Failed to save receipt. Please try again.");
             } finally {
                 setLoading(false); // End loading
@@ -473,11 +460,9 @@ const FormLayouts = () => {
                 setSuccessMessage("Form submitted successfully!");
             } else {
                 const errorData = await response.json();
-                console.error("Error response data:", errorData);
                 setErrorMessage("Failed to submit the form. Please check your input and try again.");
             }
         } catch (error) {
-            console.error("Error submitting form data:", error);
             setErrorMessage("An unexpected error occurred. Please try again later.");
             setSuccessMessage("");
         }

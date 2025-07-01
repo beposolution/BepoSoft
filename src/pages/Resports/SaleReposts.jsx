@@ -12,6 +12,8 @@ import {
     Button,
 } from "reactstrap";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const BasicTable = () => {
     const [salesData, setSalesData] = useState([]);
@@ -35,7 +37,7 @@ const BasicTable = () => {
                 setSalesData(response.data.sales_report);
                 setFilteredSalesData(response.data.sales_report);
             })
-            .catch((error) => console.error("Error fetching sales data:", error));
+            .catch((error) => toast.error("Error fetching sales data:"));
 
         // Fetch states
         axios
@@ -43,7 +45,7 @@ const BasicTable = () => {
                 headers: { Authorization: `Bearer ${token}` },
             })
             .then((response) => setStates(response.data.data))
-            .catch((error) => console.error("Error fetching states:", error));
+            .catch((error) => toast.error("Error fetching states:"));
 
         // Fetch families
         axios
@@ -51,7 +53,7 @@ const BasicTable = () => {
                 headers: { Authorization: `Bearer ${token}` },
             })
             .then((response) => setFamilies(response.data.data))
-            .catch((error) => console.error("Error fetching families:", error));
+            .catch((error) => toast.error("Error fetching families"));
     }, []);
 
     const handleFilter = () => {

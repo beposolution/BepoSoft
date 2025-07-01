@@ -7,9 +7,9 @@ import { useFormik } from "formik";
 import React, { useState, useEffect } from "react";
 import Select from 'react-select';
 import { useParams } from 'react-router-dom';
-
-// Import Breadcrumb
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const FormLayouts = () => {
     // Meta title
@@ -138,7 +138,6 @@ const FormLayouts = () => {
 
                 // Log FormData entries
                 for (let pair of formData.entries()) {
-                    console.log(`${pair[0]}: ${pair[1]}`);
                 }
 
                 const response = await axios.put(
@@ -205,7 +204,6 @@ const FormLayouts = () => {
                     if (staffResponse.status === 200) {
                         const staffData = staffResponse.data.data;
 
-                        // console.log("staff", staffData)
                         // Populate the form with the fetched staff data
                         formik.setValues({
                             name: staffData.name || "",
@@ -234,7 +232,6 @@ const FormLayouts = () => {
                             signatur_up: "", // Assuming the signature is an uploaded file, keep this empty
                             check: "", // Assuming this is for any checks, adjust accordingly
                         });
-                        console.log("Password after set values:", formik.values.password);
                     } else {
                         setError(`Failed to fetch staff data. Status: ${staffResponse.status}`);
                     }
@@ -283,7 +280,6 @@ const FormLayouts = () => {
             setError("Token not found");
             setLoading(false);
         }
-        console.log("Password updated:", formik.values.password);
     }, [token, id]); // Adding id in dependency array
 
 
@@ -952,7 +948,6 @@ const FormLayouts = () => {
                                             }
                                         </div>
                                         <div className="mb-3">
-                                            {console.log("Formik values:", formik.values)}
                                             <Button type="submit" color="primary" disabled={formik.isSubmitting}>
                                                 {formik.isSubmitting ? "Submitting..." : "Submit"}
                                             </Button>

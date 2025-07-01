@@ -85,7 +85,6 @@ const AddExpanseModal = () => {
         if (isAddMode) {
             // Handle Add State
             try {
-                console.log("Add payload:", newState);
                 const response = await axios.post(`${import.meta.env.VITE_APP_IMAGE}/apis/add/purpose/`, newState, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -95,7 +94,6 @@ const AddExpanseModal = () => {
                 }]);
                 toggleModal();
             } catch (error) {
-                console.error("Add state failed:", error);
                 setError(error.message || "Failed to add state");
             }
         } else {
@@ -108,7 +106,6 @@ const AddExpanseModal = () => {
                 setData(data.map(customer => customer.id === selectedCustomer.id ? response.data : customer));
                 toggleModal();
             } catch (error) {
-                console.error("Update failed:", error);
                 setError(error.message || "Failed to update customer");
             }
         }
@@ -131,7 +128,6 @@ const AddExpanseModal = () => {
                 }
             } catch (error) {
                 setError(error.message || "Failed to fetch data");
-                console.log("error", error);
             } finally {
                 setLoading(false);
             }

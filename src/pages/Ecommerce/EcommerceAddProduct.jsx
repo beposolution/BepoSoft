@@ -6,6 +6,8 @@ import { useFormik } from "formik";
 import Select from "react-select";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import axios from "axios"; // Ensure axios is imported
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const EcommerenceAddProduct = () => {
   document.title = "Add Product | Skote - Vite React Admin & Dashboard Template";
@@ -26,7 +28,7 @@ const EcommerenceAddProduct = () => {
         });
         setProductFamilies(response.data.data); // Adjust based on actual response structure
       } catch (error) {
-        console.error('Error fetching product families:', error);
+        toast.error('Error fetching product families:');
       }
     };
 
@@ -99,47 +101,25 @@ const EcommerenceAddProduct = () => {
     onSubmit: async (values) => {
       const formData = new FormData();
     
-      // Log initial formik values
-      console.log("Formik Values:", values);
-    
       // Append form values to FormData
       formData.append("name", values.name);
-      console.log("After appending name:", [...formData.entries()]);
-    
       formData.append("hsn_code", values.hsn_code);
-      console.log("After appending HSN Code:", [...formData.entries()]);
-    
-      // Handle family array
       values.family.forEach(familyId => {
         formData.append("family[]", familyId);
       });
-      console.log("After appending family:", [...formData.entries()]);
-    
       formData.append("purchase_rate", values.purchase_rate);
-      console.log("After appending purchase rate:", [...formData.entries()]);
-    
       formData.append("type", values.type);
-      console.log("After appending type:", [...formData.entries()]);
-    
       formData.append("tax", values.tax);
-      console.log("After appending tax:", [...formData.entries()]);
-    
       formData.append("unit", values.unit);
-      console.log("After appending unit:", [...formData.entries()]);
-    
       formData.append("selling_price", values.selling_price);
-      console.log("After appending selling price:", [...formData.entries()]);
-    
       // Conditionally append stock for 'single' type
       if (values.type === 'single') {
         formData.append("stock", values.stock);
-        console.log("After appending stock:", [...formData.entries()]);
       }
     
       // Append image if exists
       if (values.image) {
         formData.append("image", values.image);
-        console.log("After appending image:", [...formData.entries()]);
       }
     
       try {
@@ -157,7 +137,6 @@ const EcommerenceAddProduct = () => {
         setErrorMessage("");
         formik.resetForm();
       } catch (error) {
-        console.error("Error adding product:", error);
         setErrorMessage("Failed to add product. Please try again.");
         setSuccessMessage("");
       }

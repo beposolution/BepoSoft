@@ -84,15 +84,17 @@ const FormLayouts = () => {
     }, [id, token]);
 
     useEffect(() => {
-        if (customerData && managers.length > 0) {
+        if (customerData && managers.length > 0 && states.length > 0) {
             const managerObj = managers.find(m => m.name === customerData.manager);
+            const stateObj = states.find(s => s.name === customerData.state)
             formik.setValues({
                 ...customerData,
                 manager: managerObj ? managerObj.id.toString() : "",
+                state: stateObj ? stateObj.id.toString() : "",
             });
         }
         // eslint-disable-next-line
-    }, [customerData, managers]);
+    }, [customerData, managers, states]);
 
     const formik = useFormik({
         initialValues: {
@@ -193,7 +195,7 @@ const FormLayouts = () => {
                                                     >
                                                         {/* <option value="">Select Manager</option> */}
                                                         {filteredManagers.map((option) => (
-                                                            <option key={option.id} value={option?.name?.toString()}>
+                                                            <option key={option.id} value={option?.id?.toString()}>
                                                                 {option.name}
                                                             </option>
                                                         ))}

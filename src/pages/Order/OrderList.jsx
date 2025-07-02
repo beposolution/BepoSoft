@@ -63,7 +63,7 @@ const BasicTable = () => {
             const response = await axios.get(url, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            
+
             if (role === "Warehouse Admin" || role === "warehouse") {
                 const filterOrders = response.data.results.filter(
                     order => order.status === "To Print"
@@ -83,6 +83,22 @@ const BasicTable = () => {
         }
     };
 
+    const filteredOrders = orders.filter(order => {
+        const invoice = order.invoice?.toString().toLowerCase() || "";
+        const customerName = order.customer?.name?.toLowerCase() || "";
+
+        const matchesSearch = searchTerm === "" ||
+            invoice.includes(searchTerm.toLowerCase()) ||
+            customerName.includes(searchTerm.toLowerCase());
+
+        const matchesStatus = selectedState === "" ||
+            order.status?.toLowerCase() === selectedState.toLowerCase();
+
+        const matchesStaff = selectedStaff === "" ||
+            order.manage_staff === selectedStaff;
+
+        return matchesSearch && matchesStatus && matchesStaff;
+    });
 
     const exportToExcel = () => {
         const formattedData = orders.map((order, index) => ({
@@ -122,9 +138,17 @@ const BasicTable = () => {
                                 <Label>Filter by Status</Label>
                                 <Input type="select" value={selectedState} onChange={(e) => setSelectedState(e.target.value)}>
                                     <option value="">All Status</option>
-                                    {['Pending', 'Approved', 'Shipped', 'Processing', 'Completed', 'Cancelled', 'toprint',].map(status => (
-                                        <option key={status} value={status}>{status}</option>
-                                    ))}
+                                    {['Invoice Approved',
+                                        'Waiting For Confirmation',
+                                        'To Print',
+                                        'Packing under progress',
+                                        'Packed',
+                                        'Ready to ship',
+                                        'Shipped',
+                                        'Invoice Rejected',
+                                        'Invoice created',].map(status => (
+                                            <option key={status} value={status}>{status}</option>
+                                        ))}
                                 </Input>
                             </FormGroup>
                         </Col>
@@ -163,7 +187,7 @@ const BasicTable = () => {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {orders?.map((order, index) => (
+                                                    {filteredOrders?.map((order, index) => (
                                                         <tr key={order?.id}>
                                                             <th scope="row">{index + 1}</th>
                                                             <td><Link to={`/order/${order?.id}/items/`}>{order?.invoice}</Link></td>

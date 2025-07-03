@@ -139,7 +139,8 @@ const BasicTable = () => {
                                         <th>BOX</th>
                                         <th>Parcel Service</th>
                                         <th>Tracking ID</th>
-                                        <th>Image</th>
+                                        <th>Packed Image</th>
+                                        <th>Parcel Image</th>
                                         <th>Packed by</th>
                                         <th>Status</th>
                                         <th>Verified by</th>
@@ -168,6 +169,13 @@ const BasicTable = () => {
                                             <td>
                                                 {item.image ? (
                                                     <img src={`${import.meta.env.VITE_APP_IMAGE}${item.image}`} alt="Warehouse Item" style={{ width: "50px", height: "50px", objectFit: "cover", borderRadius: "5px" }} />
+                                                ) : (
+                                                    "No Image"
+                                                )}
+                                            </td>
+                                            <td>
+                                                {item.image_before ? (
+                                                    <img src={`${import.meta.env.VITE_APP_IMAGE}${item.image_before}`} alt="Warehouse Item" style={{ width: "50px", height: "50px", objectFit: "cover", borderRadius: "5px" }} />
                                                 ) : (
                                                     "No Image"
                                                 )}

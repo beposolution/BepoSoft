@@ -19,6 +19,7 @@ const FormRepeater = () => {
             breadth: "",
             height: "",
             image: null,
+            image_before: null,
             packed_by: "",
             parcel_service: "",
             shipped_date: "",
@@ -81,6 +82,9 @@ const FormRepeater = () => {
                 formData.append("shipped_date", row.shipped_date);
                 if (row.image) {
                     formData.append("image", row.image);
+                }
+                if (row.image_before) {
+                    formData.append("image_before", row.image_before);
                 }
                 return formData;
             });
@@ -205,7 +209,18 @@ const FormRepeater = () => {
 
                                                     <Col sm={12} md={6} lg={3} className="mb-3">
                                                         <FormGroup>
-                                                            <Label htmlFor="image">Image</Label>
+                                                            <Label htmlFor="image_before">Image Before Packing</Label>
+                                                            <Input
+                                                                type="file"
+                                                                id="image_before"
+                                                                onChange={(e) => handleFileChange(formRow.id, e.target.files[0])}
+                                                                className="form-control"
+                                                            />
+                                                        </FormGroup>
+                                                    </Col>
+                                                    <Col sm={12} md={6} lg={3} className="mb-3">
+                                                        <FormGroup>
+                                                            <Label htmlFor="image">Image After Packing</Label>
                                                             <Input
                                                                 type="file"
                                                                 id="image"

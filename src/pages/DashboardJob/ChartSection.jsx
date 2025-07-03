@@ -64,7 +64,7 @@ const ChartSection = () => {
             }
         })
             .then((response) => {
-                setExpense(response.data.data); 
+                setExpense(response.data.data);
                 // setFilteredData(response.data.data);
                 // setLoading(false);
             })
@@ -176,9 +176,6 @@ const ChartSection = () => {
         order => order?.family_id === userData && order?.order_date === today
     )?.length;
 
-    const total = orders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
-    const totalexpense = expense.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
-
     return (
         <React.Fragment>
 
@@ -216,7 +213,7 @@ const ChartSection = () => {
                     </>
                 )}
 
-                {(role === "ADMIN" || role === "BDM" || role === 'Marketing' || role === 'CEO') && (
+                {(role === "ADMIN" || role === "BDM" || role === 'Marketing') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}
                             onClick={() => navigate("/dashboard/todaysbill-details")}>
@@ -225,7 +222,7 @@ const ChartSection = () => {
                                     <div className="d-flex">
                                         <div className="flex-grow-1">
                                             <p className="text-muted fw-medium">Todays Bill</p>
-                                            <h4 className="mb-0"> {role === "ADMIN" ? (todayBills?.order || 0) : userFamilyTodayOrderCount}</h4>
+                                            <h4 className="mb-0"> {role === "ADMIN" || role === "CEO" ? (todayBills?.order || 0) : userFamilyTodayOrderCount}</h4>
                                         </div>
                                         <div className="flex-shrink-0 align-self-center">
                                             {/* Optional Chart */}
@@ -452,50 +449,6 @@ const ChartSection = () => {
                                         </div>
                                         <div className="flex-shrink-0 align-self-center">
                                             {/* Optional Chart */}
-                                        </div>
-                                    </div>
-                                </CardBody>
-                                <div className="card-body border-top py-3">
-                                </div>
-                            </Card>
-                        </div>
-                    </Col>
-                )}
-                {(role === "CEO") && (
-                    <Col lg={3}>
-                        <div style={{ cursor: "pointer" }}
-                            onClick={() => navigate("/all/staff/customers/")}>
-                            <Card className="mini-stats-wid">
-                                <CardBody>
-                                    <div className="d-flex">
-                                        <div className="flex-grow-1">
-                                            <p className="text-muted fw-medium">Total Expense</p>
-                                            <h4>₹{totalexpense}</h4>
-                                        </div>
-                                        <div className="flex-shrink-0 align-self-center">
-                                            {/* Optional Chart */}
-                                        </div>
-                                    </div>
-                                </CardBody>
-                                <div className="card-body border-top py-3">
-                                </div>
-                            </Card>
-                        </div>
-                    </Col>
-                )}
-                {(role === "CEO") && (
-                    <Col lg={3}>
-                        <div style={{ cursor: "pointer" }}
-                            onClick={() => navigate("/all/staff/customers/")}>
-                            <Card className="mini-stats-wid">
-                                <CardBody>
-                                    <div className="d-flex">
-                                        <div className="flex-grow-1">
-                                            <p className="text-muted fw-medium">Total Volume</p>
-                                            <h4>₹{total}</h4>
-                                        </div>
-                                        <div className="flex-shrink-0 align-self-center">
-
                                         </div>
                                     </div>
                                 </CardBody>

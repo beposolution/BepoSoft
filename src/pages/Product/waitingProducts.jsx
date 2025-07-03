@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Paginations from "../../components/Common/Pagination"
 
 const WaitingProducts = () => {
     const warehouseId = localStorage.getItem('warehouseId');
@@ -13,6 +14,8 @@ const WaitingProducts = () => {
     const [showModal, setShowModal] = useState(false);
     const [selectedVariants, setSelectedVariants] = useState([]);
     const navigate = useNavigate();
+    const [currentPage, setCurrentPage] = useState(1);
+    const [perPage] = useState(10);
 
 
     useEffect(() => {
@@ -41,7 +44,7 @@ const WaitingProducts = () => {
         };
 
         fetchWaitingProducts();
-    }, [token, warehouseId, refresh]); // 👈 Depend on `refresh` state
+    }, [token, warehouseId, refresh]);
 
     const handleApprove = async (productId) => {
         try {
@@ -77,69 +80,64 @@ const WaitingProducts = () => {
                     }
                 }
             );
-            alert("Variant approved successfully.");
+
+            toast.success("Variant approved successfully.");
+
+            // Update local state for the approved variant without closing modal
             setSelectedVariants((prevVariants) =>
                 prevVariants.map((v) =>
                     v.id === variantId ? { ...v, approval_status: "Approved" } : v
                 )
             );
+
+            // Optional: Trigger parent refresh to refetch all products
             setRefresh(prev => !prev);
-            setShowModal(false);
 
         } catch (error) {
-            alert("Failed to approve variant.");
+            toast.error("Failed to approve variant.");
         }
     };
 
-
+    const indexOfLastProduct = currentPage * perPage;
+    const indexOfFirstProduct = indexOfLastProduct - perPage;
+    const currentProducts = waitingProducts.slice(indexOfFirstProduct, indexOfLastProduct);
 
     return (
         <Fragment>
             <div className="page-content">
                 <div className="container-fluid">
-                    
+
                     <Breadcrumbs title="Tables" breadcrumbItem="Products Waiting for Approval" />
 
                     {warehouseId ? (
                         waitingProducts.length > 0 ? (
-                            <table className="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>IMAGE</th>
-                                        <th>PRODUCT NAME</th>
-                                        <th>STOCK</th>
-                                        <th>ACTION</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {waitingProducts.map((product, index) => (
-                                        <tr key={product.id}>
-                                            <td>{index + 1}</td>
-                                            <td>
-                                                <img
-                                                    src={`${import.meta.env.VITE_APP_IMAGE}${product.image}`}
-                                                    alt={product.name || "Product image"}
-                                                    style={{ width: "50px", height: "50px" }}
-                                                />
-                                            </td>
-                                            <td>{product.name}</td>
-                                            <td>{product.stock}</td>
-                                            <td>
-                                                {(!product.variantIDs || product.variantIDs.length === 0) ? (
-                                                    product.approval_status !== "Approved" ? (
-                                                        <button
-                                                            className="btn btn-success"
-                                                            onClick={() => handleApprove(product.id)}
-                                                        >
-                                                            Approve
-                                                        </button>
-                                                    ) : (
-                                                        <span className="badge bg-success">Approved</span>
-                                                    )
-                                                ) : (
-                                                    <>
-                                                        {product.approval_status !== "Approved" ? (
+                            <div>
+                                <table className="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>IMAGE</th>
+                                            <th>PRODUCT NAME</th>
+                                            <th>STOCK</th>
+                                            <th>ACTION</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {currentProducts.map((product, index) => (
+                                            <tr key={product.id}>
+                                                <td>{indexOfFirstProduct + index + 1}</td>
+                                                <td>
+                                                    <img
+                                                        src={`${import.meta.env.VITE_APP_IMAGE}${product.image}`}
+                                                        alt={product.name || "Product image"}
+                                                        style={{ width: "50px", height: "50px" }}
+                                                    />
+                                                </td>
+                                                <td>{product.name}</td>
+                                                <td>{product.stock}</td>
+                                                <td>
+                                                    {(!product.variantIDs || product.variantIDs.length === 0) ? (
+                                                        product.approval_status !== "Approved" ? (
                                                             <button
                                                                 className="btn btn-success"
                                                                 onClick={() => handleApprove(product.id)}
@@ -148,23 +146,45 @@ const WaitingProducts = () => {
                                                             </button>
                                                         ) : (
                                                             <span className="badge bg-success">Approved</span>
-                                                        )}
-                                                        <button
-                                                            className="btn btn-primary me-2 m-2"
-                                                            onClick={() => handleView(product)}
-                                                        >
-                                                            View
-                                                        </button>
-                                                    </>
+                                                        )
+                                                    ) : (
+                                                        <>
+                                                            {product.approval_status !== "Approved" ? (
+                                                                <button
+                                                                    className="btn btn-success"
+                                                                    onClick={() => handleApprove(product.id)}
+                                                                >
+                                                                    Approve
+                                                                </button>
+                                                            ) : (
+                                                                <span className="badge bg-success">Approved</span>
+                                                            )}
+                                                            <button
+                                                                className="btn btn-primary me-2 m-2"
+                                                                onClick={() => handleView(product)}
+                                                            >
+                                                                View
+                                                            </button>
+                                                        </>
 
-                                                )}
+                                                    )}
 
-                                            </td>
+                                                </td>
 
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                <Paginations
+                                    perPageData={perPage}
+                                    data={waitingProducts}
+                                    currentPage={currentPage}
+                                    setCurrentPage={setCurrentPage}
+                                    isShowingPageLength={true}
+                                    paginationDiv="col-auto"
+                                    paginationClass="pagination-sm"
+                                />
+                            </div>
                         ) : (
                             <p style={{ textAlign: "center" }}>No disapproved products found.</p>
                         )
@@ -191,7 +211,8 @@ const WaitingProducts = () => {
                                                 <th>NAME</th>
                                                 <th>COLOR</th>
                                                 <th>STOCK</th>
-                                                <th>SELLING PRICE</th>
+                                                <th>WHOLESALE PRICE</th>
+                                                <th>RETAIL PRICE</th>
                                                 <th>IMAGE</th>
                                                 <th>ACTION</th>
                                             </tr>
@@ -203,11 +224,12 @@ const WaitingProducts = () => {
                                                     <td>{variant.color || "N/A"}</td>
                                                     <td>{variant.stock}</td>
                                                     <td>{variant.selling_price}</td>
+                                                    <td>{variant.retail_price}</td>
                                                     <img
-                                                    src={`${import.meta.env.VITE_APP_IMAGE}${variant.image}`}
-                                                    alt={variant.name || "Product image"}
-                                                    style={{ width: "50px", height: "50px" }}
-                                                />
+                                                        src={`${import.meta.env.VITE_APP_IMAGE}${variant.image}`}
+                                                        alt={variant.name || "Product image"}
+                                                        style={{ width: "50px", height: "50px" }}
+                                                    />
                                                     <td>
                                                         {variant.approval_status !== "Approved" ? (
                                                             <button

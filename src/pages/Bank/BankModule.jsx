@@ -15,6 +15,7 @@ const BankModule = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
+    // console.log("baaank: ", bankmodule)
 
 
     const [startDate, endDate] = dateRange;
@@ -52,12 +53,12 @@ const BankModule = () => {
                 headers: { Authorization: `Bearer ${token}` },
             })
             .then((response) => {
-                setBankModule(response?.data?.bank_data); // Keep full dataset
+                const fullBankData = response?.data?.bank_data;
+                setBankModule(fullBankData);
                 setLoading(false);
 
-                // Apply default filter for today's date
                 const today = new Date();
-                applyFilters(response?.data?.data, today);
+                applyFilters(fullBankData, today);
             })
             .catch((err) => {
                 if (err.response && err.response.status === 401) {

@@ -113,13 +113,23 @@ const BasicTable = () => {
         XLSX.writeFile(workbook, "Sales_Report.xlsx");
     };
 
+    const totalApproved = filteredSalesData.reduce(
+        (acc, sale) => {
+            const approved = calculateTotals(sale.order_details, approvedStatuses);
+            acc.count += approved.count;
+            acc.amount += approved.amount;
+            return acc;
+        },
+        { count: 0, amount: 0 }
+    );
+
     document.title = "Beposoft | Sales Report";
 
     return (
         <React.Fragment>
             <div className="page-content">
                 <div className="container-fluid">
-                    <Breadcrumbs title="Tables" breadcrumbItem="STATE SALES REPORTS" />
+                    <Breadcrumbs title="Tables" breadcrumbItem="SALES REPORTS" />
                     <Row>
                         <Col xl={12}>
                             <Card>
@@ -197,20 +207,20 @@ const BasicTable = () => {
                                                 <tr>
                                                     <th className="text-center" style={{ padding: "12px", border: "1px solid #dee2e6" }}>#</th>
                                                     <th className="text-center" style={{ padding: "12px", border: "1px solid #dee2e6" }}>Date</th>
-                                                    <th colSpan="2" className="text-center" style={{ padding: "12px", border: "1px solid #dee2e6" }}>Invoice</th>
+                                                    {/* <th colSpan="2" className="text-center" style={{ padding: "12px", border: "1px solid #dee2e6" }}>Invoice</th> */}
                                                     <th colSpan="2" className="text-center" style={{ padding: "12px", border: "1px solid #dee2e6" }}>Approved</th>
-                                                    <th colSpan="2" className="text-center" style={{ padding: "12px", border: "1px solid #dee2e6" }}>Rejected</th>
+                                                    {/* <th colSpan="2" className="text-center" style={{ padding: "12px", border: "1px solid #dee2e6" }}>Rejected</th> */}
                                                     <th className="text-center" style={{ padding: "12px", border: "1px solid #dee2e6" }}>Action</th>
                                                 </tr>
                                                 <tr style={{ backgroundColor: "#f8f9fa", fontWeight: "bold" }}>
                                                     <th className="text-center" style={{ border: "1px solid #dee2e6" }}>No</th>
                                                     <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Date</th>
+                                                    {/* <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Bill</th> */}
+                                                    {/* <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Amount</th> */}
                                                     <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Bill</th>
                                                     <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Amount</th>
-                                                    <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Bill</th>
-                                                    <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Amount</th>
-                                                    <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Bill</th>
-                                                    <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Amount</th>
+                                                    {/* <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Bill</th> */}
+                                                    {/* <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Amount</th> */}
                                                     <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Action</th>
                                                 </tr>
                                             </thead>
@@ -228,12 +238,12 @@ const BasicTable = () => {
                                                             <tr key={sale.id} style={{ backgroundColor: index % 2 === 0 ? "#f8f9fa" : "#ffffff" }}>
                                                                 <th scope="row" className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{index + 1}</th>
                                                                 <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{sale.date}</td>
-                                                                <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{totalOrders}</td>
-                                                                <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{totalAmount.toFixed(2)}</td>
+                                                                {/* <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{totalOrders}</td> */}
+                                                                {/* <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{totalAmount.toFixed(2)}</td> */}
                                                                 <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{approved.count}</td>
                                                                 <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{approved.amount.toFixed(2)}</td>
-                                                                <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{rejected.count}</td>
-                                                                <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{rejected.amount.toFixed(2)}</td>
+                                                                {/* <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{rejected.count}</td> */}
+                                                                {/* <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{rejected.amount.toFixed(2)}</td> */}
                                                                 <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
                                                                     <a href={`/sales/view/${sale.date}/data/`} style={{ color: "#007bff", textDecoration: "none", fontWeight: "bold" }}>View</a>
 
@@ -248,6 +258,20 @@ const BasicTable = () => {
                                                         </td>
                                                     </tr>
                                                 )}
+                                                <tr style={{ backgroundColor: "#e2f0d9", fontWeight: "bold" }}>
+                                                    <td className="text-center" colSpan={2} style={{ border: "1px solid #dee2e6", padding: "12px" }}>
+                                                        Total
+                                                    </td>
+                                                    <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
+                                                        {totalApproved.count}
+                                                    </td>
+                                                    <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
+                                                        ₹{totalApproved.amount.toFixed(2)}
+                                                    </td>
+                                                    <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
+                                                        —
+                                                    </td>
+                                                </tr>
                                             </tbody>
 
                                         </Table>

@@ -134,6 +134,20 @@ const BasicTable = () => {
         XLSX.writeFile(workbook, "COD_Sales_Report.xlsx");
     };
 
+    const totalOrders = filteredData.reduce((sum, item) => sum + item.orders.length, 0);
+    const totalAmount = filteredData.reduce(
+        (sum, item) => sum + item.orders.reduce((acc, order) => acc + order.total_amount, 0),
+        0
+    );
+    const totalPaid = filteredData.reduce(
+        (sum, item) => sum + item.orders.reduce((acc, order) => acc + order.total_paid_amount, 0),
+        0
+    );
+    const totalPending = filteredData.reduce(
+        (sum, item) => sum + item.orders.reduce((acc, order) => acc + order.balance_amount, 0),
+        0
+    );
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -234,6 +248,16 @@ const BasicTable = () => {
                                                         </tr>
                                                     ))}
                                                 </tbody>
+                                                <tfoot>
+                                                    <tr style={{ backgroundColor: "#f8f9fa", fontWeight: "bold" }}>
+                                                        <td colSpan="2" className="text-end">Grand Total</td>
+                                                        <td>{totalOrders}</td>
+                                                        <td>{totalAmount.toFixed(2)}</td>
+                                                        <td>{totalPaid.toFixed(2)}</td>
+                                                        <td>{totalPending.toFixed(2)}</td>
+                                                        <td></td>
+                                                    </tr>
+                                                </tfoot>
                                             </Table>
                                         </div>
                                     )}

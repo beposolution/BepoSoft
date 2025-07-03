@@ -101,6 +101,9 @@ const BasicTable = () => {
         fetchData();
     }, [date, selectedState, selectedCompany, token]);
 
+    const grandTotalApprovedCount = data.reduce((sum, item) => sum + item.approvedCount, 0);
+    const grandTotalApprovedAmount = data.reduce((sum, item) => sum + item.approvedTotal, 0);
+
     // Fetch states
     useEffect(() => {
         const fetchStates = async () => {
@@ -155,13 +158,13 @@ const BasicTable = () => {
         <React.Fragment>
             <div className="page-content">
                 <div className="container-fluid">
-                    <Breadcrumbs title="Tables" breadcrumbItem="Basic Tables" />
+                    <Breadcrumbs title="Tables" breadcrumbItem="INVOICE REPORT" />
                     <Row>
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
                                     <div className="table-responsive">
-                                        <h4 className="card-title text-center">INVOICE REPORT</h4>
+                                        {/* <h4 className="card-title text-center">INVOICE REPORT</h4> */}
                                         <div className="table-responsive">
                                             <Row>
                                                 <Col xl={4}>
@@ -213,9 +216,9 @@ const BasicTable = () => {
                                                     >
                                                         <th className="text-center" style={{ padding: "14px", border: "1px solid #dee2e6" }}>#</th>
                                                         <th className="text-center" style={{ padding: "14px", border: "1px solid #dee2e6" }}>Staff</th>
-                                                        <th colSpan="2" className="text-center" style={{ padding: "14px", border: "1px solid #dee2e6" }}>Invoice</th>
+                                                        {/* <th colSpan="2" className="text-center" style={{ padding: "14px", border: "1px solid #dee2e6" }}>Invoice</th> */}
                                                         <th colSpan="2" className="text-center" style={{ padding: "14px", border: "1px solid #dee2e6" }}>Approved</th>
-                                                        <th colSpan="2" className="text-center" style={{ padding: "14px", border: "1px solid #dee2e6" }}>Rejected</th>
+                                                        {/* <th colSpan="2" className="text-center" style={{ padding: "14px", border: "1px solid #dee2e6" }}>Rejected</th> */}
                                                         <th className="text-center" style={{ padding: "14px", border: "1px solid #dee2e6" }}>Action</th>
                                                     </tr>
                                                     <tr
@@ -227,12 +230,12 @@ const BasicTable = () => {
                                                     >
                                                         <th className="text-center" style={{ border: "1px solid #dee2e6" }}>No</th>
                                                         <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Name</th>
+                                                        {/* <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Bill</th> */}
+                                                        {/* <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Amount</th> */}
                                                         <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Bill</th>
                                                         <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Amount</th>
-                                                        <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Bill</th>
-                                                        <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Amount</th>
-                                                        <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Bill</th>
-                                                        <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Amount</th>
+                                                        {/* <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Bill</th> */}
+                                                        {/* <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Amount</th> */}
                                                         <th className="text-center" style={{ border: "1px solid #dee2e6" }}>Action</th>
                                                     </tr>
                                                 </thead>
@@ -245,24 +248,24 @@ const BasicTable = () => {
                                                             <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
                                                                 {item.name} ({item.family})
                                                             </td>
-                                                            <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
+                                                            {/* <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
                                                                 {item.totalOrders}
-                                                            </td>
-                                                            <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
+                                                            </td> */}
+                                                            {/* <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
                                                                 {item.totalAmount.toFixed(2)}
-                                                            </td>
+                                                            </td> */}
                                                             <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
                                                                 {item.approvedCount}
                                                             </td>
                                                             <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
                                                                 {item.approvedTotal.toFixed(2)}
                                                             </td>
-                                                            <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
+                                                            {/* <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
                                                                 {item.rejectedCount}
                                                             </td>
                                                             <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
                                                                 {item.rejectedTotal.toFixed(2)}
-                                                            </td>
+                                                            </td> */}
                                                             <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
                                                                 <a href={`/sales/resport/${item.id}/staff/${date}/${item.name}/`} style={{ color: "#007bff", textDecoration: "none", fontWeight: "bold" }}>View</a>
 
@@ -270,6 +273,14 @@ const BasicTable = () => {
                                                         </tr>
                                                     ))}
                                                 </tbody>
+                                                <tfoot>
+                                                    <tr style={{ backgroundColor: "#f1f1f1", fontWeight: "bold" }}>
+                                                        <td colSpan="2" className="text-end" style={{ border: "1px solid #dee2e6", padding: "12px" }}>Grand Total</td>
+                                                        <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{grandTotalApprovedCount}</td>
+                                                        <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{grandTotalApprovedAmount.toFixed(2)}</td>
+                                                        <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>-</td>
+                                                    </tr>
+                                                </tfoot>
                                             </Table>
                                         </div>
                                     </div>

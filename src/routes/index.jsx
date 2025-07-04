@@ -414,7 +414,7 @@ const authProtectedRoutes = [
   { path: "/add-customers/", component: <CustomerForm /> },
   { path: "customer/address/:id/add/", component: <Address /> },
   { path: "/customer/:id/ledger/", component: <Ledger /> },
-  { path: "customer/:id/edit/", component: <CustomerEdit /> },
+  { path: "/customer/:id/edit/", component: <CustomerEdit /> },
   { path: "/customers/beposoft", component: <Bulkcustomers /> },
 
 

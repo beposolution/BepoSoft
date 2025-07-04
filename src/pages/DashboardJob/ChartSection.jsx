@@ -151,6 +151,13 @@ const ChartSection = () => {
 
     const today = new Date().toISOString().split('T')[0];
 
+    const totalAmountForCurrentUserFamilyToday = orders
+        ?.filter(order =>
+            order.family_id === userData &&
+            order.order_date?.slice(0, 10) === today
+        )
+        ?.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+
     // Destructure from orders
     const familyIds = orders?.map(order => order.family_id);
     const orderDates = orders?.map(order => order.order_date);
@@ -223,6 +230,34 @@ const ChartSection = () => {
                                         <div className="flex-grow-1">
                                             <p className="text-muted fw-medium">Todays Bill</p>
                                             <h4 className="mb-0"> {role === "ADMIN" || role === "CEO" ? (todayBills?.order || 0) : userFamilyTodayOrderCount}</h4>
+                                        </div>
+                                        <div className="flex-shrink-0 align-self-center">
+                                            {/* Optional Chart */}
+                                        </div>
+                                    </div>
+                                </CardBody>
+                                <div className="card-body border-top py-3">
+                                    <p className="mb-0">
+                                        <span className="badge badge-soft-success me-2">
+                                            <i className="bx bx-trending-up align-bottom me-1 text-success"></i> {todayBills?.percentageValue}
+                                        </span>
+                                        Increase last month
+                                    </p>
+                                </div>
+                            </Card>
+                        </div>
+                    </Col>
+                )}
+
+                {(role === "BDM") && (
+                    <Col lg={3}>
+                        <div style={{ cursor: "pointer" }}>
+                            <Card className="mini-stats-wid">
+                                <CardBody>
+                                    <div className="d-flex">
+                                        <div className="flex-grow-1">
+                                            <p className="text-muted fw-medium">Todays Total Volume</p>
+                                            <h4>₹{totalAmountForCurrentUserFamilyToday}</h4>
                                         </div>
                                         <div className="flex-shrink-0 align-self-center">
                                             {/* Optional Chart */}

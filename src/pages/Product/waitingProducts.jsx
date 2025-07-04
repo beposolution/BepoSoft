@@ -183,6 +183,8 @@ const WaitingProducts = () => {
                                     isShowingPageLength={true}
                                     paginationDiv="col-auto"
                                     paginationClass="pagination-sm"
+                                    indexOfFirstItem={indexOfFirstProduct}
+                                    indexOfLastItem={indexOfLastProduct}
                                 />
                             </div>
                         ) : (

@@ -9,7 +9,9 @@ const Paginations = ({
   setCurrentPage,
   isShowingPageLength,
   paginationDiv,
-  paginationClass
+  paginationClass,
+  indexOfFirstItem,
+  indexOfLastItem
 }) => {
   const totalPages = Math.ceil(data?.length / perPageData);
   const pageNumbers = [];
@@ -74,8 +76,13 @@ const Paginations = ({
         {isShowingPageLength && (
           <div className="col-auto">
             <div className="text-muted">
-              Showing <span className="fw-semibold">{perPageData}</span> of{" "}
-              <span className="fw-semibold">{data?.length}</span> entries
+              Showing{" "}
+              <span className="fw-semibold">{data.length === 0 ? 0 : indexOfFirstItem + 1}</span>{" "}
+              to{" "}
+              <span className="fw-semibold">
+                {Math.min(indexOfLastItem, data.length)}
+              </span>{" "}
+              of <span className="fw-semibold">{data.length}</span> entries
             </div>
           </div>
         )}
@@ -90,9 +97,8 @@ const Paginations = ({
             {getPagination().map((item, index) => (
               <li
                 key={index}
-                className={`page-item ${
-                  item === currentPage ? "active" : item === "..." ? "disabled" : ""
-                }`}
+                className={`page-item ${item === currentPage ? "active" : item === "..." ? "disabled" : ""
+                  }`}
               >
                 <Link
                   className="page-link"

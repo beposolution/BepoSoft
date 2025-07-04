@@ -58,7 +58,7 @@ const FormLayouts = () => {
             hsn_code: Yup.string().required("This field is required"),
             purchase_rate: Yup.string().required("This field is required"),
             tax: Yup.string().required("This field is required"),
-            family: Yup.array().min(1, "At least one family is required").required("This field is required"), // Updated validation for multiple selection
+            family: Yup.array().min(1, "At least one Division is required").required("This field is required"), // Updated validation for multiple selection
             unit: Yup.string().required("This field is required"),
             selling_price: Yup.string().required("This field is required"),
             type: Yup.string().required("This field is required"),

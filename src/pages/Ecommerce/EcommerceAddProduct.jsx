@@ -83,7 +83,7 @@ const EcommerenceAddProduct = () => {
     validationSchema: yup.object().shape({
       name: yup.string().required('Please Enter Your Product Name'),
       hsn_code: yup.string().required('Please Enter Your HSN Code'),
-      family: yup.array().min(1, 'Please select at least one Family'),
+      family: yup.array().min(1, 'Please select at least one Division'),
       purchase_rate: yup.number().required('Please Enter Your Purchase Rate'),
       type: yup.string().required('Please Enter Your Product Type'),
       tax: yup.string().required('Please Enter Your Tax'),
@@ -305,7 +305,7 @@ const EcommerenceAddProduct = () => {
 
                         {/* Product Family */}
                         <div className="mb-3">
-                          <div className="control-label" style={{ marginBottom: "0.5rem" }}>Product Family</div>
+                          <div className="control-label" style={{ marginBottom: "0.5rem" }}>Product Division</div>
                           <Select
                             classNamePrefix="select2-selection"
                             name="family"

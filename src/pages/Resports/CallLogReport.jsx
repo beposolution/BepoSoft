@@ -64,7 +64,7 @@ const CallLogReport = () => {
                 });
                 setFamilyData(response?.data?.data)
             } catch (error) {
-                toast.error("Error fetching family data.")
+                toast.error("Error fetching Division data.")
             }
         };
         fetchFamilyData();
@@ -287,7 +287,7 @@ const CallLogReport = () => {
                                             <Input type="time" value={filterEndTime} onChange={onEndTimeChange} />
                                         </Col>
                                         <Col >
-                                            <Label>Family Name</Label>
+                                            <Label>Division Name</Label>
                                             <Input
                                                 type="select"
                                                 value={selectedFamily}

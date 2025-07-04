@@ -40,7 +40,7 @@ const EcommerenceAddProduct = () => {
         validationSchema: yup.object().shape({
             name: yup.string().required('Please Enter Your Product Name'),
             hsn_code: yup.string().required('Please Enter HSN Code'),
-            family: yup.array().min(1, 'Please select at least one Feature'),
+            family: yup.array().min(1, 'Please select at least one Division'),
             purchase_rate: yup.number().required('Please Enter Purchase Rate'),
             type: yup.string().required('Please Enter Product Type'),
             tax: yup.string().required('Please Enter Tax'),
@@ -528,7 +528,7 @@ const EcommerenceAddProduct = () => {
                                         <Row>
                                             <Col lg={3}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-InputState">Family</Label>
+                                                    <Label htmlFor="formrow-InputState">Division</Label>
                                                     <select
                                                         name="family"
                                                         id="formrow-InputState"
@@ -544,7 +544,7 @@ const EcommerenceAddProduct = () => {
                                                         {/* Default Placeholder */}
                                                         {formik.values.family.length === 0 && (
                                                             <option disabled value="">
-                                                                Select Family
+                                                                Select Division
                                                             </option>
                                                         )}
 

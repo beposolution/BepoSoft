@@ -54,7 +54,7 @@ const FormLayouts = () => {
                 setFamilies(familyData);
                 setFamilyOptions(options); // This will not cause re-renders now
             } catch (error) {
-                toast.error("Error fetching family data:");
+                toast.error("Error fetching Division data:");
             }
         };
 
@@ -138,7 +138,7 @@ const FormLayouts = () => {
             name: Yup.string().required("This field is required"),
             hsn_code: Yup.string().required("This field is required"),
             family: Yup.array()
-                .min(1, "Please select at least one family")
+                .min(1, "Please select at least one Division")
                 .required("This field is required"),
             unit: Yup.string().required("This field is required"),
             state: Yup.string().required("This field is required"),

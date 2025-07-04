@@ -666,7 +666,7 @@ const FormLayouts = () => {
                                             </Col>
                                             <Col lg={4}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-InputZip">FAMILY</Label>
+                                                    <Label htmlFor="formrow-InputZip">Division</Label>
                                                     <select
                                                         type="select"
                                                         name="family"
@@ -677,7 +677,7 @@ const FormLayouts = () => {
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
                                                     >
-                                                        <option>Select Family</option>
+                                                        <option>Select Division</option>
                                                         {familyData.map((sta) => (
                                                             <option key={sta.id} value={String(sta.id)}>{sta.name}</option>
                                                         ))}

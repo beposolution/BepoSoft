@@ -605,7 +605,7 @@ const FormLayouts = () => {
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-InputZip">FAMILY</Label>
+                                                    <Label htmlFor="formrow-InputZip">DIVISION</Label>
                                                     <Input
                                                         type="text"
                                                         name="family"

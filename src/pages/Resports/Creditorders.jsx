@@ -145,7 +145,7 @@ const BasicTable = () => {
                                                 onChange={(e) => setSelectedFamily(e.target.value)}
                                                 className="mb-3"
                                             >
-                                                <option value="">All Families</option>
+                                                <option value="">All Divisions</option>
                                                 {families.map((family) => (
                                                     <option key={family} value={family}>
                                                         {family}

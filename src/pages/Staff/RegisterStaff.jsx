@@ -78,7 +78,7 @@ const FormLayouts = () => {
                 .required("Confirmation date is required"),
             designation: Yup.string().required("Please select a designation"),
             employment_status: Yup.string().required("Please select employment status"),
-            family: Yup.string().required("Please select family"),
+            family: Yup.string().required("Please select division"),
             department_id: Yup.string().required("Please select a department"),
             supervisor_id: Yup.string().required("Please select a supervisor"),
             warehouse_id: Yup.string().required("Please choose Warehouse"),
@@ -357,7 +357,7 @@ const FormLayouts = () => {
 
                                             <Col lg={4}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-family-Input">Family</Label>
+                                                    <Label htmlFor="formrow-family-Input">Division</Label>
                                                     <select
                                                         name="family"
                                                         id="formrow-family-Input"
@@ -366,7 +366,7 @@ const FormLayouts = () => {
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
                                                     >
-                                                        <option value="">Select family</option>
+                                                        <option value="">Select Division</option>
                                                         {familys.map((sta) => (
                                                             <option key={sta.id} value={sta.id}>
                                                                 {sta.name}

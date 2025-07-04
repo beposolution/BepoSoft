@@ -164,15 +164,15 @@ const FamilyTable = () => {
         fetchData();
     }, [token]);
 
-    document.title = "States | Beposoft";
+    document.title = "Division | Beposoft";
 
     return (
         <div className="page-content">
             <div className="container-fluid">
-                <Breadcrumbs title="Tables" breadcrumbItem="Family Information" />
+                <Breadcrumbs title="Tables" breadcrumbItem="Division Information" />
 
                 <Button color="success" onClick={handleAddState} className="mb-4">
-                    Add Family
+                    Add Division
                 </Button>
 
                 {loading ? (

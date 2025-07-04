@@ -447,7 +447,7 @@ const FormLayouts = () => {
                                             </Col>
                                             <Col md={4}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-family-Input">Family</Label>
+                                                    <Label htmlFor="formrow-family-Input">Division</Label>
                                                     <Input
                                                         type="select"
                                                         name="family"
@@ -465,7 +465,7 @@ const FormLayouts = () => {
                                                             formik.touched.family && formik.errors.family ? true : false
                                                         }
                                                     >
-                                                        <option value="">Select Family</option>
+                                                        <option value="">Select Division</option>
                                                         {familys.map((family) => (
                                                             <option key={family.id} value={family.id}>
                                                                 {family.name}

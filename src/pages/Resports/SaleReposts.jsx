@@ -172,7 +172,7 @@ const BasicTable = () => {
                                                 value={familyFilter}
                                                 onChange={(e) => setFamilyFilter(e.target.value)}
                                             >
-                                                <option value="">All Families</option>
+                                                <option value="">All Divisions</option>
                                                 {familys.map((family) => (
                                                     <option key={family.id} value={family.name}>
                                                         {family.name}

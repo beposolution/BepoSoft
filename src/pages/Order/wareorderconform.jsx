@@ -628,7 +628,7 @@ const OrderwarehouseConform = () => {
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-InputZip">FAMILY</Label>
+                                                    <Label htmlFor="formrow-InputZip">Division</Label>
                                                     <Input
                                                         type="text"
                                                         name="family"

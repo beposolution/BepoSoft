@@ -456,7 +456,7 @@ const FormLayouts = () => {
 
                                             <Col md={6}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="family">Family</Label>
+                                                    <Label htmlFor="family">Division</Label>
                                                     <Input
                                                         type="select"
                                                         name="family"
@@ -467,7 +467,7 @@ const FormLayouts = () => {
                                                         onBlur={formik.handleBlur}
                                                         invalid={formik.touched.family && formik.errors.family ? true : false}
                                                     >
-                                                        <option value="">Select a Family...</option>
+                                                        <option value="">Select a Division...</option>
                                                         {familys.map((fami) => (
                                                             <option key={fami.id} value={fami.id}>
                                                                 {fami.name}

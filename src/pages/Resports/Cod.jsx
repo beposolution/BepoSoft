@@ -180,13 +180,13 @@ const BasicTable = () => {
                                         </Col>
                                         <Col md={4}>
                                             <FormGroup>
-                                                <label>Family</label>
+                                                <label>Division</label>
                                                 <Input
                                                     type="select"
                                                     value={familyFilter}
                                                     onChange={(e) => setFamilyFilter(e.target.value)}
                                                 >
-                                                    <option value="">Select Family</option>
+                                                    <option value="">Select Division</option>
                                                     {allFamilies.map((family) => (
                                                         <option key={family.id} value={family.name}>
                                                             {family.name}

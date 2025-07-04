@@ -351,13 +351,19 @@ const FormLayouts = () => {
 
 
     const handleQuantityChange = (index, newQuantity) => {
-        const updatedCartProducts = [...cartProducts];
-        updatedCartProducts[index].quantity = parseInt(newQuantity, 10) || 1;
+        const updatedProducts = [...cartProducts];
+        const product = updatedProducts[index];
+        const availableStock = product.stock - product.locked_stock;
 
-        setCartProducts(updatedCartProducts); // Update cart state
-        updateCartProduct(updatedCartProducts[index].id, { quantity: newQuantity });
+        const quantity = parseInt(newQuantity, 10);
+        if (quantity <= availableStock) {
+            product.quantity = quantity;
+        } else {
+            product.quantity = availableStock; // or show a warning
+        }
+
+        setCartProducts(updatedProducts);
     };
-
 
     const handleRemoveProduct = async (productId) => {
         try {
@@ -674,7 +680,8 @@ const FormLayouts = () => {
                                                     {formik.errors.unit && formik.touched.unit && (
                                                         <FormFeedback>{formik.errors.unit}</FormFeedback>
                                                     )}
-                                                </div>                                                                       </Col>
+                                                </div>
+                                            </Col>
                                         </Row>
 
 
@@ -753,9 +760,16 @@ const FormLayouts = () => {
                                                                                         <Input
                                                                                             type="number"
                                                                                             value={product.quantity || 1}
+                                                                                            min="1"
+                                                                                            max={product.stock - product.locked_stock}
                                                                                             onChange={(e) => handleQuantityChange(index, e.target.value)}
                                                                                             className="input-sm"
                                                                                         />
+                                                                                        {(product.quantity > (product.stock - product.locked_stock)) && (
+                                                                                            <div className="text-danger" style={{ fontSize: "12px" }}>
+                                                                                                Exceeds available stock
+                                                                                            </div>
+                                                                                        )}
                                                                                     </td>
                                                                                     <td>₹{(((product.price || 0) * (product.quantity || 1)) - ((product.discount || 0) * (product.quantity || 1))).toFixed(2)}</td>
                                                                                     <td>

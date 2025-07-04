@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Navigate, useParams } from "react-router-dom"; 
+import { Navigate, useParams } from "react-router-dom";
 import axios from "axios"
 import PackingInformation from "./Packing-Information"
 import ShippingInformation from "./Shipping-Information"
@@ -28,8 +28,8 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 const FormLayouts = () => {
     document.title = "Form Layouts | Skote - Vite React Admin & Dashboard Template";
 
-    const { id } = useParams();  
-    const [orderData, setOrderData] = useState(null); 
+    const { id } = useParams();
+    const [orderData, setOrderData] = useState(null);
     const [loading, setLoading] = useState(true);
     const token = localStorage.getItem('token');
     const navigate = useNavigate();
@@ -41,11 +41,11 @@ const FormLayouts = () => {
     const downloadShippingAddress = () => {
         window.open(`${import.meta.env.VITE_APP_IMAGE}/shippinglabel/${id}/`, "_blank");
     };
-    
+
     const downloadDeliveryNote = () => {
         window.open(`${import.meta.env.VITE_APP_IMAGE}/deliverynote/${id}/`, "_blank");
     };
-    
+
     const toggleDropdown = () => setDropdownOpen(prevState => !prevState);
 
 
@@ -69,8 +69,8 @@ const FormLayouts = () => {
                     }
                 });
                 setOrderData(response.data.order);
-                setSelectedStatus(response.data.order?.status || ""); 
-            } catch (error) {   
+                setSelectedStatus(response.data.order?.status || "");
+            } catch (error) {
                 toast.error("Error fetching order data:");
             } finally {
                 setLoading(false);
@@ -83,7 +83,7 @@ const FormLayouts = () => {
     const handleSubmit = async (event) => {
         event.preventDefault();
         try {
-            await axios.put( `${import.meta.env.VITE_APP_KEY}order/status/update/${id}/`, {
+            await axios.put(`${import.meta.env.VITE_APP_KEY}order/status/update/${id}/`, {
                 status: selectedStatus,
             }, {
                 headers: {
@@ -98,12 +98,31 @@ const FormLayouts = () => {
 
 
     if (loading) {
-        return <div>Loading...</div>; 
+        return <div>Loading...</div>;
     }
 
     const billingAddress = orderData?.customer;
-    const shippingAddress = orderData?.billing_address; 
+    const shippingAddress = orderData?.billing_address;
     const warehouseData = orderData?.warehouse;
+
+    const handleCancel = async () => {
+        try {
+            const response = await axios.post(
+                `${import.meta.env.VITE_APP_KEY}orders/unlock/${id}/`,
+                {}, // You can send an empty body if not required
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            toast.success("Order unlocked successfully");
+            navigate("/delivery/notes/"); // or wherever you want to redirect
+        } catch (error) {
+            toast.error("Failed to unlock order");
+            console.error("Unlock error:", error);
+        }
+    };
 
     return (
         <React.Fragment>
@@ -125,7 +144,7 @@ const FormLayouts = () => {
                                                     className="form-control"
                                                     id="formrow-invoice-Input"
                                                     value={orderData?.invoice || ""}
-                                                    readOnly 
+                                                    readOnly
                                                 />
                                             </div>
                                         </Col>
@@ -138,7 +157,7 @@ const FormLayouts = () => {
                                                     className="form-control"
                                                     id="formrow-order_date-Input"
                                                     value={orderData?.order_date || ""}
-                                                    readOnly 
+                                                    readOnly
                                                 />
                                             </div>
                                         </Col>
@@ -152,7 +171,7 @@ const FormLayouts = () => {
                                                     className="form-control"
                                                     id="formrow-status-Input"
                                                     value={orderData?.status || ""}
-                                                    readOnly 
+                                                    readOnly
                                                 />
                                             </div>
                                         </Col>
@@ -165,11 +184,11 @@ const FormLayouts = () => {
                                                     className="form-control"
                                                     id="formrow-manage_staff-Input"
                                                     value={orderData?.manage_staff || ""}
-                                                    readOnly 
+                                                    readOnly
                                                 />
                                             </div>
                                         </Col>
-                                              {/* <Col md={6} lg={3}>
+                                        {/* <Col md={6} lg={3}>
                                             <div className="mb-3">
                                                 <Label htmlFor="formrow-status-Input">Current Status</Label>
                                                 <Input
@@ -182,7 +201,7 @@ const FormLayouts = () => {
                                                 />
                                             </div>
                                         </Col> */}
-                                        <Col  md={6} lg={3} className="d-flex align-items-end">
+                                        <Col md={6} lg={3} className="d-flex align-items-end">
                                             <Form onSubmit={handleSubmit} className="w-100">
                                                 <div className="d-flex">
                                                     <Dropdown isOpen={dropdownOpen} toggle={toggleDropdown} className="me-3 flex-grow-1">
@@ -202,6 +221,9 @@ const FormLayouts = () => {
                                                     </Button>
                                                 </div>
                                             </Form>
+                                            <Button className="" color="danger" onClick={handleCancel}>
+                                                Cancel
+                                            </Button>
                                         </Col>
 
                                     </Row>
@@ -209,21 +231,21 @@ const FormLayouts = () => {
                                 <CardBody>
                                     <CardTitle className="mb-4 text-center heading-with-underline">INVOICE - INFORMATION</CardTitle>
                                     <Row>
-                                    <Col sm={12} md={6}>
-                                        <address>
-                                            <strong>Billed To:</strong>
-                                            <br />
-                                            {billingAddress ? Object.entries(billingAddress)
-                                                .filter(([key]) => key !== "id") // Exclude 'id' from being displayed
-                                                .map(([key, value], index) => (
-                                                    <React.Fragment key={index}>
-                                                        <span>{key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ")}: {value}</span>
-                                                        <br />
-                                                    </React.Fragment>
-                                                )) 
-                                                : "No Billing Address Available"}
-                                        </address>
-                                    </Col>
+                                        <Col sm={12} md={6}>
+                                            <address>
+                                                <strong>Billed To:</strong>
+                                                <br />
+                                                {billingAddress ? Object.entries(billingAddress)
+                                                    .filter(([key]) => key !== "id") // Exclude 'id' from being displayed
+                                                    .map(([key, value], index) => (
+                                                        <React.Fragment key={index}>
+                                                            <span>{key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ")}: {value}</span>
+                                                            <br />
+                                                        </React.Fragment>
+                                                    ))
+                                                    : "No Billing Address Available"}
+                                            </address>
+                                        </Col>
 
 
                                         <Col sm={12} md={6} className="text-sm-end">
@@ -231,14 +253,14 @@ const FormLayouts = () => {
                                                 <strong>Shipped To:</strong>
                                                 <br />
                                                 {shippingAddress ? Object.entries(shippingAddress)
-                                                .filter(([key]) => key !== "id") // Exclude 'id' from being displayed
-                                                .map(([key, value], index) => (
-                                                    <React.Fragment key={index}>
-                                                        <span>{key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ")}: {value}</span>
-                                                        <br />
-                                                    </React.Fragment>
-                                                )) 
-                                                : "No Billing Address Available"}
+                                                    .filter(([key]) => key !== "id") // Exclude 'id' from being displayed
+                                                    .map(([key, value], index) => (
+                                                        <React.Fragment key={index}>
+                                                            <span>{key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ")}: {value}</span>
+                                                            <br />
+                                                        </React.Fragment>
+                                                    ))
+                                                    : "No Billing Address Available"}
                                             </address>
                                         </Col>
                                     </Row>
@@ -263,7 +285,7 @@ const FormLayouts = () => {
                                                         <td>{index + 1}</td>
                                                         <td>
                                                             <img
-                                                                src={`${import.meta.env.VITE_APP_IMAGE}${item.image}`|| 'No images'}
+                                                                src={`${import.meta.env.VITE_APP_IMAGE}${item.image}` || 'No images'}
                                                                 alt={item.name}
                                                                 style={{ width: '50px', height: '50px', objectFit: 'cover' }}
                                                             />
@@ -283,10 +305,10 @@ const FormLayouts = () => {
                                         </Table>
                                     </div>
                                 </CardBody>
-                            <PackingInformation/>
-                            <ShippingInformation warehouseData={warehouseData} />
+                                <PackingInformation />
+                                <ShippingInformation warehouseData={warehouseData} />
 
-                            <CardBody className="text-center">
+                                <CardBody className="text-center">
                                     <Button color="primary" className="me-3" onClick={downloadShippingAddress}>
                                         📥 Download Shipping Address
                                     </Button>

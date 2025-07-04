@@ -194,7 +194,7 @@ const BasicTable = () => {
                                                     {filteredProducts.length > 0 ? (
                                                         currentProducts.map((product, index) => (
                                                             <tr key={product.id} className="text-center">
-                                                                <th scope="row">{index + 1}</th>
+                                                                <th scope="row">{(currentPage - 1) * perPageData + index + 1}</th>
                                                                 <td>
                                                                     <img
                                                                         src={`${import.meta.env.VITE_APP_IMAGE}${product.image || (product.images && `${import.meta.env.VITE_APP_IMAGE}/${product.images[0]?.image}`) || 'fallback-image-url'}`}
@@ -258,6 +258,8 @@ const BasicTable = () => {
                                         isShowingPageLength={true}
                                         paginationDiv="col-sm"
                                         paginationClass="pagination pagination-rounded justify-content-end mt-3"
+                                        indexOfFirstItem={indexOfFirstItem}
+                                        indexOfLastItem={indexOfLastItem}
                                     />
                                 </CardBody>
                             </Card>

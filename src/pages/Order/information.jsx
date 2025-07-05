@@ -94,7 +94,7 @@ const UpdateInformationPage = ({ refreshData }) => {
                 const customerId = orderData.customerID;
 
                 // Set initial form values with status and note
-                formik.setValues({ status, address: '', note });
+                formik.setValues({ status, billing_address: '', note });
 
                 // Step 2: Fetch customer shipping addresses
                 const customerResponse = await axios.get(`${import.meta.env.VITE_APP_KEY}add/customer/address/${customerId}/`, {

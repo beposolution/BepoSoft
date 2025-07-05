@@ -16,6 +16,7 @@ const WaitingProducts = () => {
     const navigate = useNavigate();
     const [currentPage, setCurrentPage] = useState(1);
     const [perPage] = useState(10);
+    const [searchTerm, setSearchTerm] = useState("");
 
 
     useEffect(() => {
@@ -100,7 +101,11 @@ const WaitingProducts = () => {
 
     const indexOfLastProduct = currentPage * perPage;
     const indexOfFirstProduct = indexOfLastProduct - perPage;
-    const currentProducts = waitingProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+    const filteredProducts = waitingProducts.filter(product =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
 
     return (
         <Fragment>
@@ -112,6 +117,17 @@ const WaitingProducts = () => {
                     {warehouseId ? (
                         waitingProducts.length > 0 ? (
                             <div>
+                                <div className="row mb-3">
+                                    <div className="col-md-4">
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="Search by product name..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
                                 <table className="table table-hover">
                                     <thead>
                                         <tr>
@@ -177,7 +193,7 @@ const WaitingProducts = () => {
                                 </table>
                                 <Paginations
                                     perPageData={perPage}
-                                    data={waitingProducts}
+                                    data={filteredProducts}
                                     currentPage={currentPage}
                                     setCurrentPage={setCurrentPage}
                                     isShowingPageLength={true}

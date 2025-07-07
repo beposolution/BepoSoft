@@ -532,7 +532,7 @@ const FormLayouts = () => {
     const totalPayableAmount = orderItems.reduce(
         (acc, item) => acc + ((item.rate - item.discount) * item.quantity),
         0
-    );
+    ) + shippingCharge;
 
     return (
         <React.Fragment>

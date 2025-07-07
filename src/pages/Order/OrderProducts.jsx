@@ -81,6 +81,7 @@ const FormLayouts = () => {
         id: "",
         name: "",
         phone: "",
+        alt_phone: "",
         gst: "",
         address: "",
         zipcode: "",
@@ -329,6 +330,7 @@ const FormLayouts = () => {
                     city: data.order.customer?.city || "",
                     country: data.order.customer?.country || "",
                     phone: data.order.customer?.phone || "",
+                    alt_phone: data.order.customer?.alt_phone || "",
                     state: data.order.customer?.state || "",
                     gst: data.order.customer?.gst || "",
 
@@ -842,6 +844,7 @@ const FormLayouts = () => {
                                             <p><strong>Name:</strong> {shippingAddress.name}</p>
                                             <p><strong>Street:</strong> {shippingAddress.address}</p>
                                             <p><strong>Phone:</strong> {shippingAddress.phone}</p>
+                                            <p><strong>Alternate Phone:</strong> {billingAddress.alt_phone}</p>
                                             <p><strong>City:</strong> {shippingAddress.city}</p>
                                             <p><strong>State:</strong> {shippingAddress.state}</p>
                                             <p><strong>Zip Code:</strong> {shippingAddress.zipcode}</p>

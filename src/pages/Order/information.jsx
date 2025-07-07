@@ -16,11 +16,18 @@ import {
     FormFeedback,
 } from 'reactstrap';
 
+
 const UpdateInformationPage = ({ refreshData }) => {
     const token = localStorage.getItem("token");
     const { id } = useParams();
     const [customerAddresses, setCustomerAddresses] = useState([]);
     const [statusOptions, setStatusOptions] = useState([]);
+    const [role, setRole] = useState(null);
+
+    useEffect(() => {
+        const role = localStorage.getItem("active");
+        setRole(role);
+    }, []);
 
     const formik = useFormik({
         initialValues: {
@@ -123,59 +130,64 @@ const UpdateInformationPage = ({ refreshData }) => {
 
                         <Form onSubmit={formik.handleSubmit}>
                             <Row>
-                                <Col md={6}>
-                                    <div className="mb-3">
-                                        <Label htmlFor="formrow-status-select">STATUS</Label>
-                                        <Input
-                                            type="select"
-                                            name="status"
-                                            className="form-control"
-                                            id="formrow-status-select"
-                                            value={formik.values.status}
-                                            onChange={formik.handleChange}
-                                            onBlur={formik.handleBlur}
-                                            invalid={formik.touched.status && formik.errors.status}
-                                        >
-                                            <option value="">Select Status</option>
-                                            {statusOptions.map((option, index) => (
-                                                <option key={index} value={option}>
-                                                    {option}
-                                                </option>
-                                            ))}
-                                        </Input>
-                                        {formik.errors.status && formik.touched.status ? (
-                                            <FormFeedback type="invalid">{formik.errors.status}</FormFeedback>
-                                        ) : null}
-                                    </div>
-                                </Col>
+                                <>
+                                    {(role === "ADMIN" || role === "BDM") && (
+                                        <>
+                                            <Col md={6}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-status-select">STATUS</Label>
+                                                    <Input
+                                                        type="select"
+                                                        name="status"
+                                                        className="form-control"
+                                                        id="formrow-status-select"
+                                                        value={formik.values.status}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.status && formik.errors.status}
+                                                    >
+                                                        <option value="">Select Status</option>
+                                                        {statusOptions.map((option, index) => (
+                                                            <option key={index} value={option}>
+                                                                {option}
+                                                            </option>
+                                                        ))}
+                                                    </Input>
+                                                    {formik.errors.status && formik.touched.status ? (
+                                                        <FormFeedback type="invalid">{formik.errors.status}</FormFeedback>
+                                                    ) : null}
+                                                </div>
+                                            </Col>
 
 
-                                <Col md={6}>
-                                    <div className="mb-3">
-                                        <Label htmlFor="formrow-address-select">ADDRESS</Label>
-                                        <Input
-                                            type="select"
-                                            name="billing_address"
-                                            className="form-control"
-                                            id="formrow-billing_address-select"
-                                            value={formik.values.billing_address}
-                                            onChange={formik.handleChange}
-                                            onBlur={formik.handleBlur}
-                                            invalid={formik.touched.billing_address && formik.errors.billing_address}
-                                        >
-                                            <option value="">Select Address</option>
-                                            {customerAddresses.map((addr) => (
-                                                <option key={addr.id} value={addr.id}>
-                                                    {addr.name}-{addr.city}-{addr.state}-{addr.zipcode}-{addr.address}-{addr.phone}-{addr.email}
-                                                </option>
-                                            ))}
-                                        </Input>
-                                        {formik.errors.billing_address && formik.touched.billing_address ? (
-                                            <FormFeedback type="invalid">{formik.errors.billing_address}</FormFeedback>
-                                        ) : null}
-                                    </div>
-                                </Col>
-
+                                            <Col md={6}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-address-select">ADDRESS</Label>
+                                                    <Input
+                                                        type="select"
+                                                        name="billing_address"
+                                                        className="form-control"
+                                                        id="formrow-billing_address-select"
+                                                        value={formik.values.billing_address}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.billing_address && formik.errors.billing_address}
+                                                    >
+                                                        <option value="">Select Address</option>
+                                                        {customerAddresses.map((addr) => (
+                                                            <option key={addr.id} value={addr.id}>
+                                                                {addr.name}-{addr.city}-{addr.state}-{addr.zipcode}-{addr.address}-{addr.phone}-{addr.email}
+                                                            </option>
+                                                        ))}
+                                                    </Input>
+                                                    {formik.errors.billing_address && formik.touched.billing_address ? (
+                                                        <FormFeedback type="invalid">{formik.errors.billing_address}</FormFeedback>
+                                                    ) : null}
+                                                </div>
+                                            </Col>
+                                        </>
+                                    )}
+                                </>
                                 <Col md={12}>
                                     <div className="mb-3">
                                         <Label htmlFor="formrow-note-Input">NOTE</Label>

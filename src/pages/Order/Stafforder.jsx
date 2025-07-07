@@ -991,7 +991,7 @@ const FormLayouts = () => {
 
 
 
-                            {(role === "ADMIN" || role === "BDM") && (
+                            {(role === "ADMIN" || role === "BDM"|| role === "BDO") && (
                                 <Information />
                             )}
                             {(role === "ADMIN" || role === "BDM") && (

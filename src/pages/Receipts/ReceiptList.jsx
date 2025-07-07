@@ -11,6 +11,9 @@ const OtherReceipt = () => {
     const [banks, setBanks] = useState([]);
     const [loading, setLoading] = useState(true);
     const token = localStorage.getItem("token")
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [filteredReceipts, setFilteredReceipts] = useState([]);
 
     useEffect(() => {
         const fetchReceiptData = async () => {
@@ -60,6 +63,27 @@ const OtherReceipt = () => {
         fetchCustomers();
     }, []);
 
+    useEffect(() => {
+        const allReceipts = [
+            ...receipts.advance_receipts || [],
+            ...receipts.bank_receipts || [],
+            ...receipts.payment_receipts || []
+        ];
+
+        if (startDate && endDate) {
+            const filtered = allReceipts.filter(receipt => {
+                const receiptDate = new Date(receipt.received_at);
+                return (
+                    receiptDate >= new Date(startDate) &&
+                    receiptDate <= new Date(endDate)
+                );
+            });
+            setFilteredReceipts(filtered);
+        } else {
+            setFilteredReceipts(allReceipts);
+        }
+    }, [receipts, startDate, endDate]);
+
     const getCustomerName = (id) => {
         const customer = customers.find(c => c.id === id);
         return customer ? customer.name : "N/A";
@@ -83,36 +107,63 @@ const OtherReceipt = () => {
                                     {loading ? (
                                         <Spinner color="primary" />
                                     ) : (
-                                        <Table striped bordered responsive>
-                                            <thead>
-                                                <tr>
-                                                    <th>#</th>
-                                                    <th>Date</th>
-                                                    <th>Customer Name</th>
-                                                    <th>Bank Name</th>
-                                                    <th>Amount</th>
-                                                    <th>Reference</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {[...receipts.advance_receipts, ...receipts.bank_receipts, ...receipts.payment_receipts].length > 0 ? (
-                                                    [...receipts.advance_receipts, ...receipts.bank_receipts, ...receipts.payment_receipts].map((receipt, index) => (
-                                                        <tr key={receipt.id || index}>
-                                                            <td>{index + 1}</td>
-                                                            <td>{receipt.received_at || "N/A"}</td>
-                                                            <td>{getCustomerName(receipt.customer)}</td>
-                                                            <td>{getBankName(receipt.bank)}</td>
-                                                            <td>{receipt.amount || "N/A"}</td>
-                                                            <td>{receipt.transactionID || "N/A"}</td>
-                                                        </tr>
-                                                    ))
-                                                ) : (
+                                        <div>
+                                            <Row className="mb-3">
+                                                <Col md={3}>
+                                                    <label>Start Date</label>
+                                                    <Input
+                                                        type="date"
+                                                        value={startDate}
+                                                        onChange={(e) => setStartDate(e.target.value)}
+                                                    />
+                                                </Col>
+                                                <Col md={3}>
+                                                    <label>End Date</label>
+                                                    <Input
+                                                        type="date"
+                                                        value={endDate}
+                                                        onChange={(e) => setEndDate(e.target.value)}
+                                                    />
+                                                </Col>
+                                                <Col md={3} className="d-flex align-items-end">
+                                                    <Button color="primary" onClick={() => { /* No action needed since useEffect handles it */ }}>
+                                                        Filter
+                                                    </Button>
+                                                </Col>
+                                            </Row>
+
+
+                                            <Table striped bordered responsive>
+                                                <thead>
                                                     <tr>
-                                                        <td colSpan="6" className="text-center">No receipts found.</td>
+                                                        <th>#</th>
+                                                        <th>Date</th>
+                                                        <th>Customer Name</th>
+                                                        <th>Bank Name</th>
+                                                        <th>Amount</th>
+                                                        <th>Reference</th>
                                                     </tr>
-                                                )}
-                                            </tbody>
-                                        </Table>
+                                                </thead>
+                                                <tbody>
+                                                    {filteredReceipts.length > 0 ? (
+                                                        filteredReceipts.map((receipt, index) => (
+                                                            <tr key={receipt.id || index}>
+                                                                <td>{index + 1}</td>
+                                                                <td>{receipt.received_at || "N/A"}</td>
+                                                                <td>{getCustomerName(receipt.customer)}</td>
+                                                                <td>{getBankName(receipt.bank)}</td>
+                                                                <td>{receipt.amount || "N/A"}</td>
+                                                                <td>{receipt.transactionID || "N/A"}</td>
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan="6" className="text-center">No receipts found.</td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </Table>
+                                        </div>
                                     )}
                                 </CardBody>
                             </Card>

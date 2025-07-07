@@ -131,7 +131,7 @@ const UpdateInformationPage = ({ refreshData }) => {
                         <Form onSubmit={formik.handleSubmit}>
                             <Row>
                                 <>
-                                    {(role === "ADMIN" || role === "BDM") && (
+                                    {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting") && (
                                         <>
                                             <Col md={6}>
                                                 <div className="mb-3">
@@ -180,9 +180,6 @@ const UpdateInformationPage = ({ refreshData }) => {
                                                             </option>
                                                         ))}
                                                     </Input>
-                                                    {formik.errors.billing_address && formik.touched.billing_address ? (
-                                                        <FormFeedback type="invalid">{formik.errors.billing_address}</FormFeedback>
-                                                    ) : null}
                                                 </div>
                                             </Col>
                                         </>
@@ -202,9 +199,6 @@ const UpdateInformationPage = ({ refreshData }) => {
                                             onBlur={formik.handleBlur}
                                             invalid={formik.touched.note && formik.errors.note}
                                         />
-                                        {formik.errors.note && formik.touched.note ? (
-                                            <FormFeedback type="invalid">{formik.errors.note}</FormFeedback>
-                                        ) : null}
                                     </div>
                                 </Col>
                             </Row>

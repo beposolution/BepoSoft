@@ -138,6 +138,7 @@ const OtherReceipt = () => {
                                                     <tr>
                                                         <th>#</th>
                                                         <th>Date</th>
+                                                        <th>Invoice</th>
                                                         <th>Customer Name</th>
                                                         <th>Bank Name</th>
                                                         <th>Amount</th>
@@ -150,6 +151,7 @@ const OtherReceipt = () => {
                                                             <tr key={receipt.id || index}>
                                                                 <td>{index + 1}</td>
                                                                 <td>{receipt.received_at || "N/A"}</td>
+                                                                <td>{receipt?.order_name || "N/A"}</td>
                                                                 <td>{getCustomerName(receipt.customer)}</td>
                                                                 <td>{getBankName(receipt.bank)}</td>
                                                                 <td>{receipt.amount || "N/A"}</td>

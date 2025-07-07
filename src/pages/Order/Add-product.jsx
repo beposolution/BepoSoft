@@ -70,7 +70,7 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
                 },
             });
 
-            const data = response.data; // Axios automatically parses JSON
+            const data = response.data; 
 
             // Ensure the response contains `data` and it is an array
             if (data && Array.isArray(data.data)) {
@@ -155,12 +155,18 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
 
     // Filter products based on the search query
     const filteredProducts = Array.isArray(products)
-        ? products.filter(
-            (product) =>
-                product.approval_status === "Approved" &&
-                product.stock > 0 &&
-                product.name.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+        ? products.filter((product) => {
+            const parentMatches = product.approval_status === "Approved" &&
+                product.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+            const parentHasStock = product.stock > 0;
+
+            const variantsHaveStock = Array.isArray(product.variantIDs)
+                ? product.variantIDs.some((variant) => variant.stock > 0)
+                : false;
+
+            return parentMatches && (parentHasStock || variantsHaveStock);
+        })
         : [];
 
     return (
@@ -200,46 +206,73 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
                             </thead>
                             <tbody>
                                 {filteredProducts.length >= 0 ? (
-                                    filteredProducts.map((product, index) => (
-                                        <React.Fragment key={product.id}>
-                                            <tr>
-                                                <td>{index + 1}</td>
-                                                <td>
-                                                    <img
-                                                        src={`${import.meta.env.VITE_APP_IMAGE}${product.image}`}
-                                                        alt={product.name}
-                                                        style={{ width: "50px", height: "50px", objectFit: "cover" }}
-                                                    />
-                                                </td>
-                                                <td>{product.name}</td>
-                                                <td>₹{product.selling_price ? product.selling_price.toFixed(2) : "N/A"}</td>
-                                                <td>{product.stock || 0}</td>
-                                                <td>{product.locked_stock || 0}</td>
-                                                <td>
-                                                    <Input
-                                                        type="number"
-                                                        min="1"
-                                                        max={product.stock || 0}
-                                                        value={quantity[product.id] || 1}
-                                                        onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                                                        className="form-control"
-                                                        placeholder="Quantity"
-                                                    />
+                                    filteredProducts.flatMap((product, index) => {
+                                        const rows = [];
 
-                                                </td>
-                                                <td>
-                                                    <Button
-                                                        color="success"
-                                                        size="sm"
-                                                        onClick={() => addToCart(product)}
-                                                        disabled={product.stock === 0}
-                                                    >
-                                                        Add
-                                                    </Button>
-                                                </td>
-                                            </tr>
-                                        </React.Fragment>
-                                    ))
+                                        // Parent product row (only if stock > 0)
+                                        if (product.stock > 0) {
+                                            rows.push(
+                                                <tr key={`parent-${product.id}`}>
+                                                    <td>{index + 1}</td>
+                                                    <td><img src={`${import.meta.env.VITE_APP_IMAGE}${product.image}`} style={{ width: "50px", height: "50px" }} alt={product.name} /></td>
+                                                    <td>{product.name}</td>
+                                                    <td>₹{product.selling_price?.toFixed(2)}</td>
+                                                    <td>{product.stock}</td>
+                                                    <td>{product.locked_stock}</td>
+                                                    <td>
+                                                        <Input
+                                                            type="number"
+                                                            min="1"
+                                                            max={product.stock}
+                                                            value={quantity[product.id] || 1}
+                                                            onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                                                            className="form-control"
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <Button color="success" size="sm" onClick={() => addToCart(product)} disabled={product.stock === 0}>
+                                                            Add
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        }
+
+                                        // Variant rows (only if stock > 0)
+                                        if (Array.isArray(product.variantIDs)) {
+                                            product.variantIDs.forEach((variant, variantIndex) => {
+                                                if (variant.stock > 0) {
+                                                    rows.push(
+                                                        <tr key={`variant-${variant.id}`}>
+                                                            <td>{index + 1}.{variantIndex + 1}</td>
+                                                            <td><img src={`${import.meta.env.VITE_APP_IMAGE}${variant.image}`} style={{ width: "50px", height: "50px" }} alt={variant.name} /></td>
+                                                            <td>{variant.name}</td>
+                                                            <td>₹{variant.selling_price?.toFixed(2)}</td>
+                                                            <td>{variant.stock}</td>
+                                                            <td>{variant.locked_stock}</td>
+                                                            <td>
+                                                                <Input
+                                                                    type="number"
+                                                                    min="1"
+                                                                    max={variant.stock}
+                                                                    value={quantity[variant.id] || 1}
+                                                                    onChange={(e) => handleQuantityChange(variant.id, e.target.value)}
+                                                                    className="form-control"
+                                                                />
+                                                            </td>
+                                                            <td>
+                                                                <Button color="success" size="sm" onClick={() => addToCart(product, variant)} disabled={variant.stock === 0}>
+                                                                    Add
+                                                                </Button>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                }
+                                            });
+                                        }
+
+                                        return rows;
+                                    })
                                 ) : (
                                     <tr>
                                         <td colSpan="7" className="text-center">

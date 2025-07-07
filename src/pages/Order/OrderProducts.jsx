@@ -844,7 +844,7 @@ const FormLayouts = () => {
                                             <p><strong>Phone:</strong> {shippingAddress.phone}</p>
                                             <p><strong>City:</strong> {shippingAddress.city}</p>
                                             <p><strong>State:</strong> {shippingAddress.state}</p>
-                                            <p><strong>Zip Code:</strong> {shippingAddress.zip_code}</p>
+                                            <p><strong>Zip Code:</strong> {shippingAddress.zipcode}</p>
                                             <p><strong>Country:</strong> {shippingAddress.country}</p>
                                         </div>
                                     </div>

@@ -74,6 +74,7 @@ const FormLayouts = () => {
         country: "",
         phone: "",
         email: "",
+        phone: "",
 
     });
     const [billingAddress, setBillingAddress] = useState({
@@ -797,7 +798,6 @@ const FormLayouts = () => {
                                     </Form>
                                 </CardBody>
                                 <div style={{ display: "flex", justifyContent: "space-between", padding: "20px", gap: "20px", backgroundColor: "#f5f5f5" }}>
-                                    {/* Billing Address Card */}
                                     <div style={{
                                         flex: "1",
                                         padding: "20px",
@@ -819,6 +819,7 @@ const FormLayouts = () => {
                                                 </span>
                                             </p>
                                             <p><strong>Street:</strong> {billingAddress.address}</p>
+                                            <p><strong>Phone:</strong> {billingAddress.phone}</p>
                                             <p><strong>City:</strong> {billingAddress.city}</p>
                                             <p><strong>State:</strong> {billingAddress.state}</p>
                                             <p><strong>Zip Code:</strong> {billingAddress.zipcode}</p>
@@ -840,9 +841,10 @@ const FormLayouts = () => {
                                         <div style={{ marginTop: "20px" }}>
                                             <p><strong>Name:</strong> {shippingAddress.name}</p>
                                             <p><strong>Street:</strong> {shippingAddress.address}</p>
+                                            <p><strong>Phone:</strong> {shippingAddress.phone}</p>
                                             <p><strong>City:</strong> {shippingAddress.city}</p>
                                             <p><strong>State:</strong> {shippingAddress.state}</p>
-                                            <p><strong>Zip Code:</strong> {shippingAddress.zipcode}</p>
+                                            <p><strong>Zip Code:</strong> {shippingAddress.zip_code}</p>
                                             <p><strong>Country:</strong> {shippingAddress.country}</p>
                                         </div>
                                     </div>

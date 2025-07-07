@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useRef } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useParams } from "react-router-dom";
@@ -23,6 +24,7 @@ const UpdateInformationPage = ({ refreshData }) => {
     const [customerAddresses, setCustomerAddresses] = useState([]);
     const [statusOptions, setStatusOptions] = useState([]);
     const [role, setRole] = useState(null);
+    const originalValuesRef = useRef({});
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -41,10 +43,29 @@ const UpdateInformationPage = ({ refreshData }) => {
             // note: Yup.string().max(500, 'Note cannot exceed 500 characters'),
         }),
         onSubmit: async (values) => {
+            const payload = {};
+            const original = originalValuesRef.current;
+
+            // Compare each field
+            if (values.status && values.status !== original.status) {
+                payload.status = values.status;
+            }
+            if (values.billing_address && values.billing_address !== original.billing_address) {
+                payload.billing_address = values.billing_address;
+            }
+            if (values.note && values.note !== original.note) {
+                payload.note = values.note;
+            }
+
+            if (Object.keys(payload).length === 0) {
+                toast.info("No changes to update.");
+                return;
+            }
+
             try {
-                const response = await axios.put(
+                await axios.put(
                     `${import.meta.env.VITE_APP_KEY}shipping/${id}/order/`,
-                    values,
+                    payload,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -56,10 +77,9 @@ const UpdateInformationPage = ({ refreshData }) => {
                     refreshData();
                 }
             } catch (error) {
-                toast.error("Error updating order!", error);
-                // Optionally, handle the error or display an error message
+                toast.error("Error updating order!");
             }
-        },
+        }
     });
 
     useEffect(() => {
@@ -97,11 +117,21 @@ const UpdateInformationPage = ({ refreshData }) => {
 
                 // Access order and customer details from the response
                 const orderData = orderResponse.data.order;
-                const { status, note } = orderData;
+                const { status, note, billing_address } = orderData;
                 const customerId = orderData.customerID;
 
                 // Set initial form values with status and note
-                formik.setValues({ status, billing_address: '', note });
+                formik.setValues({
+                    status: status || '',
+                    billing_address: billing_address?.id || '',
+                    note: note || '',
+                });
+
+                originalValuesRef.current = {
+                    status: status || '',
+                    billing_address: billing_address?.id || '',
+                    note: note || '',
+                };
 
                 // Step 2: Fetch customer shipping addresses
                 const customerResponse = await axios.get(`${import.meta.env.VITE_APP_KEY}add/customer/address/${customerId}/`, {

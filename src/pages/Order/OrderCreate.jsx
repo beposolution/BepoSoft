@@ -258,7 +258,7 @@ const FormLayouts = () => {
                     return acc + ((product.discount || 0) * product.quantity);
                 }, 0);
 
-                const finalAmountAfterDiscount = totalAmount - totalDiscount;
+                const finalAmountAfterDiscount = (totalAmount - totalDiscount) * quantity;
 
                 // Update the state for total amount, total discount, and final amount
                 setCartTotalAmount(totalAmount);

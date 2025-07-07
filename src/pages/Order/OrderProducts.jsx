@@ -529,6 +529,11 @@ const FormLayouts = () => {
         window.open(deliveryNoteUrl, "_blank");
     }
 
+    const totalPayableAmount = orderItems.reduce(
+        (acc, item) => acc + ((item.rate - item.discount) * item.quantity),
+        0
+    );
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -1115,7 +1120,7 @@ const FormLayouts = () => {
                             </Card>
                         </Col>
                         <Col xl={12}>
-                            <Paymentrecipent closingBalance={closingBalance} />
+                            <Paymentrecipent closingBalance={totalPayableAmount} />
                             <Information refreshData={fetchOrderData} />
                             <Row>
                                 <Col xl={12}>

@@ -40,7 +40,7 @@ const FormLayouts = () => {
         },
         validationSchema: Yup.object({
             name: Yup.string().required("This field is required"),
-            email: Yup.string().email("Invalid email format").required("Please enter email"),
+            email: Yup.string().email("Invalid email format"),
             phone: Yup.string().required("Please enter phone"),
             address: Yup.string().required("Please enter address"),
             zip_code: Yup.string().required("ZIP code required"),

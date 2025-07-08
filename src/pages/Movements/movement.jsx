@@ -283,7 +283,7 @@ const Movement = () => {
                                     {/* <th>Shipped Date</th> */}
                                     <th>Actual Weight (gram)</th>
                                     <th>Parcel Amount (₹)</th>
-                                    <th>Post Office Date</th>
+                                    {/* <th>Post Office Date</th> */}
                                     <th>Parcel Service</th>
                                     <th>Packed By</th>
                                     <th>Verified By</th>
@@ -317,7 +317,7 @@ const Movement = () => {
 
                                             <td><strong>{warehouse.actual_weight}</strong></td>
                                             <td><strong>{warehouse.parcel_amount}</strong></td>
-                                            <td><strong>{warehouse.postoffice_date || "-"}</strong></td>
+                                            {/* <td><strong>{warehouse.postoffice_date || "-"}</strong></td> */}
                                             <td><strong>{warehouse.parcel_service || "Unknown"}</strong></td>
                                             <td><strong>{warehouse.packed_by}</strong></td>
                                             <td><strong>{warehouse.verified_by || "N/A"}</strong></td>

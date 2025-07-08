@@ -11,7 +11,7 @@ import { AiFillProduct } from "react-icons/ai";
 import { BiCheckDouble, BiSolidBank } from "react-icons/bi";
 import { BsArrowRightSquareFill } from "react-icons/bs";
 import { LuCircleCheckBig } from "react-icons/lu";
-import { GiBassetHoundHead, GiExpense } from "react-icons/gi";
+import { GiBassetHoundHead, GiExpense, GiPostOffice } from "react-icons/gi";
 import { TbReportSearch } from "react-icons/tb";
 import { MdOutlineVideogameAsset, MdLocalFireDepartment, MdAssignmentReturn, MdDetails } from "react-icons/md";
 import { IoMdInformationCircleOutline } from "react-icons/io";
@@ -573,6 +573,19 @@ const SidebarContent = (props) => {
                     </li>
                     <li>
                       <Link to="/expense/add-expanse-modal/">{props.t("add expanse type")}</Link>
+                    </li>
+                  </ul>
+                </li>
+
+                {/* parcel srvice Section */}
+                <li>
+                  <Link to="/#" className="has-arrow">
+                    <GiPostOffice size={20} style={{ marginRight: '8px' }} />
+                    <span>{props.t("Parcel Service")}</span>
+                  </Link>
+                  <ul className="sub-menu" aria-expanded="false">
+                    <li>
+                      <Link to="/add/parcel/service/">{props.t("Add Parcel Service")}</Link>
                     </li>
                   </ul>
                 </li>

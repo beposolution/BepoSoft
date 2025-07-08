@@ -221,8 +221,8 @@ const FormLayouts = () => {
                                                     </Button>
                                                 </div>
                                             </Form>
-                                            <Button className="" color="danger" onClick={handleCancel}>
-                                                Cancel
+                                            <Button className="ms-3" color="danger" onClick={handleCancel}>
+                                                Unlock
                                             </Button>
                                         </Col>
 

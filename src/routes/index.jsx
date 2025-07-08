@@ -362,6 +362,7 @@ import ReceiptList from "../pages/Receipts/ReceiptList";
 import AdvanceReceiptList from "../pages/Receipts/AdvanceReceiptList";
 import OrderReceiptList from "../pages/Receipts/OrderReceiptList";
 import OtherReceiptList from "../pages/Receipts/OtherReceiptList";
+import AddParcelService from "../pages/ParcelServices/AddParcelService";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -546,6 +547,9 @@ const authProtectedRoutes = [
   { path: "/projects-overview/:id", component: <ProjectsOverview /> },
   { path: "/projects-create", component: <ProjectsCreate /> },
   { path: "/movement/:id", component: <Movement /> },
+
+  // Parcel Services
+  { path: "/add/parcel/service/", component: <AddParcelService /> },
 
   //Bank
 

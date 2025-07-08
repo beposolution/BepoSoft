@@ -641,16 +641,19 @@ const FormLayouts = () => {
 
         // Update local state
         if (field === 'quantity') {
-            updatedItems[index].quantity = Number(value); // Convert to Number for consistency
+            updatedItems[index].quantity = Number(value);
         } else if (field === 'discount') {
-            updatedItems[index].discount = Number(value); // Convert to Number
+            updatedItems[index].discount = Number(value);
+        } else if (field === 'rate') {
+            updatedItems[index].rate = Number(value);
         }
         setOrderItems(updatedItems);
 
         // Prepare the data to be sent to the backend
         const updateData = {
             quantity: updatedItems[index].quantity,
-            discount: updatedItems[index].discount
+            discount: updatedItems[index].discount,
+            rate: updatedItems[index].rate
         };
 
         // Call the backend update function with productId in the URL
@@ -1202,7 +1205,7 @@ const FormLayouts = () => {
                                                                 <td>{item.rate}</td>
                                                                 <td>{item.exclude_price}</td>
                                                                 <td>{item.tax} %</td>
-                                                                <td>{item.rate - item.exclude_price}</td>
+                                                                <td>{(item.rate - item.exclude_price).toFixed(3)}</td>
                                                                 <td>
                                                                     <Input
                                                                         type="number"
@@ -1212,7 +1215,15 @@ const FormLayouts = () => {
                                                                         style={{ width: '80px' }}
                                                                     />
                                                                 </td>
-                                                                <td>{item.rate - item.discount}</td>
+                                                                <td>
+                                                                    <Input
+                                                                        type="number"
+                                                                        value={item.rate}
+                                                                        disabled={isAddDisabled}
+                                                                        onChange={(e) => handleItemChange(index, 'rate', Number(e.target.value))}
+                                                                        style={{ width: '80px' }}
+                                                                    />
+                                                                </td>
                                                                 <td>
                                                                     <Input
                                                                         type="number"

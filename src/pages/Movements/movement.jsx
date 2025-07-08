@@ -271,16 +271,17 @@ const Movement = () => {
                                     <th>Invoice No</th>
                                     <th>Customer</th>
                                     <th>Phone</th>
+                                    <th>Pincode</th>
                                     <th>Box</th>
                                     <th>COD</th>
-                                    <th>Weight</th>
+                                    <th>Weight (gram)</th>
                                     {/* <th>Length (cm)</th>
                                 <th>Breadth (cm)</th>
                                 <th>Height (cm)</th> */}
                                     <th>Volume (cm³)</th>
                                     <th>Tracking ID</th>
                                     {/* <th>Shipped Date</th> */}
-                                    <th>Actual Weight</th>
+                                    <th>Actual Weight (gram)</th>
                                     <th>Parcel Amount (₹)</th>
                                     <th>Post Office Date</th>
                                     <th>Parcel Service</th>
@@ -297,6 +298,7 @@ const Movement = () => {
                                             <td><strong>{order.invoice}</strong></td>
                                             <td><strong>{warehouse.customer}</strong></td>
                                             <td><strong>{warehouse.phone}</strong></td>
+                                            <td><strong>{warehouse.zip_code}</strong></td>
                                             <td><strong>{warehouse.box}</strong></td>
                                             <td><strong>{order.cod_amount}</strong></td>
                                             <td><strong>{warehouse.weight}</strong></td>

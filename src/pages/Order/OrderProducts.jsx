@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Card, Col, Container, Row, CardBody, Button, CardTitle, Label, ModalHeader, Modal, Form, Input, Table, FormFeedback, ModalBody } from "reactstrap";
+import { Card, Col, Container, Row, CardBody, Button, CardTitle, Label, ModalHeader, Modal, Form, Input, Table, FormFeedback, ModalBody, Spinner } from "reactstrap";
 import { FaFileInvoice, FaCalendarAlt, FaUser, FaDollarSign, FaUniversity, FaIdBadge, FaUserCheck, FaUserPlus, FaStickyNote } from "react-icons/fa";
 import * as Yup from 'yup';
 import { useFormik } from "formik";
@@ -45,8 +45,184 @@ const FormLayouts = () => {
     const [customerId, setCustomerId] = useState([]);
     const [ledgerData, setLedgerData] = useState({});
     const [closingBalance, setClosingBalance] = useState(0);
-
+    const [products, setProducts] = useState([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [expandedProductId, setExpandedProductId] = useState(null);
+    const [quantity, setQuantity] = useState({});
     const navigate = useNavigate();
+    const [userData, setUserData] = useState();
+    const warehouseId = userData;
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}profile/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setUserData(response?.data?.data?.warehouse_id);
+            } catch (error) {
+                toast.error('Error fetching user data:');
+            }
+        };
+        fetchUserData();
+    }, []);
+
+    const fetchProducts = async () => {
+        setLoading(true);
+        setError(null);
+        const token = localStorage.getItem("token");
+
+        try {
+            const response = await fetch(`${import.meta.env.VITE_APP_KEY}all/products/`, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+            });
+
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch products");
+            }
+
+            const data = await response.json();
+
+            // Ensure the data is an array and properly set it
+            if (data && Array.isArray(data.data)) {
+                setProducts(data.data);
+            } else {
+                setError('Data structure is not as expected');
+            }
+
+        } catch (error) {
+            setError(error.message || "An error occurred while fetching products.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchwarehouseProduct = async () => {
+        setLoading(true);
+        setError(null);
+        const token = localStorage.getItem("token");
+
+        try {
+            const response = await axios.get(`${import.meta.env.VITE_APP_KEY}warehouse/products/${warehouseId}/`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                },
+            });
+
+            const data = response.data;
+
+            // Ensure the response contains `data` and it is an array
+            if (data && Array.isArray(data.data)) {
+                setProducts(data.data);
+            } else {
+                throw new Error("Unexpected data structure received from API");
+            }
+
+        } catch (error) {
+            setError(error.response?.data?.message || "An error occurred while fetching products.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const addToItem = async (product, variant = null) => {
+        const token = localStorage.getItem("token");
+
+        const selected = variant || product;
+
+        const qty = quantity[selected.id] || 1;
+
+        const payload = {
+            order: parseInt(id),
+            product: product.id,
+            quantity: parseInt(qty),
+            variant: variant ? variant.id : null,
+            rate: selected.selling_price, // Assuming this is the price you want to use
+            tax: selected.tax || 0         // Add this if tax field exists in product/variant
+        };
+
+        try {
+            const response = await fetch(`${import.meta.env.VITE_APP_KEY}order-item/create/`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || "Failed to add product");
+            }
+
+            toast.success("Product added successfully!");
+            fetchOrderData();
+        } catch (error) {
+            toast.error(error.message || "Error adding product");
+        }
+    };
+
+    useEffect(() => {
+
+        if (!warehouseId || warehouseId === "" || warehouseId === undefined) {
+            if (isOpen) {
+                fetchProducts();
+            }
+        } else {
+            fetchwarehouseProduct();
+        }
+    }, [isOpen, warehouseId]);;
+
+    const handleSearchChange = (event) => {
+        setSearchQuery(event.target.value);
+    };
+
+    const toggleExpand = (productId) => {
+        setExpandedProductId(expandedProductId === productId ? null : productId);
+    };
+
+    const handleQuantityChange = (productId, value) => {
+        const parsedValue = parseInt(value, 10);
+        const product = products.find(p => p.id === productId);
+        const stock = product ? product.stock : 0;
+
+        if (parsedValue > stock) {
+            setQuantity((prev) => ({
+                ...prev,
+                [productId]: stock,
+            }));
+            alert(`Quantity cannot exceed available stock of ${stock}.`);
+        } else {
+            setQuantity((prev) => ({
+                ...prev,
+                [productId]: parsedValue,
+            }));
+        }
+    };
+
+    const filteredProducts = Array.isArray(products)
+        ? products.filter((product) => {
+            const parentMatches = product.approval_status === "Approved" &&
+                product.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+            const parentHasStock = product.stock > 0;
+
+            const variantsHaveStock = Array.isArray(product.variantIDs)
+                ? product.variantIDs.some((variant) => variant.stock > 0)
+                : false;
+
+            return parentMatches && (parentHasStock || variantsHaveStock);
+        })
+        : [];
 
     const handleNameClick = (updateId) => {
         navigate(`/customer/${updateId}/edit/`);
@@ -74,7 +250,6 @@ const FormLayouts = () => {
         country: "",
         phone: "",
         email: "",
-        phone: "",
 
     });
     const [billingAddress, setBillingAddress] = useState({
@@ -860,6 +1035,127 @@ const FormLayouts = () => {
                                 <Col xl={12}>
                                     <Card className="bordered-card">
                                         <CardBody>
+                                            <div className="text-end mb-3">
+                                                <Button color="primary" onClick={toggleReciptModal}>
+                                                    Add Product
+                                                </Button>
+                                            </div>
+                                            <Modal isOpen={isOpen} toggle={toggleReciptModal} size="lg" style={{ maxWidth: "90%", width: "90%" }}>
+                                                <ModalHeader toggle={toggleReciptModal}>Search Products</ModalHeader>
+                                                <ModalBody>
+                                                    {loading ? (
+                                                        <div className="text-center">
+                                                            <Spinner />
+                                                            <p>Loading products...</p>
+                                                        </div>
+                                                    ) : error ? (
+                                                        <div className="text-center text-danger">
+                                                            <p>{error}</p>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <Input
+                                                                type="text"
+                                                                placeholder="Search for products..."
+                                                                value={searchQuery}
+                                                                onChange={handleSearchChange}
+                                                                className="mb-3"
+                                                            />
+                                                            <Table className="mt-3" responsive bordered hover>
+                                                                <thead className="table-light">
+                                                                    <tr>
+                                                                        <th>#</th>
+                                                                        <th>Image</th>
+                                                                        <th>Name</th>
+                                                                        <th>Price</th>
+                                                                        <th>Stock</th>
+                                                                        <th>Locked Stock</th>
+                                                                        <th>Quantity</th>
+                                                                        <th>Action</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {filteredProducts.length >= 0 ? (
+                                                                        filteredProducts.flatMap((product, index) => {
+                                                                            const rows = [];
+
+                                                                            // Parent product row (only if stock > 0)
+                                                                            if (product.stock > 0) {
+                                                                                rows.push(
+                                                                                    <tr key={`parent-${product.id}`}>
+                                                                                        <td>{index + 1}</td>
+                                                                                        <td><img src={`${import.meta.env.VITE_APP_IMAGE}${product.image}`} style={{ width: "50px", height: "50px" }} alt={product.name} /></td>
+                                                                                        <td>{product.name}</td>
+                                                                                        <td>₹{product.selling_price?.toFixed(2)}</td>
+                                                                                        <td>{product.stock}</td>
+                                                                                        <td>{product.locked_stock}</td>
+                                                                                        <td>
+                                                                                            <Input
+                                                                                                type="number"
+                                                                                                min="1"
+                                                                                                max={product.stock}
+                                                                                                value={quantity[product.id] || 1}
+                                                                                                onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                                                                                                className="form-control"
+                                                                                            />
+                                                                                        </td>
+                                                                                        <td>
+                                                                                            <Button color="success" size="sm" onClick={() => addToItem(product)} disabled={product.stock === 0}>
+                                                                                                Add
+                                                                                            </Button>
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                );
+                                                                            }
+
+                                                                            // Variant rows (only if stock > 0)
+                                                                            if (Array.isArray(product.variantIDs)) {
+                                                                                product.variantIDs.forEach((variant, variantIndex) => {
+                                                                                    if (variant.stock > 0) {
+                                                                                        rows.push(
+                                                                                            <tr key={`variant-${variant.id}`}>
+                                                                                                <td>{index + 1}.{variantIndex + 1}</td>
+                                                                                                <td><img src={`${import.meta.env.VITE_APP_IMAGE}${variant.image}`} style={{ width: "50px", height: "50px" }} alt={variant.name} /></td>
+                                                                                                <td>{variant.name}</td>
+                                                                                                <td>₹{variant.selling_price?.toFixed(2)}</td>
+                                                                                                <td>{variant.stock}</td>
+                                                                                                <td>{variant.locked_stock}</td>
+                                                                                                <td>
+                                                                                                    <Input
+                                                                                                        type="number"
+                                                                                                        min="1"
+                                                                                                        max={variant.stock}
+                                                                                                        value={quantity[variant.id] || 1}
+                                                                                                        onChange={(e) => handleQuantityChange(variant.id, e.target.value)}
+                                                                                                        className="form-control"
+                                                                                                    />
+                                                                                                </td>
+                                                                                                <td>
+                                                                                                    <Button color="success" size="sm" onClick={() => addToItem(product, variant)} disabled={variant.stock === 0}>
+                                                                                                        Add
+                                                                                                    </Button>
+                                                                                                </td>
+                                                                                            </tr>
+                                                                                        );
+                                                                                    }
+                                                                                });
+                                                                            }
+
+                                                                            return rows;
+                                                                        })
+                                                                    ) : (
+                                                                        <tr>
+                                                                            <td colSpan="7" className="text-center">
+                                                                                No products found.
+                                                                            </td>
+                                                                        </tr>
+                                                                    )}
+                                                                </tbody>
+                                                            </Table>
+                                                        </>
+                                                    )}
+                                                </ModalBody>
+                                            </Modal>
                                             <CardTitle className="h4">Order table</CardTitle>
                                             <div className="table-responsive">
                                                 <Table className="table table-bordered table-striped mb-0">
@@ -926,7 +1222,7 @@ const FormLayouts = () => {
                                                                     <Button
                                                                         color="danger"
                                                                         onClick={() => handleRemoveItem(item.id)}
-                                                                        disabled={isDisabled}
+                                                                    // disabled={isDisabled}
                                                                     >
                                                                         Remove
                                                                     </Button>
@@ -935,23 +1231,16 @@ const FormLayouts = () => {
                                                         ))}
                                                         {/* Total Row */}
                                                         <tr className="total-row">
-                                                            <td colSpan="3" className="text-end font-weight-bold">Totals:</td>
+                                                            <td colSpan="7" className="text-end font-weight-bold">Totals:</td>
 
-                                                            <td className="font-weight-bold">
-                                                                {orderItems.reduce((acc, item) => acc + parseFloat(item.rate), 0).toFixed(2)}
-                                                            </td>
-                                                            <td className="font-weight-bold">
-                                                                {orderItems.reduce((acc, item) => acc + parseFloat(item.exclude_price * item.quantity), 0).toFixed(2)}
-                                                            </td>
+                                                            {/* <td></td>
                                                             <td></td>
-                                                            <td></td>
+                                                            <td></td> */}
+                                                            {/* <td></td> */}
                                                             <td className="font-weight-bold">
                                                                 {orderItems.reduce((acc, item) => acc + parseInt(item.quantity), 0)}
                                                             </td>
-                                                            <td className="font-weight-bold">
-                                                                {orderItems.reduce((acc, item) => acc + parseInt(item.rate - item.discount), 0)}
-                                                            </td>
-
+                                                            <td></td>
                                                             <td className="font-weight-bold">
                                                                 {orderItems.reduce((acc, item) => acc + parseInt(item.discount * item.quantity), 0)}
                                                             </td>
@@ -1079,11 +1368,6 @@ const FormLayouts = () => {
                                                     vertical-align: middle;
                                                 }
                                             `}</style>
-                                            {/* <div className="mb-3 mt-3">
-                                                <Button color="primary" disabled={isAddDisabled} onClick={toggleModal}>
-                                                    Add Products
-                                                </Button>
-                                            </div> */}
 
                                             <div className="mb-3 mt-3" style={{ textAlign: "right" }}>
                                                 <Button type="submit" color="primary" disabled={isAddDisabled} onClick={handleSubmit}>

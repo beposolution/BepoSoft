@@ -21,6 +21,7 @@ const BasicTable = () => {
     const navigate = useNavigate();
     const [lockedOrderId, setLockedOrderId] = useState(null);
     const [statusFilter, setStatusFilter] = useState("");
+    const [invoiceSearch, setInvoiceSearch] = useState("");
 
     document.title = "Orders | Beposoft";
 
@@ -133,6 +134,17 @@ const BasicTable = () => {
                                 <CardBody>
                                     <Row className="mb-3">
                                         <Col md={4}>
+                                            <label htmlFor="invoiceSearch" className="form-label">Search by Invoice</label>
+                                            <input
+                                                type="text"
+                                                id="invoiceSearch"
+                                                className="form-control"
+                                                placeholder="Enter invoice number"
+                                                value={invoiceSearch}
+                                                onChange={(e) => setInvoiceSearch(e.target.value)}
+                                            />
+                                        </Col>
+                                        <Col md={4}>
                                             <label htmlFor="statusFilter" className="form-label">Filter by Status</label>
                                             <select
                                                 id="statusFilter"
@@ -166,7 +178,11 @@ const BasicTable = () => {
                                                 </thead>
                                                 <tbody>
                                                     {orders
-                                                        .filter(order => !statusFilter || order.status === statusFilter)
+                                                        .filter(order => {
+                                                            const matchesStatus = !statusFilter || order.status === statusFilter;
+                                                            const matchesInvoice = !invoiceSearch || order.invoice?.toLowerCase().includes(invoiceSearch.toLowerCase());
+                                                            return matchesStatus && matchesInvoice;
+                                                        })
                                                         .map((order, index) => (
                                                             <tr key={order.id}>
                                                                 <th scope="row">{index + 1}</th>

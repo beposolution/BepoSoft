@@ -20,6 +20,7 @@ const BasicTable = () => {
     const [role, setRole] = useState(null);
     const navigate = useNavigate();
     const [lockedOrderId, setLockedOrderId] = useState(null);
+    const [statusFilter, setStatusFilter] = useState("");
 
     document.title = "Orders | Beposoft";
 
@@ -59,6 +60,24 @@ const BasicTable = () => {
             setLoading(false);
         }
     };
+
+    const statusOptions = [
+        "Pending",
+        "Approved",
+        "Shipped",
+        "To Print",
+        "Invoice Rejected",
+        "Order Request by Warehouse",
+        "Processing",
+        "Completed",
+        "Cancelled",
+        "Refunded",
+        "Rejected",
+        "Return",
+        "Packing under progress",
+        "Packed",
+        "Ready to ship"
+    ];
 
     const viewDeliveryNote = async (invoiceId) => {
         try {
@@ -112,6 +131,24 @@ const BasicTable = () => {
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
+                                    <Row className="mb-3">
+                                        <Col md={4}>
+                                            <label htmlFor="statusFilter" className="form-label">Filter by Status</label>
+                                            <select
+                                                id="statusFilter"
+                                                className="form-select"
+                                                value={statusFilter}
+                                                onChange={(e) => setStatusFilter(e.target.value)}
+                                            >
+                                                <option value="">All</option>
+                                                {statusOptions.map((status, index) => (
+                                                    <option key={index} value={status}>
+                                                        {status}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </Col>
+                                    </Row>
                                     <CardTitle className="h4"></CardTitle>
                                     <div className="table-responsive">
                                         {loading ? <div>Loading...</div> : error ? <div className="text-danger">{error}</div> : (
@@ -128,41 +165,43 @@ const BasicTable = () => {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {orders.map((order, index) => (
-                                                        <tr key={order.id}>
-                                                            <th scope="row">{index + 1}</th>
-                                                            <td>{order.invoice}</td>
-                                                            <td>{order.customer.name}</td>
-                                                            <td>{order.status}</td>
-                                                            <td>{order.total_amount}</td>
-                                                            <td>{order.order_date}</td>
-                                                            <td>
-                                                                <div style={{ display: "flex", flexDirection: "column" }}>
-                                                                    <button
-                                                                        onClick={() => viewDeliveryNote(order.id)}
-                                                                        style={{
-                                                                            padding: "10px 20px",
-                                                                            border: "none",
-                                                                            background: "#3258a8",
-                                                                            color: "white",
-                                                                            cursor: "pointer",
-                                                                            marginBottom: "5px",
-                                                                            opacity: order.locked_by && order.locked_by !== localStorage.getItem("username") ? 0.7 : 1
-                                                                        }}
-                                                                    >
-                                                                        View
-                                                                    </button>
-                                                                    {
-                                                                        order.locked_by && order.locked_by !== localStorage.getItem("username") && (
-                                                                            <span className="text-danger" style={{ fontSize: "0.85rem" }}>
-                                                                                In use by: {order.locked_by.toUpperCase()}
-                                                                            </span>
-                                                                        )
-                                                                    }
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
+                                                    {orders
+                                                        .filter(order => !statusFilter || order.status === statusFilter)
+                                                        .map((order, index) => (
+                                                            <tr key={order.id}>
+                                                                <th scope="row">{index + 1}</th>
+                                                                <td>{order.invoice}</td>
+                                                                <td>{order.customer.name}</td>
+                                                                <td>{order.status}</td>
+                                                                <td>{order.total_amount}</td>
+                                                                <td>{order.order_date}</td>
+                                                                <td>
+                                                                    <div style={{ display: "flex", flexDirection: "column" }}>
+                                                                        <button
+                                                                            onClick={() => viewDeliveryNote(order.id)}
+                                                                            style={{
+                                                                                padding: "10px 20px",
+                                                                                border: "none",
+                                                                                background: "#3258a8",
+                                                                                color: "white",
+                                                                                cursor: "pointer",
+                                                                                marginBottom: "5px",
+                                                                                opacity: order.locked_by && order.locked_by !== localStorage.getItem("username") ? 0.7 : 1
+                                                                            }}
+                                                                        >
+                                                                            View
+                                                                        </button>
+                                                                        {
+                                                                            order.locked_by && order.locked_by !== localStorage.getItem("username") && (
+                                                                                <span className="text-danger" style={{ fontSize: "0.85rem" }}>
+                                                                                    In use by: {order.locked_by.toUpperCase()}
+                                                                                </span>
+                                                                            )
+                                                                        }
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
                                                 </tbody>
                                             </Table>
                                         )}

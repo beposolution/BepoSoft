@@ -17,6 +17,7 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Link } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Pagination from "../../components/Common/Pagination"
 
 const BasicTable = () => {
     const [orders, setOrders] = useState([]);
@@ -30,6 +31,8 @@ const BasicTable = () => {
     const token = localStorage.getItem("token");
     const [role, setRole] = useState(null);
     const [userData, setUserData] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const perPageData = 25;
 
     document.title = "Orders | Beposoft";
 
@@ -99,6 +102,27 @@ const BasicTable = () => {
 
         return matchesSearch && matchesStatus && matchesStaff;
     });
+
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const currentPageOrders = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
+
+    const getStatusStyle = (status) => {
+        switch (status) {
+            case "Invoice Approved":
+                return { color: "green", fontWeight: "bold" };
+            case "Invoice Rejected":
+                return { color: "red", fontWeight: "bold" };
+            case "Waiting For Confirmation":
+                return { color: "orange", fontWeight: "bold" };
+            case "Packing under progress":
+                return { color: "gray", fontWeight: "bold" };
+            case "Invoice Created":
+                return { color: "blue", fontWeight: "bold" };
+            default:
+                return {};
+        }
+    };
 
     const exportToExcel = () => {
         const formattedData = orders.map((order, index) => ({
@@ -187,9 +211,9 @@ const BasicTable = () => {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {filteredOrders?.map((order, index) => (
+                                                    {currentPageOrders?.map((order, index) => (
                                                         <tr key={order?.id}>
-                                                            <th scope="row">{index + 1}</th>
+                                                            <th scope="row">{indexOfFirstItem + index + 1}</th>
                                                             <td><Link to={`/order/${order?.id}/items/`}>{order?.invoice}</Link></td>
                                                             <td>{order?.manage_staff} ({order?.family})</td>
                                                             <td>
@@ -197,7 +221,9 @@ const BasicTable = () => {
                                                                     {order?.customer?.name}
                                                                 </Link>
                                                             </td>
-                                                            <td>{order?.status}</td>
+                                                            <td style={getStatusStyle(order?.status)}>
+                                                                <strong>{order?.status}</strong>
+                                                            </td>
                                                             <td>{order?.total_amount}</td>
                                                             <td>
                                                                 {order?.order_date
@@ -210,6 +236,17 @@ const BasicTable = () => {
                                             </Table>
                                         )}
                                     </div>
+                                    <Pagination
+                                        perPageData={perPageData}
+                                        data={filteredOrders}
+                                        currentPage={currentPage}
+                                        setCurrentPage={setCurrentPage}
+                                        isShowingPageLength={true}
+                                        paginationDiv="col-auto"
+                                        paginationClass="pagination-rounded"
+                                        indexOfFirstItem={indexOfFirstItem}
+                                        indexOfLastItem={indexOfLastItem}
+                                    />
                                 </CardBody>
                             </Card>
                         </Col>

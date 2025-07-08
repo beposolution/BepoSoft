@@ -144,8 +144,8 @@ const FormLayouts = () => {
             product: product.id,
             quantity: parseInt(qty),
             variant: variant ? variant.id : null,
-            rate: selected.selling_price, // Assuming this is the price you want to use
-            tax: selected.tax || 0         // Add this if tax field exists in product/variant
+            rate: selected?.selling_price, // Assuming this is the price you want to use
+            tax: selected?.tax || 0         // Add this if tax field exists in product/variant
         };
 
         try {
@@ -657,10 +657,15 @@ const FormLayouts = () => {
         updateCartProduct(productId, updateData);
     };
 
+    const totalPayableAmount = orderItems.reduce(
+        (acc, item) => acc + ((item.rate - item.discount) * item.quantity),
+        0
+    ) + shippingCharge;
+
     const handleSubmit = async () => {
         const payload = {
             shipping_charge: shippingCharge,
-            total_amount: totalAmount + shippingCharge,
+            total_amount: totalPayableAmount,
             bank: selectedBank ? parseInt(selectedBank) : null,
         };
         try {
@@ -675,6 +680,7 @@ const FormLayouts = () => {
             if (response.ok) {
                 const data = await response.json();
                 setSuccessMessage("Form submitted successfully!");
+                toast("Order updated successfully!");
             } else {
                 const errorData = await response.json();
                 setErrorMessage("Failed to submit the form. Please check your input and try again.");
@@ -704,7 +710,7 @@ const FormLayouts = () => {
         window.open(deliveryNoteUrl, "_blank");
     }
 
-    const totalPayableAmount = orderItems.reduce(
+    const totalPayableAmountDisplay = orderItems.reduce(
         (acc, item) => acc + ((item.rate - item.discount) * item.quantity),
         0
     ) + shippingCharge;
@@ -1346,7 +1352,7 @@ const FormLayouts = () => {
                                                                     </tr>
                                                                     <tr>
                                                                         <th scope="row" className="text-dark" style={{ backgroundColor: "#f1f3f5", fontWeight: "bold" }}>Total Payable Amount</th>
-                                                                        <td><strong className="text-success" style={{ fontWeight: "700", fontSize: "1.2em" }}>${Number(totalAmount + shippingCharge).toFixed(2)}</strong></td>
+                                                                        <td><strong className="text-success" style={{ fontWeight: "700", fontSize: "1.2em" }}>₹{totalPayableAmountDisplay.toFixed(2)}</strong></td>
                                                                     </tr>
                                                                 </tbody>
                                                             </Table>
@@ -1368,7 +1374,6 @@ const FormLayouts = () => {
                                                     vertical-align: middle;
                                                 }
                                             `}</style>
-
                                             <div className="mb-3 mt-3" style={{ textAlign: "right" }}>
                                                 <Button type="submit" color="primary" disabled={isAddDisabled} onClick={handleSubmit}>
                                                     Submit

@@ -45,7 +45,13 @@ const BasicTable = () => {
                 const filterOrders = response.data.results.filter(order => order.status === "To Print")
                 setOrders(filterOrders);
             } else {
-                setOrders(response.data.results);
+                const excludedStatuses = ["Invoice Created", "Invoice Approved", "Waiting For Confirmation"];
+
+                const filteredOrders = response.data.results.filter(
+                    (order) => !excludedStatuses.includes(order.status)
+                );
+
+                setOrders(filteredOrders);
             }
         } catch (error) {
             setError("Error fetching orders data. Please try again later.");

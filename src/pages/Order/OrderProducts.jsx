@@ -134,15 +134,13 @@ const FormLayouts = () => {
 
     const addToItem = async (product, variant = null) => {
         const token = localStorage.getItem("token");
-
         const selected = variant || product;
         const qty = quantity[selected.id] || 1;
 
         const payload = {
             order: parseInt(id),
-            product: product.id,
+            product: selected.id, 
             quantity: parseInt(qty),
-            product: variant?.id || null,
             rate: selected?.selling_price || 0,
             tax: selected?.tax || 0,
         };

@@ -178,13 +178,22 @@ const UpdateInformationPage = ({ refreshData }) => {
                                                     >
                                                         <option value="">Select Status</option>
                                                         {(() => {
-                                                            const selectedIndex = statusOptions.indexOf(formik.values.status);
-                                                            let filteredOptions = statusOptions;
+                                                            let filteredOptions = [];
 
-                                                            if (selectedIndex !== -1) {
-                                                                filteredOptions = statusOptions.slice(selectedIndex, selectedIndex + 2);
+                                                            if (formik.values.status === "Invoice Rejected") {
+                                                                filteredOptions = [...statusOptions];
+                                                            } else {
+                                                                const selectedIndex = statusOptions.indexOf(formik.values.status);
+                                                                if (selectedIndex !== -1) {
+                                                                    filteredOptions = statusOptions.slice(selectedIndex, selectedIndex + 2);
+                                                                } else {
+                                                                    filteredOptions = statusOptions.slice(0, 2);
+                                                                }
+
+                                                                if (!filteredOptions.includes("Invoice Rejected")) {
+                                                                    filteredOptions.push("Invoice Rejected");
+                                                                }
                                                             }
-
                                                             return filteredOptions.map((option, index) => (
                                                                 <option key={index} value={option}>
                                                                     {option}

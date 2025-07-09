@@ -243,7 +243,7 @@ const FormRepeater = () => {
                                                                 <option value="">Select Packed By</option>
                                                                 {staffs
                                                                     .filter(staff =>
-                                                                        ["Accounts / Accounting", "ADMIN", "Warehouse", "Warehouse Admin"].includes(staff.department_name)
+                                                                        ["Accounts / Accounting", "ADMIN", "warehouse", "Warehouse Admin"].includes(staff.department_name)
                                                                     )
                                                                     .map((staff, index) => (
                                                                         <option key={index} value={staff.id}>

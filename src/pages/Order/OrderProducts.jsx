@@ -160,7 +160,6 @@ const FormLayouts = () => {
             const result = await response.json();
 
             if (!response.ok) {
-                console.error("Server returned:", result);
                 throw new Error(result.message || "Failed to add product");
             }
 

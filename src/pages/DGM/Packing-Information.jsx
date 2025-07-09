@@ -241,11 +241,15 @@ const FormRepeater = () => {
                                                                 className="form-control"
                                                             >
                                                                 <option value="">Select Packed By</option>
-                                                                {staffs.map((staff, index) => (
-                                                                    <option key={index} value={staff.id}>
-                                                                        {staff.name}
-                                                                    </option>
-                                                                ))}
+                                                                {staffs
+                                                                    .filter(staff =>
+                                                                        ["Accounts / Accounting", "ADMIN", "Warehouse", "Warehouse Admin"].includes(staff.department_name)
+                                                                    )
+                                                                    .map((staff, index) => (
+                                                                        <option key={index} value={staff.id}>
+                                                                            {staff.name}
+                                                                        </option>
+                                                                    ))}
                                                             </Input>
                                                         </FormGroup>
                                                     </Col>

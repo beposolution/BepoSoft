@@ -136,16 +136,15 @@ const FormLayouts = () => {
         const token = localStorage.getItem("token");
 
         const selected = variant || product;
-
         const qty = quantity[selected.id] || 1;
 
         const payload = {
             order: parseInt(id),
             product: product.id,
             quantity: parseInt(qty),
-            variant: variant ? variant.id : null,
-            rate: selected?.selling_price, // Assuming this is the price you want to use
-            tax: selected?.tax || 0         // Add this if tax field exists in product/variant
+            product: variant?.id || null,
+            rate: selected?.selling_price || 0,
+            tax: selected?.tax || 0,
         };
 
         try {
@@ -161,6 +160,7 @@ const FormLayouts = () => {
             const result = await response.json();
 
             if (!response.ok) {
+                console.error("Server returned:", result);
                 throw new Error(result.message || "Failed to add product");
             }
 

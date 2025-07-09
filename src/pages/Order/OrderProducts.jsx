@@ -139,7 +139,7 @@ const FormLayouts = () => {
 
         const payload = {
             order: parseInt(id),
-            product: selected.id, 
+            product: selected.id,
             quantity: parseInt(qty),
             rate: selected?.selling_price || 0,
             tax: selected?.tax || 0,
@@ -567,8 +567,15 @@ const FormLayouts = () => {
 
     const calculateTaxAmount = (items) => {
         const totalTaxAmount = items.reduce((sum, item) => {
-            const itemTax = item.actual_price - item.exclude_price;
-            const itemTotalTax = itemTax * item.quantity;
+            const rate = parseFloat(item.rate || 0);
+            const discount = parseFloat(item.discount || 0);
+            const exclude = parseFloat(item.exclude_price || 0);
+            const qty = parseInt(item.quantity || 0);
+
+            const effectiveRate = rate - discount;
+            const taxPerItem = effectiveRate - exclude;
+            const itemTotalTax = taxPerItem * qty;
+
             return sum + itemTotalTax;
         }, 0);
 

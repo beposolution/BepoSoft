@@ -245,6 +245,10 @@ const UpdateInformationPage = ({ refreshData }) => {
                                             value={formik.values.note}
                                             onChange={formik.handleChange}
                                             onBlur={formik.handleBlur}
+                                            disabled={
+                                                (role === "BDM" || role === "BDO") &&
+                                                !["Invoice Created"].includes(formik.values.status)
+                                            }
                                             invalid={formik.touched.note && formik.errors.note}
                                         />
                                     </div>

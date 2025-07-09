@@ -53,11 +53,8 @@ const FormLayouts = () => {
         setSelectedStatus(newStatus);
     };
     const [status, setStatus] = useState([
-        "To Print",
         "Packing under progress",
-        "Packed",
         "Ready to ship",
-        "Shipped",
     ]);
 
     useEffect(() => {
@@ -83,7 +80,7 @@ const FormLayouts = () => {
     const handleSubmit = async (event) => {
         event.preventDefault();
         try {
-            await axios.put(`${import.meta.env.VITE_APP_KEY}order/status/update/${id}/`, {
+            await axios.put(`${import.meta.env.VITE_APP_KEY}shipping/${id}/order/`, {
                 status: selectedStatus,
             }, {
                 headers: {

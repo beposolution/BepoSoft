@@ -92,11 +92,11 @@ const UpdateInformationPage = ({ refreshData }) => {
                 "Invoice Approved",
                 "Waiting For Confirmation",
                 "To Print",
-                "Invoice Rejected",
                 'Packing under progress',
                 'Packed',
                 'Ready to ship',
                 'Shipped',
+                "Invoice Rejected",
             ]);
         }
     }, []);
@@ -177,11 +177,20 @@ const UpdateInformationPage = ({ refreshData }) => {
                                                         invalid={formik.touched.status && formik.errors.status}
                                                     >
                                                         <option value="">Select Status</option>
-                                                        {statusOptions.map((option, index) => (
-                                                            <option key={index} value={option}>
-                                                                {option}
-                                                            </option>
-                                                        ))}
+                                                        {(() => {
+                                                            const selectedIndex = statusOptions.indexOf(formik.values.status);
+                                                            let filteredOptions = statusOptions;
+
+                                                            if (selectedIndex !== -1) {
+                                                                filteredOptions = statusOptions.slice(selectedIndex, selectedIndex + 2);
+                                                            }
+
+                                                            return filteredOptions.map((option, index) => (
+                                                                <option key={index} value={option}>
+                                                                    {option}
+                                                                </option>
+                                                            ));
+                                                        })()}
                                                     </Input>
                                                     {formik.errors.status && formik.touched.status ? (
                                                         <FormFeedback type="invalid">{formik.errors.status}</FormFeedback>

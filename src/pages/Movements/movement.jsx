@@ -155,6 +155,18 @@ const Movement = () => {
                         .print-section, .print-section * {
                             visibility: visible;
                         }
+                        .family-title {
+                            // width: 200px !important;         
+                            margin: auto !important;   
+                            padding: 6px !important;  
+                            font-size: 12px !important;
+                            background-color: #ffeb3b !important;
+                            color: black !important;
+                            text-align: center !important;
+                            border-radius: 4px !important;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
 
                         .print-section {
                             position: absolute;
@@ -229,10 +241,32 @@ const Movement = () => {
                 </h3>
                 {data.map((category, index) => {
                     let serialNo = 1;
+                    let boxTotal = 0;
+                    let codTotal = 0;
+                    let weightTotal = 0;
+                    let volumeTotal = 0;
+                    let actualWeightTotal = 0;
+                    let parcelAmountTotal = 0;
+
+                    category.orders.forEach(order => {
+                        order.warehouses.forEach(warehouse => {
+                            if (warehouse.box) {
+                                boxTotal += 1;
+                            }
+                            codTotal += parseFloat(order.cod_amount || 0);
+                            weightTotal += parseFloat(warehouse.weight || 0);
+                            actualWeightTotal += parseFloat(warehouse.actual_weight || 0);
+                            parcelAmountTotal += parseFloat(warehouse.parcel_amount || 0);
+
+                            if (warehouse.length && warehouse.breadth && warehouse.height) {
+                                volumeTotal += warehouse.length * warehouse.breadth * warehouse.height;
+                            }
+                        });
+                    });
                     return (
                         <div key={index} style={{ marginBottom: "30px" }}>
                             <h4
-                                className="print-header"
+                                className="print-header family-title"
                                 style={{
                                     backgroundColor: "#4CAF50", // used only for screen
                                     color: "white",
@@ -267,10 +301,10 @@ const Movement = () => {
                                 <th>Breadth (cm)</th>
                                 <th>Height (cm)</th> */}
                                         <th style={{ border: "1px solid black" }}>Volume (cm³)</th>
-                                        <th style={{ border: "1px solid black" }}>Tracking ID</th>
                                         {/* <th>Shipped Date</th> */}
                                         <th style={{ border: "1px solid black" }}>Actual Weight (gram)</th>
                                         <th style={{ border: "1px solid black" }}>Parcel Amount (₹)</th>
+                                        <th style={{ border: "1px solid black" }}>Tracking ID</th>
                                         {/* <th>Post Office Date</th> */}
                                         <th style={{ border: "1px solid black" }}>Parcel Service</th>
                                         <th style={{ border: "1px solid black" }}>Packed By</th>
@@ -300,11 +334,11 @@ const Movement = () => {
                                                             : "N/A"}
                                                     </strong>
                                                 </td>
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.tracking_id}</strong></td>
                                                 {/* <td>{warehouse.shipped_date}</td> */}
 
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.actual_weight}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.parcel_amount}</strong></td>
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.tracking_id}</strong></td>
                                                 {/* <td><strong>{warehouse.postoffice_date || "-"}</strong></td> */}
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.parcel_service || "Unknown"}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.packed_by}</strong></td>
@@ -313,6 +347,20 @@ const Movement = () => {
                                             </tr>
                                         ))
                                     )}
+                                    <tr style={{ backgroundColor: "#f0f0f0", color: "red", fontWeight: "bold", textAlign: "left" }}>
+                                        <td colSpan={5} style={{ border: "1px solid black" }}><strong>Total</strong></td>
+                                        <td style={{ border: "1px solid black" }}>{boxTotal}</td>
+                                        <td style={{ border: "1px solid black" }}>{codTotal.toFixed(2)}</td>
+                                        <td style={{ border: "1px solid black" }}>{weightTotal.toFixed(2)}</td>
+                                        <td style={{ border: "1px solid black" }}>{volumeTotal}</td>
+                                        <td style={{ border: "1px solid black" }}>{actualWeightTotal.toFixed(2)}</td>
+                                        <td style={{ border: "1px solid black" }}>{parcelAmountTotal.toFixed(2)}</td>
+                                        <td style={{ border: "1px solid black" }}></td>
+                                        <td style={{ border: "1px solid black" }}></td>
+                                        <td style={{ border: "1px solid black" }}></td>
+                                        <td style={{ border: "1px solid black" }}></td>
+                                        <td colSpan={4}></td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>

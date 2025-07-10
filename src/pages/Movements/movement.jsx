@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
+import * as XLSX from "xlsx";
 
 const Movement = () => {
     const { id } = useParams();
@@ -147,6 +148,98 @@ const Movement = () => {
         BEPARCEL: (parcelCounts['BEPARCEL'] || 0) + (parcelCounts['BEPARCEL COD'] || 0),
         SPEED: (parcelCounts['SPEED POST'] || 0) + (parcelCounts['SPEED COD'] || 0),
     };
+
+    const exportToExcel = () => {
+        const wb = XLSX.utils.book_new();
+        const wsData = [];
+
+        let globalSerial = 1;
+
+        data.forEach((category) => {
+            // Title row
+            wsData.push([`${category.family?.toUpperCase()} FAMILY`]);
+            // Header
+            wsData.push([
+                "SL No", "Invoice No", "Customer", "Phone", "Pincode", "Box", "COD (₹)", "Weight (g)",
+                "Volume Weight (kg)", "Actual Weight (g)", "Parcel Amount (₹)", "Tracking ID",
+                "Parcel Service", "Packed By", "Verified By"
+            ]);
+
+            let boxTotal = 0;
+            let codTotal = 0;
+            let weightTotal = 0;
+            let volumeTotal = 0;
+            let actualWeightTotal = 0;
+            let parcelAmountTotal = 0;
+
+            category.orders.forEach((order) => {
+                order.warehouses.forEach((warehouse) => {
+                    const volumeWeight = warehouse.length && warehouse.breadth && warehouse.height
+                        ? (warehouse.length * warehouse.breadth * warehouse.height) / 6000
+                        : 0;
+
+                    wsData.push([
+                        globalSerial++,
+                        order.invoice,
+                        warehouse.customer,
+                        warehouse.phone,
+                        warehouse.zip_code,
+                        warehouse.box,
+                        order.cod_amount,
+                        warehouse.weight,
+                        volumeWeight.toFixed(2),
+                        warehouse.actual_weight,
+                        warehouse.parcel_amount,
+                        warehouse.tracking_id,
+                        warehouse.parcel_service,
+                        warehouse.packed_by,
+                        warehouse.verified_by || "N/A"
+                    ]);
+
+                    // Accumulate totals
+                    boxTotal += warehouse.box ? 1 : 0;
+                    codTotal += parseFloat(order.cod_amount || 0);
+                    weightTotal += parseFloat(warehouse.weight || 0);
+                    volumeTotal += volumeWeight;
+                    actualWeightTotal += parseFloat(warehouse.actual_weight || 0);
+                    parcelAmountTotal += parseFloat(warehouse.parcel_amount || 0);
+                });
+            });
+
+            // Family Total Row
+            wsData.push([
+                "TOTAL", "", "", "", "", boxTotal, codTotal.toFixed(2), weightTotal.toFixed(2),
+                volumeTotal.toFixed(2), actualWeightTotal.toFixed(2), parcelAmountTotal.toFixed(2),
+                "", "", "", ""
+            ]);
+            wsData.push([]); // Blank row between families
+        });
+
+        // Create sheet for details
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        XLSX.utils.book_append_sheet(wb, ws, "Movement Summary");
+
+        // === Summary Sheet (Parcel Services) ===
+        const wsSummaryData = [
+            ["Parcel Service", "Total Count"],
+            ...Object.entries(parcelCounts).map(([service, count]) => [service, count]),
+            ["", ""],
+            ["TOTAL PARCEL COUNT", Object.values(parcelCounts).reduce((a, b) => a + b, 0)],
+            ["TOTAL COD ORDERS", codCount],
+            ["", ""],
+            ["Grouped Summary", ""],
+            ["BEPARCEL", aggregatedParcelCounts.BEPARCEL],
+            ["SPEED", aggregatedParcelCounts.SPEED],
+            ["TOTAL", aggregatedParcelCounts.BEPARCEL + aggregatedParcelCounts.SPEED]
+        ];
+
+        const wsSummary = XLSX.utils.aoa_to_sheet(wsSummaryData);
+        XLSX.utils.book_append_sheet(wb, wsSummary, "Parcel Totals");
+
+        // Write the file
+        XLSX.writeFile(wb, `DGM_Report_${id}.xlsx`);
+    };
+
     return (
         <div style={{ padding: "20px", overflow: "auto", maxHeight: "90vh" }}>
             <style>
@@ -240,6 +333,19 @@ const Movement = () => {
                 `}
             </style>
             <div style={{ marginTop: "3rem", display: "flex", justifyContent: "flex-end", padding: "10px" }}>
+                <button
+                    onClick={exportToExcel}
+                    style={{
+                        padding: "10px 20px",
+                        fontSize: "16px",
+                        cursor: "pointer",
+                        border: "none",
+                        background: "#007bff",
+                        color: "white"
+                    }}
+                >
+                    Export to Excel
+                </button>
                 <button
                     onClick={() => window.print()}
                     style={{

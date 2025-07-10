@@ -287,8 +287,8 @@ const FormRepeater = () => {
                                                         </FormGroup>
                                                     </Col>
 
-                                                    <Col sm={12} md={6} lg={3} className="align-self-center">
-                                                        <div className="d-grid">
+                                                    <Col sm={12}>
+                                                        <div className="d-flex justify-content-end">
                                                             <Button
                                                                 color="danger"
                                                                 onClick={() => onDeleteFormRow(formRow.id)}

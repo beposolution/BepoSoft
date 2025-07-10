@@ -11,6 +11,7 @@ import {
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import Paginations from "../../components/Common/Pagination";
 
 const BasicTable = () => {
     const [orders, setOrders] = useState([]);
@@ -22,6 +23,11 @@ const BasicTable = () => {
     const [lockedOrderId, setLockedOrderId] = useState(null);
     const [statusFilter, setStatusFilter] = useState("");
     const [invoiceSearch, setInvoiceSearch] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [perPageData, setPerPageData] = useState(10);
+
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
 
     document.title = "Orders | Beposoft";
 
@@ -164,62 +170,80 @@ const BasicTable = () => {
                                     <CardTitle className="h4"></CardTitle>
                                     <div className="table-responsive">
                                         {loading ? <div>Loading...</div> : error ? <div className="text-danger">{error}</div> : (
-                                            <Table className="table mb-0">
-                                                <thead>
-                                                    <tr>
-                                                        <th>#</th>
-                                                        <th>INVOICE NO</th>
-                                                        <th>CUSTOMER</th>
-                                                        <th>STATUS</th>
-                                                        <th>BILL AMOUNT</th>
-                                                        <th>CREATED AT</th>
-                                                        <th>view</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {orders
-                                                        .filter(order => {
-                                                            const matchesStatus = !statusFilter || order.status === statusFilter;
-                                                            const matchesInvoice = !invoiceSearch || order.invoice?.toLowerCase().includes(invoiceSearch.toLowerCase());
-                                                            return matchesStatus && matchesInvoice;
-                                                        })
-                                                        .map((order, index) => (
-                                                            <tr key={order.id}>
-                                                                <th scope="row">{index + 1}</th>
-                                                                <td>{order.invoice}</td>
-                                                                <td>{order.customer.name}</td>
-                                                                <td>{order.status}</td>
-                                                                <td>{order.total_amount}</td>
-                                                                <td>{order.order_date}</td>
-                                                                <td>
-                                                                    <div style={{ display: "flex", flexDirection: "column" }}>
-                                                                        <button
-                                                                            onClick={() => viewDeliveryNote(order.id)}
-                                                                            style={{
-                                                                                padding: "10px 20px",
-                                                                                border: "none",
-                                                                                background: "#3258a8",
-                                                                                color: "white",
-                                                                                cursor: "pointer",
-                                                                                marginBottom: "5px",
-                                                                                opacity: order.locked_by && order.locked_by !== localStorage.getItem("username") ? 0.7 : 1
-                                                                            }}
-                                                                        >
-                                                                            View
-                                                                        </button>
-                                                                        {
-                                                                            order.locked_by && order.locked_by !== localStorage.getItem("username") && (
-                                                                                <span className="text-danger" style={{ fontSize: "0.85rem" }}>
-                                                                                    In use by: {order.locked_by.toUpperCase()}
-                                                                                </span>
-                                                                            )
-                                                                        }
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                </tbody>
-                                            </Table>
+                                            <>
+                                                <Table className="table mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>#</th>
+                                                            <th>INVOICE NO</th>
+                                                            <th>CUSTOMER</th>
+                                                            <th>STATUS</th>
+                                                            <th>BILL AMOUNT</th>
+                                                            <th>CREATED AT</th>
+                                                            <th>view</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {orders
+                                                            .filter(order => {
+                                                                const matchesStatus = !statusFilter || order.status === statusFilter;
+                                                                const matchesInvoice = !invoiceSearch || order.invoice?.toLowerCase().includes(invoiceSearch.toLowerCase());
+                                                                return matchesStatus && matchesInvoice;
+                                                            })
+                                                            .slice(indexOfFirstItem, indexOfLastItem)
+                                                            .map((order, index) => (
+                                                                <tr key={order.id}>
+                                                                    <th scope="row">{indexOfFirstItem + index + 1}</th>
+                                                                    <td>{order.invoice}</td>
+                                                                    <td>{order.customer.name}</td>
+                                                                    <td>{order.status}</td>
+                                                                    <td>{order.total_amount}</td>
+                                                                    <td>{order.order_date}</td>
+                                                                    <td>
+                                                                        <div style={{ display: "flex", flexDirection: "column" }}>
+                                                                            <button
+                                                                                onClick={() => viewDeliveryNote(order.id)}
+                                                                                style={{
+                                                                                    padding: "10px 20px",
+                                                                                    border: "none",
+                                                                                    background: "#3258a8",
+                                                                                    color: "white",
+                                                                                    cursor: "pointer",
+                                                                                    marginBottom: "5px",
+                                                                                    opacity: order.locked_by && order.locked_by !== localStorage.getItem("username") ? 0.7 : 1
+                                                                                }}
+                                                                            >
+                                                                                View
+                                                                            </button>
+                                                                            {
+                                                                                order.locked_by && order.locked_by !== localStorage.getItem("username") && (
+                                                                                    <span className="text-danger" style={{ fontSize: "0.85rem" }}>
+                                                                                        In use by: {order.locked_by.toUpperCase()}
+                                                                                    </span>
+                                                                                )
+                                                                            }
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                    </tbody>
+                                                </Table>
+                                                <Paginations
+                                                    perPageData={perPageData}
+                                                    data={orders.filter(order => {
+                                                        const matchesStatus = !statusFilter || order.status === statusFilter;
+                                                        const matchesInvoice = !invoiceSearch || order.invoice?.toLowerCase().includes(invoiceSearch.toLowerCase());
+                                                        return matchesStatus && matchesInvoice;
+                                                    })}
+                                                    currentPage={currentPage}
+                                                    setCurrentPage={setCurrentPage}
+                                                    isShowingPageLength={true}
+                                                    paginationDiv="col-auto"
+                                                    paginationClass="pagination"
+                                                    indexOfFirstItem={indexOfFirstItem}
+                                                    indexOfLastItem={indexOfLastItem}
+                                                />
+                                            </>
                                         )}
                                     </div>
                                 </CardBody>

@@ -97,7 +97,7 @@ const handleClick = (date) => {
                                                     <th>Date</th>
                                                     <th>Total Boxes Delivered</th>
                                                     <th>Total Volume Wt. (In Kg.)</th>
-                                                    <th>Total Actual Wt.</th>
+                                                    <th>Total Actual Wt. (In Kg.)</th>
                                                     <th>Total Delivery Charge</th>
                                                     <th>Actions</th>
                                                 </tr>
@@ -108,8 +108,8 @@ const handleClick = (date) => {
                                                         <th scope="row">{index + 1}</th>
                                                         <td>{item.shipped_date}</td>
                                                         <td>{item.total_boxes}</td>
-                                                        <td>{item.total_weight}</td>
                                                         <td>{item.total_volume_weight}</td>
+                                                        <td>{(item.total_weight / 1000).toFixed(2)}</td>
                                                         <td>{item.total_shipping_charge}</td>
                                                         <td>
                                                             <button  onClick={() =>handleClick(item.shipped_date)} style={{border:"none", background:"blue", color:"white"}}>View</button>

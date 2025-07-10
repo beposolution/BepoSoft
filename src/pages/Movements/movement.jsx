@@ -143,6 +143,10 @@ const Movement = () => {
         setCodCount(codOrderCount); // new state for COD
     }, [data]);
 
+    const aggregatedParcelCounts = {
+        BEPARCEL: (parcelCounts['BEPARCEL'] || 0) + (parcelCounts['BEPARCEL COD'] || 0),
+        SPEED: (parcelCounts['SPEED POST'] || 0) + (parcelCounts['SPEED COD'] || 0),
+    };
     return (
         <div style={{ padding: "20px", overflow: "auto", maxHeight: "90vh" }}>
             <style>
@@ -175,6 +179,30 @@ const Movement = () => {
                             width: 100%;
                             font-size: 10px;
                             color: black;
+                        }
+                        
+                        .total-row{
+                            background-color: #ffeb3b !important;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                        .total-row2{
+                            background-color: #40E0D0  !important;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                        .total-row1{
+                            background-color: red !important;
+                            color: white !important;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                        .small-col {
+                            width: 60px !important;
+                            min-width: 60px !important;
+                            max-width: 60px !important;
+                            font-size: 10px !important;
+                            word-break: break-word !important;
                         }
 
                         table, th, td, tr {
@@ -259,7 +287,7 @@ const Movement = () => {
                             parcelAmountTotal += parseFloat(warehouse.parcel_amount || 0);
 
                             if (warehouse.length && warehouse.breadth && warehouse.height) {
-                                volumeTotal += warehouse.length * warehouse.breadth * warehouse.height;
+                                volumeTotal += warehouse.length * warehouse.breadth * warehouse.height / 6000;
                             }
                         });
                     });
@@ -295,21 +323,21 @@ const Movement = () => {
                                         <th style={{ border: "1px solid black" }}>Phone</th>
                                         <th style={{ border: "1px solid black" }}>Pincode</th>
                                         <th style={{ border: "1px solid black" }}>Box</th>
-                                        <th style={{ border: "1px solid black" }}>COD</th>
-                                        <th style={{ border: "1px solid black" }}>Weight (gram)</th>
+                                        <th style={{ border: "1px solid black" }}>COD (₹)</th>
+                                        <th className="small-col" style={{ border: "1px solid black" }}>Weight (gram)</th>
                                         {/* <th>Length (cm)</th>
                                 <th>Breadth (cm)</th>
                                 <th>Height (cm)</th> */}
-                                        <th style={{ border: "1px solid black" }}>Volume (cm³)</th>
+                                        <th className="small-col" style={{ border: "1px solid black" }}>Volume (cm³)</th>
                                         {/* <th>Shipped Date</th> */}
-                                        <th style={{ border: "1px solid black" }}>Actual Weight (gram)</th>
+                                        <th className="small-col" style={{ border: "1px solid black" }}>Actual Weight (gram)</th>
                                         <th style={{ border: "1px solid black" }}>Parcel Amount (₹)</th>
                                         <th style={{ border: "1px solid black" }}>Tracking ID</th>
                                         {/* <th>Post Office Date</th> */}
                                         <th style={{ border: "1px solid black" }}>Parcel Service</th>
                                         <th style={{ border: "1px solid black" }}>Packed By</th>
                                         <th style={{ border: "1px solid black" }}>Verified By</th>
-                                        <th style={{ border: "1px solid black" }}>Final Conformation</th>
+                                        {/* <th style={{ border: "1px solid black" }}>Final Conformation</th> */}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -323,42 +351,42 @@ const Movement = () => {
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.zip_code}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.box}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{order.cod_amount}</strong></td>
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.weight}</strong></td>
+                                                <td className="small-col" style={{ border: "1px solid black" }}><strong>{warehouse.weight}</strong></td>
                                                 {/* <td>{warehouse.length}</td>
                                         <td>{warehouse.breadth}</td>
                                         <td>{warehouse.height}</td> */}
-                                                <td style={{ border: "1px solid black" }}>
+                                                <td className="small-col" style={{ border: "1px solid black" }}>
                                                     <strong>
                                                         {warehouse.length && warehouse.breadth && warehouse.height
-                                                            ? warehouse.length * warehouse.breadth * warehouse.height
+                                                            ? warehouse.length * warehouse.breadth * warehouse.height / 6000
                                                             : "N/A"}
                                                     </strong>
                                                 </td>
                                                 {/* <td>{warehouse.shipped_date}</td> */}
 
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.actual_weight}</strong></td>
+                                                <td className="small-col" style={{ border: "1px solid black" }}><strong>{warehouse.actual_weight}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.parcel_amount}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.tracking_id}</strong></td>
                                                 {/* <td><strong>{warehouse.postoffice_date || "-"}</strong></td> */}
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.parcel_service || "Unknown"}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.packed_by}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.verified_by || "N/A"}</strong></td>
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.checked_by}</strong></td>
+                                                {/* <td style={{ border: "1px solid black" }}><strong>{warehouse.checked_by}</strong></td> */}
                                             </tr>
                                         ))
                                     )}
-                                    <tr style={{ backgroundColor: "#f0f0f0", color: "red", fontWeight: "bold", textAlign: "left" }}>
+                                    <tr className="total-row" style={{ backgroundColor: "#f0f0f0", color: "red", fontWeight: "bold", textAlign: "left" }}>
                                         <td colSpan={5} style={{ border: "1px solid black" }}><strong>Total</strong></td>
                                         <td style={{ border: "1px solid black" }}>{boxTotal}</td>
-                                        <td style={{ border: "1px solid black" }}>{codTotal.toFixed(2)}</td>
-                                        <td style={{ border: "1px solid black" }}>{weightTotal.toFixed(2)}</td>
-                                        <td style={{ border: "1px solid black" }}>{volumeTotal}</td>
-                                        <td style={{ border: "1px solid black" }}>{actualWeightTotal.toFixed(2)}</td>
-                                        <td style={{ border: "1px solid black" }}>{parcelAmountTotal.toFixed(2)}</td>
+                                        <td style={{ border: "1px solid black" }}>{codTotal}</td>
+                                        <td style={{ border: "1px solid black" }}>{weightTotal}</td>
+                                        <td style={{ border: "1px solid black" }}>{volumeTotal.toFixed(2)}</td>
+                                        <td style={{ border: "1px solid black" }}>{actualWeightTotal}</td>
+                                        <td style={{ border: "1px solid black" }}>{parcelAmountTotal}</td>
                                         <td style={{ border: "1px solid black" }}></td>
                                         <td style={{ border: "1px solid black" }}></td>
                                         <td style={{ border: "1px solid black" }}></td>
-                                        <td style={{ border: "1px solid black" }}></td>
+                                        {/* <td style={{ border: "1px solid black" }}></td> */}
                                         <td colSpan={4}></td>
                                     </tr>
                                 </tbody>
@@ -367,60 +395,80 @@ const Movement = () => {
                     )
                 })}
 
-                <div style={{ marginTop: "30px", padding: "10px", border: "1px solid #ddd", borderRadius: "5px" }}>
-                    <h4 style={{ textAlign: "center" }}>PARCEL SERVICE TOTAL</h4>
-                    <table border="1" cellPadding="5" style={{ width: "100%", borderCollapse: "collapse", textAlign: "center" }}>
-                        <thead className="printdata-header">
-                            <tr>
-                                <th style={{ border: "1px solid black" }}>Parcel Service</th>
-                                <th style={{ border: "1px solid black" }}>Total Count</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {Object.entries(parcelCounts).map(([serviceName, count]) => (
-                                <tr key={serviceName}>
-                                    <td style={{ border: "1px solid black" }}><strong>{serviceName}</strong></td>
-                                    <td style={{ border: "1px solid black" }}><strong>{count}</strong></td>
+                <div style={{ display: "flex", justifyContent: "flex-start", marginTop: "30px" }}>
+                    <div style={{ width: "66%", padding: "10px", border: "1px solid #ddd", borderRadius: "5px" }}>
+                        <h4 style={{ textAlign: "center" }}>PARCEL SERVICE TOTAL</h4>
+                        <table border="1" cellPadding="5" style={{ width: "100%", borderCollapse: "collapse", textAlign: "center" }}>
+                            <thead className="printdata-header">
+                                <tr>
+                                    <th style={{ border: "1px solid black" }}>Parcel Service</th>
+                                    <th style={{ border: "1px solid black" }}>Total Count</th>
                                 </tr>
-                            ))}
-                            <tr style={{ backgroundColor: '#e0e0e0' }}>
-                                <td style={{ border: "1px solid black" }}><strong>Total Parcel Count</strong></td>
-                                <td style={{ border: "1px solid black" }}>
-                                    <strong>
-                                        {Object.values(parcelCounts).reduce((acc, curr) => acc + curr, 0)}
-                                    </strong>
-                                </td>
-                            </tr>
-                            <tr style={{ backgroundColor: '#f0f0f0' }}>
-                                <td style={{ border: "1px solid black" }}><strong>Total COD Orders</strong></td>
-                                <td style={{ border: "1px solid black" }}><strong>{codCount}</strong></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", margin: "10px 0px" }}>
-                        {isVerified ? (
-                            <span style={{ fontWeight: "bold", color: "#000", fontSize: "18px" }}>
-                                Final Confirmation by: <span style={{ color: "#28837a" }}>{checkedBy}</span>
-                            </span>
-                        ) : (
-                            <button
-                                onClick={verifyButton}
-                                style={{
-                                    padding: "10px 20px",
-                                    fontSize: "16px",
-                                    cursor: "pointer",
-                                    border: "none",
-                                    background: "#28837a",
-                                    color: "white"
-                                }}
-                                disabled={isVerified}
-                            >
-                                Verify Now
-                            </button>
-                        )}
+                            </thead>
+                            <tbody>
+                                {Object.entries(parcelCounts).map(([serviceName, count]) => (
+                                    <tr key={serviceName}>
+                                        <td style={{ border: "1px solid black" }}><strong>{serviceName}</strong></td>
+                                        <td style={{ border: "1px solid black" }}><strong>{count}</strong></td>
+                                    </tr>
+                                ))}
+                                <tr className="total-row1" style={{ backgroundColor: '#e0e0e0' }}>
+                                    <td style={{ border: "1px solid black" }}><strong>TOTAL PARCEL COUNT</strong></td>
+                                    <td style={{ border: "1px solid black" }}>
+                                        <strong>
+                                            {Object.values(parcelCounts).reduce((acc, curr) => acc + curr, 0)}
+                                        </strong>
+                                    </td>
+                                </tr>
+                                <tr className="total-row1" style={{ backgroundColor: '#f0f0f0' }}>
+                                    <td style={{ border: "1px solid black" }}><strong>TOTAL COD ORDERS</strong></td>
+                                    <td style={{ border: "1px solid black" }}><strong>{codCount}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <ToastContainer />
+                    <div style={{ width: "30%", padding: "10px", border: "1px solid #ddd", borderRadius: "5px" }}>
+                        <table border="1" cellPadding="5" style={{ width: "100%", borderCollapse: "collapse", textAlign: "center", marginTop: "30px" }}>
+                            <tbody>
+                                <tr>
+                                    <td className="total-row" style={{ border: "1px solid black" }}><strong>BEPARCEL</strong></td>
+                                    <td className="total-row" style={{ border: "1px solid black" }}><strong>{aggregatedParcelCounts.BEPARCEL}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td className="total-row2" style={{ border: "1px solid black" }}><strong>SPEED</strong></td>
+                                    <td className="total-row2" style={{ border: "1px solid black" }}><strong>{aggregatedParcelCounts.SPEED}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td className="total-row1" style={{ border: "1px solid black" }}><strong>TOTAL</strong></td>
+                                    <td className="total-row1" style={{ border: "1px solid black" }}><strong>{Object.values(aggregatedParcelCounts).reduce((acc, curr) => acc + curr, 0)}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
+                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", margin: "10px 0px" }}>
+                    {isVerified ? (
+                        <span style={{ fontWeight: "bold", color: "#000", fontSize: "18px" }}>
+                            Final Confirmation by: <span style={{ color: "#28837a" }}>{checkedBy}</span>
+                        </span>
+                    ) : (
+                        <button
+                            onClick={verifyButton}
+                            style={{
+                                padding: "10px 20px",
+                                fontSize: "16px",
+                                cursor: "pointer",
+                                border: "none",
+                                background: "#28837a",
+                                color: "white"
+                            }}
+                            disabled={isVerified}
+                        >
+                            Verify Now
+                        </button>
+                    )}
+                </div>
+                <ToastContainer />
             </div>
         </div>
     );

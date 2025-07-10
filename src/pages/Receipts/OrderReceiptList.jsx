@@ -17,6 +17,7 @@ const OrderReceiptList = () => {
     const [banks, setBanks] = useState([]);
     const [order, setOrder] = useState([]);
     const [customer, setCustomer] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         const fetchCustomers = async () => {
@@ -149,6 +150,15 @@ const OrderReceiptList = () => {
         });
     };
 
+    const filteredReceipts = receipts.filter((item) =>
+        (item.payment_receipt || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.order_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.transactionID || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.bank_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.created_by_name || '').toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -159,7 +169,14 @@ const OrderReceiptList = () => {
                             <Card>
                                 <CardBody>
                                     <CardTitle className="mb-4">ORDER RECEIPTS</CardTitle>
-
+                                    <div className="mb-3">
+                                        <Input
+                                            type="text"
+                                            placeholder="Search by Receipt, Order, Transaction ID, Customer, Bank, Created By"
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                        />
+                                    </div>
                                     {loading ? (
                                         <Spinner color="primary" />
                                     ) : (
@@ -180,7 +197,7 @@ const OrderReceiptList = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {receipts.map((item, index) => (
+                                                {filteredReceipts.map((item, index) => (
                                                     <tr key={item.id}>
                                                         <td>{index + 1}</td>
                                                         <td>{item.payment_receipt}</td>

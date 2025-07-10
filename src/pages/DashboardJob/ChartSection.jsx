@@ -183,6 +183,32 @@ const ChartSection = () => {
         order => order?.family_id === userData && order?.order_date === today
     )?.length;
 
+    const totalAmountSkatingAndCyclingToday = orders?.reduce((sum, order) => {
+        const orderDate = order?.order_date?.slice(0, 10);
+        if (
+            (order.family_name === "skating" || order.family_name === "cycling") &&
+            orderDate === today
+        ) {
+            return sum + (parseFloat(order.total_amount) || 0);
+        }
+        return sum;
+    }, 0);
+
+    const skatingAndCyclingTodayCount = orders?.filter(order =>
+        (order.family_name === "skating" || order.family_name === "cycling") &&
+        order.order_date === today
+    )?.length || 0;
+
+    const skatingTodayCount = orders?.filter(order =>
+        (order.family_name === "skating") &&
+        order.order_date === today
+    )?.length || 0;
+
+    const cyclingTodayCount = orders?.filter(order =>
+        (order.family_name === "cycling") &&
+        order.order_date === today
+    )?.length || 0;
+
     return (
         <React.Fragment>
 
@@ -220,7 +246,7 @@ const ChartSection = () => {
                     </>
                 )}
 
-                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting") && (
+                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === 'CSO') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}
                             onClick={() => navigate("/dashboard/todaysbill-details")}>
@@ -229,10 +255,13 @@ const ChartSection = () => {
                                     <div className="d-flex">
                                         <div className="flex-grow-1">
                                             <p className="text-muted fw-medium">Todays Bill</p>
-                                            <h4 className="mb-0"> {role === "ADMIN" || role === "CEO" ? (todayBills?.order || 0) : userFamilyTodayOrderCount}</h4>
-                                        </div>
-                                        <div className="flex-shrink-0 align-self-center">
-                                            {/* Optional Chart */}
+                                            <h4 className="mb-0">
+                                                {role === "ADMIN" || role === "CEO"
+                                                    ? (todayBills?.order || 0)
+                                                    : role === "CSO"
+                                                        ? skatingAndCyclingTodayCount
+                                                        : userFamilyTodayOrderCount}
+                                            </h4>
                                         </div>
                                     </div>
                                 </CardBody>
@@ -249,7 +278,53 @@ const ChartSection = () => {
                     </Col>
                 )}
 
-                {(role === "BDM") && (
+
+                {(role === "CSO") && (
+                    <Col lg={3}>
+                        <div style={{ cursor: "pointer" }}
+                            onClick={() => navigate("/all/staff/customers/")}>
+                            <Card className="mini-stats-wid">
+                                <CardBody>
+                                    <div className="d-flex">
+                                        <div className="flex-grow-1">
+                                            <p className="text-muted fw-medium">SKATING</p>
+                                            <h5>Todays Bill: <strong> {skatingTodayCount}</strong> </h5>
+                                        </div>
+                                        <div className="flex-shrink-0 align-self-center">
+                                            {/* Optional Chart */}
+                                        </div>
+                                    </div>
+                                </CardBody>
+                                <div className="card-body border-top py-3">
+                                </div>
+                            </Card>
+                        </div>
+                    </Col>
+                )}
+                {(role === "CSO") && (
+                    <Col lg={3}>
+                        <div style={{ cursor: "pointer" }}
+                            onClick={() => navigate("/all/staff/customers/")}>
+                            <Card className="mini-stats-wid">
+                                <CardBody>
+                                    <div className="d-flex">
+                                        <div className="flex-grow-1">
+                                            <p className="text-muted fw-medium">CYCLING</p>
+                                            <h5>Todays Bill: <strong> {cyclingTodayCount}</strong> </h5>
+                                        </div>
+                                        <div className="flex-shrink-0 align-self-center">
+                                            {/* Optional Chart */}
+                                        </div>
+                                    </div>
+                                </CardBody>
+                                <div className="card-body border-top py-3">
+                                </div>
+                            </Card>
+                        </div>
+                    </Col>
+                )}
+
+                {(role === "BDM" || role === 'CSO') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}>
                             <Card className="mini-stats-wid">
@@ -257,7 +332,11 @@ const ChartSection = () => {
                                     <div className="d-flex">
                                         <div className="flex-grow-1">
                                             <p className="text-muted fw-medium">Todays Total Volume</p>
-                                            <h4>₹{totalAmountForCurrentUserFamilyToday}</h4>
+                                            <h4>
+                                                ₹{role === "CSO"
+                                                    ? totalAmountSkatingAndCyclingToday
+                                                    : totalAmountForCurrentUserFamilyToday}
+                                            </h4>
                                         </div>
                                         <div className="flex-shrink-0 align-self-center">
                                             {/* Optional Chart */}

@@ -25,7 +25,6 @@ const StatisticsApplications = () => {
         return today.toISOString().split("T")[0];
     });
     const [filteredData, setFilteredData] = useState([]);
-    console.log("dataa", warehouseData)
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -256,7 +255,8 @@ const StatisticsApplications = () => {
         return acc;
     }, { totalAmount: 0, orderCount: 0 });
 
-    const todayBills = chartsData?.find(item => item?.title === "Today Bills");
+    // const todayBills = chartsData?.find(item => item?.title === "Today Bills");
+    const todayBills = orders.length;
     const totalVolume = orders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
     const totalexpense = expense.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
 
@@ -302,9 +302,9 @@ const StatisticsApplications = () => {
                                             {/* First Row (was Column 1) */}
                                             <div className="p-4 border rounded-4 shadow-sm bg-light d-flex flex-column justify-content-center align-items-center text-center">
                                                 <p className="text-muted fw-medium mb-2">Total Division Stats</p>
-                                                <h5 className="mb-1">Total Volume : <span className='text-primary'>₹<strong>{overallTotals.totalAmount.toLocaleString()}</strong></span></h5>
+                                                <h5 className="mb-1">Today's Total Volume : <span className='text-primary'>₹<strong>{overallTotals.totalAmount.toLocaleString()}</strong></span></h5>
                                                 <p className="text-muted fw-medium mb-0">
-                                                    Total Orders : <span className="fw-bold text-dark"><strong>{overallTotals.orderCount}</strong></span>
+                                                    Today's Total Orders : <span className="fw-bold text-dark"><strong>{overallTotals.orderCount}</strong></span>
                                                 </p>
                                             </div>
 
@@ -312,8 +312,8 @@ const StatisticsApplications = () => {
                                             <div className="d-flex flex-row justify-content-between gap-3 text-center">
                                                 {/* Card 1 */}
                                                 <div className="flex-fill p-4 border rounded-4 shadow-sm bg-light">
-                                                    <p className="text-muted fw-medium mb-1">Today's Bill</p>
-                                                    <h4 className="mb-0">{role === "CEO" && (todayBills?.order || 0)}</h4>
+                                                    <p className="text-muted fw-medium mb-1">Total Bill</p>
+                                                    <h4 className="mb-0">{todayBills}</h4>
                                                 </div>
 
                                                 {/* Card 2 */}

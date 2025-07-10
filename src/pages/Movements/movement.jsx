@@ -147,81 +147,57 @@ const Movement = () => {
         <div style={{ padding: "20px", overflow: "auto", maxHeight: "90vh" }}>
             <style>
                 {`
-               @media print {
-    body * {
-        visibility: hidden;
-    }
+                    @media print {
+                            body * {
+                            visibility: hidden;
+                        }
 
-    .print-section, .print-section * {
-        visibility: visible;
-    }
+                        .print-section, .print-section * {
+                            visibility: visible;
+                        }
 
-    .print-section {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        font-size: 10px;
-        color: black;
-    }
+                        .print-section {
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            width: 100%;
+                            font-size: 10px;
+                            color: black;
+                        }
 
-    .main-title {
-        color:black;
-    }
+                        table, th, td, tr {
+                            border: 1px solid black !important;
+                            border-collapse: collapse !important;
+                        }
 
-    table {
-        page-break-inside: auto;
-        break-inside: auto;
-        width: 100%;
-        font-size: 9px;
-        border-collapse: collapse;
-        color-adjust: exact;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
+                        tr {
+                            page-break-inside: avoid;
+                        }
 
-    tr {
-        page-break-inside: avoid;
-        break-inside: avoid;
-    }
+                        th, td {
+                            padding: 4px;
+                            word-break: break-word;
+                        }
 
-    th, td {
-        padding: 4px;
-        border: 1px solid #000;
-        word-break: break-word;
-    }
+                        thead.printdata-header {
+                            background-color: #40E0D0 !important;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                            color: black !important;
+                        }
 
-    thead {
-        background-color: #3399cc !important;
-        color: white !important;
-    }
+                        .print-header {
+                            background-color: #ffeb3b !important;
+                            color: black !important;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
 
-    /* Apply yellow to all h2 and h3 inside print-section, EXCEPT the main-title */
-    .print-section h2,
-    .print-section h3:not(.main-title) {
-        background-color: #ffeb3b !important; /* yellow */
-        color: #000 !important;
-        padding: 6px !important;
-        text-align: center !important;
-        margin: 4px 0 !important;
-        border-radius: 4px;
-    }
-
-    /* Keep the main title (DAILY GOODS MOVEMENT) with Turkish blue */
-    .print-section .main-title {
-        background-color: #3399cc !important;
-        color: white !important;
-        padding: 6px !important;
-        margin-top: 2rem !important;
-        text-align: center !important;
-        border-radius: 4px;
-    }
-
-    button, .no-print {
-        display: none !important;
-    }
-}
-    `}
+                        button, .no-print {
+                            display: none !important;
+                        }
+                    }
+                `}
             </style>
             <div style={{ marginTop: "3rem", display: "flex", justifyContent: "flex-end", padding: "10px" }}>
                 <button
@@ -251,120 +227,128 @@ const Movement = () => {
                 >
                     DAILY GOODS MOVEMENT (DGM) ON {id}
                 </h3>
-                {data.map((category, index) => (
-                    <div key={index} style={{ marginBottom: "30px" }}>
-                        <h4
-                            style={{
-                                backgroundColor: "#4CAF50", // used only for screen
-                                color: "white",
-                                padding: "10px",
-                                borderRadius: "5px",
-                                textAlign: "center"
-                            }}
-                        >
-                            {category.family?.toUpperCase()}
-                        </h4>
-                        <table border="1" cellPadding="5" style={{ width: "100%", borderCollapse: "collapse", textAlign: "center" }}>
-                            <thead style={{ backgroundColor: "#ddd", fontWeight: "bold" }}>
-                                <tr>
-                                    <th>SL No</th>
-                                    <th>Invoice No</th>
-                                    <th>Customer</th>
-                                    <th>Phone</th>
-                                    <th>Pincode</th>
-                                    <th>Box</th>
-                                    <th>COD</th>
-                                    <th>Weight (gram)</th>
-                                    {/* <th>Length (cm)</th>
+                {data.map((category, index) => {
+                    let serialNo = 1;
+                    return (
+                        <div key={index} style={{ marginBottom: "30px" }}>
+                            <h4
+                                className="print-header"
+                                style={{
+                                    backgroundColor: "#4CAF50", // used only for screen
+                                    color: "white",
+                                    padding: "10px",
+                                    borderRadius: "5px",
+                                    textAlign: "center"
+                                }}
+                            >
+                                {category.family?.toUpperCase()}
+                            </h4>
+                            <table
+                                border="1"
+                                cellPadding="5"
+                                style={{
+                                    width: "100%",
+                                    borderCollapse: "collapse",
+                                    textAlign: "left",
+                                    border: "1px solid black"
+                                }}
+                            >
+                                <thead className="printdata-header">
+                                    <tr>
+                                        <th style={{ border: "1px solid black" }}>SL No</th>
+                                        <th style={{ border: "1px solid black" }}>Invoice No</th>
+                                        <th style={{ border: "1px solid black" }}>Customer</th>
+                                        <th style={{ border: "1px solid black" }}>Phone</th>
+                                        <th style={{ border: "1px solid black" }}>Pincode</th>
+                                        <th style={{ border: "1px solid black" }}>Box</th>
+                                        <th style={{ border: "1px solid black" }}>COD</th>
+                                        <th style={{ border: "1px solid black" }}>Weight (gram)</th>
+                                        {/* <th>Length (cm)</th>
                                 <th>Breadth (cm)</th>
                                 <th>Height (cm)</th> */}
-                                    <th>Volume (cm³)</th>
-                                    <th>Tracking ID</th>
-                                    {/* <th>Shipped Date</th> */}
-                                    <th>Actual Weight (gram)</th>
-                                    <th>Parcel Amount (₹)</th>
-                                    {/* <th>Post Office Date</th> */}
-                                    <th>Parcel Service</th>
-                                    <th>Packed By</th>
-                                    <th>Verified By</th>
-                                    <th>Final Conformation</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {category.orders.map((order, orderIndex) =>
-                                    order.warehouses.map((warehouse, warehouseIndex) => (
-                                        <tr key={`${orderIndex}-${warehouseIndex}`} style={{ backgroundColor: warehouseIndex % 2 === 0 ? "#f9f9f9" : "white" }}>
-                                            <td>{orderIndex + 1}</td>
-                                            <td><strong>{order.invoice}</strong></td>
-                                            <td><strong>{warehouse.customer}</strong></td>
-                                            <td><strong>{warehouse.phone}</strong></td>
-                                            <td><strong>{warehouse.zip_code}</strong></td>
-                                            <td><strong>{warehouse.box}</strong></td>
-                                            <td><strong>{order.cod_amount}</strong></td>
-                                            <td><strong>{warehouse.weight}</strong></td>
-                                            {/* <td>{warehouse.length}</td>
+                                        <th style={{ border: "1px solid black" }}>Volume (cm³)</th>
+                                        <th style={{ border: "1px solid black" }}>Tracking ID</th>
+                                        {/* <th>Shipped Date</th> */}
+                                        <th style={{ border: "1px solid black" }}>Actual Weight (gram)</th>
+                                        <th style={{ border: "1px solid black" }}>Parcel Amount (₹)</th>
+                                        {/* <th>Post Office Date</th> */}
+                                        <th style={{ border: "1px solid black" }}>Parcel Service</th>
+                                        <th style={{ border: "1px solid black" }}>Packed By</th>
+                                        <th style={{ border: "1px solid black" }}>Verified By</th>
+                                        <th style={{ border: "1px solid black" }}>Final Conformation</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {category.orders.map((order) =>
+                                        order.warehouses.map((warehouse) => (
+                                            <tr key={serialNo}>
+                                                <td style={{ border: "1px solid black" }}>{serialNo++}</td>
+                                                <td style={{ border: "1px solid black" }}><strong>{order.invoice}</strong></td>
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.customer}</strong></td>
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.phone}</strong></td>
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.zip_code}</strong></td>
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.box}</strong></td>
+                                                <td style={{ border: "1px solid black" }}><strong>{order.cod_amount}</strong></td>
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.weight}</strong></td>
+                                                {/* <td>{warehouse.length}</td>
                                         <td>{warehouse.breadth}</td>
                                         <td>{warehouse.height}</td> */}
-                                            <td>
-                                                <strong>
-                                                    {warehouse.length && warehouse.breadth && warehouse.height
-                                                        ? warehouse.length * warehouse.breadth * warehouse.height
-                                                        : "N/A"}
-                                                </strong>
-                                            </td>
-                                            <td><strong>{warehouse.tracking_id}</strong></td>
-                                            {/* <td>{warehouse.shipped_date}</td> */}
+                                                <td style={{ border: "1px solid black" }}>
+                                                    <strong>
+                                                        {warehouse.length && warehouse.breadth && warehouse.height
+                                                            ? warehouse.length * warehouse.breadth * warehouse.height
+                                                            : "N/A"}
+                                                    </strong>
+                                                </td>
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.tracking_id}</strong></td>
+                                                {/* <td>{warehouse.shipped_date}</td> */}
 
-                                            <td><strong>{warehouse.actual_weight}</strong></td>
-                                            <td><strong>{warehouse.parcel_amount}</strong></td>
-                                            {/* <td><strong>{warehouse.postoffice_date || "-"}</strong></td> */}
-                                            <td><strong>{warehouse.parcel_service || "Unknown"}</strong></td>
-                                            <td><strong>{warehouse.packed_by}</strong></td>
-                                            <td><strong>{warehouse.verified_by || "N/A"}</strong></td>
-                                            <td><strong>{warehouse.checked_by}</strong></td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                ))}
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.actual_weight}</strong></td>
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.parcel_amount}</strong></td>
+                                                {/* <td><strong>{warehouse.postoffice_date || "-"}</strong></td> */}
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.parcel_service || "Unknown"}</strong></td>
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.packed_by}</strong></td>
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.verified_by || "N/A"}</strong></td>
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.checked_by}</strong></td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    )
+                })}
 
                 <div style={{ marginTop: "30px", padding: "10px", border: "1px solid #ddd", borderRadius: "5px" }}>
                     <h4 style={{ textAlign: "center" }}>PARCEL SERVICE TOTAL</h4>
                     <table border="1" cellPadding="5" style={{ width: "100%", borderCollapse: "collapse", textAlign: "center" }}>
-                        <thead style={{ backgroundColor: "#ddd", fontWeight: "bold" }}>
+                        <thead className="printdata-header">
                             <tr>
-                                <th>Parcel Service</th>
-                                <th>Total Count</th>
+                                <th style={{ border: "1px solid black" }}>Parcel Service</th>
+                                <th style={{ border: "1px solid black" }}>Total Count</th>
                             </tr>
                         </thead>
                         <tbody>
                             {Object.entries(parcelCounts).map(([serviceName, count]) => (
                                 <tr key={serviceName}>
-                                    <td><strong>{serviceName}</strong></td>
-                                    <td><strong>{count}</strong></td>
+                                    <td style={{ border: "1px solid black" }}><strong>{serviceName}</strong></td>
+                                    <td style={{ border: "1px solid black" }}><strong>{count}</strong></td>
                                 </tr>
                             ))}
+                            <tr style={{ backgroundColor: '#e0e0e0' }}>
+                                <td style={{ border: "1px solid black" }}><strong>Total Parcel Count</strong></td>
+                                <td style={{ border: "1px solid black" }}>
+                                    <strong>
+                                        {Object.values(parcelCounts).reduce((acc, curr) => acc + curr, 0)}
+                                    </strong>
+                                </td>
+                            </tr>
+                            <tr style={{ backgroundColor: '#f0f0f0' }}>
+                                <td style={{ border: "1px solid black" }}><strong>Total COD Orders</strong></td>
+                                <td style={{ border: "1px solid black" }}><strong>{codCount}</strong></td>
+                            </tr>
                         </tbody>
                     </table>
-                    <div className="mt-3">
-                        <h4 style={{ textAlign: "center" }}>TOTAL COD COUNT</h4>
-                        <table border="1" cellPadding="5" style={{ width: "100%", borderCollapse: "collapse", textAlign: "center" }}>
-                            <thead style={{ backgroundColor: "#ddd", fontWeight: "bold" }}>
-                                <tr>
-                                    <th>Label</th>
-                                    <th>No of COD Orders</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><strong>Total COD Orders</strong></td>
-                                    <td><strong>{codCount}</strong></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
                     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", margin: "10px 0px" }}>
                         {isVerified ? (
                             <span style={{ fontWeight: "bold", color: "#000", fontSize: "18px" }}>

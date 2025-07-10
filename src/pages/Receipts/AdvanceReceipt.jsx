@@ -4,6 +4,7 @@ import { ToastContainer, toast } from "react-toastify";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Card, CardBody, Col, Row, Label, CardTitle, Form, Input, Button } from "reactstrap";
 import "react-toastify/dist/ReactToastify.css";
+import Select from 'react-select';
 
 const AdvanceReceipt = () => {
 
@@ -11,6 +12,8 @@ const AdvanceReceipt = () => {
     const token = localStorage.getItem("token")
     const [isLoading, setIsLoading] = useState(false);
     const [customers, setCustomers] = useState([]);
+    const [selectedBank, setSelectedBank] = useState(null);
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
 
     const [formData, setFormData] = useState({
         bank: '',
@@ -89,6 +92,16 @@ const AdvanceReceipt = () => {
         fetchCustomers();
     }, []);
 
+    const handleBankChange = (selected) => {
+        setSelectedBank(selected);
+        setFormData(prev => ({ ...prev, bank: selected ? selected.value : '' }));
+    };
+
+    const handleCustomerChange = (selected) => {
+        setSelectedCustomer(selected);
+        setFormData(prev => ({ ...prev, customer: selected ? selected.value : '' }));
+    };
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -104,12 +117,16 @@ const AdvanceReceipt = () => {
                                             <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label>Bank</Label>
-                                                    <Input type="select" name="bank" value={formData.bank} onChange={handleChange}>
-                                                        <option value="">Select Bank</option>
-                                                        {banks.map((bank) => (
-                                                            <option key={bank.id} value={bank.id}>{bank.name}</option>
-                                                        ))}
-                                                    </Input>
+                                                    <Select
+                                                        value={selectedBank}
+                                                        onChange={handleBankChange}
+                                                        options={banks.map(bank => ({
+                                                            label: bank.name,
+                                                            value: bank.id
+                                                        }))}
+                                                        isClearable
+                                                        placeholder="Select Bank"
+                                                    />
                                                 </div>
                                             </Col>
                                             <Col md={4}>
@@ -128,13 +145,17 @@ const AdvanceReceipt = () => {
                                         <Row>
                                             <Col md={4}>
                                                 <div className="mb-3">
-                                                    <Label>Customers</Label>
-                                                    <Input type="select" name="customer" value={formData.customer} onChange={handleChange}>
-                                                        <option value="">Select Customers</option>
-                                                        {customers.map((customer) => (
-                                                            <option key={customer.id} value={customer.id}>{customer.name}</option>
-                                                        ))}
-                                                    </Input>
+                                                    <Label>Customer</Label>
+                                                    <Select
+                                                        value={selectedCustomer}
+                                                        onChange={handleCustomerChange}
+                                                        options={customers.map(customer => ({
+                                                            label: customer.name,
+                                                            value: customer.id
+                                                        }))}
+                                                        isClearable
+                                                        placeholder="Select Customer"
+                                                    />
                                                 </div>
                                             </Col>
                                             <Col md={4}>

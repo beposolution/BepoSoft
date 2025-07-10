@@ -4,6 +4,7 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Card, CardBody, Col, Row, Label, CardTitle, Form, Input, Button } from "reactstrap";
+import Select from "react-select";
 
 const OrderReceipt = () => {
     const { id } = useParams(); // get order ID from route
@@ -12,6 +13,10 @@ const OrderReceipt = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [order, setOrder] = useState([]);
     const [selectedOrderId, setSelectedOrderId] = useState('');
+    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [selectedBank, setSelectedBank] = useState(null);
+    const [searchBank, setSearchBank] = useState('');
+    const [searchOrder, setSearchOrder] = useState('');
 
     const [formData, setFormData] = useState({
         bank: '',
@@ -86,6 +91,25 @@ const OrderReceipt = () => {
         fetchOrders();
     }, []);
 
+    const filteredBanks = banks.filter(bank =>
+        (bank?.name || "").toLowerCase().includes(searchBank.toLowerCase())
+    );
+
+    const filteredOrders = order.filter(ord =>
+        (ord?.invoice || "").toLowerCase().includes(searchOrder.toLowerCase()) ||
+        (ord?.customer?.name || "").toLowerCase().includes(searchOrder.toLowerCase())
+    );
+
+    const handleBankChange = (selected) => {
+        setSelectedBank(selected);
+        setFormData(prev => ({ ...prev, bank: selected ? selected.value : '' }));
+    };
+
+    const handleOrderChange = (selected) => {
+        setSelectedOrder(selected);
+        setSelectedOrderId(selected ? selected.value : '');
+    };
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -101,25 +125,31 @@ const OrderReceipt = () => {
                                             <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label>Orders</Label>
-                                                    <Input type="select" value={selectedOrderId} onChange={(e) => setSelectedOrderId(e.target.value)}>
-                                                        <option value=''>Select Order</option>
-                                                        {order.map((order) => (
-                                                            <option key={order.id} value={order.id}>
-                                                                {order.invoice} - {order.customer?.name} - ₹{order.total_amount}
-                                                            </option>
-                                                        ))}
-                                                    </Input>
+                                                    <Select
+                                                        value={selectedOrder}
+                                                        onChange={handleOrderChange}
+                                                        options={filteredOrders.map(order => ({
+                                                            label: `${order.invoice} - ${order.customer?.name} - ₹${order.total_amount}`,
+                                                            value: order.id
+                                                        }))}
+                                                        isClearable
+                                                        placeholder="Select Order"
+                                                    />
                                                 </div>
                                             </Col>
                                             <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label>Bank</Label>
-                                                    <Input type="select" name="bank" value={formData.bank} onChange={handleChange}>
-                                                        <option value="">Select Bank</option>
-                                                        {banks.map((bank) => (
-                                                            <option key={bank.id} value={bank.id}>{bank.name}</option>
-                                                        ))}
-                                                    </Input>
+                                                    <Select
+                                                        value={selectedBank}
+                                                        onChange={handleBankChange}
+                                                        options={filteredBanks.map(bank => ({
+                                                            label: bank.name,
+                                                            value: bank.id
+                                                        }))}
+                                                        isClearable
+                                                        placeholder="Select Bank"
+                                                    />
                                                 </div>
                                             </Col>
                                             <Col md={4}>

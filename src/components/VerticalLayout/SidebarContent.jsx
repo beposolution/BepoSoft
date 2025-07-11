@@ -411,7 +411,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'Marketing' || role === 'CEO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'Marketing' || role === 'CEO' || role === 'CSO' ? (
 
 
               <li>

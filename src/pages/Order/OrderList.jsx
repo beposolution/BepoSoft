@@ -214,22 +214,40 @@ const BasicTable = () => {
                                                     {currentPageOrders?.map((order, index) => (
                                                         <tr key={order?.id}>
                                                             <th scope="row">{indexOfFirstItem + index + 1}</th>
-                                                            <td><Link to={`/order/${order?.id}/items/`}>{order?.invoice}</Link></td>
+                                                            <td>
+                                                                <Link to={`/order/${order?.id}/items/`}>{order?.invoice}</Link>
+                                                            </td>
                                                             <td>{order?.manage_staff} ({order?.family})</td>
                                                             <td>
                                                                 <Link to={`/customer/${order?.customer?.id}/ledger/`}>
                                                                     {order?.customer?.name}
                                                                 </Link>
                                                             </td>
-                                                            <td style={getStatusStyle(order?.status)}>
+                                                            <td style={{ verticalAlign: "top", ...getStatusStyle(order?.status) }}>
                                                                 <strong>{order?.status}</strong>
+                                                                {order?.status === "Ready to ship" && order?.warehouse_data?.length > 0 && (
+                                                                    <Table bordered size="sm" className="mt-2" style={{ width: "100%", fontSize: "12px" }}>
+                                                                        <thead>
+                                                                            <tr>
+                                                                                <th style={{ border: "1px solid green" }}>#</th>
+                                                                                <th style={{ border: "1px solid green" }}>Box</th>
+                                                                                <th style={{ border: "1px solid green" }}>Tracking ID</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {order.warehouse_data.map((entry, idx) => (
+                                                                                <tr key={idx}>
+                                                                                    <td style={{ border: "1px solid green" }}>{idx + 1}</td>
+                                                                                    <td style={{ border: "1px solid green" }}>{entry.box}</td>
+                                                                                    <td style={{ border: "1px solid green" }}>{entry.tracking_id}</td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </Table>
+                                                                )}
                                                             </td>
                                                             <td>{order?.total_amount}</td>
-                                                            <td>
-                                                                {order?.order_date
-                                                                    ? order.order_date.substring(0, 10)
-                                                                    : ''}
-                                                            </td>
+                                                            <td>{order?.order_date?.substring(0, 10)}</td>
                                                         </tr>
                                                     ))}
                                                 </tbody>

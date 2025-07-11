@@ -4,6 +4,7 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Card, Col, Container, Row, CardBody, CardTitle, Table, Spinner, Input, Modal, ModalHeader, ModalBody, Label, ModalFooter, Button } from "reactstrap";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Paginations from '../../components/Common/Pagination';
 
 const AdvanceReceiptList = () => {
     const [receipts, setReceipts] = useState([])
@@ -17,6 +18,8 @@ const AdvanceReceiptList = () => {
     const [banks, setBanks] = useState([]);
     const [customer, setCustomer] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const perPageData = 10;
 
     useEffect(() => {
         const fetchCustomers = async () => {
@@ -139,6 +142,10 @@ const AdvanceReceiptList = () => {
         (item.created_by_name || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const currentReceipts = filteredReceipts.slice(indexOfFirstItem, indexOfLastItem);
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -160,45 +167,58 @@ const AdvanceReceiptList = () => {
                                     {loading ? (
                                         <Spinner color="primary" />
                                     ) : (
-                                        <Table bordered responsive striped hover>
-                                            <thead className="thead-dark">
-                                                <tr>
-                                                    <th>#</th>
-                                                    <th>Receipt</th>
-                                                    <th>Amount</th>
-                                                    <th>Transaction ID</th>
-                                                    <th>Received At</th>
-                                                    <th>Remark</th>
-                                                    <th>Customer</th>
-                                                    <th>Bank</th>
-                                                    <th>Created By</th>
-                                                    <th>Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {filteredReceipts.map((item, index) => (
-                                                    <tr key={item.id}>
-                                                        <td>{index + 1}</td>
-                                                        <td>{item.payment_receipt}</td>
-                                                        <td>{item.amount}</td>
-                                                        <td>{item.transactionID}</td>
-                                                        <td>{item.received_at}</td>
-                                                        <td>{item.remark}</td>
-                                                        <td>{item.customer_name}</td>
-                                                        <td>{item.bank_name}</td>
-                                                        <td>{item.created_by_name}</td>
-                                                        <td>
-                                                            <button
-                                                                className="btn btn-primary btn-sm"
-                                                                onClick={() => handleView(item.id)}
-                                                            >
-                                                                View
-                                                            </button>
-                                                        </td>
+                                        <>
+                                            <Table bordered responsive striped hover>
+                                                <thead className="thead-dark">
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Receipt</th>
+                                                        <th>Amount</th>
+                                                        <th>Transaction ID</th>
+                                                        <th>Received At</th>
+                                                        <th>Remark</th>
+                                                        <th>Customer</th>
+                                                        <th>Bank</th>
+                                                        <th>Created By</th>
+                                                        <th>Actions</th>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </Table>
+                                                </thead>
+                                                <tbody>
+                                                    {currentReceipts.map((item, index) => (
+                                                        <tr key={item.id}>
+                                                            <td>{indexOfFirstItem + index + 1}</td>
+                                                            <td>{item.payment_receipt}</td>
+                                                            <td>{item.amount}</td>
+                                                            <td>{item.transactionID}</td>
+                                                            <td>{item.received_at}</td>
+                                                            <td>{item.remark}</td>
+                                                            <td>{item.customer_name}</td>
+                                                            <td>{item.bank_name}</td>
+                                                            <td>{item.created_by_name}</td>
+                                                            <td>
+                                                                <button
+                                                                    className="btn btn-primary btn-sm"
+                                                                    onClick={() => handleView(item.id)}
+                                                                >
+                                                                    View
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </Table>
+                                            <Paginations
+                                                perPageData={perPageData}
+                                                data={filteredReceipts}
+                                                currentPage={currentPage}
+                                                setCurrentPage={setCurrentPage}
+                                                isShowingPageLength={true}
+                                                paginationDiv="col-auto"
+                                                paginationClass="pagination-rounded"
+                                                indexOfFirstItem={indexOfFirstItem}
+                                                indexOfLastItem={indexOfLastItem}
+                                            />
+                                        </>
                                     )}
                                     <Modal isOpen={modalOpen} toggle={() => setModalOpen(!modalOpen)} size="lg">
                                         <ModalHeader toggle={() => setModalOpen(!modalOpen)}>

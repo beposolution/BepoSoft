@@ -15,6 +15,13 @@ const FormLayouts = () => {
     const [states, setStates] = useState([]);
     const token = localStorage.getItem('token');
     const [userData, setUserData] = useState();
+    const [user, setUser] = useState();
+    const [role, setRole] = useState("");
+
+    useEffect(() => {
+        const storedRole = localStorage.getItem("active");
+        setRole(storedRole);
+    }, []);
 
     document.title = "Form Layouts | Skote - Vite React Admin & Dashboard Template";
 
@@ -25,6 +32,7 @@ const FormLayouts = () => {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setUserData(response?.data?.data?.family_name);
+                setUser(response?.data?.data?.name);
             } catch (error) {
                 toast.error('Error fetching user data:');
             }
@@ -146,9 +154,21 @@ const FormLayouts = () => {
         },
     });
 
-    const filteredManagers = userData
-        ? managers.filter(manager => manager.family_name === userData)
-        : managers;
+    const filteredManagers = (() => {
+        if (!role) return [];
+
+        if (role === "BDO") {
+            // Only show the logged-in user (assuming token-based profile includes name)
+            return managers.filter(manager => manager.name === user);
+        }
+
+        if (role === "BDM") {
+            // Only show managers from the same family
+            return managers.filter(manager => manager.family_name === userData);
+        }
+
+        return managers; // For ADMIN and others
+    })();
 
     return (
         <React.Fragment>

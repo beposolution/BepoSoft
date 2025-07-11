@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import Paginations from "../../components/Common/Pagination";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import * as XLSX from "xlsx";
 
 const truncateText = (text, length) => {
     return text.length > length ? `${text.substring(0, length)}...` : text;
@@ -129,6 +130,66 @@ const BasicTable = () => {
 
     document.title = "Product Tables | Beposoft";
 
+    const exportToExcel = () => {
+        const exportData = [];
+
+        filteredProducts.forEach((product, index) => {
+            // Add main product
+            exportData.push({
+                "#": index + 1,
+                ID: product.id,
+                Name: product.name,
+                Type: product.type,
+                HSN_Code: product.hsn_code,
+                Unit: product.unit,
+                Purchase_Rate: product.purchase_rate,
+                Tax_Percent: product.tax,
+                Landing_Cost: product.landing_cost,
+                Excluded_Price: Math.floor(product.exclude_price),
+                Wholesale_Price: product.selling_price,
+                Retail_Price: product.retail_price,
+                Purchase_Type: product.purchase_type === "International" ? "IN" : "Local",
+                Variant: "Single",
+                Size: product.size || "",
+                Color: product.color || "",
+                Stock: product.stock,
+                Locked_Stock: product.locked_stock
+            });
+
+            // Add variants if any
+            if (Array.isArray(product.variantIDs) && product.variantIDs.length > 0) {
+                product.variantIDs.forEach((variant) => {
+                    exportData.push({
+                        "#": "", // Empty to group under same index
+                        ID: variant.id,
+                        Name: variant.name,
+                        Type: "variant",
+                        HSN_Code: product.hsn_code, // Inherit from parent if needed
+                        Unit: product.unit,
+                        Purchase_Rate: "", // Assume variants don't have this unless defined
+                        Tax_Percent: "",   // Same here
+                        Landing_Cost: "",
+                        Excluded_Price: "",
+                        Wholesale_Price: variant.selling_price,
+                        Retail_Price: variant.retail_price,
+                        Purchase_Type: product.purchase_type === "International" ? "IN" : "Local",
+                        Variant: "Variant",
+                        Size: variant.size || "",
+                        Color: variant.color || "",
+                        Stock: variant.stock,
+                        Locked_Stock: variant.locked_stock
+                    });
+                });
+            }
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Warehouse_Products");
+
+        XLSX.writeFile(workbook, "Product_Details.xlsx");
+    };
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -169,7 +230,12 @@ const BasicTable = () => {
                                         <p>Loading...</p>
                                     ) : error ? (
                                         <p className="text-danger">Error: {error}</p>
-                                    ) : (
+                                    ) : (<>
+                                        <div className="text-end align-items-right mb-3">
+                                            <Button color="success" onClick={exportToExcel}>
+                                                Export to Excel
+                                            </Button>
+                                        </div>
                                         <div className="table-responsive">
                                             <Table className="table mb-0">
                                                 <thead>
@@ -249,6 +315,7 @@ const BasicTable = () => {
                                                 </tbody>
                                             </Table>
                                         </div>
+                                    </>
                                     )}
                                     <Paginations
                                         perPageData={perPageData}

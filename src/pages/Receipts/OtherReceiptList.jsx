@@ -133,7 +133,7 @@ const OtherReceiptList = () => {
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
-                                    <CardTitle className="mb-4">ORDER RECEIPTS</CardTitle>
+                                    <CardTitle className="mb-4">OTHER RECEIPTS</CardTitle>
                                     <div className="mb-3">
                                         <Input
                                             type="text"

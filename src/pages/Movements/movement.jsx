@@ -273,7 +273,13 @@ const Movement = () => {
                             font-size: 10px;
                             color: black;
                         }
-                        
+
+                        .cod-column{
+                            background-color: #ffeb3b !important;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+
                         .total-row{
                             background-color: #ffeb3b !important;
                             -webkit-print-color-adjust: exact !important;
@@ -429,7 +435,7 @@ const Movement = () => {
                                         <th style={{ border: "1px solid black" }}>Phone</th>
                                         <th style={{ border: "1px solid black" }}>Pincode</th>
                                         <th style={{ border: "1px solid black" }}>Box</th>
-                                        <th style={{ border: "1px solid black" }}>COD (₹)</th>
+                                        <th className="cod-column" style={{ border: "1px solid black", backgroundColor: "#ffeb3b" }}>COD (₹)</th>
                                         <th className="small-col" style={{ border: "1px solid black" }}>Weight (gram)</th>
                                         {/* <th>Length (cm)</th>
                                 <th>Breadth (cm)</th>
@@ -456,7 +462,7 @@ const Movement = () => {
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.phone}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.zip_code}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.box}</strong></td>
-                                                <td style={{ border: "1px solid black" }}><strong>{order.cod_amount}</strong></td>
+                                                <td className="cod-column" style={{ border: "1px solid black", backgroundColor: "#ffeb3b" }}><strong>{order.cod_amount}</strong></td>
                                                 <td className="small-col" style={{ border: "1px solid black" }}><strong>{warehouse.weight}</strong></td>
                                                 {/* <td>{warehouse.length}</td>
                                         <td>{warehouse.breadth}</td>

@@ -142,7 +142,7 @@ const FormLayouts = () => {
             product: selected.id,
             quantity: parseInt(qty),
             rate: selected?.selling_price || 0,
-            tax: selected?.tax || 0,
+            tax: variant ? product?.tax || 0 : selected?.tax || 0,
         };
 
         try {

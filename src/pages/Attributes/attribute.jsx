@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { Table, Row, Col, Card, CardBody, CardTitle, Button, Form, FormGroup, Input, Label } from "reactstrap";
-import { FaEdit, FaTrashAlt } from "react-icons/fa"; // Import icons for edit and delete
+import { FaEdit, FaTrashAlt } from "react-icons/fa";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import Paginations from "../../components/Common/Pagination";
 
 const BasicTable = () => {
     const [attributes, setAttributes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [showForm, setShowForm] = useState(false); // State to show/hide the form
-    const [newAttribute, setNewAttribute] = useState(""); // State to store new attribute name
-    const [editingAttribute, setEditingAttribute] = useState(null); // State to track which attribute is being edited
+    const [showForm, setShowForm] = useState(false);
+    const [newAttribute, setNewAttribute] = useState("");
+    const [editingAttribute, setEditingAttribute] = useState(null);
     const token = localStorage.getItem("token");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [perPageData] = useState(10);
 
     // Fetch product attributes
     const fetchAttributes = async () => {
@@ -104,6 +107,10 @@ const BasicTable = () => {
         setShowForm(true); // Show the form to edit
     };
 
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const currentPageData = attributes.slice(indexOfFirstItem, indexOfLastItem);
+
     document.title = "Basic Tables | Skote - Vite React Admin & Dashboard Template";
 
     return (
@@ -134,9 +141,9 @@ const BasicTable = () => {
                                                 </thead>
                                                 <tbody>
                                                     {attributes.length > 0 ? (
-                                                        attributes.map((attribute, index) => (
+                                                        currentPageData.map((attribute, index) => (
                                                             <tr key={index}>
-                                                                <td>{index + 1}</td>
+                                                                <td>{indexOfFirstItem + index + 1}</td>
                                                                 <td>{attribute.name || ""}</td>
                                                                 <td>
                                                                     <Button
@@ -166,6 +173,17 @@ const BasicTable = () => {
                                                     )}
                                                 </tbody>
                                             </Table>
+                                            <Paginations
+                                                perPageData={perPageData}
+                                                data={attributes}
+                                                currentPage={currentPage}
+                                                setCurrentPage={setCurrentPage}
+                                                isShowingPageLength={true}
+                                                paginationDiv="mt-3 d-flex justify-content-center"
+                                                paginationClass="pagination pagination-rounded"
+                                                indexOfFirstItem={indexOfFirstItem}
+                                                indexOfLastItem={indexOfLastItem}
+                                            />
                                         </div>
                                     )}
 

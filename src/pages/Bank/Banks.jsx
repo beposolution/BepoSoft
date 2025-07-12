@@ -20,6 +20,7 @@ import {
 } from "reactstrap";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Paginations from "../../components/Common/Pagination";
 
 const BasicTable = () => {
     const [loading, setLoading] = useState(true);
@@ -36,6 +37,8 @@ const BasicTable = () => {
         open_balance: ""
     });
     const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [perPageData] = useState(10);
 
     // Document title
     document.title = "beposoft | bank details";
@@ -101,6 +104,10 @@ const BasicTable = () => {
     const filteredAccounts = accounts.filter(account =>
         account.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const currentPageData = filteredAccounts.slice(indexOfFirstItem, indexOfLastItem);
 
     return (
         <React.Fragment>
@@ -190,9 +197,9 @@ const BasicTable = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {filteredAccounts.map((account, index) => (
+                                                {currentPageData.map((account, index) => (
                                                     <tr key={account.id}>
-                                                        <th scope="row">{index + 1}</th>
+                                                        <th scope="row">{indexOfFirstItem + index + 1}</th>
                                                         <td>{account.name}</td>
                                                         <td style={{ color: 'blue' }}>{account.account_number}</td>
                                                         <td>{account.ifsc_code}</td>
@@ -205,6 +212,17 @@ const BasicTable = () => {
                                                 ))}
                                             </tbody>
                                         </Table>
+                                        <Paginations
+                                            perPageData={perPageData}
+                                            data={filteredAccounts}
+                                            currentPage={currentPage}
+                                            setCurrentPage={setCurrentPage}
+                                            isShowingPageLength={true}
+                                            paginationDiv="mt-3 d-flex justify-content-center"
+                                            paginationClass="pagination pagination-rounded"
+                                            indexOfFirstItem={indexOfFirstItem}
+                                            indexOfLastItem={indexOfLastItem}
+                                        />
                                     </div>
                                 </CardBody>
                             </Card>

@@ -4,17 +4,20 @@ import { FaEdit, FaTrashAlt } from "react-icons/fa"; // Import icons for edit an
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Paginations from "../../components/Common/Pagination";
 
 const BasicTable = () => {
-    const [attributes, setAttributes] = useState([]); // Ensure attributes is an array
+    const [attributes, setAttributes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [showForm, setShowForm] = useState(false); // State to show/hide the form
-    const [newAttribute, setNewAttribute] = useState(""); // State to store new attribute name
-    const [newAttributeValue, setNewAttributeValue] = useState(""); // State to store new attribute value
-    const [editingAttribute, setEditingAttribute] = useState(null); // State to track which attribute is being edited
-    const [availableAttributes, setAvailableAttributes] = useState([]); // Ensure availableAttributes is an array
+    const [showForm, setShowForm] = useState(false);
+    const [newAttribute, setNewAttribute] = useState("");
+    const [newAttributeValue, setNewAttributeValue] = useState("");
+    const [editingAttribute, setEditingAttribute] = useState(null);
+    const [availableAttributes, setAvailableAttributes] = useState([]);
     const token = localStorage.getItem("token");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [perPageData] = useState(10);
 
     // Fetch product attributes
     const fetchAttributes = async () => {
@@ -156,7 +159,10 @@ const BasicTable = () => {
     };
 
     document.title = "Beposoft | Product Attribute Values";
-
+    
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const currentPageAttributes = attributes.slice(indexOfFirstItem, indexOfLastItem);
 
     return (
         <React.Fragment>
@@ -231,9 +237,9 @@ const BasicTable = () => {
                                                     </thead>
                                                     <tbody>
                                                         {attributes && attributes.length > 0 ? ( // Safe check before accessing .length
-                                                            attributes.map((attribute, index) => (
+                                                            currentPageAttributes.map((attribute, index) => (
                                                                 <tr key={index}>
-                                                                    <td>{index + 1}</td>
+                                                                    <td>{indexOfFirstItem + index + 1}</td>
                                                                     <td>{attributeLookup[attribute?.attribute] || ""}</td>
                                                                     <td>{attribute?.value || ""}</td>
 
@@ -265,6 +271,17 @@ const BasicTable = () => {
                                                         )}
                                                     </tbody>
                                                 </Table>
+                                                <Paginations
+                                                    perPageData={perPageData}
+                                                    data={attributes}
+                                                    currentPage={currentPage}
+                                                    setCurrentPage={setCurrentPage}
+                                                    isShowingPageLength={true}
+                                                    paginationDiv="mt-3 d-flex justify-content-center"
+                                                    paginationClass="pagination pagination-rounded"
+                                                    indexOfFirstItem={indexOfFirstItem}
+                                                    indexOfLastItem={indexOfLastItem}
+                                                />
                                             </div>
                                         </>
                                     )}

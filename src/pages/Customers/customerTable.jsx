@@ -16,6 +16,7 @@ import {
     Label
 } from "reactstrap";
 import { useNavigate } from "react-router-dom";
+import Paginations from "../../components/Common/Pagination";
 
 const BasicTable = () => {
     const [data, setData] = useState([]);
@@ -27,6 +28,8 @@ const BasicTable = () => {
     const [selectedState, setSelectedState] = useState("");
     const token = localStorage.getItem('token');
     const navigate = useNavigate();
+    const [currentPage, setCurrentPage] = useState(1);
+    const [perPageData] = useState(10);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -106,6 +109,10 @@ const BasicTable = () => {
         XLSX.writeFile(workbook, "Customer_List.xlsx");
     };
 
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const currentPageData = filteredData.slice(indexOfFirstItem, indexOfLastItem);
+
     document.title = "Customer List | Dashboard Template";
 
     return (
@@ -164,47 +171,60 @@ const BasicTable = () => {
                                     ) : error ? (
                                         <p className="text-danger">{error}</p>
                                     ) : (
-                                        <div className="table-responsive">
-                                            <Table bordered striped hover className="mb-0">
-                                                <thead>
-                                                    <tr>
-                                                        <th>#</th>
-                                                        <th>Name</th>
-                                                        <th>Email</th>
-                                                        <th>Phone</th>
-                                                        <th>Action</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {filteredData.map((customer, index) => (
-                                                        <tr key={customer.id}>
-                                                            <th scope="row">{index + 1}</th>
-                                                            <td>{customer.name}</td>
-                                                            <td>{customer.email || 'N/A'}</td>
-                                                            <td>{customer.phone || 'N/A'}</td>
-                                                            <td>
-                                                                <Dropdown>
-                                                                    <Dropdown.Toggle variant="secondary" size="sm" id={`dropdown-${customer.id}`}>
-                                                                        Actions
-                                                                    </Dropdown.Toggle>
-                                                                    <Dropdown.Menu>
-                                                                        <Dropdown.Item onClick={() => handleUpdate(customer.id)}>
-                                                                            Update
-                                                                        </Dropdown.Item>
-                                                                        <Dropdown.Item onClick={() => handleAddress(customer.id)}>
-                                                                            Address
-                                                                        </Dropdown.Item>
-                                                                        <Dropdown.Item onClick={() => handleLedger(customer.id)}>
-                                                                            Ledger
-                                                                        </Dropdown.Item>
-                                                                    </Dropdown.Menu>
-                                                                </Dropdown>
-                                                            </td>
+                                        <>
+                                            <div className="table-responsive">
+                                                <Table bordered striped hover className="mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>#</th>
+                                                            <th>Name</th>
+                                                            <th>Email</th>
+                                                            <th>Phone</th>
+                                                            <th>Action</th>
                                                         </tr>
-                                                    ))}
-                                                </tbody>
-                                            </Table>
-                                        </div>
+                                                    </thead>
+                                                    <tbody>
+                                                        {currentPageData.map((customer, index) => (
+                                                            <tr key={customer.id}>
+                                                                <th scope="row">{indexOfFirstItem + index + 1}</th>
+                                                                <td>{customer.name}</td>
+                                                                <td>{customer.email || 'N/A'}</td>
+                                                                <td>{customer.phone || 'N/A'}</td>
+                                                                <td>
+                                                                    <Dropdown>
+                                                                        <Dropdown.Toggle variant="secondary" size="sm" id={`dropdown-${customer.id}`}>
+                                                                            Actions
+                                                                        </Dropdown.Toggle>
+                                                                        <Dropdown.Menu>
+                                                                            <Dropdown.Item onClick={() => handleUpdate(customer.id)}>
+                                                                                Update
+                                                                            </Dropdown.Item>
+                                                                            <Dropdown.Item onClick={() => handleAddress(customer.id)}>
+                                                                                Address
+                                                                            </Dropdown.Item>
+                                                                            <Dropdown.Item onClick={() => handleLedger(customer.id)}>
+                                                                                Ledger
+                                                                            </Dropdown.Item>
+                                                                        </Dropdown.Menu>
+                                                                    </Dropdown>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </Table>
+                                            </div>
+                                            <Paginations
+                                                perPageData={perPageData}
+                                                data={filteredData}
+                                                currentPage={currentPage}
+                                                setCurrentPage={setCurrentPage}
+                                                isShowingPageLength={true}
+                                                paginationDiv="mt-3 d-flex justify-content-center"
+                                                paginationClass="pagination pagination-rounded"
+                                                indexOfFirstItem={indexOfFirstItem}
+                                                indexOfLastItem={indexOfLastItem}
+                                            />
+                                        </>
                                     )}
                                 </CardBody>
                             </Card>

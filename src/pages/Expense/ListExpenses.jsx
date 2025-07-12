@@ -5,6 +5,7 @@ import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Paginations from "../../components/Common/Pagination"
 
 const BasicTable = () => {
     const [expenses, setExpenses] = useState([]);
@@ -14,6 +15,8 @@ const BasicTable = () => {
     const [endDate, setEndDate] = useState('');
     const [purposeOfPayment, setPurposeOfPayment] = useState([]);
     const navigate = useNavigate();
+    const [currentPage, setCurrentPage] = useState(1);
+    const [perPageData] = useState(10);
 
     const token = localStorage.getItem('token');
 
@@ -93,7 +96,11 @@ const BasicTable = () => {
         navigate(`/expense/update/${id}/`);
     }
 
-    document.title = "Basic Tables | Skote - Vite React Admin & Dashboard Template";
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const currentExpenses = filteredExpenses.slice(indexOfFirstItem, indexOfLastItem);
+
+    document.title = "Beposoft | Expense Data";
 
     return (
         <React.Fragment>
@@ -154,9 +161,9 @@ const BasicTable = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {filteredExpenses.map((expense, index) => (
+                                                {currentExpenses.map((expense, index) => (
                                                     <tr key={expense?.id}>
-                                                        <th scope="row">{index + 1}</th>
+                                                        <th scope="row">{indexOfFirstItem + index + 1}</th>
                                                         <td style={{ color: '#007bff' }}>{expense?.company?.name || 'N/A'}</td>
                                                         <td style={{ color: '#28a745' }}>{expense?.payed_by?.name || 'N/A'}</td>
                                                         <td>
@@ -171,6 +178,17 @@ const BasicTable = () => {
                                                 ))}
                                             </tbody>
                                         </Table>
+                                        <Paginations
+                                            perPageData={perPageData}
+                                            data={filteredExpenses}
+                                            currentPage={currentPage}
+                                            setCurrentPage={setCurrentPage}
+                                            isShowingPageLength={true}
+                                            paginationDiv="col-auto"
+                                            paginationClass="pagination pagination-rounded justify-content-center"
+                                            indexOfFirstItem={indexOfFirstItem}
+                                            indexOfLastItem={indexOfLastItem}
+                                        />
                                     </div>
                                 </CardBody>
                             </Card>

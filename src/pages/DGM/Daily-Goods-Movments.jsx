@@ -5,6 +5,7 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Paginations from "../../components/Common/Pagination"
 
 const BasicTable = () => {
     const [data, setData] = useState([]);
@@ -12,6 +13,8 @@ const BasicTable = () => {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const token = localStorage.getItem('token');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [perPageData] = useState(15);
 
     const navigate = useNavigate();
 
@@ -47,10 +50,13 @@ const BasicTable = () => {
     };
 
 
-const handleClick = (date) => {
-    navigate(`/Movement/${date}`);
-}
+    const handleClick = (date) => {
+        navigate(`/Movement/${date}`);
+    }
 
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const currentPageData = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
     return (
         <React.Fragment>
@@ -112,13 +118,24 @@ const handleClick = (date) => {
                                                         <td>{(item.total_weight / 1000).toFixed(2)}</td>
                                                         <td>{item.total_shipping_charge}</td>
                                                         <td>
-                                                            <button  onClick={() =>handleClick(item.shipped_date)} style={{border:"none", background:"blue", color:"white"}}>View</button>
+                                                            <button onClick={() => handleClick(item.shipped_date)} style={{ border: "none", background: "blue", color: "white" }}>View</button>
                                                         </td>
                                                     </tr>
                                                 ))}
                                             </tbody>
                                         </Table>
                                     </div>
+                                    <Paginations
+                                        perPageData={perPageData}
+                                        data={filteredData}
+                                        currentPage={currentPage}
+                                        setCurrentPage={setCurrentPage}
+                                        isShowingPageLength={true}
+                                        paginationDiv="mt-3 d-flex justify-content-center"
+                                        paginationClass="pagination pagination-rounded"
+                                        indexOfFirstItem={indexOfFirstItem}
+                                        indexOfLastItem={indexOfLastItem}
+                                    />
                                 </CardBody>
                             </Card>
                         </Col>

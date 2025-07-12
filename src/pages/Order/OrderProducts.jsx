@@ -1207,9 +1207,9 @@ const FormLayouts = () => {
                                                                 </td>
                                                                 <td>{item.name}</td>
                                                                 <td>{item.rate}</td>
-                                                                <td>{item.exclude_price}</td>
+                                                                <td>{item.exclude_price}</td> 
                                                                 <td>{item.tax} %</td>
-                                                                <td>{(item.rate - item.exclude_price).toFixed(3)}</td>
+                                                                <td>{TaxAmount.toFixed(2)}</td>
                                                                 <td>
                                                                     <Input
                                                                         type="number"

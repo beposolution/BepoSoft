@@ -209,6 +209,22 @@ const ChartSection = () => {
         order.order_date === today
     )?.length || 0;
 
+    const totalSkatingTodayAmount = orders?.reduce((sum, order) => {
+        const orderDate = order?.order_date?.slice(0, 10);
+        if (order.family_name === "skating" && orderDate === today) {
+            return sum + (parseFloat(order.total_amount) || 0);
+        }
+        return sum;
+    }, 0);
+
+    const totalCyclingTodayAmount = orders?.reduce((sum, order) => {
+        const orderDate = order?.order_date?.slice(0, 10);
+        if (order.family_name === "cycling" && orderDate === today) {
+            return sum + (parseFloat(order.total_amount) || 0);
+        }
+        return sum;
+    }, 0);
+
     return (
         <React.Fragment>
 
@@ -281,14 +297,14 @@ const ChartSection = () => {
 
                 {(role === "CSO") && (
                     <Col lg={3}>
-                        <div style={{ cursor: "pointer" }}
-                            onClick={() => navigate("/all/staff/customers/")}>
+                        <div style={{ cursor: "pointer" }}>
                             <Card className="mini-stats-wid">
                                 <CardBody>
                                     <div className="d-flex">
                                         <div className="flex-grow-1">
                                             <p className="text-muted fw-medium">SKATING</p>
                                             <h5>Todays Bill: <strong> {skatingTodayCount}</strong> </h5>
+                                            <h5>Todays Volume: <strong> {totalSkatingTodayAmount}</strong> </h5>
                                         </div>
                                         <div className="flex-shrink-0 align-self-center">
                                             {/* Optional Chart */}
@@ -303,14 +319,14 @@ const ChartSection = () => {
                 )}
                 {(role === "CSO") && (
                     <Col lg={3}>
-                        <div style={{ cursor: "pointer" }}
-                            onClick={() => navigate("/all/staff/customers/")}>
+                        <div style={{ cursor: "pointer" }}>
                             <Card className="mini-stats-wid">
                                 <CardBody>
                                     <div className="d-flex">
                                         <div className="flex-grow-1">
                                             <p className="text-muted fw-medium">CYCLING</p>
                                             <h5>Todays Bill: <strong> {cyclingTodayCount}</strong> </h5>
+                                            <h5>Todays Volume: <strong> {totalCyclingTodayAmount}</strong> </h5>
                                         </div>
                                         <div className="flex-shrink-0 align-self-center">
                                             {/* Optional Chart */}

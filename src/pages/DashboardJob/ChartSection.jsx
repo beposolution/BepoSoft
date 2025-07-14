@@ -158,6 +158,10 @@ const ChartSection = () => {
         )
         ?.reduce((sum, order) => sum + (order.total_amount || 0), 0);
 
+    const allTodayOrdersCount = orders?.filter(
+        order => order?.order_date === today
+    )?.length || 0;
+
     // Destructure from orders
     const familyIds = orders?.map(order => order.family_id);
     const orderDates = orders?.map(order => order.order_date);
@@ -273,7 +277,7 @@ const ChartSection = () => {
                                             <p className="text-muted fw-medium">Todays Bill</p>
                                             <h4 className="mb-0">
                                                 {role === "ADMIN" || role === "CEO"
-                                                    ? (todayBills?.order || 0)
+                                                    ? allTodayOrdersCount
                                                     : role === "CSO"
                                                         ? skatingAndCyclingTodayCount
                                                         : userFamilyTodayOrderCount}

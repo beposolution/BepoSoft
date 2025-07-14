@@ -304,7 +304,7 @@ const ChartSection = () => {
                                         <div className="flex-grow-1">
                                             <p className="text-muted fw-medium">SKATING</p>
                                             <h5>Todays Bill: <strong> {skatingTodayCount}</strong> </h5>
-                                            <h5>Todays Volume: <strong> {totalSkatingTodayAmount}</strong> </h5>
+                                            <h5>Todays Volume: ₹ <strong> {totalSkatingTodayAmount}</strong> </h5>
                                         </div>
                                         <div className="flex-shrink-0 align-self-center">
                                             {/* Optional Chart */}
@@ -326,7 +326,7 @@ const ChartSection = () => {
                                         <div className="flex-grow-1">
                                             <p className="text-muted fw-medium">CYCLING</p>
                                             <h5>Todays Bill: <strong> {cyclingTodayCount}</strong> </h5>
-                                            <h5>Todays Volume: <strong> {totalCyclingTodayAmount}</strong> </h5>
+                                            <h5>Todays Volume: ₹ <strong> {totalCyclingTodayAmount}</strong> </h5>
                                         </div>
                                         <div className="flex-shrink-0 align-self-center">
                                             {/* Optional Chart */}
@@ -349,7 +349,7 @@ const ChartSection = () => {
                                         <div className="flex-grow-1">
                                             <p className="text-muted fw-medium">Todays Total Volume</p>
                                             <h4>
-                                                ₹{role === "CSO"
+                                                ₹ {role === "CSO"
                                                     ? totalAmountSkatingAndCyclingToday
                                                     : totalAmountForCurrentUserFamilyToday}
                                             </h4>

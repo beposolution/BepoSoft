@@ -662,9 +662,11 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/states/sales/resport/">{props.t("States Sales Report")}</Link>
                   </li>
-                  <li>
-                    <Link to="/monthly/sales/report/">{props.t("Monthly Sales Report")}</Link>
-                  </li>
+                  {role === 'CSO' ? (
+                    <li>
+                      <Link to="/monthly/sales/report/">{props.t("Monthly Sales Report")}</Link>
+                    </li>
+                  ) : null}
                   <li>
                     <Link to="/expense/report/">{props.t("Expense Report")}</Link>
                   </li>

@@ -19,7 +19,7 @@ import "react-toastify/dist/ReactToastify.css";
 import Paginations from "../../components/Common/Pagination";
 
 const BasicTable = () => {
-    document.title = "Filtered Tables | Skote - Vite React Admin & Dashboard Template";
+    document.title = "Beposoft | Product Sold Report";
 
     const [tableData, setTableData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
@@ -28,11 +28,17 @@ const BasicTable = () => {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const token = localStorage.getItem("token");
+    const [role, setRole] = useState(null)
     const [currentPage, setCurrentPage] = useState(1);
-    const perPageData = 10;
+    const perPageData = 15;
 
     const indexOfLastItem = currentPage * perPageData;
     const indexOfFirstItem = indexOfLastItem - perPageData;
+
+    useEffect(() => {
+        const role = localStorage.getItem("active");
+        setRole(role);
+    }, []);
 
     const fetchData = async () => {
         try {
@@ -72,13 +78,17 @@ const BasicTable = () => {
                     const isDateMatch =
                         (!startDate || new Date(group.date) >= new Date(startDate)) &&
                         (!endDate || new Date(group.date) <= new Date(endDate));
-                    return isStaffMatch && isDateMatch;
+
+                    // Exclude family === 'bepocart' only if role === 'CSO'
+                    const isFamilyAllowed = !(role === "CSO" && item.family === "bepocart");
+
+                    return isStaffMatch && isDateMatch && isFamilyAllowed;
                 }),
             }))
-            .filter((group) => group.data.length > 0); // Remove empty groups
+            .filter((group) => group.data.length > 0);
 
         setFilteredData(filtered);
-    }, [selectedStaff, startDate, endDate, tableData]);
+    }, [selectedStaff, startDate, endDate, tableData, role]);
 
     // Fetch data on component mount
     useEffect(() => {

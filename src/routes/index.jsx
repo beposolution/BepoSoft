@@ -363,6 +363,7 @@ import AdvanceReceiptList from "../pages/Receipts/AdvanceReceiptList";
 import OrderReceiptList from "../pages/Receipts/OrderReceiptList";
 import OtherReceiptList from "../pages/Receipts/OtherReceiptList";
 import AddParcelService from "../pages/ParcelServices/AddParcelService";
+import MonthlySalesReport from "../pages/Resports/MonthlySalesReport";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -570,6 +571,7 @@ const authProtectedRoutes = [
   { path: "/credit/sales/report/:date/", component: <CreditOrders /> },
   { path: "/product/stock/report/", component: <StockReport /> },
   { path: "/product/add-excel/", component: <ExcelOrderCreation /> },
+  { path: "/monthly/sales/report/", component: <MonthlySalesReport /> },
 
 
 

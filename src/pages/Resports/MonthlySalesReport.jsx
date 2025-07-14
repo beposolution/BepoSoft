@@ -214,7 +214,7 @@ const MonthlySalesReport = () => {
                                                 ))}
                                             </select>
                                         </Col>
-                                        <Col md={12} className="mb-3">
+                                        <Col md={12} className="mb-3 mt-3">
                                             <label>Select Staff</label>
                                             <Select
                                                 options={[
@@ -285,7 +285,7 @@ const MonthlySalesReport = () => {
                                                 ))}
                                             </select>
                                         </Col>
-                                        <Col md={12} className="mb-3">
+                                        <Col md={12} className="mb-3 mt-3">
                                             <label>Select Staff</label>
                                             <Select
                                                 options={[

@@ -12,15 +12,15 @@ import {
     FormGroup,
     Button,
 } from "reactstrap";
-import * as XLSX from "xlsx"; 
+import * as XLSX from "xlsx";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Paginations from "../../components/Common/Pagination";
 
 const BasicTable = () => {
     document.title = "Filtered Tables | Skote - Vite React Admin & Dashboard Template";
 
-    // State to store table data and filters
     const [tableData, setTableData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
     const [staffs, setStaffs] = useState([]);
@@ -28,8 +28,12 @@ const BasicTable = () => {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const token = localStorage.getItem("token");
+    const [currentPage, setCurrentPage] = useState(1);
+    const perPageData = 10;
 
-    // Fetch data using the fetch API
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+
     const fetchData = async () => {
         try {
             const response = await fetch(`${import.meta.env.VITE_APP_KEY}sold/products/`, {
@@ -45,7 +49,7 @@ const BasicTable = () => {
             }
 
             const data = await response.json();
-            setTableData(data); // Adjust based on actual API response structure
+            setTableData(data);
             setFilteredData(data);
 
             // Extract unique staff names
@@ -58,7 +62,6 @@ const BasicTable = () => {
         }
     };
 
-    // Apply filters whenever any filter value changes
     useEffect(() => {
         const filtered = tableData
             .map((group) => ({
@@ -82,6 +85,8 @@ const BasicTable = () => {
         fetchData();
     }, []);
 
+    const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
+
     // Function to export table data to Excel
     const exportToExcel = () => {
         // Prepare data for export
@@ -96,16 +101,16 @@ const BasicTable = () => {
                 Stock: group.stock || 0, // Add stock from group
             }))
         );
-    
+
         // Create worksheet and workbook
         const worksheet = XLSX.utils.json_to_sheet(exportData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Product Sales");
-    
+
         // Save workbook
         XLSX.writeFile(workbook, "Product_Sales_Summary.xlsx");
     };
-    
+
 
     return (
         <React.Fragment>
@@ -189,7 +194,7 @@ const BasicTable = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {filteredData.map((group, index) => {
+                                                {currentItems.map((group, index) => {
                                                     const totalOrders = group.data.length;
                                                     const totalSoldProducts = group.data.reduce(
                                                         (sum, item) => sum + item.total_sold,
@@ -206,7 +211,7 @@ const BasicTable = () => {
 
                                                     return (
                                                         <tr key={index}>
-                                                            <th scope="row">{index + 1}</th>
+                                                            <th scope="row">{indexOfFirstItem + index + 1}</th>
                                                             <td>{group.date}</td>
                                                             <td>{group.product}</td>
                                                             <td>{totalOrders}</td>
@@ -223,6 +228,17 @@ const BasicTable = () => {
                             </Card>
                         </Col>
                     </Row>
+                    <Paginations
+                        perPageData={perPageData}
+                        data={filteredData}
+                        currentPage={currentPage}
+                        setCurrentPage={setCurrentPage}
+                        isShowingPageLength={true}
+                        paginationDiv="col-auto"
+                        paginationClass="pagination-rounded"
+                        indexOfFirstItem={indexOfFirstItem}
+                        indexOfLastItem={indexOfLastItem}
+                    />
                 </div>
             </div>
         </React.Fragment>

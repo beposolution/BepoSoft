@@ -143,11 +143,7 @@ const BasicTable = () => {
                                         <tr key={item.id}>
                                             <th scope="row">{index + 1}</th>
                                             <td>{item.box || "N/A"}</td>
-                                            <td>
-                                                {
-                                                    parcelServices.find(service => service.id == item.parcel_service)?.name || "N/A"
-                                                }
-                                            </td>
+                                            <td>{item.parcel_service || "N/A"}</td>
                                             <td>{item.tracking_id || "N/A"}</td>
                                             <td>{item.height}</td>
                                             <td>{item.breadth}</td>
@@ -448,7 +444,10 @@ const BasicTable = () => {
                                                 );
                                                 const fixedData = {
                                                     ...res.data,
-                                                    parcel_service: res.data.parcel_service?.id || res.data.parcel_service,
+                                                    parcel_service:
+                                                        typeof res.data.parcel_service === "object"
+                                                            ? res.data.parcel_service.id
+                                                            : res.data.parcel_service,
                                                 };
                                                 updatedList[idx] = fixedData;
                                                 setEditableData(updatedList);

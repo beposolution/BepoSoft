@@ -178,7 +178,7 @@ const FormRepeater = () => {
                                         <div>
                                             {formRows.map((formRow, key) => (
                                                 <Row key={key}>
-                                                    <Col sm={12} md={6} lg={3} className="mb-3">
+                                                    <Col sm={12} md={4} className="mb-3">
                                                         <FormGroup>
                                                             <Label htmlFor="box">Box</Label>
                                                             <Input
@@ -191,7 +191,7 @@ const FormRepeater = () => {
                                                             />
                                                         </FormGroup>
                                                     </Col>
-                                                    <Col sm={12} md={6} lg={3} className="mb-3">
+                                                    <Col sm={12} md={4} className="mb-3">
                                                         <FormGroup>
                                                             <Label htmlFor="box">Tracking ID</Label>
                                                             <Input
@@ -205,141 +205,7 @@ const FormRepeater = () => {
                                                         </FormGroup>
                                                     </Col>
 
-                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
-                                                        <FormGroup>
-                                                            <Label htmlFor="weight">Weight (g)</Label>
-                                                            <Input
-                                                                type="number"
-                                                                id="weight"
-                                                                value={formRow.weight}
-                                                                onChange={(e) => handleInputChange(formRow.id, 'weight', e.target.value)}
-                                                                className="form-control"
-                                                                placeholder="Enter Weight"
-                                                            />
-                                                        </FormGroup>
-                                                    </Col> */}
-
-                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
-                                                        <FormGroup>
-                                                            <Label htmlFor="length">Length</Label>
-                                                            <Input
-                                                                type="number"
-                                                                id="length"
-                                                                value={formRow.length}
-                                                                onChange={(e) => handleInputChange(formRow.id, 'length', e.target.value)}
-                                                                className="form-control"
-                                                                placeholder="Enter Length"
-                                                            />
-                                                        </FormGroup>
-                                                    </Col> */}
-                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
-                                                        <FormGroup>
-                                                            <Label htmlFor="breadth">Breadth</Label>
-                                                            <Input
-                                                                type="number"
-                                                                id="breadth"
-                                                                value={formRow.breadth}
-                                                                onChange={(e) => handleInputChange(formRow.id, 'breadth', e.target.value)}
-                                                                className="form-control"
-                                                                placeholder="Enter Breadth"
-                                                            />
-                                                        </FormGroup>
-                                                    </Col> */}
-                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
-                                                        <FormGroup>
-                                                            <Label htmlFor="height">Height</Label>
-                                                            <Input
-                                                                type="number"
-                                                                id="height"
-                                                                value={formRow.height}
-                                                                onChange={(e) => handleInputChange(formRow.id, 'height', e.target.value)}
-                                                                className="form-control"
-                                                                placeholder="Enter Height"
-                                                            />
-                                                        </FormGroup>
-                                                    </Col> */}
-
-                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
-                                                        <FormGroup>
-                                                            <Label htmlFor="image_before">Image Before Packing</Label>
-                                                            <Input
-                                                                type="file"
-                                                                id="image_before"
-                                                                onChange={(e) => handleFileChange(formRow.id, e.target.files[0])}
-                                                                className="form-control"
-                                                            />
-                                                        </FormGroup>
-                                                    </Col> */}
-                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
-                                                        <FormGroup>
-                                                            <Label htmlFor="image">Image After Packing</Label>
-                                                            <Input
-                                                                type="file"
-                                                                id="image"
-                                                                onChange={(e) => handleFileChange(formRow.id, e.target.files[0])}
-                                                                className="form-control"
-                                                            />
-                                                        </FormGroup>
-                                                    </Col> */}
-
-                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
-                                                        <FormGroup>
-                                                            <Label htmlFor="packed_by">Packed By</Label>
-                                                            <Input
-                                                                type="select"
-                                                                id="packed_by"
-                                                                value={formRow.packed_by}
-                                                                onChange={(e) => handleInputChange(formRow.id, 'packed_by', e.target.value)}
-                                                                className="form-control"
-                                                            >
-                                                                <option value="">Select Packed By</option>
-                                                                {staffs
-                                                                    .filter(staff =>
-                                                                        ["Accounts / Accounting", "ADMIN", "warehouse", "Warehouse Admin"].includes(staff.department_name)
-                                                                    )
-                                                                    .map((staff, index) => (
-                                                                        <option key={index} value={staff.id}>
-                                                                            {staff.name}
-                                                                        </option>
-                                                                    ))}
-                                                            </Input>
-                                                        </FormGroup>
-                                                    </Col> */}
-
-                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
-                                                        <FormGroup>
-                                                            <Label htmlFor="packed_by">Status</Label>
-                                                            <Input
-                                                                type="select"
-                                                                id="packed_by7"
-                                                                value={formRow.status}
-                                                                onChange={(e) => handleInputChange(formRow.id, 'status', e.target.value)}
-                                                                className="form-control"
-                                                            >
-                                                                <option value="">select status</option>
-                                                                <option value="Ready To Ship">Ready To Ship</option>
-                                                                <option value="Packed">Packed</option>
-                                                                <option value="Shipped">Shipped</option>
-
-
-                                                            </Input>
-                                                        </FormGroup>
-                                                    </Col> */}
-
-                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
-                                                        <FormGroup>
-                                                            <Label htmlFor="date">Date</Label>
-                                                            <Input
-                                                                type="date"
-                                                                id="date"
-                                                                value={formRow.shipped_date || ''}
-                                                                onChange={(e) => handleInputChange(formRow.id, 'shipped_date', e.target.value)}
-                                                                className="form-control"
-                                                            />
-                                                        </FormGroup>
-                                                    </Col> */}
-
-                                                    <Col sm={6}>
+                                                    <Col sm={12} md={4}>
                                                         <div className="d-flex justify-content-end mt-4">
                                                             <Button
                                                                 color="danger"

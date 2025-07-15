@@ -8,22 +8,15 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const FormRepeater = () => {
-    document.title = "Form Repeater | Skote - Vite React Admin & Dashboard Template";
+    document.title = "Form Repeater | Beposoft";
 
     const [formRows, setFormRows] = useState([
         {
             id: 1,
             box: "Box 1",
-            weight: "",
-            length: "",
-            breadth: "",
-            height: "",
-            image: null,
-            image_before: null,
             packed_by: "",
+            tracking_id: "",
             parcel_service: "",
-            shipped_date: "",
-            status: "",
         }
     ]);
     const [successMessage, setSuccessMessage] = useState("");
@@ -32,8 +25,56 @@ const FormRepeater = () => {
     const token = localStorage.getItem('token');
     const [staffs, setStaffs] = useState([]);
     const { id } = useParams();
+    const [parcelServiceData, setParcelServiceData] = useState();
+    const [userData, setUserData] = useState();
+    console.log("user id:", userData)
+    console.log("parcel services:", parcelServiceData)
 
-    // ✅ Fetch Staff Data
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}profile/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const userId = response?.data?.data?.id;
+                setUserData(userId);
+
+                setFormRows((prevRows) =>
+                    prevRows.map((row, index) =>
+                        index === 0 ? { ...row, packed_by: userId } : row
+                    )
+                );
+            } catch (error) {
+                toast.error('Error fetching user data:', error);
+            }
+        };
+        fetchUserData();
+    }, []);
+
+    useEffect(() => {
+        const fetchParcelServiceData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}parcal/service/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setParcelServiceData(response?.data);
+
+                const firstServiceId = response?.data?.data?.[0]?.id;
+                if (firstServiceId) {
+                    setFormRows((prevRows) =>
+                        prevRows.map((row) => ({
+                            ...row,
+                            parcel_service: row.parcel_service || firstServiceId,
+                        }))
+                    );
+                }
+            } catch (error) {
+                toast.error('Error fetching parcel service data');
+            }
+        };
+        fetchParcelServiceData();
+    }, []);
+
     const fetchData = async () => {
         try {
             const response = await axios.get(`${import.meta.env.VITE_APP_KEY}staffs/`, {
@@ -50,7 +91,17 @@ const FormRepeater = () => {
     }, [token]);
 
     const onAddFormRow = () => {
-        setFormRows([...formRows, { id: formRows.length + 1, box: `Box ${formRows.length + 1}`, weight: "", length: "", breadth: "", height: "", image: null, packed_by: "", shipped_date: "", status: "" }]);
+        const firstServiceId = parcelServiceData?.data?.[0]?.id || "";
+        setFormRows([
+            ...formRows,
+            {
+                id: formRows.length + 1,
+                box: `Box ${formRows.length + 1}`,
+                tracking_id: "",
+                packed_by: userData,
+                parcel_service: firstServiceId,
+            },
+        ]);
     };
 
     const onDeleteFormRow = (rowId) => {
@@ -73,19 +124,9 @@ const FormRepeater = () => {
                 const formData = new FormData();
                 formData.append("box", row.box);
                 formData.append("order", id);
-                formData.append("weight", row.weight);
-                formData.append("length", row.length);
-                formData.append("breadth", row.breadth);
-                formData.append("height", row.height);
                 formData.append("packed_by", row.packed_by);
-                formData.append("status", row.status);
-                formData.append("shipped_date", row.shipped_date);
-                if (row.image) {
-                    formData.append("image", row.image);
-                }
-                if (row.image_before) {
-                    formData.append("image_before", row.image_before);
-                }
+                formData.append("tracking_id", row.tracking_id);
+                formData.append("parcel_service", row.parcel_service);
                 return formData;
             });
 
@@ -108,7 +149,7 @@ const FormRepeater = () => {
             if (allSuccess) {
                 setSuccessMessage("All data successfully saved!");
                 setShowSuccessModal(true); // ✅ Show success modal
-                setFormRows([{ id: 1, box: "Box 1", weight: "", length: "", breadth: "", height: "", image: null, packed_by: "", shipped_date: "", status: "" }]);
+                setFormRows([{ id: 1, box: "Box 1", tracking_id: "", packed_by: "" }]);
                 setTimeout(() => {
                     window.location.reload();
                 }, 1200); // 1.2 seconds delay so user sees the message/modal
@@ -152,8 +193,21 @@ const FormRepeater = () => {
                                                             />
                                                         </FormGroup>
                                                     </Col>
-
                                                     <Col sm={12} md={6} lg={3} className="mb-3">
+                                                        <FormGroup>
+                                                            <Label htmlFor="box">Tracking ID</Label>
+                                                            <Input
+                                                                type="text"
+                                                                id="tracking_id"
+                                                                value={formRow.tracking_id}
+                                                                onChange={(e) => handleInputChange(formRow.id, 'tracking_id', e.target.value)}
+                                                                className="form-control"
+                                                                placeholder="Enter Tracking ID"
+                                                            />
+                                                        </FormGroup>
+                                                    </Col>
+
+                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
                                                         <FormGroup>
                                                             <Label htmlFor="weight">Weight (g)</Label>
                                                             <Input
@@ -165,9 +219,9 @@ const FormRepeater = () => {
                                                                 placeholder="Enter Weight"
                                                             />
                                                         </FormGroup>
-                                                    </Col>
+                                                    </Col> */}
 
-                                                    <Col sm={12} md={6} lg={3} className="mb-3">
+                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
                                                         <FormGroup>
                                                             <Label htmlFor="length">Length</Label>
                                                             <Input
@@ -179,8 +233,8 @@ const FormRepeater = () => {
                                                                 placeholder="Enter Length"
                                                             />
                                                         </FormGroup>
-                                                    </Col>
-                                                    <Col sm={12} md={6} lg={3} className="mb-3">
+                                                    </Col> */}
+                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
                                                         <FormGroup>
                                                             <Label htmlFor="breadth">Breadth</Label>
                                                             <Input
@@ -192,8 +246,8 @@ const FormRepeater = () => {
                                                                 placeholder="Enter Breadth"
                                                             />
                                                         </FormGroup>
-                                                    </Col>
-                                                    <Col sm={12} md={6} lg={3} className="mb-3">
+                                                    </Col> */}
+                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
                                                         <FormGroup>
                                                             <Label htmlFor="height">Height</Label>
                                                             <Input
@@ -205,9 +259,9 @@ const FormRepeater = () => {
                                                                 placeholder="Enter Height"
                                                             />
                                                         </FormGroup>
-                                                    </Col>
+                                                    </Col> */}
 
-                                                    <Col sm={12} md={6} lg={3} className="mb-3">
+                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
                                                         <FormGroup>
                                                             <Label htmlFor="image_before">Image Before Packing</Label>
                                                             <Input
@@ -217,8 +271,8 @@ const FormRepeater = () => {
                                                                 className="form-control"
                                                             />
                                                         </FormGroup>
-                                                    </Col>
-                                                    <Col sm={12} md={6} lg={3} className="mb-3">
+                                                    </Col> */}
+                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
                                                         <FormGroup>
                                                             <Label htmlFor="image">Image After Packing</Label>
                                                             <Input
@@ -228,9 +282,9 @@ const FormRepeater = () => {
                                                                 className="form-control"
                                                             />
                                                         </FormGroup>
-                                                    </Col>
+                                                    </Col> */}
 
-                                                    <Col sm={12} md={6} lg={3} className="mb-3">
+                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
                                                         <FormGroup>
                                                             <Label htmlFor="packed_by">Packed By</Label>
                                                             <Input
@@ -252,9 +306,9 @@ const FormRepeater = () => {
                                                                     ))}
                                                             </Input>
                                                         </FormGroup>
-                                                    </Col>
+                                                    </Col> */}
 
-                                                    <Col sm={12} md={6} lg={3} className="mb-3">
+                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
                                                         <FormGroup>
                                                             <Label htmlFor="packed_by">Status</Label>
                                                             <Input
@@ -272,9 +326,9 @@ const FormRepeater = () => {
 
                                                             </Input>
                                                         </FormGroup>
-                                                    </Col>
+                                                    </Col> */}
 
-                                                    <Col sm={12} md={6} lg={3} className="mb-3">
+                                                    {/* <Col sm={12} md={6} lg={3} className="mb-3">
                                                         <FormGroup>
                                                             <Label htmlFor="date">Date</Label>
                                                             <Input
@@ -285,10 +339,10 @@ const FormRepeater = () => {
                                                                 className="form-control"
                                                             />
                                                         </FormGroup>
-                                                    </Col>
+                                                    </Col> */}
 
-                                                    <Col sm={12}>
-                                                        <div className="d-flex justify-content-end">
+                                                    <Col sm={6}>
+                                                        <div className="d-flex justify-content-end mt-4">
                                                             <Button
                                                                 color="danger"
                                                                 onClick={() => onDeleteFormRow(formRow.id)}
@@ -302,7 +356,7 @@ const FormRepeater = () => {
                                         </div>
 
                                         <Row className="mt-3">
-                                            <Col sm={12} className="d-flex justify-content-start mb-3">
+                                            <Col sm={6} className="d-flex justify-content-start mb-3">
                                                 <Button
                                                     color="success"
                                                     className="mt-3 mt-lg-0"
@@ -311,7 +365,7 @@ const FormRepeater = () => {
                                                     Add Row
                                                 </Button>
                                             </Col>
-                                            <Col sm={12} className="d-flex justify-content-end">
+                                            <Col sm={6} className="d-flex justify-content-end">
                                                 <Button
                                                     color="primary"
                                                     type="submit"

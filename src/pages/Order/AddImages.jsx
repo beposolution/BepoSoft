@@ -19,7 +19,9 @@ const AddImages = ({ orderId }) => {
             const response = await axios.get(`${import.meta.env.VITE_APP_KEY}order/images/${orderId}/`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            setExistingImages(response.data.images || []);
+            setExistingImages(
+                (response.data.images || []).map(img => img.image)
+            );
         } catch (error) {
             console.error('Error fetching existing images:', error.response?.data || error.message);
         }

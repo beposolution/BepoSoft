@@ -165,6 +165,9 @@ const ChartSection = () => {
     // Destructure from orders
     const familyIds = orders?.map(order => order.family_id);
     const orderDates = orders?.map(order => order.order_date);
+    const waitingForConfirmationToday = orders?.filter(
+        order => order?.status === "Waiting For Confirmation" && order.order_date === today
+    )?.length;
     const shippedOrdersToday = orders?.filter(
         order => order?.status === "Shipped" && order.order_date === today
     )?.length;
@@ -384,7 +387,7 @@ const ChartSection = () => {
                                 <div className="d-flex">
                                     <div className="flex-grow-1">
                                         <p className="text-muted fw-medium">Waiting For Confirmation</p>
-                                        <h4 className="mb-0">{invoiceApprovedCount}</h4>
+                                        <h4 className="mb-0">{waitingForConfirmationToday}</h4>
                                     </div>
                                     <div className="flex-shrink-0 align-self-center">
                                         {/* Optional Chart */}

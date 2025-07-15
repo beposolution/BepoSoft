@@ -108,7 +108,7 @@ const AddImages = ({ orderId }) => {
                                             {existingImages.map((imgUrl, index) => (
                                                 <Col key={index} md={2} className="mb-3">
                                                     <img
-                                                        src={`${import.meta.env.VITE_APP_KEY}${imgUrl}`}
+                                                        src={`${import.meta.env.VITE_APP_IMAGE}${imgUrl}`}
                                                         alt={`Product ${index}`}
                                                         className="img-thumbnail"
                                                         style={{ height: '100px', objectFit: 'cover' }}

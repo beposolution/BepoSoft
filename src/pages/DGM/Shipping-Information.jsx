@@ -40,7 +40,6 @@ const BasicTable = () => {
             .then((response) => {
                 setWarehouseData(response.data.order.warehouse);
                 setEditableData(response.data.order.warehouse);
-                console.log("jdhfhjsdf", response.data.order.warehouse)
             })
             .catch(() => toast.error("Error fetching warehouse data"));
     }, [id, token]);
@@ -364,6 +363,25 @@ const BasicTable = () => {
                                                 }
                                             />
 
+                                            <label>Parcel Service</label>
+                                            <select
+                                                className="form-control mb-2"
+                                                value={selectedItem.parcel_service || ""}
+                                                onChange={(e) =>
+                                                    setSelectedItem({
+                                                        ...selectedItem,
+                                                        parcel_service: e.target.value
+                                                    })
+                                                }
+                                            >
+                                                <option value="">Select</option>
+                                                {parcelServices.map((service) => (
+                                                    <option key={service.id} value={service.id}>
+                                                        {service.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+
                                             <label>Image Before Packing</label>
                                             <input
                                                 type="file"
@@ -395,6 +413,7 @@ const BasicTable = () => {
                                                 formData.append("status", selectedItem.status || "");
                                                 formData.append("tracking_id", selectedItem.tracking_id || "");
                                                 formData.append("shipped_date", selectedItem.shipped_date || "");
+                                                formData.append("parcel_service", selectedItem.parcel_service || "");
 
                                                 if (imageBeforeFile) {
                                                     formData.append("image_before", imageBeforeFile);
@@ -423,7 +442,14 @@ const BasicTable = () => {
                                                 const idx = updatedList.findIndex(
                                                     (item) => item.id === selectedItem.id
                                                 );
-                                                updatedList[idx] = res.data;
+                                                const fixedData = {
+                                                    ...res.data,
+                                                    parcel_service:
+                                                        typeof res.data.parcel_service === "object"
+                                                            ? res.data.parcel_service.id
+                                                            : res.data.parcel_service,
+                                                };
+                                                updatedList[idx] = fixedData;
                                                 setEditableData(updatedList);
                                                 setWarehouseData(updatedList);
                                             } catch (err) {

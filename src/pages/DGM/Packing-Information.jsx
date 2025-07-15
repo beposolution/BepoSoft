@@ -27,8 +27,6 @@ const FormRepeater = () => {
     const { id } = useParams();
     const [parcelServiceData, setParcelServiceData] = useState();
     const [userData, setUserData] = useState();
-    console.log("user id:", userData)
-    console.log("parcel services:", parcelServiceData)
 
     useEffect(() => {
         const fetchUserData = async () => {

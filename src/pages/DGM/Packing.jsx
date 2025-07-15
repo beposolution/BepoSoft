@@ -24,6 +24,7 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import AddImages from "../Order/AddImages";
 
 const FormLayouts = () => {
     document.title = "Form Layouts | Skote - Vite React Admin & Dashboard Template";
@@ -66,6 +67,7 @@ const FormLayouts = () => {
                     }
                 });
                 setOrderData(response.data.order);
+                console.log("sdfhghsf", response.data.order)
                 setSelectedStatus(response.data.order?.status || "");
             } catch (error) {
                 toast.error("Error fetching order data:");
@@ -302,15 +304,16 @@ const FormLayouts = () => {
                                         </Table>
                                     </div>
                                 </CardBody>
+                                <AddImages orderId={orderData?.id} />
                                 <PackingInformation />
                                 <ShippingInformation warehouseData={warehouseData} />
 
                                 <CardBody className="text-center">
                                     <Button color="primary" className="me-3" onClick={downloadShippingAddress}>
-                                        📥 Download Shipping Address
+                                         Download Shipping Address
                                     </Button>
                                     <Button color="success" onClick={downloadDeliveryNote}>
-                                        📥 Download Delivery Note
+                                         Download Delivery Note
                                     </Button>
                                 </CardBody>
 

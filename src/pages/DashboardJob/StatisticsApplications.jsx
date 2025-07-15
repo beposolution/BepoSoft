@@ -309,23 +309,24 @@ const StatisticsApplications = () => {
                                             </div>
 
                                             {/* Second Row (was Column 2) */}
-                                            <div className="d-flex flex-row justify-content-between gap-3 text-center">
-                                                {/* Card 1 */}
-                                                <div className="flex-fill p-4 border rounded-4 shadow-sm bg-light">
+                                            <div className="d-flex gap-3">
+                                                {/* Left Column - 1/3 width */}
+                                                <div className="w-33 flex-shrink-0 p-4 border rounded-4 shadow-sm bg-light d-flex flex-column justify-content-center align-items-center text-center">
                                                     <p className="text-muted fw-medium mb-1">Total Bill</p>
                                                     <h4 className="mb-0">{todayBills}</h4>
                                                 </div>
 
-                                                {/* Card 2 */}
-                                                <div className="flex-fill p-4 border rounded-4 shadow-sm bg-light">
-                                                    <p className="text-muted fw-medium mb-1">Total Expense</p>
-                                                    <h4 className="mb-0">₹{totalexpense}</h4>
-                                                </div>
+                                                {/* Right Column - 2/3 width with two rows */}
+                                                <div className="flex-grow-1 d-flex flex-column gap-3">
+                                                    {/* Row 1: Total Expense */}
+                                                    <div className="p-4 border rounded-4 shadow-sm bg-light text-center">
+                                                        <p className="text-muted fw-medium mb-1">Total Expense: <span>₹<strong>{totalexpense.toFixed(2)}</strong></span></p>
+                                                    </div>
 
-                                                {/* Card 3 */}
-                                                <div className="flex-fill p-4 border rounded-4 shadow-sm bg-light">
-                                                    <p className="text-muted fw-medium mb-1">Total Volume</p>
-                                                    <h4 className="mb-0">₹{totalVolume}</h4>
+                                                    {/* Row 2: Total Volume */}
+                                                    <div className="p-4 border rounded-4 shadow-sm bg-light text-center">
+                                                        <p className="text-muted fw-medium mb-1">Total Volume: <span>₹<strong>{totalVolume.toFixed(2)}</strong></span></p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

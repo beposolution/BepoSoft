@@ -139,6 +139,7 @@ const UpdateExpense = () => {
         try {
             const payload = {
                 ...formData,
+                expense_date: formData.date, // send correctly formatted date
                 ...(formData.purpose_of_pay === "emi" ? { loan: formData.emi_details } : {}),
             };
 

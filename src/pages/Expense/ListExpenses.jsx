@@ -68,9 +68,9 @@ const BasicTable = () => {
 
         if (searchTerm) {
             filteredData = filteredData.filter(expense =>
-                expense.company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                expense.payed_by.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                expense.purpose_of_payment.toLowerCase().includes(searchTerm.toLowerCase())
+                expense.company?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                expense.payed_by?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                expense.purpose_of_pay?.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 

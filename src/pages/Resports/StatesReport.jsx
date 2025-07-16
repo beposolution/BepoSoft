@@ -26,9 +26,12 @@ const BasicTable = () => {
     const token = localStorage.getItem("token");
 
     document.title = "STATE WISE REPORTS | BEPOSOFT";
+
     useEffect(() => {
         setStateName(decodeURIComponent(name));
     }, [name]);
+
+    const role = localStorage.getItem("active");
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -45,11 +48,20 @@ const BasicTable = () => {
 
 
                 // Filter orders by state name (case-insensitive)
-                const filteredOrders = ordersArray.filter(
-                    (order) =>
+                // Filter orders by state and (optionally) family
+                const filteredOrders = ordersArray.filter((order) => {
+                    const isSameState =
                         order.state &&
-                        order.state.toLowerCase() === decodeURIComponent(name).toLowerCase()
-                );
+                        order.state.toLowerCase() === decodeURIComponent(name).toLowerCase();
+
+                    const isBepocart = (order.family || "").toLowerCase() === "bepocart";
+
+                    if (role === "CSO") {
+                        return isSameState && !isBepocart;
+                    }
+
+                    return isSameState;
+                });
                 setOrders(filteredOrders);
             } catch (error) {
                 setError("Error fetching data. Please try again later.");

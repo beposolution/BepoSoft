@@ -18,6 +18,7 @@ const BasicTable = () => {
 
     useEffect(() => {
         const token = localStorage.getItem("token");
+        const role = localStorage.getItem("active");
 
         axios
             .get(`${import.meta.env.VITE_APP_KEY}state/wise/report/`, {
@@ -26,9 +27,41 @@ const BasicTable = () => {
                 },
             })
             .then((response) => {
-                setSalesData(response.data.data);
+                const rawData = response.data.data;
+                const processedData = [];
+
+                rawData.forEach((state) => {
+                    let totalOrdersCount = 0;
+                    let totalAmount = 0;
+
+                    const filteredOrders = (state.orders || []).map((orderGroup) => {
+                        const waitingOrders = (orderGroup.waiting_orders || []).filter(order => {
+                            if (role === "CSO") {
+                                return order.family?.toLowerCase() !== "bepocart";
+                            }
+                            return true;
+                        });
+
+                        totalOrdersCount += waitingOrders.length;
+                        totalAmount += waitingOrders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
+
+                        return {
+                            ...orderGroup,
+                            waiting_orders: waitingOrders,
+                        };
+                    });
+
+                    processedData.push({
+                        ...state,
+                        orders: filteredOrders,
+                        total_orders_count: totalOrdersCount,
+                        total_amount: totalAmount,
+                    });
+                });
+
+                setSalesData(processedData);
             })
-            .catch((error) => {
+            .catch(() => {
                 toast.error("There was an error fetching the data");
             });
     }, []);

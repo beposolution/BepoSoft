@@ -231,6 +231,7 @@ const ReceiptFormPage = ({ closingBalance }) => {
                                 <label className="form-label">Post Office Amount</label>
                                 <input
                                     type="number"
+                                    step="0.01"
                                     onChange={handleChange}
                                     name="parcel_amount"
                                     className="form-control"

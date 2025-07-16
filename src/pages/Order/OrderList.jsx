@@ -215,7 +215,12 @@ const BasicTable = () => {
                                                         <tr key={order?.id}>
                                                             <th scope="row">{indexOfFirstItem + index + 1}</th>
                                                             <td>
-                                                                <Link to={`/order/${order?.id}/items/`}>{order?.invoice}</Link>
+                                                                <Link
+                                                                    to={`/order/${order?.id}/items/`}
+                                                                    state={{ orderIds: filteredOrders.map(o => o.id) }}
+                                                                >
+                                                                    {order?.invoice}
+                                                                </Link>
                                                             </td>
                                                             <td>{order?.manage_staff} ({order?.family})</td>
                                                             <td>

@@ -15,6 +15,7 @@ const BasicTable = () => {
     const [selectedState, setSelectedState] = useState(""); // State filter
     const [selectedCompany, setSelectedCompany] = useState(""); // Company filter
     const token = localStorage.getItem('token');
+    const role = localStorage.getItem('active');
 
     const approvedStatuses = [
         "Approved",
@@ -25,6 +26,8 @@ const BasicTable = () => {
         "To Print",
         "Processing",
         "Completed",
+        "Packing under progress",
+        "Ready to ship",
     ];
 
     const rejectedStatuses = ["Invoice Rejected", "Cancelled", "Refunded", "Return"];
@@ -44,37 +47,39 @@ const BasicTable = () => {
                 const result = await response.json();
 
                 if (result.status === "success") {
-                    let processedData = result.data.map((staff) => {
-                        let totalOrders = 0;
-                        let totalAmount = 0;
-                        let approvedCount = 0;
-                        let approvedTotal = 0;
-                        let rejectedCount = 0;
-                        let rejectedTotal = 0;
+                    let processedData = result.data
+                        .filter(staff => role !== "CSO" || staff.family?.toLowerCase() !== "bepocart") // <- NEW LINE
+                        .map((staff) => {
+                            let totalOrders = 0;
+                            let totalAmount = 0;
+                            let approvedCount = 0;
+                            let approvedTotal = 0;
+                            let rejectedCount = 0;
+                            let rejectedTotal = 0;
 
-                        staff.orders_details.forEach((order) => {
-                            totalOrders += 1;
-                            totalAmount += order.total_amount || 0;
+                            staff.orders_details.forEach((order) => {
+                                totalOrders += 1;
+                                totalAmount += order.total_amount || 0;
 
-                            if (approvedStatuses.includes(order.status)) {
-                                approvedCount += 1;
-                                approvedTotal += order.total_amount || 0;
-                            } else if (rejectedStatuses.includes(order.status)) {
-                                rejectedCount += 1;
-                                rejectedTotal += order.total_amount || 0;
-                            }
+                                if (approvedStatuses.includes(order.status)) {
+                                    approvedCount += 1;
+                                    approvedTotal += order.total_amount || 0;
+                                } else if (rejectedStatuses.includes(order.status)) {
+                                    rejectedCount += 1;
+                                    rejectedTotal += order.total_amount || 0;
+                                }
+                            });
+
+                            return {
+                                ...staff,
+                                totalOrders,
+                                totalAmount,
+                                approvedCount,
+                                approvedTotal,
+                                rejectedCount,
+                                rejectedTotal,
+                            };
                         });
-
-                        return {
-                            ...staff,
-                            totalOrders,
-                            totalAmount,
-                            approvedCount,
-                            approvedTotal,
-                            rejectedCount,
-                            rejectedTotal,
-                        };
-                    });
 
                     // Apply state and company filtering
                     if (selectedState) {

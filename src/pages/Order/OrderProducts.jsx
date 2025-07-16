@@ -13,6 +13,7 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { isDisabled } from "@testing-library/user-event/dist/cjs/utils/index.js";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useLocation } from "react-router-dom";
 
 const FormLayouts = () => {
 
@@ -54,6 +55,8 @@ const FormLayouts = () => {
     const navigate = useNavigate();
     const [userData, setUserData] = useState();
     const warehouseId = userData;
+    const location = useLocation();
+    const { orderIds = [] } = location.state || {};
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -223,6 +226,29 @@ const FormLayouts = () => {
 
     const handleNameClick = (updateId) => {
         navigate(`/customer/${updateId}/edit/`);
+    };
+
+    const currentIndex = orderIds.indexOf(parseInt(id));
+    const handleNextOrder = () => {
+        if (currentIndex !== -1 && currentIndex < orderIds.length - 1) {
+            const nextOrderId = orderIds[currentIndex + 1];
+            navigate(`/order/${nextOrderId}/items/`, {
+                state: { orderIds }
+            });
+        } else {
+            toast.info("No more orders.");
+        }
+    };
+
+    const handlePrevOrder = () => {
+        if (currentIndex > 0) {
+            const prevOrderId = orderIds[currentIndex - 1];
+            navigate(`/order/${prevOrderId}/items/`, {
+                state: { orderIds }
+            });
+        } else {
+            toast.info("This is the first order.");
+        }
     };
 
     useEffect(() => {
@@ -727,6 +753,12 @@ const FormLayouts = () => {
             <div className="page-content">
                 <Container fluid={true}>
                     <Breadcrumbs title="Forms" breadcrumbItem="ORDER PRODUCTS" />
+                    <Row className="mb-3">
+                        <Col className="d-flex justify-content-end gap-2">
+                            <Button color="secondary" onClick={handlePrevOrder}>Previous</Button>
+                            <Button color="primary" onClick={handleNextOrder}>Next</Button>
+                        </Col>
+                    </Row>
                     <Row>
 
                         <Col xl={12}>
@@ -1207,7 +1239,7 @@ const FormLayouts = () => {
                                                                 </td>
                                                                 <td>{item.name}</td>
                                                                 <td>{item.rate}</td>
-                                                                <td>{item.exclude_price}</td> 
+                                                                <td>{item.exclude_price}</td>
                                                                 <td>{item.tax} %</td>
                                                                 <td>{TaxAmount.toFixed(2)}</td>
                                                                 <td>

@@ -24,6 +24,7 @@ const BasicTable = () => {
     const [familys, setFamilies] = useState([]);
     const [stateFilter, setStateFilter] = useState("");
     const [familyFilter, setFamilyFilter] = useState("");
+    const role = localStorage.getItem("active");
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -34,8 +35,23 @@ const BasicTable = () => {
                 headers: { Authorization: `Bearer ${token}` },
             })
             .then((response) => {
-                setSalesData(response.data.sales_report);
-                setFilteredSalesData(response.data.sales_report);
+                const rawData = response.data.sales_report;
+
+                let processedData = rawData;
+
+                if (role === "CSO") {
+                    processedData = rawData.map(entry => {
+                        const filteredOrders = (entry.order_details || []).filter(order => order.family__name?.toLowerCase() !== "bepocart");
+
+                        return {
+                            ...entry,
+                            order_details: filteredOrders,
+                        };
+                    }).filter(entry => entry.order_details.length > 0); // Only keep entries with valid orders
+                }
+
+                setSalesData(processedData);
+                setFilteredSalesData(processedData);
             })
             .catch((error) => toast.error("Error fetching sales data:"));
 
@@ -57,18 +73,32 @@ const BasicTable = () => {
     }, []);
 
     const handleFilter = () => {
-        const filteredData = salesData.filter((sale) => {
+        const filteredData = salesData.map(sale => {
+            // Step 1: Filter order_details by "bepocart" for CSO
+            const filteredOrders = role === "CSO"
+                ? sale.order_details.filter(order => order.family__name?.toLowerCase() !== "bepocart")
+                : sale.order_details;
+
+            // Step 2: Check if it matches filters (date, state, family)
             const saleDate = new Date(sale.date);
             const start = startDate ? new Date(startDate) : null;
             const end = endDate ? new Date(endDate) : null;
 
-            return (
+            const matchesDate =
                 (!start || saleDate >= start) &&
-                (!end || saleDate <= end) &&
-                (!stateFilter || sale.order_details.some(order => order.state__name === stateFilter)) &&
-                (!familyFilter || sale.order_details.some(order => order.family__name === familyFilter))
-            );
-        });
+                (!end || saleDate <= end);
+
+            const matchesState = !stateFilter || filteredOrders.some(order => order.state__name === stateFilter);
+            const matchesFamily = !familyFilter || filteredOrders.some(order => order.family__name === familyFilter);
+
+            if (matchesDate && matchesState && matchesFamily && filteredOrders.length > 0) {
+                return {
+                    ...sale,
+                    order_details: filteredOrders
+                };
+            }
+            return null;
+        }).filter(entry => entry !== null);
 
         setFilteredSalesData(filteredData);
     };
@@ -86,7 +116,7 @@ const BasicTable = () => {
             );
     };
 
-    const approvedStatuses = ["Approved", "Invoice Approved", "Completed", "Shipped", "Waiting For Confirmation", "To Print", "Invoice Created"];
+    const approvedStatuses = ["Approved", "Invoice Approved", "Completed", "Shipped", "Waiting For Confirmation", "To Print", "Invoice Created", "Packing under progress", "Ready to ship"];
     const rejectedStatuses = ["Cancelled", "Refunded", "Invoice Rejected", "Return"];
 
     const exportToExcel = () => {

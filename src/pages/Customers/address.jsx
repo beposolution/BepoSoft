@@ -60,7 +60,7 @@ const FormLayouts = () => {
                     values,
                     { headers: { 'Authorization': `Bearer ${token}` } }
                 );
-    
+
                 if (response.status === 200 || response.status === 201) {
                     // Optimistically update the state
                     setCustomerAddress(prevAddresses => [
@@ -79,7 +79,7 @@ const FormLayouts = () => {
             }
         }
     });
-    
+
 
     const handleDeleteAddress = async (id) => {
         const confirmDelete = window.confirm("Are you sure you want to delete this address?");
@@ -88,7 +88,7 @@ const FormLayouts = () => {
                 const response = await axios.delete(`${import.meta.env.VITE_APP_KEY}update/customer/address/${id}/`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-    
+
                 if (response.status === 200) { // Check for successful deletion (204 No Content)
                     const updatedAddresses = customerAddress.filter(address => address.id !== id);
                     setCustomerAddress(updatedAddresses);
@@ -101,23 +101,23 @@ const FormLayouts = () => {
             }
         }
     };
-    
+
 
 
     // Fetch states from API
-    useEffect(() => { 
+    useEffect(() => {
         const fetchData = async () => {
             setLoading(true); // Set loading to true at the start of fetch
             try {
                 const responseState = await axios.get(`${import.meta.env.VITE_APP_KEY}states/`, { headers: { 'Authorization': `Bearer ${token}` } });
                 const responseAddress = await axios.get(`${import.meta.env.VITE_APP_KEY}add/customer/address/${id}/`, { headers: { 'Authorization': `Bearer ${token}` } });
-    
+
                 if (responseState.status === 200) {
                     setState(responseState.data.data);
                 } else {
                     throw new Error(`HTTP error! Status: ${responseState.status}`);
                 }
-    
+
                 if (responseAddress.status === 200) {
                     setCustomerAddress(responseAddress.data.data);
                 } else {
@@ -129,16 +129,22 @@ const FormLayouts = () => {
                 setLoading(false); // Set loading to false after fetching
             }
         };
-    
+
         fetchData();
     }, [token, id]); // Add id to dependencies
-    
+
 
 
     // Handle edit address click (opens modal with data)
     const handleEditAddress = (address) => {
-        setCurrentAddress(address);  // Set the current address data to edit
-        toggle();  // Open the modal
+        const matchedState = state.find(st => st.name === address.state);
+
+        setCurrentAddress({
+            ...address,
+            state: matchedState ? matchedState.id : "", // Convert state name to ID
+        });
+
+        toggle();
     };
 
     // Handle update form submission

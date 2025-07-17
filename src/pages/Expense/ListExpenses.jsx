@@ -100,6 +100,10 @@ const BasicTable = () => {
     const indexOfFirstItem = indexOfLastItem - perPageData;
     const currentExpenses = filteredExpenses.slice(indexOfFirstItem, indexOfLastItem);
 
+    const totalAmount = filteredExpenses.reduce((sum, expense) => {
+        return sum + parseFloat(expense.amount || 0);
+    }, 0);
+
     document.title = "Beposoft | Expense Data";
 
     return (
@@ -143,6 +147,9 @@ const BasicTable = () => {
                                                 Export to Excel
                                             </Button>
                                         </Col>
+                                        <Col md={3} className="d-flex align-items-center">
+                                            <strong>Total Expense: ₹ <Button color="success"><span style={{ color: '#fff', fontSize: '1rem'}}>{totalAmount.toFixed(2)}</span></Button></strong>
+                                        </Col>
                                     </Row>
 
                                     <div className="table-responsive">
@@ -166,9 +173,7 @@ const BasicTable = () => {
                                                         <th scope="row">{indexOfFirstItem + index + 1}</th>
                                                         <td style={{ color: '#007bff' }}>{expense?.company?.name || 'N/A'}</td>
                                                         <td style={{ color: '#28a745' }}>{expense?.payed_by?.name || 'N/A'}</td>
-                                                        <td>
-                                                            <span style={{ color: '#28a745' }}>₹{expense?.amount}</span>
-                                                        </td>
+                                                        <td style={{ color: '#28a745' }}>₹{expense?.amount}</td>
                                                         <td>{expense.expense_date}</td>
                                                         <td style={{ color: '#ff6f61' }}>{expense?.purpose_of_pay?.toUpperCase()}</td>
                                                         <td>{expense?.description}</td>

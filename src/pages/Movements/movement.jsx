@@ -244,6 +244,12 @@ const Movement = () => {
         <div style={{ padding: "20px", overflow: "auto", maxHeight: "90vh" }}>
             <style>
                 {`
+                    .volume-col {
+                    width: 80px !important;
+                    max-width: 80px;
+                    text-align: center;
+                    white-space: nowrap;
+                    }
                     @media print {
                             body * {
                             visibility: hidden;
@@ -437,10 +443,10 @@ const Movement = () => {
                                         <th style={{ border: "1px solid black" }}>Box</th>
                                         <th className="cod-column" style={{ border: "1px solid black", backgroundColor: "#ffeb3b" }}>COD (₹)</th>
                                         <th className="small-col" style={{ border: "1px solid black" }}>Weight (gram)</th>
-                                        {/* <th>Length (cm)</th>
-                                <th>Breadth (cm)</th>
-                                <th>Height (cm)</th> */}
-                                        <th className="small-col" style={{ border: "1px solid black" }}>Volume (cm³)</th>
+                                        <th style={{ border: "1px solid black" }}>Length (cm)</th>
+                                        <th style={{ border: "1px solid black" }}>Breadth (cm)</th>
+                                        <th style={{ border: "1px solid black" }}>Height (cm)</th>
+                                        <th className="volume-col small-col" style={{ border: "1px solid black" }}>Volume<br /> (cm³)</th>
                                         {/* <th>Shipped Date</th> */}
                                         <th className="small-col" style={{ border: "1px solid black" }}>Actual Weight (gram)</th>
                                         <th style={{ border: "1px solid black" }}>Parcel Amount (₹)</th>
@@ -464,13 +470,13 @@ const Movement = () => {
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.box}</strong></td>
                                                 <td className="cod-column" style={{ border: "1px solid black", backgroundColor: "#ffeb3b" }}><strong>{order.cod_amount}</strong></td>
                                                 <td className="small-col" style={{ border: "1px solid black" }}><strong>{warehouse.weight}</strong></td>
-                                                {/* <td>{warehouse.length}</td>
-                                        <td>{warehouse.breadth}</td>
-                                        <td>{warehouse.height}</td> */}
-                                                <td className="small-col" style={{ border: "1px solid black" }}>
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.length}</strong></td>
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.breadth}</strong></td>
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.height}</strong></td>
+                                                <td className="volume-col small-col" style={{ border: "1px solid black" }}>
                                                     <strong>
                                                         {warehouse.length && warehouse.breadth && warehouse.height
-                                                            ? warehouse.length * warehouse.breadth * warehouse.height / 6000
+                                                            ? (warehouse.length * warehouse.breadth * warehouse.height / 6000).toFixed(2)
                                                             : "N/A"}
                                                     </strong>
                                                 </td>

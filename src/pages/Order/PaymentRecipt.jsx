@@ -204,7 +204,7 @@ const ReceiptFormPage = ({ closingBalance }) => {
                         </div>
                     </Col>
                     <Col md={4} className="d-flex flex-column p-3">
-                        <h5>ACTION</h5>
+                        <h5>RECEIPT</h5>
                         <button
                             className="btn btn-primary btn-sm mt-2"
                             onClick={toggleModal}

@@ -10,6 +10,7 @@ import {
 } from "reactstrap";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Link, useParams } from "react-router-dom";
+import Paginations from "../../components/Common/Pagination";
 
 const BasicTable = () => {
     const [orders, setOrders] = useState([]);
@@ -17,7 +18,9 @@ const BasicTable = () => {
     const [error, setError] = useState(null);
     const { date } = useParams(); // Use useParams to get staffID and order_date from the URL
     const token = localStorage.getItem("token");
-
+    const role = localStorage.getItem("active");
+    const [currentPage, setCurrentPage] = useState(1);
+    const perPageData = 10;
 
     document.title = "Orders | Beposoft";
 
@@ -30,10 +33,17 @@ const BasicTable = () => {
                     },
                 });
 
-                const filteredOrders = response.data?.results?.filter(
+                let filteredOrders = response.data?.results?.filter(
                     (order) =>
                         order.payment_status === "COD" && order.order_date === date
                 );
+
+                //  Exclude 'bepocart' family if role is CSO
+                if (role === "CSO") {
+                    filteredOrders = filteredOrders.filter(
+                        (order) => order.family_name?.toLowerCase() !== "bepocart"
+                    );
+                }
 
                 setOrders(filteredOrders);
             } catch (error) {
@@ -44,20 +54,24 @@ const BasicTable = () => {
         };
 
         fetchOrders();
-    }, [date, token]);
+    }, [date, token, role]);
 
 
     const getStatusColor = (status) => {
         const statusColors = {
             Pending: "red",
             Approved: "blue",
-            Shipped: "yellow",
+            Shipped: "#DAA520",
             Processing: "orange",
             Completed: "green",
             Cancelled: "gray",
         };
         return { color: statusColors[status] || "black" };
     };
+
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const currentOrders = orders.slice(indexOfFirstItem, indexOfLastItem);
 
     return (
         <React.Fragment>
@@ -76,34 +90,35 @@ const BasicTable = () => {
                                         ) : error ? (
                                             <div className="text-danger">{error}</div>
                                         ) : (
-                                            <Table className="table mb-0">
-                                                <thead>
-                                                    <tr>
-                                                        <th>#</th>
-                                                        <th>INVOICE NO</th>
-                                                        <th>STAFF</th>
-                                                        <th>CUSTOMER</th>
-                                                        <th>STATUS</th>
-                                                        <th>BILL AMOUNT</th>
-                                                        <th>CREATED AT</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {orders.length > 0 ? (
-                                                        orders.map((order, index) => (
-                                                            <React.Fragment key={order.id}>
-                                                                <tr>
-                                                                    <th scope="row">{index + 1}</th>
-                                                                    <td>
-                                                                        <Link to={`/order/${order.id}/items/`}>
-                                                                            {order.invoice}
-                                                                        </Link>
-                                                                    </td>
-                                                                    <td>{order.manage_staff} ({order.family})</td>
-                                                                    <td>{order.customer.name}</td>
-                                                                    <td style={getStatusColor(order.status)} className="position-relative">
-                                                                        {order.status}
-                                                                        <table className="nested-table table table-sm table-bordered mt-2">
+                                            <>
+                                                <Table className="table mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>#</th>
+                                                            <th>INVOICE NO</th>
+                                                            <th>STAFF</th>
+                                                            <th>CUSTOMER</th>
+                                                            <th>STATUS</th>
+                                                            <th>BILL AMOUNT</th>
+                                                            <th>CREATED AT</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {currentOrders.length > 0 ? (
+                                                            currentOrders.map((order, index) => (
+                                                                <React.Fragment key={order.id}>
+                                                                    <tr>
+                                                                        <th scope="row">{indexOfFirstItem + index + 1}</th>
+                                                                        <td>
+                                                                            <Link to={`/order/${order.id}/items/`}>
+                                                                                {order.invoice}
+                                                                            </Link>
+                                                                        </td>
+                                                                        <td>{order.manage_staff} ({order.family})</td>
+                                                                        <td>{order.customer.name}</td>
+                                                                        <td style={getStatusColor(order.status)} className="position-relative">
+                                                                            {order.status}
+                                                                            {/* <table className="nested-table table table-sm table-bordered mt-2">
                                                                             <thead>
                                                                                 <tr className="bg-light">
                                                                                     <th>#</th>
@@ -128,22 +143,34 @@ const BasicTable = () => {
                                                                                     </tr>
                                                                                 )}
                                                                             </tbody>
-                                                                        </table>
-                                                                    </td>
-                                                                    <td>{order.total_amount}</td>
-                                                                    <td>{order.order_date}</td>
-                                                                </tr>
-                                                            </React.Fragment>
-                                                        ))
-                                                    ) : (
-                                                        <tr>
-                                                            <td colSpan="7" className="text-center text-muted">
-                                                                No orders found for this date.
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </tbody>
-                                            </Table>
+                                                                        </table> */}
+                                                                        </td>
+                                                                        <td>{order.total_amount}</td>
+                                                                        <td>{order.order_date}</td>
+                                                                    </tr>
+                                                                </React.Fragment>
+                                                            ))
+                                                        ) : (
+                                                            <tr>
+                                                                <td colSpan="7" className="text-center text-muted">
+                                                                    No orders found for this date.
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                    </tbody>
+                                                </Table>
+                                                <Paginations
+                                                    perPageData={perPageData}
+                                                    data={orders}
+                                                    currentPage={currentPage}
+                                                    setCurrentPage={setCurrentPage}
+                                                    isShowingPageLength={true}
+                                                    paginationDiv="col-auto"
+                                                    paginationClass="pagination"
+                                                    indexOfFirstItem={indexOfFirstItem}
+                                                    indexOfLastItem={indexOfLastItem}
+                                                />
+                                            </>
                                         )}
                                     </div>
                                 </CardBody>

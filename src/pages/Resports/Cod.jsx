@@ -15,6 +15,7 @@ import * as XLSX from "xlsx";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Paginations from "../../components/Common/Pagination";
 
 const useDebounce = (value, delay) => {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -40,13 +41,15 @@ const BasicTable = () => {
     const [allStaffs, setAllStaffs] = useState([]);
     const [allFamilies, setAllFamilies] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
-
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('active');
+    const [currentPage, setCurrentPage] = useState(1);
+    const perPageData = 10;
 
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
     // Fetch data using Axios
     useEffect(() => {
-        const token = localStorage.getItem('token');
 
         // Fetch all staff data
         axios.get(`${import.meta.env.VITE_APP_KEY}staffs/`, {
@@ -100,16 +103,25 @@ const BasicTable = () => {
     }, [staffFilter, familyFilter]);
 
 
-    const filteredData = data.filter((item) => {
-        return (
-            (staffFilter ? item.orders.some((order) => order.staff_name === staffFilter) : true) &&
-            (familyFilter ? item.orders.some((order) => order.family_name === familyFilter) : true) &&
-            (debouncedSearchTerm ? item.orders.some((order) =>
-                order.staff_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-                order.family_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-            ) : true)
-        );
-    });
+    const filteredData = data
+        .map((item) => {
+            const filteredOrders = item.orders.filter((order) => {
+                const matchesStaff = staffFilter ? order.staff_name === staffFilter : true;
+                const matchesFamily = familyFilter ? order.family_name === familyFilter : true;
+                const matchesSearch = debouncedSearchTerm
+                    ? order.staff_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                    order.family_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+                    : true;
+                const excludeBepocart = !(role === "CSO" && order.family_name === "bepocart");
+
+                return matchesStaff && matchesFamily && matchesSearch && excludeBepocart;
+            });
+
+            return filteredOrders.length > 0
+                ? { ...item, orders: filteredOrders }
+                : null;
+        })
+        .filter(Boolean);
 
     const exportToExcel = () => {
         const data = filteredData.map((item, index) => {
@@ -147,6 +159,10 @@ const BasicTable = () => {
         (sum, item) => sum + item.orders.reduce((acc, order) => acc + order.balance_amount, 0),
         0
     );
+
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const currentData = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
     return (
         <React.Fragment>
@@ -230,18 +246,14 @@ const BasicTable = () => {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {filteredData.map((item, index) => (
+                                                    {currentData.map((item, index) => (
                                                         <tr key={index}>
-                                                            <th scope="row">{index + 1}</th>
+                                                            <th scope="row">{indexOfFirstItem + index + 1}</th>
                                                             <td>{item.date}</td>
                                                             <td>{item.orders.length}</td>
-                                                            <td>{item.orders.reduce((acc, order) => acc + order.total_amount, 0)}</td> {/* Total amount for the entire date */}
-                                                            <td>
-                                                                {item.orders.reduce((acc, order) => acc + order.total_paid_amount, 0)}
-                                                            </td>
-                                                            <td>
-                                                                {item.orders.reduce((acc, order) => acc + order.balance_amount, 0)}
-                                                            </td>
+                                                            <td>{item.orders.reduce((acc, order) => acc + order.total_amount, 0).toFixed(2)}</td>
+                                                            <td>{item.orders.reduce((acc, order) => acc + order.total_paid_amount, 0).toFixed(2)}</td>
+                                                            <td>{item.orders.reduce((acc, order) => acc + order.balance_amount, 0).toFixed(2)}</td>
                                                             <td>
                                                                 <a href={`/COD/sales/resport/${item.date}/`} style={{ color: "#007bff", textDecoration: "none", fontWeight: "bold" }}>View</a>
                                                             </td>
@@ -259,6 +271,17 @@ const BasicTable = () => {
                                                     </tr>
                                                 </tfoot>
                                             </Table>
+                                            <Paginations
+                                                perPageData={perPageData}
+                                                data={filteredData}
+                                                currentPage={currentPage}
+                                                setCurrentPage={setCurrentPage}
+                                                isShowingPageLength={true}
+                                                paginationDiv="col-auto"
+                                                paginationClass="pagination"
+                                                indexOfFirstItem={indexOfFirstItem}
+                                                indexOfLastItem={indexOfLastItem}
+                                            />
                                         </div>
                                     )}
                                 </CardBody>

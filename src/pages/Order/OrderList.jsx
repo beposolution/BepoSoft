@@ -30,25 +30,10 @@ const BasicTable = () => {
     const [prevPage, setPrevPage] = useState(null);
     const token = localStorage.getItem("token");
     const [role, setRole] = useState(null);
-    const [userData, setUserData] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const perPageData = 25;
 
     document.title = "Orders | Beposoft";
-
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}profile/`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setUserData(response?.data?.data?.family_name);
-            } catch (error) {
-                toast.error('Error fetching user data:');
-            }
-        };
-        fetchUserData();
-    }, []);
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -56,30 +41,39 @@ const BasicTable = () => {
     }, []);
 
     useEffect(() => {
-        if (token && role) fetchOrders(`${import.meta.env.VITE_APP_KEY}orders/`);
-    }, [token, role, userData]);
+        if (token && role) fetchOrders();
+    }, [token, role]);
 
-    const fetchOrders = async (url) => {
-        if (!url) return;
+    const fetchOrders = async (url = null) => {
         try {
             setLoading(true);
-            const response = await axios.get(url, {
+
+            let apiUrl = url;
+            if (!apiUrl) {
+                const baseUrl = import.meta.env.VITE_APP_KEY;
+                if (role === "BDM" || role === "BDO") {
+                    apiUrl = `${baseUrl}family/orders/`;
+                } else {
+                    apiUrl = `${baseUrl}orders/`;
+                }
+            }
+
+            const response = await axios.get(apiUrl, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
+            let results = Array.isArray(response.data)
+                ? response.data
+                : response.data.results || [];
+
             if (role === "Warehouse Admin" || role === "warehouse") {
-                const filterOrders = response.data.results.filter(
-                    order => order.status === "To Print"
-                );
+                const filterOrders = results.filter(order => order.status === "To Print");
                 setOrders(filterOrders);
-            } else if (role === "BDM") {
-                const filterOrders = response.data.results.filter(order => order.family === userData)
-                setOrders(filterOrders);
-            }
-            else {
-                setOrders(response.data.results);
+            } else {
+                setOrders(results);
             }
         } catch (error) {
+            console.error("Fetch error:", error);
             setError("Error fetching orders data. Please try again later.");
         } finally {
             setLoading(false);
@@ -230,7 +224,7 @@ const BasicTable = () => {
                                                             </td>
                                                             <td style={{ verticalAlign: "top", ...getStatusStyle(order?.status) }}>
                                                                 <strong>{order?.status}</strong>
-                                                                {order?.status === "Ready to ship" && order?.warehouse_data?.length > 0 && (
+                                                                {order?.status === "Ready to ship" && (order?.warehouse_data?.length > 0 || order?.warehouse?.length > 0) && (
                                                                     <Table bordered size="sm" className="mt-2" style={{ width: "100%", fontSize: "12px" }}>
                                                                         <thead>
                                                                             <tr>
@@ -240,7 +234,7 @@ const BasicTable = () => {
                                                                             </tr>
                                                                         </thead>
                                                                         <tbody>
-                                                                            {order.warehouse_data.map((entry, idx) => (
+                                                                            {(order.warehouse_data ?? order.warehouse ?? []).map((entry, idx) => (
                                                                                 <tr key={idx}>
                                                                                     <td style={{ border: "1px solid green" }}>{idx + 1}</td>
                                                                                     <td style={{ border: "1px solid green" }}>{entry.box}</td>

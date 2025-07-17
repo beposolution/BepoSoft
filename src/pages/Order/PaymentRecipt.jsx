@@ -35,6 +35,16 @@ const ReceiptFormPage = ({ closingBalance }) => {
 
     const productModal = (id) => {
         setSelectedBoxId(id);
+
+        const selectedBox = packing.find((box) => box.id === id);
+        if (selectedBox) {
+            setBoxDetails({
+                actual_weight: selectedBox.actual_weight || '',
+                parcel_amount: selectedBox.parcel_amount || '',
+                postoffice_date: selectedBox.postoffice_date || '',
+            });
+        }
+
         setModalOpen(true);
     };
 
@@ -72,6 +82,7 @@ const ReceiptFormPage = ({ closingBalance }) => {
                 alert("Warehouse details updated successfully!");
                 setModalOpen(false);
                 setBoxDetails("");
+                await fetchData();
             };
         } catch (error) {
             alert("Failed to update warehouse details.");
@@ -222,6 +233,7 @@ const ReceiptFormPage = ({ closingBalance }) => {
                                     type="number"
                                     step="0.01"
                                     name="actual_weight"
+                                    value={boxDetails.actual_weight}
                                     onChange={handleChange}
                                     className="form-control"
                                     placeholder="Enter actual weight"
@@ -232,8 +244,9 @@ const ReceiptFormPage = ({ closingBalance }) => {
                                 <input
                                     type="number"
                                     step="0.01"
-                                    onChange={handleChange}
                                     name="parcel_amount"
+                                    value={boxDetails.parcel_amount}
+                                    onChange={handleChange}
                                     className="form-control"
                                     placeholder="Enter post office amount"
                                 />
@@ -242,9 +255,10 @@ const ReceiptFormPage = ({ closingBalance }) => {
                                 <label className="form-label">Date</label>
                                 <input
                                     type="date"
-                                    className="form-control"
                                     name="postoffice_date"
+                                    value={boxDetails.postoffice_date}
                                     onChange={handleChange}
+                                    className="form-control"
                                 />
                             </div>
                             <div className="text-center">
@@ -349,6 +363,7 @@ const ReceiptFormPage = ({ closingBalance }) => {
                                                             <th>PARCEL SERVICE</th>
                                                             <th>TRACKING ID</th>
                                                             <th>ParcelAmount</th>
+                                                            <th>Date</th>
                                                             <th>Edit</th>
                                                         </tr>
                                                     </thead>
@@ -365,7 +380,7 @@ const ReceiptFormPage = ({ closingBalance }) => {
                                                                     ) : (
                                                                         <td>N/A</td>
                                                                     )}
-
+                                                                    <td>{packedItems?.postoffice_date}</td>
                                                                     <th>
                                                                         <button onClick={() => productModal(packedItems.id)} className="btn btn-primary">Edit</button>
                                                                     </th>

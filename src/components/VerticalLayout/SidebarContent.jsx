@@ -683,6 +683,9 @@ const SidebarContent = (props) => {
                     <Link to="/order/postoffice/">{props.t("Post Office Report")}</Link>
                   </li>
                   <li>
+                    <Link to="/orders/tracking/report/">{props.t("Order Tracking Report")}</Link>
+                  </li>
+                  <li>
                     <Link to="/calllog/reports/">{props.t("Call Log Report")}</Link>
                   </li>
                 </ul>

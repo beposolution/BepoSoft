@@ -246,6 +246,7 @@ const BasicTable = () => {
                                                         <th>HSN CODE</th>
                                                         <th>TYPE</th>
                                                         <th>UNIT</th>
+                                                        <th>STOCK</th>
                                                         <th>PURCHASE RATE</th>
                                                         <th>TAX %</th>
                                                         <th>LANDING COST</th>
@@ -272,9 +273,10 @@ const BasicTable = () => {
                                                                 <td style={{ cursor: 'pointer' }} onClick={() => handleProductClick(product.id, product.type)}>
                                                                     {truncateText(product.name, 30)}
                                                                 </td>
-                                                                <td>{product.hsn_code}</td>
-                                                                <td>{product.type}</td>
-                                                                <td>{product.unit}</td>
+                                                                <td>{product?.hsn_code}</td>
+                                                                <td>{product?.type}</td>
+                                                                <td>{product?.unit}</td>
+                                                                <td>{product.stock}</td>
                                                                 <td>{product.purchase_rate}</td>
                                                                 <td>{product.tax}%</td>
                                                                 <td>{product.landing_cost}</td>

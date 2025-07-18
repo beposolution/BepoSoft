@@ -73,7 +73,9 @@ const BasicTable = () => {
     };
 
     const filteredData = data.filter((customer) =>
-        (customer.name.toLowerCase().includes(searchTerm.toLowerCase())))
+        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (customer.phone && customer.phone.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
 
     const handleUpdate = (customerId) => {
         navigate(`/customer/${customerId}/edit/`);
@@ -133,7 +135,7 @@ const BasicTable = () => {
                                             <FormGroup className="mb-0">
                                                 <Input
                                                     type="text"
-                                                    placeholder="Search by name"
+                                                    placeholder="Search by Name, Phone Number"
                                                     value={searchTerm}
                                                     onChange={handleSearch}
                                                     className="w-100"

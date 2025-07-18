@@ -204,19 +204,19 @@ const TrackingReport = () => {
                                         <Table className="table mb-0">
                                             <thead>
                                                 <tr>
-                                                    <th style={{ border: "1px solid black" }}><strong>#</strong></th>
-                                                    <th style={{ border: "1px solid black" }}><strong>Date</strong></th>
-                                                    <th style={{ border: "1px solid black" }}><strong>Invoice</strong></th>
-                                                    <th style={{ border: "1px solid black" }}><strong>Customer</strong></th>
-                                                    <th style={{ border: "1px solid black" }}><strong>Invoice Amount</strong></th>
-                                                    <th style={{ border: "1px solid black" }}><strong>Tracking Amount</strong></th>
-                                                    <th style={{ border: "1px solid black" }}><strong>Tracking ID</strong></th>
-                                                    <th style={{ border: "1px solid black" }}><strong>Parcel Service</strong></th>
-                                                    <th style={{ border: "1px solid black" }}><strong>Post Office Weight</strong></th>
-                                                    <th style={{ border: "1px solid black" }}><strong>Actual Weight</strong></th>
-                                                    <th style={{ border: "1px solid black" }}><strong>Volume Weight</strong></th>
-                                                    <th style={{ border: "1px solid black" }}><strong>Box</strong></th>
-                                                    <th style={{ border: "1px solid black" }}><strong>Average</strong></th>
+                                                    <th style={{ border: "1px solid black", backgroundColor: "#30D5C8" }}><strong>#</strong></th>
+                                                    <th style={{ border: "1px solid black", backgroundColor: "#30D5C8" }}><strong>Date</strong></th>
+                                                    <th style={{ border: "1px solid black", backgroundColor: "#30D5C8" }}><strong>Invoice</strong></th>
+                                                    <th style={{ border: "1px solid black", backgroundColor: "#30D5C8" }}><strong>Customer</strong></th>
+                                                    <th style={{ border: "1px solid black", backgroundColor: "#30D5C8" }}><strong>Invoice Amount</strong></th>
+                                                    <th style={{ border: "1px solid black", backgroundColor: "#30D5C8" }}><strong>Tracking Amount</strong></th>
+                                                    <th style={{ border: "1px solid black", backgroundColor: "#30D5C8" }}><strong>Tracking ID</strong></th>
+                                                    <th style={{ border: "1px solid black", backgroundColor: "#30D5C8" }}><strong>Parcel Service</strong></th>
+                                                    <th style={{ border: "1px solid black", backgroundColor: "#30D5C8" }}><strong>Post Office Weight</strong></th>
+                                                    <th style={{ border: "1px solid black", backgroundColor: "#30D5C8" }}><strong>Actual Weight</strong></th>
+                                                    <th style={{ border: "1px solid black", backgroundColor: "#30D5C8" }}><strong>Volume Weight</strong></th>
+                                                    <th style={{ border: "1px solid black", backgroundColor: "#30D5C8" }}><strong>Box</strong></th>
+                                                    <th style={{ border: "1px solid black", backgroundColor: "#30D5C8" }}><strong>Average</strong></th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -248,9 +248,9 @@ const TrackingReport = () => {
                                                     <tbody>
                                                         <tr>
                                                             <td style={{ border: "1px solid black" }}><strong>Total Invoice Amount</strong></td>
-                                                            <td style={{ border: "1px solid black" }}><strong>{totals.invoiceAmount.toFixed(2)}</strong></td>
+                                                            <td style={{ border: "1px solid black" }}><strong>₹ {totals.invoiceAmount.toFixed(2)}</strong></td>
                                                             <td style={{ border: "1px solid black" }}><strong>Total Tracking Amount</strong></td>
-                                                            <td style={{ border: "1px solid black" }}><strong>{totals.trackingAmount.toFixed(2)}</strong></td>
+                                                            <td style={{ border: "1px solid black" }}><strong>₹ {totals.trackingAmount.toFixed(2)}</strong></td>
                                                         </tr>
                                                         <tr>
                                                             <td style={{ border: "1px solid black" }}><strong>Total Post Office Weight</strong></td>
@@ -280,8 +280,8 @@ const TrackingReport = () => {
                                                 <Table bordered responsive>
                                                     <thead>
                                                         <tr>
-                                                            <th style={{ border: "1px solid black" }}>Parcel Service</th>
-                                                            <th style={{ border: "1px solid black" }}>Count</th>
+                                                            <th style={{ border: "1px solid black", backgroundColor: "#30D5C8" }}>Parcel Service</th>
+                                                            <th style={{ border: "1px solid black", backgroundColor: "#30D5C8" }}>Count</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>

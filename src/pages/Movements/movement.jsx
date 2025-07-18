@@ -14,6 +14,7 @@ const Movement = () => {
     const [isVerified, setIsVerified] = useState(false);
     const [checkedBy, setCheckedBy] = useState("");
     const [codCount, setCodCount] = useState(0);
+    const [parcelAmounts, setParcelAmounts] = useState({});
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -122,31 +123,38 @@ const Movement = () => {
 
     useEffect(() => {
         const countParcels = {};
+        const totalAmounts = {};
         let codOrderCount = 0;
 
         data.forEach((category) => {
             category.orders.forEach((order) => {
+                if (order.cod_amount && parseFloat(order.cod_amount) > 0) {
+                    codOrderCount += 1;
+                }
+
                 order.warehouses.forEach((warehouse) => {
                     const serviceName = warehouse.parcel_service;
                     if (serviceName) {
                         countParcels[serviceName] = (countParcels[serviceName] || 0) + 1;
-                    }
-
-                    // Count COD orders
-                    if (order.cod_amount && parseFloat(order.cod_amount) > 0) {
-                        codOrderCount += 1;
+                        totalAmounts[serviceName] = (totalAmounts[serviceName] || 0) + parseFloat(warehouse.parcel_amount || 0);
                     }
                 });
             });
         });
 
         setParcelCounts(countParcels);
-        setCodCount(codOrderCount); // new state for COD
+        setParcelAmounts(totalAmounts);
+        setCodCount(codOrderCount);
     }, [data]);
 
     const aggregatedParcelCounts = {
         BEPARCEL: (parcelCounts['BEPARCEL'] || 0) + (parcelCounts['BEPARCEL COD'] || 0),
         SPEED: (parcelCounts['SPEED POST'] || 0) + (parcelCounts['SPEED COD'] || 0),
+    };
+
+    const aggregatedParcelAmounts = {
+        BEPARCEL: (parcelAmounts['BEPARCEL'] || 0) + (parcelAmounts['BEPARCEL COD'] || 0),
+        SPEED: (parcelAmounts['SPEED POST'] || 0) + (parcelAmounts['SPEED COD'] || 0),
     };
 
     const exportToExcel = () => {
@@ -498,14 +506,17 @@ const Movement = () => {
                                         <td style={{ border: "1px solid black" }}>{boxTotal}</td>
                                         <td style={{ border: "1px solid black" }}>{codTotal}</td>
                                         <td style={{ border: "1px solid black" }}>{weightTotal}</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
                                         <td style={{ border: "1px solid black" }}>{volumeTotal.toFixed(2)}</td>
                                         <td style={{ border: "1px solid black" }}>{actualWeightTotal}</td>
-                                        <td style={{ border: "1px solid black" }}>{parcelAmountTotal}</td>
-                                        <td style={{ border: "1px solid black" }}></td>
-                                        <td style={{ border: "1px solid black" }}></td>
-                                        <td style={{ border: "1px solid black" }}></td>
+                                        <td style={{ border: "1px solid black" }}>{parcelAmountTotal.toFixed(2)}</td>
+                                        <td ></td>
+                                        <td></td>
+                                        <td></td>
                                         {/* <td style={{ border: "1px solid black" }}></td> */}
-                                        <td colSpan={4}></td>
+                                        <td></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -559,6 +570,22 @@ const Movement = () => {
                                 <tr>
                                     <td className="total-row1" style={{ border: "1px solid black" }}><strong>TOTAL</strong></td>
                                     <td className="total-row1" style={{ border: "1px solid black" }}><strong>{Object.values(aggregatedParcelCounts).reduce((acc, curr) => acc + curr, 0)}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table border="1" cellPadding="5" style={{ width: "100%", borderCollapse: "collapse", textAlign: "center", marginTop: "30px" }}>
+                            <tbody>
+                                <tr>
+                                    <td className="total-row" style={{ border: "1px solid black" }}><strong>BEPARCEL AMOUNT</strong></td>
+                                    <td className="total-row" style={{ border: "1px solid black" }}><strong>₹{aggregatedParcelAmounts.BEPARCEL.toFixed(2)}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td className="total-row2" style={{ border: "1px solid black" }}><strong>SPEED AMOUNT</strong></td>
+                                    <td className="total-row2" style={{ border: "1px solid black" }}><strong>₹{aggregatedParcelAmounts.SPEED.toFixed(2)}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td className="total-row1" style={{ border: "1px solid black" }}><strong>TOTAL</strong></td>
+                                    <td className="total-row1" style={{ border: "1px solid black" }}><strong>₹{(aggregatedParcelAmounts.BEPARCEL + aggregatedParcelAmounts.SPEED).toFixed(2)}</strong></td>
                                 </tr>
                             </tbody>
                         </table>

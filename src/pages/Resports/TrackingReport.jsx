@@ -48,34 +48,41 @@ const TrackingReport = () => {
     const handleToDate = (e) => setToDate(e.target.value);
 
     const filteredData = data.filter((tracking) => {
-        const invoiceMatch = tracking.invoice?.toLowerCase().includes(searchTerm);
-        const customerMatch = tracking.customerName?.toLowerCase().includes(searchTerm);
-        const warehouseMatch = tracking.warehouse_data?.some((w) =>
-            w.tracking_id?.toLowerCase().includes(searchTerm) ||
-            w.parcel_service?.toLowerCase().includes(searchTerm)
-        );
-        const trackingDate = new Date(tracking.order_date);
-        const isAfterFromDate = fromDate ? trackingDate >= new Date(fromDate) : true;
-        const isBeforeToDate = toDate ? trackingDate <= new Date(toDate) : true;
+        const matchesSearch = tracking.invoice?.toLowerCase().includes(searchTerm) ||
+            tracking.customerName?.toLowerCase().includes(searchTerm) ||
+            tracking.warehouse_data?.some((w) =>
+                w.tracking_id?.toLowerCase().includes(searchTerm) ||
+                w.parcel_service?.toLowerCase().includes(searchTerm)
+            );
 
-        const matchesSearch =
-            (invoiceMatch || customerMatch || warehouseMatch) &&
-            isAfterFromDate &&
-            isBeforeToDate;
+        const filteredWarehouses = (tracking.warehouse_data || []).filter((w) => {
+            if (!w.shipped_date) return false;
 
-        const parcelFilter = selectedParcelService
-            ? tracking.warehouse_data?.some((w) => w.parcel_service === selectedParcelService)
-            : true;
+            const shippedDate = new Date(w.shipped_date);
+            const isAfterFromDate = fromDate ? shippedDate >= new Date(fromDate) : true;
+            const isBeforeToDate = toDate ? shippedDate <= new Date(toDate) : true;
+            const matchesParcelService = selectedParcelService ? w.parcel_service === selectedParcelService : true;
 
-        return matchesSearch && parcelFilter;
+            return isAfterFromDate && isBeforeToDate && matchesParcelService;
+        });
+
+        return matchesSearch && filteredWarehouses.length > 0;
     });
 
     const flattenedData = filteredData.flatMap((tracking) => {
-        const warehouseList = (tracking.warehouse_data || []).filter(
-            (w) => w.tracking_id && w.tracking_id.trim() !== "0" && w.tracking_id.trim() !== ""
-        );
+        const filteredWarehouses = (tracking.warehouse_data || []).filter((w) => {
+            if (!w.shipped_date) return false;
 
-        return warehouseList.map((warehouse) => ({
+            const shippedDate = new Date(w.shipped_date);
+            const isAfterFromDate = fromDate ? shippedDate >= new Date(fromDate) : true;
+            const isBeforeToDate = toDate ? shippedDate <= new Date(toDate) : true;
+            const matchesParcelService = selectedParcelService ? w.parcel_service === selectedParcelService : true;
+
+            return w.tracking_id && w.tracking_id.trim() !== "0" && w.tracking_id.trim() !== "" &&
+                isAfterFromDate && isBeforeToDate && matchesParcelService;
+        });
+
+        return filteredWarehouses.map((warehouse) => ({
             tracking,
             warehouse,
         }));

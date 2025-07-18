@@ -13,8 +13,6 @@ const TrackingReport = () => {
     const token = localStorage.getItem("token");
     const [data, setData] = useState([]);
     const [parcelServices, setParcelServices] = useState([]);
-    console.log("parcel service : ", parcelServices)
-    console.log("data : ", data)
     const [searchTerm, setSearchTerm] = useState("");
     const [fromDate, setFromDate] = useState("");
     const [toDate, setToDate] = useState("");

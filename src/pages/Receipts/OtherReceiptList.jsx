@@ -180,7 +180,7 @@ const OtherReceiptList = () => {
                 }
             }
 
-            // 🔥 DELETE only if conversion to advance/order receipt was successful
+            // DELETE only if conversion to advance/order receipt was successful
             if (shouldDeleteOriginalReceipt && selectedReceipt?.id) {
                 await axios.delete(`${import.meta.env.VITE_APP_KEY}bankreceipt/view/${selectedReceipt.id}/`, {
                     headers: {

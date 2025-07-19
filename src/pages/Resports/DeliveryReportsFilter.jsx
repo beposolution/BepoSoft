@@ -5,6 +5,7 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Link, useParams } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Paginations from "../../components/Common/Pagination";
 
 const BasicTable = () => {
     const [orders, setOrders] = useState([]);
@@ -12,6 +13,8 @@ const BasicTable = () => {
     const [error, setError] = useState(null);
     const { date } = useParams();
     const token = localStorage.getItem("token");
+    const [currentPage, setCurrentPage] = useState(1);
+    const perPageData = 10;
 
     document.title = `Orders | Beposoft (${date})`;
 
@@ -55,6 +58,10 @@ const BasicTable = () => {
         return { color: statusColors[status] || "black" };
     };
 
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const currentOrders = orders.slice(indexOfFirstItem, indexOfLastItem);
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -72,50 +79,63 @@ const BasicTable = () => {
                                         ) : error ? (
                                             <div className="text-danger">{error}</div>
                                         ) : (
-                                            <Table className="table mb-0 table-bordered">
-                                                <thead>
-                                                    <tr>
-                                                        <th>#</th>
-                                                        <th>Invoice No</th>
-                                                        <th>Customer</th>
-                                                        <th>Shipped Date</th>
-                                                        <th>Status</th>
-                                                        <th>Tracking ID</th>
-                                                        <th>Parcel Service</th>
-                                                        <th>Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {orders.length > 0 ? (
-                                                        orders.map((order, index) => (
-                                                            <tr key={order.id}>
-                                                                <td>{index + 1}</td>
-                                                                <td>
-                                                                    <Link to={`/order/${order?.order_id}/items/`}>
-                                                                        {order.invoice}
-                                                                    </Link>
-                                                                </td>
-                                                                <td>{order.customer}</td>
-                                                                <td>{order.shipped_date}</td>
-                                                                <td style={getStatusColor(order.status)}>{order.status}</td>
-                                                                <td>{order.tracking_id ? order.tracking_id : "N/A"}</td>
-                                                                <td>{order.parcel_service ? order.parcel_service : "N/A"}</td>
-                                                                <td>
-                                                                    <Link to={`/order/${order?.order_id}/items`} className="btn btn-sm btn-primary">
-                                                                        View
-                                                                    </Link>
+                                            <>
+                                                <Table className="table mb-0 table-bordered">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>#</th>
+                                                            <th>Invoice No</th>
+                                                            <th>Customer</th>
+                                                            <th>Shipped Date</th>
+                                                            <th>Status</th>
+                                                            <th>Tracking ID</th>
+                                                            <th>Parcel Service</th>
+                                                            <th>Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {currentOrders.length > 0 ? (
+                                                            currentOrders.map((order, index) => (
+                                                                <tr key={order.id}>
+                                                                    <td>{index + 1}</td>
+                                                                    <td>
+                                                                        <Link to={`/order/${order?.order_id}/items/`}>
+                                                                            {order.invoice}
+                                                                        </Link>
+                                                                    </td>
+                                                                    <td>{order.customer}</td>
+                                                                    <td>{order.shipped_date}</td>
+                                                                    <td style={getStatusColor(order.status)}>{order.status}</td>
+                                                                    <td>{order.tracking_id ? order.tracking_id : "N/A"}</td>
+                                                                    <td>{order.parcel_service ? order.parcel_service : "N/A"}</td>
+                                                                    <td>
+                                                                        <Link to={`/order/${order?.order_id}/items`} className="btn btn-sm btn-primary">
+                                                                            View
+                                                                        </Link>
+                                                                    </td>
+                                                                </tr>
+                                                            ))
+                                                        ) : (
+                                                            <tr>
+                                                                <td colSpan="8" className="text-center text-muted">
+                                                                    No orders found for {date}.
                                                                 </td>
                                                             </tr>
-                                                        ))
-                                                    ) : (
-                                                        <tr>
-                                                            <td colSpan="8" className="text-center text-muted">
-                                                                No orders found for {date}.
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </tbody>
-                                            </Table>
+                                                        )}
+                                                    </tbody>
+                                                </Table>
+                                                <Paginations
+                                                    perPageData={perPageData}
+                                                    data={orders}
+                                                    currentPage={currentPage}
+                                                    setCurrentPage={setCurrentPage}
+                                                    isShowingPageLength={true}
+                                                    paginationDiv="col-auto"
+                                                    paginationClass="pagination"
+                                                    indexOfFirstItem={indexOfFirstItem}
+                                                    indexOfLastItem={indexOfLastItem}
+                                                />
+                                            </>
                                         )}
                                     </div>
                                 </CardBody>

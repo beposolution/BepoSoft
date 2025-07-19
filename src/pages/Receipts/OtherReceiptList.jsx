@@ -390,10 +390,17 @@ const OtherReceiptList = () => {
                                                                     options={customers.map(c => ({ label: c.name, value: c.id }))}
                                                                     onChange={(selected) => setFormData(prev => ({
                                                                         ...prev,
-                                                                        customer: selected?.value || ''
+                                                                        customer: selected?.value || '',
+                                                                        order: ''  // clear order if customer is selected
                                                                     }))}
                                                                     isClearable
                                                                     placeholder="Choose Customer"
+                                                                    value={
+                                                                        formData.customer
+                                                                            ? { label: customers.find(c => c.id === formData.customer)?.name || '', value: formData.customer }
+                                                                            : null
+                                                                    }
+                                                                    isDisabled={!!formData.order}
                                                                 />
                                                             </div>
                                                         </Col>
@@ -407,10 +414,22 @@ const OtherReceiptList = () => {
                                                                     }))}
                                                                     onChange={(selected) => setFormData(prev => ({
                                                                         ...prev,
-                                                                        order: selected?.value || ''
+                                                                        order: selected?.value || '',
+                                                                        customer: ''  // clear customer if order is selected
                                                                     }))}
                                                                     isClearable
                                                                     placeholder="Choose Order"
+                                                                    value={
+                                                                        formData.order
+                                                                            ? {
+                                                                                label: orders.find(o => o.id === formData.order)?.invoice +
+                                                                                    ' - ' + orders.find(o => o.id === formData.order)?.customer?.name +
+                                                                                    ' - ₹' + orders.find(o => o.id === formData.order)?.total_amount,
+                                                                                value: formData.order
+                                                                            }
+                                                                            : null
+                                                                    }
+                                                                    isDisabled={!!formData.customer}
                                                                 />
                                                             </div>
                                                         </Col>

@@ -12,6 +12,7 @@ import {
 } from "reactstrap";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Link, useParams } from "react-router-dom";
+import Paginations from "../../components/Common/Pagination";
 
 const BasicTable = () => {
     const [orders, setOrders] = useState([]);
@@ -24,6 +25,10 @@ const BasicTable = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const { name } = useParams();
     const token = localStorage.getItem("token");
+    const [staffs, setStaffs] = useState([])
+    const [selectedStaff, setSelectedStaff] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const perPageData = 10;
 
     document.title = "STATE WISE REPORTS | BEPOSOFT";
 
@@ -32,6 +37,21 @@ const BasicTable = () => {
     }, [name]);
 
     const role = localStorage.getItem("active");
+
+    const fetchData = async () => {
+        try {
+            const response = await axios.get(`${import.meta.env.VITE_APP_KEY}staffs/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setStaffs(response.data.data);
+        } catch (error) {
+            toast.error("Error fetching staffs:");
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, [token]);
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -95,6 +115,12 @@ const BasicTable = () => {
                 );
             }
 
+            if (selectedStaff) {
+                filtered = filtered.filter(order =>
+                    order.manage_staff && order.manage_staff.toLowerCase() === selectedStaff.toLowerCase()
+                );
+            }
+
             setFilteredOrders(filtered);
         };
 
@@ -113,6 +139,10 @@ const BasicTable = () => {
         return { color: statusColors[status] || "black" };
     };
 
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const currentPageData = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -127,7 +157,7 @@ const BasicTable = () => {
                                     </CardTitle>
 
                                     <Row>
-                                        <Col sm={4}>
+                                        <Col sm={3}>
                                             <Label>Start Date</Label>
                                             <Input
                                                 type="date"
@@ -135,7 +165,7 @@ const BasicTable = () => {
                                                 onChange={(e) => setStartDate(e.target.value)}
                                             />
                                         </Col>
-                                        <Col sm={4}>
+                                        <Col sm={3}>
                                             <Label>End Date</Label>
                                             <Input
                                                 type="date"
@@ -143,7 +173,7 @@ const BasicTable = () => {
                                                 onChange={(e) => setEndDate(e.target.value)}
                                             />
                                         </Col>
-                                        <Col sm={4}>
+                                        <Col sm={3}>
                                             <Label>Search</Label>
                                             <Input
                                                 type="text"
@@ -151,6 +181,21 @@ const BasicTable = () => {
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
                                             />
+                                        </Col>
+                                        <Col sm={3}>
+                                            <Label>Filter by Staff</Label>
+                                            <Input
+                                                type="select"
+                                                value={selectedStaff}
+                                                onChange={(e) => setSelectedStaff(e.target.value)}
+                                            >
+                                                <option value="">All Staff</option>
+                                                {staffs.map((staff) => (
+                                                    <option key={staff.id} value={staff.name}>
+                                                        {staff.name} ({staff.family_name})
+                                                    </option>
+                                                ))}
+                                            </Input>
                                         </Col>
                                     </Row>
 
@@ -160,40 +205,53 @@ const BasicTable = () => {
                                         ) : error ? (
                                             <div className="text-danger">{error}</div>
                                         ) : (
-                                            <Table className="table mb-0">
-                                                <thead>
-                                                    <tr>
-                                                        <th>#</th>
-                                                        <th>INVOICE NO</th>
-                                                        <th>STAFF</th>
-                                                        <th>CUSTOMER</th>
-                                                        <th>STATUS</th>
-                                                        <th>BILL AMOUNT</th>
-                                                        <th>CREATED AT</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {filteredOrders.map((order, index) => (
-                                                        <tr key={order.id}>
-                                                            <th scope="row">{index + 1}</th>
-                                                            <td>
-                                                                <Link to={`/order/${order.id}/items/`}>
-                                                                    {order.invoice}
-                                                                </Link>
-                                                            </td>
-                                                            <td>
-                                                                {order.manage_staff} ({order.family})
-                                                            </td>
-                                                            <td>{order.customer.name}</td>
-                                                            <td style={getStatusColor(order.status)}>
-                                                                {order.status}
-                                                            </td>
-                                                            <td>{order.total_amount}</td>
-                                                            <td>{order.order_date}</td>
+                                            <>
+                                                <Table className="table mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>#</th>
+                                                            <th>INVOICE NO</th>
+                                                            <th>STAFF</th>
+                                                            <th>CUSTOMER</th>
+                                                            <th>STATUS</th>
+                                                            <th>BILL AMOUNT</th>
+                                                            <th>CREATED AT</th>
                                                         </tr>
-                                                    ))}
-                                                </tbody>
-                                            </Table>
+                                                    </thead>
+                                                    <tbody>
+                                                        {currentPageData.map((order, index) => (
+                                                            <tr key={order.id}>
+                                                                <th scope="row">{indexOfFirstItem + index + 1}</th>
+                                                                <td>
+                                                                    <Link to={`/order/${order.id}/items/`}>
+                                                                        {order.invoice}
+                                                                    </Link>
+                                                                </td>
+                                                                <td>
+                                                                    {order.manage_staff} ({order.family})
+                                                                </td>
+                                                                <td>{order.customer.name}</td>
+                                                                <td style={getStatusColor(order.status)}>
+                                                                    {order.status}
+                                                                </td>
+                                                                <td>{order.total_amount}</td>
+                                                                <td>{order.order_date}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </Table>
+                                                <Paginations
+                                                    perPageData={perPageData}
+                                                    data={filteredOrders}
+                                                    currentPage={currentPage}
+                                                    setCurrentPage={setCurrentPage}
+                                                    isShowingPageLength={true}
+                                                    paginationDiv="mt-3"
+                                                    paginationClass="pagination pagination-rounded"
+                                                    indexOfFirstItem={indexOfFirstItem}
+                                                    indexOfLastItem={indexOfLastItem}
+                                                />
+                                            </>
                                         )}
                                     </div>
                                 </CardBody>

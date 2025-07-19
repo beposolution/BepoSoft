@@ -14,6 +14,7 @@ import {
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Paginations from "../../components/Common/Pagination";
 
 const BasicTable = () => {
     const [salesData, setSalesData] = useState([]);
@@ -25,6 +26,8 @@ const BasicTable = () => {
     const [stateFilter, setStateFilter] = useState("");
     const [familyFilter, setFamilyFilter] = useState("");
     const role = localStorage.getItem("active");
+    const [currentPage, setCurrentPage] = useState(1);
+    const perPageData = 10;
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -118,6 +121,10 @@ const BasicTable = () => {
 
     const approvedStatuses = ["Approved", "Invoice Approved", "Completed", "Shipped", "Waiting For Confirmation", "To Print", "Invoice Created", "Packing under progress", "Ready to ship"];
     const rejectedStatuses = ["Cancelled", "Refunded", "Invoice Rejected", "Return"];
+
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const currentData = filteredSalesData.slice(indexOfFirstItem, indexOfLastItem);
 
     const exportToExcel = () => {
         const data = filteredSalesData.map((sale, index) => {
@@ -257,7 +264,7 @@ const BasicTable = () => {
 
                                             <tbody>
                                                 {filteredSalesData.length > 0 ? (
-                                                    filteredSalesData.map((sale, index) => {
+                                                    currentData.map((sale, index) => {
                                                         const totalOrders = sale.order_details.length;
                                                         const totalAmount = sale.order_details.reduce((sum, order) => sum + order.total_amount, 0);
                                                         const approved = calculateTotals(sale.order_details, approvedStatuses);
@@ -266,7 +273,9 @@ const BasicTable = () => {
                                                         return (
 
                                                             <tr key={sale.id} style={{ backgroundColor: index % 2 === 0 ? "#f8f9fa" : "#ffffff" }}>
-                                                                <th scope="row" className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{index + 1}</th>
+                                                                <th scope="row" className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
+                                                                    {indexOfFirstItem + index + 1}
+                                                                </th>
                                                                 <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{sale.date}</td>
                                                                 {/* <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{totalOrders}</td> */}
                                                                 {/* <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>{totalAmount.toFixed(2)}</td> */}
@@ -305,6 +314,17 @@ const BasicTable = () => {
                                             </tbody>
 
                                         </Table>
+                                        <Paginations
+                                            perPageData={perPageData}
+                                            data={filteredSalesData}
+                                            currentPage={currentPage}
+                                            setCurrentPage={setCurrentPage}
+                                            isShowingPageLength={true}
+                                            paginationDiv="col-12"
+                                            paginationClass="pagination pagination-rounded"
+                                            indexOfFirstItem={indexOfFirstItem}
+                                            indexOfLastItem={indexOfLastItem}
+                                        />
                                     </div>
                                 </CardBody>
                             </Card>

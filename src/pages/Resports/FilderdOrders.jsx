@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Table, Row, Col, Card, CardBody, FormGroup, Label, Input } from "reactstrap";
 import { useParams } from "react-router-dom";
+import axios from "axios";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Paginations from "../../components/Common/Pagination";
 
 const BasicTable = () => {
     document.title = "Basic Tables | Skote - Vite React Admin & Dashboard Template";
@@ -16,6 +18,10 @@ const BasicTable = () => {
     const [selectedCompany, setSelectedCompany] = useState(""); // Company filter
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('active');
+    const [staffs, setStaffs] = useState([]);
+    const [selectedStaffId, setSelectedStaffId] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const perPageData = 10;
 
     const approvedStatuses = [
         "Approved",
@@ -31,6 +37,21 @@ const BasicTable = () => {
     ];
 
     const rejectedStatuses = ["Invoice Rejected", "Cancelled", "Refunded", "Return"];
+
+    const fetchStaffs = async () => {
+        try {
+            const response = await axios.get(`${import.meta.env.VITE_APP_KEY}staffs/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setStaffs(response.data.data);
+        } catch (error) {
+            toast.error("Error fetching staffs:");
+        }
+    };
+
+    useEffect(() => {
+        fetchStaffs();
+    }, [token]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -94,6 +115,12 @@ const BasicTable = () => {
                         );
                     }
 
+                    if (selectedStaffId) {
+                        processedData = processedData.filter((staff) =>
+                            String(staff.id) === String(selectedStaffId)
+                        );
+                    }
+
                     setData(processedData);
                 } else {
                     toast.error("Failed to fetch data:");
@@ -104,7 +131,7 @@ const BasicTable = () => {
         };
 
         fetchData();
-    }, [date, selectedState, selectedCompany, token]);
+    }, [date, selectedState, selectedCompany, selectedStaffId, token]);
 
     const grandTotalApprovedCount = data.reduce((sum, item) => sum + item.approvedCount, 0);
     const grandTotalApprovedAmount = data.reduce((sum, item) => sum + item.approvedTotal, 0);
@@ -159,6 +186,10 @@ const BasicTable = () => {
         fetchCompanies();
     }, [token]);
 
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const currentData = data.slice(indexOfFirstItem, indexOfLastItem);
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -206,6 +237,23 @@ const BasicTable = () => {
                                                         </Input>
                                                     </FormGroup>
                                                 </Col>
+                                                <Col xl={4}>
+                                                    <FormGroup>
+                                                        <Input
+                                                            type="select"
+                                                            name="staff"
+                                                            id="staff"
+                                                            onChange={(e) => setSelectedStaffId(e.target.value)}
+                                                        >
+                                                            <option value="">Select Staff</option>
+                                                            {staffs.map((staff) => (
+                                                                <option key={staff.id} value={staff.id}>
+                                                                    {staff.name} ({staff.family_name})
+                                                                </option>
+                                                            ))}
+                                                        </Input>
+                                                    </FormGroup>
+                                                </Col>
                                             </Row>
                                             <Table className="align-middle mb-0">
                                                 <thead>
@@ -245,10 +293,10 @@ const BasicTable = () => {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {data && Array.isArray(data) && data.map((item, index) => (
+                                                    {currentData && Array.isArray(currentData) && currentData.map((item, index) => (
                                                         <tr key={index}>
                                                             <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
-                                                                {index + 1}
+                                                                {indexOfFirstItem + index + 1}
                                                             </td>
                                                             <td className="text-center" style={{ border: "1px solid #dee2e6", padding: "12px" }}>
                                                                 {item.name} ({item.family})
@@ -287,6 +335,17 @@ const BasicTable = () => {
                                                     </tr>
                                                 </tfoot>
                                             </Table>
+                                            <Paginations
+                                                perPageData={perPageData}
+                                                data={data}
+                                                currentPage={currentPage}
+                                                setCurrentPage={setCurrentPage}
+                                                isShowingPageLength={true}
+                                                paginationDiv="mt-3"
+                                                paginationClass="pagination pagination-rounded"
+                                                indexOfFirstItem={indexOfFirstItem}
+                                                indexOfLastItem={indexOfLastItem}
+                                            />  
                                         </div>
                                     </div>
                                 </CardBody>

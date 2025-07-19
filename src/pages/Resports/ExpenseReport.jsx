@@ -17,28 +17,30 @@ import {
     FormGroup,
     Label
 } from "reactstrap";
-import * as XLSX from "xlsx";  
+import * as XLSX from "xlsx";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Paginations from "../../components/Common/Pagination";
 
 const BasicTable = () => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState(""); // For search input
+    const [searchQuery, setSearchQuery] = useState("");
     const [filteredData, setFilteredData] = useState([]);
-    const [selectedRow, setSelectedRow] = useState(null); // To hold the selected row data for the modal
-    const [modalOpen, setModalOpen] = useState(false); // To control modal visibility
-    const [startDate, setStartDate] = useState(""); // Start date for filtering
-    const [endDate, setEndDate] = useState(""); // End date for filtering
+    const [selectedRow, setSelectedRow] = useState(null);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const perPageData = 10;
 
-    // Fetch data using Axios
     useEffect(() => {
-        const token = localStorage.getItem('token'); // Replace with actual method of fetching token
+        const token = localStorage.getItem('token');
 
         axios.get(`${import.meta.env.VITE_APP_KEY}expense/add/`, {
             headers: {
-                Authorization: `Bearer ${token}` // Pass the token in the Authorization header
+                Authorization: `Bearer ${token}`
             }
         })
             .then((response) => {
@@ -98,6 +100,10 @@ const BasicTable = () => {
         setSelectedRow(item);
         toggleModal();
     };
+
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
     // Export data to Excel
     const exportToExcel = () => {
@@ -204,9 +210,9 @@ const BasicTable = () => {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {filteredData.map((item, index) => (
+                                                    {currentItems.map((item, index) => (
                                                         <tr key={index}>
-                                                            <th scope="row">{index + 1}</th>
+                                                            <th scope="row">{indexOfFirstItem + index + 1}</th>
                                                             <td>{item.expense_date}</td>
                                                             <td>{item.description}</td>
                                                             <td>{item.purpose_of_pay}</td>
@@ -222,6 +228,17 @@ const BasicTable = () => {
                                                     ))}
                                                 </tbody>
                                             </Table>
+                                            <Paginations
+                                                perPageData={perPageData}
+                                                data={filteredData}
+                                                currentPage={currentPage}
+                                                setCurrentPage={setCurrentPage}
+                                                isShowingPageLength={true}
+                                                paginationDiv="col-auto"
+                                                paginationClass="pagination-rounded"
+                                                indexOfFirstItem={indexOfFirstItem}
+                                                indexOfLastItem={indexOfLastItem}
+                                            />
                                         </div>
                                     )}
                                 </CardBody>

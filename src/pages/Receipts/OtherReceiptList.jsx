@@ -233,6 +233,19 @@ const OtherReceiptList = () => {
 
     return (
         <React.Fragment>
+            <style>
+                {`
+                    .modal {
+                        overflow: visible !important;
+                    }
+                    .Select__menu-portal {
+                        z-index: 9999;
+                    }
+                    .react-select__menu {
+                        z-index: 9999 !important;
+                    }
+                `}
+            </style>
             <div className="page-content">
                 <Container fluid={true}>
                     <Breadcrumbs title="TABLES" breadcrumbItem="OTHER RECEIPTS" />
@@ -401,6 +414,11 @@ const OtherReceiptList = () => {
                                                                             : null
                                                                     }
                                                                     isDisabled={!!formData.order}
+                                                                    menuPortalTarget={document.body} 
+                                                                    styles={{
+                                                                        menuPortal: base => ({ ...base, zIndex: 9999 }),
+                                                                        menu: base => ({ ...base, zIndex: 9999 })
+                                                                    }}
                                                                 />
                                                             </div>
                                                         </Col>
@@ -430,6 +448,11 @@ const OtherReceiptList = () => {
                                                                             : null
                                                                     }
                                                                     isDisabled={!!formData.customer}
+                                                                    menuPortalTarget={document.body} 
+                                                                    styles={{
+                                                                        menuPortal: base => ({ ...base, zIndex: 9999 }),
+                                                                        menu: base => ({ ...base, zIndex: 9999 })
+                                                                    }}
                                                                 />
                                                             </div>
                                                         </Col>

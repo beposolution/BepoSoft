@@ -4,6 +4,7 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import { Card, Col, Container, Row, CardBody, CardTitle, Table, Spinner, Input, Modal, ModalHeader, ModalBody, Label, ModalFooter, Button } from "reactstrap";
 import Paginations from '../../components/Common/Pagination';
+import Select from 'react-select';
 
 const OtherReceiptList = () => {
     const [receipts, setReceipts] = useState([])
@@ -11,9 +12,21 @@ const OtherReceiptList = () => {
     const token = localStorage.getItem("token")
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedReceipt, setSelectedReceipt] = useState(null);
-    const [formData, setFormData] = useState({ bank: '', amount: '' });
+    const [formData, setFormData] = useState({
+        bank: '',
+        amount: '',
+        payment_receipt: '',
+        created_by_name: '',
+        transactionID: '',
+        remark: '',
+        received_at: '',
+        customer: '',
+        order: '',
+    });
     const [modalLoading, setModalLoading] = useState(false);
     const [banks, setBanks] = useState([]);
+    const [orders, setOrders] = useState([]);
+    const [customers, setCustomers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const perPageData = 10;
@@ -25,13 +38,45 @@ const OtherReceiptList = () => {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 if (response?.status === 200) {
-                    setBanks(response.data.data);
+                    setBanks(response?.data?.data);
                 }
             } catch (error) {
                 toast.error("Error fetching banks:");
             }
         };
         fetchBanks();
+    }, []);
+
+    useEffect(() => {
+        const fetchOrders = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}orders/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (response?.status === 200) {
+                    setOrders(response?.data?.results);
+                }
+            } catch (error) {
+                toast.error("Error fetching banks:");
+            }
+        };
+        fetchOrders();
+    }, []);
+
+    useEffect(() => {
+        const fetchCustomers = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}customers/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (response.status === 200) {
+                    setCustomers(response?.data?.data);
+                }
+            } catch (error) {
+                toast.error('Error fetching bank data:');
+            }
+        };
+        fetchCustomers();
     }, []);
 
     const fetchReceiptData = async () => {
@@ -78,30 +123,77 @@ const OtherReceiptList = () => {
 
     const handleUpdate = async () => {
         try {
-            const response = await axios.put(
-                `${import.meta.env.VITE_APP_KEY}bankreceipt/view/${selectedReceipt.id}/`,
-                {
-                    payment_receipt: formData.payment_receipt,
+            let shouldDeleteOriginalReceipt = false;
+
+            if (formData.customer) {
+                const response = await axios.post(`${import.meta.env.VITE_APP_KEY}advancereceipt/`, {
                     bank: formData.bank,
                     amount: formData.amount,
-                    transactionID: formData.transactionID,
                     received_at: formData.received_at,
+                    transactionID: formData.transactionID,
                     remark: formData.remark,
-                    created_by: selectedReceipt.created_by,
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json"
+                    customer: formData.customer,
+                }, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                toast.success("Advance Receipt created successfully");
+                shouldDeleteOriginalReceipt = true;
+
+            } else if (formData.order) {
+                const response = await axios.post(`${import.meta.env.VITE_APP_KEY}payment/${formData.order}/reciept/`, {
+                    bank: formData.bank,
+                    amount: formData.amount,
+                    received_at: formData.received_at,
+                    transactionID: formData.transactionID,
+                    remark: formData.remark,
+                }, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                toast.success("Order Receipt created successfully");
+                shouldDeleteOriginalReceipt = true;
+            } else {
+                // Regular PUT update
+                const response = await axios.put(
+                    `${import.meta.env.VITE_APP_KEY}bankreceipt/view/${selectedReceipt.id}/`,
+                    {
+                        payment_receipt: formData.payment_receipt,
+                        bank: formData.bank,
+                        amount: formData.amount,
+                        transactionID: formData.transactionID,
+                        received_at: formData.received_at,
+                        remark: formData.remark,
+                        created_by: selectedReceipt.created_by,
+                    },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json"
+                        }
                     }
+                );
+
+                if (response.status === 200 || response.status === 204) {
+                    toast.success("Receipt updated successfully!");
+                    fetchReceiptData();
                 }
-            );
-            if (response.status === 200 || response.status === 204) {
-                toast.success("Receipt updated successfully!");
-                setModalOpen(false);
-                fetchReceiptData();
             }
+
+            // 🔥 DELETE only if conversion to advance/order receipt was successful
+            if (shouldDeleteOriginalReceipt && selectedReceipt?.id) {
+                await axios.delete(`${import.meta.env.VITE_APP_KEY}bankreceipt/view/${selectedReceipt.id}/`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                toast.success("Original bank receipt deleted.");
+                fetchReceiptData(); // refresh the list
+            }
+
+            setModalOpen(false);
         } catch (error) {
+            console.error("Error:", error);
             toast.error("Failed to update receipt.");
         }
     };
@@ -119,6 +211,21 @@ const OtherReceiptList = () => {
         (item.bank_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.created_by_name || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const resetForm = () => {
+        setFormData({
+            bank: '',
+            amount: '',
+            payment_receipt: '',
+            created_by_name: '',
+            transactionID: '',
+            remark: '',
+            received_at: '',
+            customer: '',
+            order: '',
+        });
+        setSelectedReceipt(null);
+    };
 
     const indexOfLastItem = currentPage * perPageData;
     const indexOfFirstItem = indexOfLastItem - perPageData;
@@ -275,6 +382,39 @@ const OtherReceiptList = () => {
                                                             </div>
                                                         </Col>
                                                     </Row>
+                                                    <Row>
+                                                        <Col md={6}>
+                                                            <div className="mb-3">
+                                                                <Label>Select Customer</Label>
+                                                                <Select
+                                                                    options={customers.map(c => ({ label: c.name, value: c.id }))}
+                                                                    onChange={(selected) => setFormData(prev => ({
+                                                                        ...prev,
+                                                                        customer: selected?.value || ''
+                                                                    }))}
+                                                                    isClearable
+                                                                    placeholder="Choose Customer"
+                                                                />
+                                                            </div>
+                                                        </Col>
+                                                        <Col md={6}>
+                                                            <div className="mb-3">
+                                                                <Label>Select Order</Label>
+                                                                <Select
+                                                                    options={orders.map(order => ({
+                                                                        label: `${order.invoice} - ${order.customer?.name} - ₹${order.total_amount}`,
+                                                                        value: order.id
+                                                                    }))}
+                                                                    onChange={(selected) => setFormData(prev => ({
+                                                                        ...prev,
+                                                                        order: selected?.value || ''
+                                                                    }))}
+                                                                    isClearable
+                                                                    placeholder="Choose Order"
+                                                                />
+                                                            </div>
+                                                        </Col>
+                                                    </Row>
                                                 </>
                                             )}
                                         </ModalBody>
@@ -282,7 +422,13 @@ const OtherReceiptList = () => {
                                             <Button color="primary" onClick={handleUpdate}>
                                                 Update Receipt
                                             </Button>
-                                            <Button color="secondary" onClick={() => setModalOpen(false)}>
+                                            <Button
+                                                color="secondary"
+                                                onClick={() => {
+                                                    setModalOpen(false);
+                                                    resetForm();  // reset all form fields
+                                                }}
+                                            >
                                                 Cancel
                                             </Button>
                                         </ModalFooter>

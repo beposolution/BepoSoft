@@ -414,7 +414,7 @@ const VariantProductCreateForm = () => {
                                                         <th>VARIATION</th>
                                                         <th>STOCK</th>
                                                         <th>CREATED USER</th>
-                                                        <th>DELETE</th>
+                                                        {/* <th>DELETE</th> */}
                                                         <th>EDIT</th>
                                                     </tr>
                                                 </thead>
@@ -443,7 +443,7 @@ const VariantProductCreateForm = () => {
                                                                 <td>{item.size || 'N/A'} - {item.color || 'N/A'}</td>
                                                                 <td>{item.stock}</td>
                                                                 <td>{item.created_user}</td>
-                                                                <td>
+                                                                {/* <td>
                                                                     <button
                                                                         type="button"
                                                                         className="btn btn-light btn-sm"
@@ -451,7 +451,7 @@ const VariantProductCreateForm = () => {
                                                                     >
                                                                         Delete
                                                                     </button>
-                                                                </td>
+                                                                </td> */}
                                                                 <td>
                                                                     <Link to={`/ecommerce-product-edit/${item.id}/`}>
                                                                         <button type="button" className="btn btn-light btn-sm">Edit</button>

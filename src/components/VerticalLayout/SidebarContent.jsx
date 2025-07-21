@@ -197,24 +197,7 @@ const SidebarContent = (props) => {
               </Link>
             </li> */}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'CSO' ? (
-              <li>
-                <Link to="/#" className="has-arrow">
-                  <FaUserTie size={17} style={{ marginRight: '6px' }} />
-                  <span>{props.t("Staff")}</span>
-                </Link>
-                <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/all-staffs">{props.t("Staffs")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/add-staffs">{props.t("Add Staff")}</Link>
-                  </li>
 
-                </ul>
-              </li>
-
-            ) : null}
 
             {role === 'BDO' ? (
               <li>
@@ -284,30 +267,6 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
-              <li>
-                <Link to="/#" className="has-arrow">
-                  <AiFillProduct size={17} style={{ marginRight: '6px' }} />
-                  <span>{props.t("purchase")}</span>
-                </Link>
-                <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/add/products/">{props.t("Purchase")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/add/products/bulk/">{props.t("Bulk Order Creation")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/product/list/">{props.t("Purchase List")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/product/add-excel/">{props.t("Excel upload products")}</Link>
-                  </li>
-                </ul>
-              </li>
-            ) : null}
-
             {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'Marketing' || role === 'CEO' || role === 'CSO' ? (
 
               <li>
@@ -321,91 +280,6 @@ const SidebarContent = (props) => {
                   </li>
                   <li>
                     <Link to="/add-customers/">{props.t("Add Customers")}</Link>
-                  </li>
-                </ul>
-              </li>
-            ) : null}
-
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
-
-
-              <li>
-                <Link to="/#" className="has-arrow">
-                  <FaUsers size={20} style={{ marginRight: '8px' }} />
-                  <span>{props.t("Supervisor")}</span>
-                </Link>
-                <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/all-supervisors/">{props.t("Supervisors")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/add-supervisors/">{props.t("add Supervisors")}</Link>
-                  </li>
-                </ul>
-              </li>
-
-            ) : null}
-
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
-
-              <li>
-                <Link to="/#" className="has-arrow">
-                  <FaUsers size={20} style={{ marginRight: '8px' }} />
-                  <span>{props.t("States")}</span>
-                </Link>
-                <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/all-states/">{props.t("States")}</Link>
-                  </li>
-                </ul>
-              </li>
-
-            ) : null}
-
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
-
-
-              <li>
-                <Link to="/#" className="has-arrow">
-                  <MdLocalFireDepartment size={20} style={{ marginRight: '8px' }} />
-                  <span>{props.t("Department")}</span>
-                </Link>
-                <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/all-departments/">{props.t("Departments")}</Link>
-                  </li>
-                </ul>
-              </li>
-            ) : null}
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
-
-
-              <li>
-                <Link to="/#" className="has-arrow">
-                  <FaUsers size={20} style={{ marginRight: '8px' }} />
-                  <span>{props.t("Division")}</span>
-                </Link>
-                <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/all-families/">{props.t("Divisions")}</Link>
-                  </li>
-                </ul>
-              </li>
-            ) : null}
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
-
-
-              <li>
-                <Link to="/#" className="has-arrow">
-                  <FaUsers size={20} style={{ marginRight: '8px' }} />
-                  <span>{props.t("Attribute")}</span>
-                </Link>
-                <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/attributes/">{props.t("attribute")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/attribute-values/">{props.t("attribute-values")}</Link>
                   </li>
                 </ul>
               </li>
@@ -430,7 +304,6 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-
             {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'BDO' || role === "BDM" || role === 'CEO' || role === 'CSO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
@@ -448,63 +321,30 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-
             {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
-
               <li>
                 <Link to="/#" className="has-arrow">
-                  <BiSolidBank size={20} style={{ marginRight: '8px' }} />
-                  <span>{props.t("Bank")}</span>
+                  <AiFillProduct size={17} style={{ marginRight: '6px' }} />
+                  <span>{props.t("purchase")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
                   <li>
-                    <Link to="/add/bank/">{props.t("Add Bank")}</Link>
+                    <Link to="/add/products/">{props.t("Purchase")}</Link>
                   </li>
                   <li>
-                    <Link to="/bank/datas/">{props.t("Bank List")}</Link>
+                    <Link to="/add/products/bulk/">{props.t("Bulk Order Creation")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/product/list/">{props.t("Purchase List")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/product/add-excel/">{props.t("Excel upload products")}</Link>
                   </li>
                 </ul>
               </li>
             ) : null}
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
 
-              <li>
-                <Link to="/#" className="has-arrow">
-                  <GrOrganization size={20} style={{ marginRight: '8px' }} />
-                  <span>{props.t("Company")}</span>
-                </Link>
-                <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/add/beposoft/company/details/">{props.t("Add company")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/beposoft/companies/">{props.t("Companies")}</Link>
-                  </li>
-                </ul>
-              </li>
-            ) : null}
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'Warehouse Admin' || role === 'warehouse' || role === 'CEO' || role === 'CSO' ? (
-
-              <li>
-                <Link to="/#" className="has-arrow">
-                  <MdAssignmentReturn size={20} style={{ marginRight: '8px' }} />
-                  <span>{props.t("GRV")}</span>
-                </Link>
-                <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/beposoft/new/grv/">{props.t("new grv")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/beposoft/grv/view/">{props.t("grv list")}</Link>
-                  </li>
-
-                </ul>
-              </li>
-
-            ) : null}
             {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'Warehouse Admin' || role === 'warehouse' || role === 'CEO' ? (
-
-
               <li>
                 <Link to="/#" className="has-arrow">
                   <MdDetails size={20} style={{ marginRight: '8px' }} />
@@ -521,90 +361,6 @@ const SidebarContent = (props) => {
                 </ul>
               </li>
             ) : null}
-
-            {role === 'Warehouse Admin' || role === 'warehouse' ? (
-              <li>
-                <Link to="/#" className="has-arrow">
-                  <FaUsers size={20} style={{ marginRight: '8px' }} />
-                  <span>{props.t("Orders")}</span>
-                </Link>
-                <ul className="sub-menu" aria-expanded="false">
-                  <li><Link to="/Orders/">{props.t("Waiting For Packing")}</Link></li>
-                  <li><Link to="/Orders2">{props.t("Waiting For Shipping")}</Link></li>
-                </ul>
-              </li>
-
-
-            ) : null}
-
-
-
-            {/* {role === 'ADMIN' || role === 'ACCOUNTS' || role === 'Warehouse Admin' ? (
-
-
-<li>
-<Link to="/order/warehousee/" className=" ">
-  <i className="bx bx-box"></i>
-  <span>{props.t("order request")}</span>
-</Link>
-</li>
-
-) : null} */}
-
-
-
-            {(role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO') && (
-              <>
-                {/* Expense Section */}
-                <li>
-                  <Link to="/#" className="has-arrow">
-                    <GiExpense size={20} style={{ marginRight: '8px' }} />
-                    <span>{props.t("Expense")}</span>
-                  </Link>
-                  <ul className="sub-menu" aria-expanded="false">
-                    <li>
-                      <Link to="/add/expense/">{props.t("Add Expense")}</Link>
-                    </li>
-                    <li>
-                      <Link to="/expense/list/">{props.t("Expenses")}</Link>
-                    </li>
-                    <li>
-                      <Link to="/expense/add-category/">{props.t("Add category")}</Link>
-                    </li>
-                    <li>
-                      <Link to="/expense/add-expanse-modal/">{props.t("add expanse type")}</Link>
-                    </li>
-                  </ul>
-                </li>
-
-                {/* parcel srvice Section */}
-                <li>
-                  <Link to="/#" className="has-arrow">
-                    <GiPostOffice size={20} style={{ marginRight: '8px' }} />
-                    <span>{props.t("Parcel Service")}</span>
-                  </Link>
-                  <ul className="sub-menu" aria-expanded="false">
-                    <li>
-                      <Link to="/add/parcel/service/">{props.t("Add Parcel Service")}</Link>
-                    </li>
-                  </ul>
-                </li>
-
-                {/* Warehouse Section */}
-                <li>
-                  <Link to="/#" className="has-arrow">
-                    <FaWarehouse size={20} style={{ marginRight: '8px' }} />
-                    <span>{props.t("Warehouse")}</span>
-                  </Link>
-                  <ul className="sub-menu" aria-expanded="false">
-                    <li>
-                      <Link to="/add/warehouse/">{props.t("Add Warehouse")}</Link>
-                    </li>
-
-                  </ul>
-                </li>
-              </>
-            )}
 
             {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'CEO' ? (
               <li>
@@ -638,8 +394,191 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'CSO' ? (
+            {(role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO') && (
+              <>
+                {/* Expense Section */}
+                <li>
+                  <Link to="/#" className="has-arrow">
+                    <GiExpense size={20} style={{ marginRight: '8px' }} />
+                    <span>{props.t("Expense")}</span>
+                  </Link>
+                  <ul className="sub-menu" aria-expanded="false">
+                    <li>
+                      <Link to="/add/expense/">{props.t("Add Expense")}</Link>
+                    </li>
+                    <li>
+                      <Link to="/expense/list/">{props.t("Expenses")}</Link>
+                    </li>
+                    <li>
+                      <Link to="/expense/add-category/">{props.t("Add category")}</Link>
+                    </li>
+                    <li>
+                      <Link to="/expense/add-expanse-modal/">{props.t("add expanse type")}</Link>
+                    </li>
+                  </ul>
+                </li>
+              </>
+            )}
 
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'Warehouse Admin' || role === 'warehouse' || role === 'CEO' || role === 'CSO' ? (
+
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <MdAssignmentReturn size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("GRV")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li>
+                    <Link to="/beposoft/new/grv/">{props.t("new grv")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/beposoft/grv/view/">{props.t("grv list")}</Link>
+                  </li>
+
+                </ul>
+              </li>
+
+            ) : null}
+
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("Attribute")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li>
+                    <Link to="/attributes/">{props.t("attribute")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/attribute-values/">{props.t("attribute-values")}</Link>
+                  </li>
+                </ul>
+              </li>
+            ) : null}
+
+            {(role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO') && (
+              <>
+                {/* parcel srvice Section */}
+                <li>
+                  <Link to="/#" className="has-arrow">
+                    <GiPostOffice size={20} style={{ marginRight: '8px' }} />
+                    <span>{props.t("Parcel Service")}</span>
+                  </Link>
+                  <ul className="sub-menu" aria-expanded="false">
+                    <li>
+                      <Link to="/add/parcel/service/">{props.t("Add Parcel Service")}</Link>
+                    </li>
+                  </ul>
+                </li>
+
+                {/* Warehouse Section */}
+                <li>
+                  <Link to="/#" className="has-arrow">
+                    <FaWarehouse size={20} style={{ marginRight: '8px' }} />
+                    <span>{props.t("Warehouse")}</span>
+                  </Link>
+                  <ul className="sub-menu" aria-expanded="false">
+                    <li>
+                      <Link to="/add/warehouse/">{props.t("Add Warehouse")}</Link>
+                    </li>
+
+                  </ul>
+                </li>
+              </>
+            )}
+
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <MdLocalFireDepartment size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("Department")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li>
+                    <Link to="/all-departments/">{props.t("Departments")}</Link>
+                  </li>
+                </ul>
+              </li>
+            ) : null}
+
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("Division")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li>
+                    <Link to="/all-families/">{props.t("Divisions")}</Link>
+                  </li>
+                </ul>
+              </li>
+            ) : null}
+
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <BiSolidBank size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("Bank")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li>
+                    <Link to="/add/bank/">{props.t("Add Bank")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/bank/datas/">{props.t("Bank List")}</Link>
+                  </li>
+                </ul>
+              </li>
+            ) : null}
+
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <GrOrganization size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("Company")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li>
+                    <Link to="/add/beposoft/company/details/">{props.t("Add company")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/beposoft/companies/">{props.t("Companies")}</Link>
+                  </li>
+                </ul>
+              </li>
+            ) : null}
+
+            {role === 'Warehouse Admin' || role === 'warehouse' ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("Orders")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li><Link to="/Orders/">{props.t("Waiting For Packing")}</Link></li>
+                  <li><Link to="/Orders2">{props.t("Waiting For Shipping")}</Link></li>
+                </ul>
+              </li>
+            ) : null}
+
+
+
+            {/* {role === 'ADMIN' || role === 'ACCOUNTS' || role === 'Warehouse Admin' ? (
+
+
+<li>
+<Link to="/order/warehousee/" className=" ">
+  <i className="bx bx-box"></i>
+  <span>{props.t("order request")}</span>
+</Link>
+</li>
+
+) : null} */}
+
+
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'CSO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <TbReportSearch size={20} style={{ marginRight: '8px' }} />
@@ -690,8 +629,56 @@ const SidebarContent = (props) => {
                   </li>
                 </ul>
               </li>
+            ) : null}
 
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'CSO' ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaUserTie size={17} style={{ marginRight: '6px' }} />
+                  <span>{props.t("Staff")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li>
+                    <Link to="/all-staffs">{props.t("Staffs")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/add-staffs">{props.t("Add Staff")}</Link>
+                  </li>
 
+                </ul>
+              </li>
+
+            ) : null}
+
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("Supervisor")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li>
+                    <Link to="/all-supervisors/">{props.t("Supervisors")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/add-supervisors/">{props.t("add Supervisors")}</Link>
+                  </li>
+                </ul>
+              </li>
+            ) : null}
+
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("States")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li>
+                    <Link to="/all-states/">{props.t("States")}</Link>
+                  </li>
+                </ul>
+              </li>
             ) : null}
 
             {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
@@ -700,14 +687,12 @@ const SidebarContent = (props) => {
                   <BiCheckDouble size={20} style={{ marginRight: '8px' }} />
                   <span>{props.t("Add Emi")}</span>
                 </Link>
-
                 <ul>
                   <li>
                     <Link to="/add-emi/" >
                       <BiCheckDouble size={20} style={{ marginRight: '8px' }} />
                       <span>{props.t("Add Emi")}</span>
                     </Link>
-
                   </li>
                   <Link to="/emi-report/" >
                     <LuCircleCheckBig size={20} style={{ marginRight: '8px' }} />
@@ -715,8 +700,6 @@ const SidebarContent = (props) => {
                   </Link>
                 </ul>
               </li>
-
-
             ) : null}
 
             {role === 'Warehouse Admin' || role === 'ADMIN' || role === 'CEO' || role === "Accounts / Accounting" ? (
@@ -726,8 +709,6 @@ const SidebarContent = (props) => {
                   <span>{props.t("products Waiting For Confirmation")}</span>
                 </Link>
               </li>
-
-
             ) : null}
 
             {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
@@ -736,34 +717,26 @@ const SidebarContent = (props) => {
                   <GiBassetHoundHead size={20} style={{ marginRight: '8px' }} />
                   <span>{props.t("Compony Asset Information")}</span>
                 </Link>
-
                 <ul>
                   <li>
                     <Link to="/profile/asset/" >
                       <MdOutlineVideogameAsset size={20} style={{ marginRight: '8px' }} />
                       <span>{props.t("Assets")}</span>
                     </Link>
-
                   </li>
-
                   <Link to="/profile/liability/" >
                     <LuCircleCheckBig size={20} style={{ marginRight: '8px' }} />
                     <span>{props.t("Liability Information")}</span>
                   </Link>
-
                   <li>
                     <Link to="/profile/total/assets/" >
                       <IoMdInformationCircleOutline size={20} style={{ marginRight: '8px' }} />
                       <span>{props.t("compony profile summary")}</span>
                     </Link>
-
                   </li>
                 </ul>
               </li>
-
-
             ) : null}
-
           </ul>
         </div>
       </SimpleBar>

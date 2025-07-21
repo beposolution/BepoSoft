@@ -128,24 +128,72 @@ const TrackingReport = () => {
     const currentData = flattenedData.slice(indexOfFirstItem, indexOfLastItem);
 
     const exportToExcel = () => {
-        const excelData = flattenedData.map(({ tracking, warehouse }, i) => ({
-            "#": i + 1,
-            Date: tracking.order_date,
-            Invoice: tracking.invoice,
-            Customer: tracking.customerName,
-            "Invoice Amount": tracking.total_amount,
-            "Tracking Amount": warehouse?.parcel_amount || "--",
-            "Tracking ID": warehouse?.tracking_id || "--",
-            "Parcel Service": warehouse?.parcel_service || "--",
-            "Post Office Weight": warehouse?.weight || "0.00",
-            "Actual Weight": warehouse?.actual_weight || "0.00",
-            "Volume Weight": warehouse?.volume_weight || "0.00",
-            Box: warehouse?.box || "--",
-            Average: warehouse?.average || "--",
-        }));
-
-        const worksheet = XLSX.utils.json_to_sheet(excelData);
         const workbook = XLSX.utils.book_new();
+        const sheetData = [];
+
+        // Title
+        sheetData.push(["ORDER TRACKING REPORT"]);
+        sheetData.push([]);
+
+        // Column Headers
+        const tableHeaders = [
+            "#", "Date", "Invoice", "Customer", "Invoice Amount", "Tracking Amount",
+            "Tracking ID", "Parcel Service", "Post Office Weight",
+            "Actual Weight", "Volume Weight", "Box", "Average"
+        ];
+
+        // Group data by Parcel Service
+        const grouped = flattenedData.reduce((acc, entry) => {
+            const service = entry.warehouse?.parcel_service || "UNKNOWN";
+            if (!acc[service]) acc[service] = [];
+            acc[service].push(entry);
+            return acc;
+        }, {});
+
+        Object.entries(grouped).forEach(([service, entries]) => {
+            sheetData.push([service]); // Group title
+            sheetData.push(tableHeaders); // Headers for each group
+
+            entries.forEach(({ tracking, warehouse }, idx) => {
+                sheetData.push([
+                    idx + 1,
+                    tracking.order_date,
+                    tracking.invoice,
+                    tracking.customerName,
+                    tracking.total_amount,
+                    warehouse?.parcel_amount || "--",
+                    warehouse?.tracking_id || "--",
+                    warehouse?.parcel_service || "--",
+                    warehouse?.weight || "0.00",
+                    warehouse?.actual_weight || "0.00",
+                    warehouse?.volume_weight || "0.00",
+                    warehouse?.box || "--",
+                    warehouse?.average || "--"
+                ]);
+            });
+
+            sheetData.push([]); // Gap between parcel groups
+        });
+
+        // Add Summary Section
+        sheetData.push([]);
+        sheetData.push(["Summary"]);
+        sheetData.push(["Total Invoice Amount", totals.invoiceAmount.toFixed(2), "Total Tracking Amount", totals.trackingAmount.toFixed(2)]);
+        sheetData.push(["Total Post Office Weight", totals.postWeight.toFixed(2), "Total Actual Weight", totals.actualWeight.toFixed(2)]);
+        sheetData.push(["Total Volume Weight", totals.volumeWeight.toFixed(2), "Total Average", totals.totalAverage.toFixed(2)]);
+        sheetData.push(["Total Boxes", totals.boxCount, "Total Parcel Services", Object.keys(totals.parcelServices).length]);
+
+        // Add Parcel Service-wise Count Section
+        sheetData.push([]);
+        sheetData.push(["Parcel Service-wise Count"]);
+        sheetData.push(["Parcel Service", "Count"]);
+        Object.entries(totals.parcelServices).forEach(([service, count]) => {
+            sheetData.push([service, count]);
+        });
+        sheetData.push(["Total", totalParcelServiceCount]);
+
+        // Create Sheet and Export
+        const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
         XLSX.utils.book_append_sheet(workbook, worksheet, "Tracking Report");
         XLSX.writeFile(workbook, "Tracking_Report.xlsx");
     };

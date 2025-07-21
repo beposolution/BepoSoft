@@ -21,6 +21,7 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
     const [expandedProductId, setExpandedProductId] = useState(null);
     const [quantity, setQuantity] = useState({});
     const token = localStorage.getItem("token");
+    const [lockedInvoices, setLockedInvoices] = useState({});
 
 
     const fetchProducts = async () => {
@@ -58,6 +59,20 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
         }
     };
 
+    const fetchLockedInvoices = async (productId) => {
+        try {
+            const res = await axios.get(`${import.meta.env.VITE_APP_KEY}product/${productId}/locked-invoices/`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setLockedInvoices((prev) => ({
+                ...prev,
+                [productId]: res.data.locked_invoices || []
+            }));
+        } catch (err) {
+            console.error('Failed to fetch locked invoices', err);
+        }
+    };
+
     const fetchwarehouseProduct = async () => {
         setLoading(true);
         setError(null);
@@ -70,7 +85,7 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
                 },
             });
 
-            const data = response.data; 
+            const data = response.data;
 
             // Ensure the response contains `data` and it is an array
             if (data && Array.isArray(data.data)) {
@@ -103,7 +118,12 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
     };
 
     const toggleExpand = (productId) => {
-        setExpandedProductId(expandedProductId === productId ? null : productId);
+        if (expandedProductId === productId) {
+            setExpandedProductId(null);
+        } else {
+            fetchLockedInvoices(productId);  // Fetch when expanding
+            setExpandedProductId(productId);
+        }
     };
 
     const handleQuantityChange = (productId, value) => {
@@ -212,7 +232,7 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
                                         // Parent product row (only if stock > 0)
                                         if (product.stock > 0) {
                                             rows.push(
-                                                <tr key={`parent-${product.id}`}>
+                                                <tr key={`parent-${product.id}`} onClick={() => toggleExpand(product.id)} style={{ cursor: "pointer" }}>
                                                     <td>{index + 1}</td>
                                                     <td><img src={`${import.meta.env.VITE_APP_IMAGE}${product.image}`} style={{ width: "50px", height: "50px" }} alt={product.name} /></td>
                                                     <td>{product.name}</td>
@@ -236,6 +256,26 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
                                                     </td>
                                                 </tr>
                                             );
+
+                                            //  details of locked stocks (invoices, quantity, date, status)
+                                            if (expandedProductId === product.id && lockedInvoices[product.id]?.length > 0) {
+                                                rows.push(
+                                                    <tr key={`locked-${product.id}`}>
+                                                        <td colSpan="8">
+                                                            <div style={{ backgroundColor: "#f8f9fa", padding: "10px", borderRadius: "5px" }}>
+                                                                <strong>🔒 Locked by Invoices:</strong>
+                                                                <ul style={{ marginTop: 5, paddingLeft: 20 }}>
+                                                                    {lockedInvoices[product.id].map((inv, idx) => (
+                                                                        <li key={idx}>
+                                                                            🧾 <b>{inv.invoice}</b> — 🔢: <strong> {inv.quantity_locked}</strong>, 📦: {inv.status}, 📅: {inv.order_date}
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            }
                                         }
 
                                         // Variant rows (only if stock > 0)

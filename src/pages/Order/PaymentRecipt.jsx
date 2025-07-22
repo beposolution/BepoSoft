@@ -7,7 +7,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 
-const ReceiptFormPage = ({ closingBalance }) => {
+const ReceiptFormPage = ({ closingBalance, billingPhone }) => {
     const { id } = useParams();
     const [packing, setPacking] = useState([]);
     const [paymentRecipts, setPaymentRecipts] = useState([]);
@@ -146,6 +146,48 @@ const ReceiptFormPage = ({ closingBalance }) => {
         return receipts.reduce((sum, receipt) => {
             return sum + Number(receipt.amount || 0);
         }, 0);
+    };
+
+    const sendTracking = async (box) => {
+        const customerName = box.customer_name || box.customer;
+        const phoneNumber = billingPhone;
+        const invoiceNumber = box.invoice || id;
+        const trackingId = box.tracking_id;
+
+        if (!customerName || !phoneNumber || !invoiceNumber || !trackingId) {
+            toast.error("Missing required data. Please check name, phone, invoice or tracking ID.");
+            return;
+        }
+
+        const payload = {
+            name: customerName,
+            phone: phoneNumber,
+            order_id: invoiceNumber,
+            tracking_id: trackingId,
+        };
+
+        try {
+            const token = localStorage.getItem("token");
+            const response = await axios.post(
+                `${import.meta.env.VITE_APP_KEY}sendtrackingid/`,
+                payload,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            if (response.status === 200) {
+                toast.success("Tracking SMS sent successfully");
+            } else {
+                toast.error("SMS sending failed");
+            }
+        } catch (error) {
+            console.error("SMS Error:", error.response?.data || error.message);
+            toast.error("Error sending SMS. Try again.");
+        }
     };
 
     return (
@@ -362,9 +404,11 @@ const ReceiptFormPage = ({ closingBalance }) => {
                                                             <th>BOX</th>
                                                             <th>PARCEL SERVICE</th>
                                                             <th>TRACKING ID</th>
-                                                            <th>ParcelAmount</th>
-                                                            <th>Date</th>
-                                                            <th>Edit</th>
+                                                            {/* <th>STATUS</th> */}
+                                                            <th>PARCEL AMOUNT</th>
+                                                            <th>DATE</th>
+                                                            <th>EDIT</th>
+                                                            <th>SMS</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -375,6 +419,7 @@ const ReceiptFormPage = ({ closingBalance }) => {
                                                                     <td>{packedItems.box}</td>
                                                                     <td>{packedItems.parcel_service || 'N/A'}</td>
                                                                     <td>{packedItems.tracking_id || 'N/A'}</td>
+                                                                    {/* <td>{packedItems.status || 'N/A'}</td> */}
                                                                     {packedItems.parcel_amount ? (
                                                                         <td>{packedItems.parcel_amount}</td>
                                                                     ) : (
@@ -384,6 +429,15 @@ const ReceiptFormPage = ({ closingBalance }) => {
                                                                     <th>
                                                                         <button onClick={() => productModal(packedItems.id)} className="btn btn-primary">Edit</button>
                                                                     </th>
+                                                                    {packedItems.status === "Shipped" ? (
+                                                                        <td>
+                                                                            <button className="btn btn-success btn-sm" onClick={() => sendTracking(packedItems)}>
+                                                                                Send SMS
+                                                                            </button>
+                                                                        </td>
+                                                                    ) : (
+                                                                        <td>-</td>
+                                                                    )}
                                                                 </tr>
                                                             ))
                                                         ) : (

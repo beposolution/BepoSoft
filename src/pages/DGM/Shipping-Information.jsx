@@ -87,23 +87,45 @@ const BasicTable = () => {
     };
 
     const sendTracking = async (index) => {
+        const item = editableData[index];
+        const customerName = item.customer_name || warehouseData[0]?.customer;
+        const phoneNumber = item.phone || warehouseData[0]?.phone;
+        const invoiceNumber = item.invoice || warehouseData[0]?.invoice;
+        const trackingId = item.tracking_id;
+
+        // Validate required fields
+        if (!customerName || !phoneNumber || !invoiceNumber || !trackingId) {
+            toast.error("Missing required data. Please check name, phone, invoice or tracking ID.");
+            return;
+        }
+
+        const payload = {
+            name: customerName,
+            phone: phoneNumber,
+            order_id: invoiceNumber,
+            tracking_id: trackingId,
+        };
+
         try {
             const response = await axios.post(
                 `${import.meta.env.VITE_APP_KEY}sendtrackingid/`,
+                payload,
                 {
-                    tracking_id: editableData[index].tracking_id,
-                    name: warehouseData[0]?.customer,
-                    order_id: warehouseData[0]?.invoice,
-                    phone: warehouseData[0]?.phone
-                },
-                {
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
                 }
             );
+
             if (response.status === 200) {
-                toast.success("SMS sent successfully");
+                toast.success("Tracking SMS sent successfully");
+                // Optionally update message_status in frontend here
+            } else {
+                toast.error("SMS sending failed");
             }
         } catch (error) {
+            console.error("SMS Error:", error.response?.data || error.message);
             toast.error("Error sending SMS. Try again.");
         }
     };
@@ -135,7 +157,7 @@ const BasicTable = () => {
                                         <th>Shipped Date</th>
                                         <th>Action</th>
                                         <th>Delete</th>
-                                        <th>SMS</th>
+                                        {/* <th>SMS</th> */}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -218,18 +240,13 @@ const BasicTable = () => {
                                                     Delete
                                                 </Button>
                                             </td>
-                                            <td>
+                                            {/* <td>
                                                 {item.status === "Shipped" && (
-                                                    <Button
-                                                        color="success"
-                                                        onClick={() =>
-                                                            sendTracking(index)
-                                                        }
-                                                    >
+                                                    <Button color="success" onClick={() => sendTracking(index)}>
                                                         Send SMS
                                                     </Button>
                                                 )}
-                                            </td>
+                                            </td> */}
                                         </tr>
                                     ))}
                                 </tbody>

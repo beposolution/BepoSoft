@@ -365,6 +365,7 @@ import OtherReceiptList from "../pages/Receipts/OtherReceiptList";
 import AddParcelService from "../pages/ParcelServices/AddParcelService";
 import MonthlySalesReport from "../pages/Resports/MonthlySalesReport";
 import TrackingReport from "../pages/Resports/TrackingReport";
+import DivisionWiseReport from "../pages/Resports/DivisionWiseReport";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -589,6 +590,7 @@ const authProtectedRoutes = [
   { path: "/Delivery/report/", component: <DeliveryReports /> },
   { path: "/delivery/:date/reports/", component: <DeliveryReportsDeliverdOrdes /> },
   { path: "/product/sold/report/", component: <ProductSalesReport /> },
+  { path: "/division/wise/report/", component: <DivisionWiseReport /> },
 
   //   //Blog
   { path: "/blog-list", component: <BlogList /> },

@@ -355,7 +355,7 @@ const FormLayouts = () => {
                                                             />
                                                         </td>
                                                         <td>{product.name}</td>
-                                                        <td>₹{product.rate ? product.rate.toFixed(2) : "0.00"}</td> {/* Fixed here */}
+                                                        <td>₹{product.rate ? product.rate : "0.00"}</td> {/* Fixed here */}
                                                         <td>1</td>
                                                         <td>
                                                             <div>
@@ -497,7 +497,7 @@ const FormLayouts = () => {
                                                         }}
                                                     />
                                                 </td>
-                                                <td>₹{product.rate.toFixed(2)}</td>
+                                                <td>₹{product?.rate}</td>
                                                 <td>{product.quantity}</td>
                                                 <td>
                                                     <Input

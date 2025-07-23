@@ -98,7 +98,8 @@ const DivisionWiseProductReport = () => {
                 const bdmBdoIds = filteredStaff.map(staff => staff.id);
 
                 const filteredReport = data.filter(entry =>
-                    bdmBdoIds.includes(entry.staff_id)
+                    bdmBdoIds.includes(entry.staff_id) &&
+                    (!selectedFamily || entry.family_name?.toLowerCase() === selectedFamily.toLowerCase())
                 );
 
                 setReportData(filteredReport);

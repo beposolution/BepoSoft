@@ -118,7 +118,7 @@ const TodaysBillDetails = () => {
                                                         <tr key={order?.id}>
                                                             <td>{index + 1}</td>
                                                             <td>
-                                                                <Link to={`/perfoma/invoice/${order.invoice}/view/`}>
+                                                                <Link to={`/order/${order.id}/items/`}>
                                                                     {order.invoice}
                                                                 </Link>
                                                             </td>

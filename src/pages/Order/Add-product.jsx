@@ -147,9 +147,12 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
 
 
     const addToCart = async (product, variant = null) => {
+        const selectedId = variant ? variant.id : product.id;
+        const selectedQuantity = quantity[selectedId] || 1;
+
         const cartItem = {
-            product: product.id,
-            quantity: variant ? quantity[variant.id] || 1 : quantity[product.id] || 1,
+            product: selectedId,
+            quantity: selectedQuantity,
         };
 
         try {
@@ -250,7 +253,12 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
                                                         />
                                                     </td>
                                                     <td>
-                                                        <Button color="success" size="sm" onClick={() => addToCart(product)} disabled={product.stock === 0}>
+                                                        <Button
+                                                            color="success"
+                                                            size="sm"
+                                                            onClick={() => addToCart(product)}
+                                                            disabled={product.stock === 0}
+                                                        >
                                                             Add
                                                         </Button>
                                                     </td>
@@ -301,7 +309,12 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
                                                                 />
                                                             </td>
                                                             <td>
-                                                                <Button color="success" size="sm" onClick={() => addToCart(product, variant)} disabled={variant.stock === 0}>
+                                                                <Button
+                                                                    color="success"
+                                                                    size="sm"
+                                                                    onClick={() => addToCart(product, variant)}
+                                                                    disabled={variant.stock === 0}
+                                                                >
                                                                     Add
                                                                 </Button>
                                                             </td>

@@ -291,9 +291,9 @@ const ChartSection = () => {
                                 <div className="card-body border-top py-3">
                                     <p className="mb-0">
                                         <span className="badge badge-soft-success me-2">
-                                            <i className="bx bx-trending-up align-bottom me-1 text-success"></i> {todayBills?.percentageValue}
+                                            {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i> {todayBills?.percentageValue} */}
                                         </span>
-                                        Increase last month
+                                        {/* Increase last month */}
                                     </p>
                                 </div>
                             </Card>
@@ -369,9 +369,9 @@ const ChartSection = () => {
                                 <div className="card-body border-top py-3">
                                     <p className="mb-0">
                                         <span className="badge badge-soft-success me-2">
-                                            <i className="bx bx-trending-up align-bottom me-1 text-success"></i> {todayBills?.percentageValue}
+                                            {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i> {todayBills?.percentageValue} */}
                                         </span>
-                                        Increase last month
+                                        {/* Increase last month */}
                                     </p>
                                 </div>
                             </Card>
@@ -397,9 +397,9 @@ const ChartSection = () => {
                             <div className="card-body border-top py-3">
                                 <p className="mb-0">
                                     <span className="badge badge-soft-success me-2">
-                                        <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{waitingForConfirmation?.percentageValue || 0}
+                                        {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{waitingForConfirmation?.percentageValue || 0} */}
                                     </span>
-                                    Increase last month
+                                    {/* Increase last month */}
                                 </p>
                             </div>
                         </Card>
@@ -425,9 +425,9 @@ const ChartSection = () => {
                                 <div className="card-body border-top py-3">
                                     <p className="mb-0">
                                         <span className="badge badge-soft-success me-2">
-                                            <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{shipped?.percentageValue || 0}
+                                            {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{shipped?.percentageValue || 0} */}
                                         </span>
-                                        Increase last month
+                                        {/* Increase last month */}
                                     </p>
                                 </div>
                             </Card>
@@ -454,9 +454,9 @@ const ChartSection = () => {
                                 <div className="card-body border-top py-3">
                                     <p className="mb-0">
                                         <span className="badge badge-soft-success me-2">
-                                            <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{proformaInvoices?.percentageValue || 0}
+                                            {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{proformaInvoices?.percentageValue || 0} */}
                                         </span>
-                                        Increase last month
+                                        {/* Increase last month */}
                                     </p>
                                 </div>
                             </Card>
@@ -482,9 +482,9 @@ const ChartSection = () => {
                             <div className="card-body border-top py-3">
                                 <p className="mb-0">
                                     <span className="badge badge-soft-success me-2">
-                                        <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{goodsReturn?.percentageValue || 0}
+                                        {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{goodsReturn?.percentageValue || 0} */}
                                     </span>
-                                    Increase last month
+                                    {/* Increase last month */}
                                 </p>
                             </div>
                         </Card>
@@ -515,9 +515,9 @@ const ChartSection = () => {
                                 <div className="card-body border-top py-3">
                                     <p className="mb-0">
                                         <span className="badge badge-soft-success me-2">
-                                            <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{grvWaitingForConfirmation?.percentageValue || 0}
+                                            {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{grvWaitingForConfirmation?.percentageValue || 0} */}
                                         </span>
-                                        Increase last month
+                                        {/* Increase last month */}
                                     </p>
                                 </div>
                             </Card>
@@ -544,9 +544,9 @@ const ChartSection = () => {
                                 <div className="card-body border-top py-3">
                                     <p className="mb-0">
                                         <span className="badge badge-soft-success me-2">
-                                            <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{waitingForApproval?.percentageValue}
+                                            {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{waitingForApproval?.percentageValue} */}
                                         </span>
-                                        Increase last month
+                                        {/* Increase last month */}
                                     </p>
                                 </div>
                             </Card>

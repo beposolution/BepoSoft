@@ -14,6 +14,7 @@ import { isDisabled } from "@testing-library/user-event/dist/cjs/utils/index.js"
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useLocation } from "react-router-dom";
+import { Link } from 'react-router-dom';
 
 const FormLayouts = () => {
 
@@ -755,6 +756,7 @@ const FormLayouts = () => {
                     <Breadcrumbs title="Forms" breadcrumbItem="ORDER PRODUCTS" />
                     <Row className="mb-3">
                         <Col className="d-flex justify-content-end gap-2">
+                            <Button color="warning" tag={Link} to="/Orders">Order List</Button>
                             <Button color="secondary" onClick={handlePrevOrder}>Previous</Button>
                             <Button color="primary" onClick={handleNextOrder}>Next</Button>
                         </Col>

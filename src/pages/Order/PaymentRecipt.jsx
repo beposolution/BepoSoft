@@ -358,8 +358,8 @@ const ReceiptFormPage = ({ closingBalance, billingPhone }) => {
                                                         <tr >
                                                             <th>#</th>
                                                             <th>BOX</th>
-                                                            <th>A.WT</th>
                                                             <th>V.WT</th>
+                                                            <th>A.WT</th>
                                                             <th>IMAGE</th>
                                                         </tr>
                                                     </thead>

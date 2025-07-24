@@ -447,6 +447,7 @@ const Movement = () => {
                                         <th style={{ border: "1px solid black" }}>Invoice No</th>
                                         <th style={{ border: "1px solid black" }}>Customer</th>
                                         <th style={{ border: "1px solid black" }}>Phone</th>
+                                        <th style={{ border: "1px solid black" }}>State</th>
                                         <th style={{ border: "1px solid black" }}>Pincode</th>
                                         <th style={{ border: "1px solid black" }}>Box</th>
                                         <th className="cod-column" style={{ border: "1px solid black", backgroundColor: "#ffeb3b" }}>COD (₹)</th>
@@ -474,6 +475,7 @@ const Movement = () => {
                                                 <td style={{ border: "1px solid black" }}><strong>{order.invoice}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.customer}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.phone}</strong></td>
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.order_state}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.zip_code}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.box}</strong></td>
                                                 <td className="cod-column" style={{ border: "1px solid black", backgroundColor: "#ffeb3b" }}><strong>{order.cod_amount}</strong></td>

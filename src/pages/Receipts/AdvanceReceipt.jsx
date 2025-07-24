@@ -150,7 +150,7 @@ const AdvanceReceipt = () => {
                                                         value={selectedCustomer}
                                                         onChange={handleCustomerChange}
                                                         options={customers.map(customer => ({
-                                                            label: customer.name,
+                                                            label: `${customer.name} (${customer.phone})`, // show name + phone
                                                             value: customer.id
                                                         }))}
                                                         isClearable
@@ -158,6 +158,7 @@ const AdvanceReceipt = () => {
                                                     />
                                                 </div>
                                             </Col>
+
                                             <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label>Transaction ID</Label>

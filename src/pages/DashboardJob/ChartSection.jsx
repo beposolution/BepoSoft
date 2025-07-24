@@ -347,7 +347,7 @@ const ChartSection = () => {
                     </Col>
                 )}
 
-                {(role === "BDM" || role === 'CSO') && (
+                {(role === "BDM" || role === 'CSO' || role === 'Marketing') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}>
                             <Card className="mini-stats-wid">

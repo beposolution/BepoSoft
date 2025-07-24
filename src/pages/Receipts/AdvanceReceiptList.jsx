@@ -20,6 +20,8 @@ const AdvanceReceiptList = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const perPageData = 10;
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
 
     useEffect(() => {
         const fetchCustomers = async () => {
@@ -134,13 +136,20 @@ const AdvanceReceiptList = () => {
         });
     };
 
-    const filteredReceipts = receipts.filter((item) =>
-        (item.payment_receipt || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.transactionID || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.customer_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.bank_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.created_by_name || "").toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredReceipts = receipts.filter((item) => {
+        const matchesSearch =
+            (item.payment_receipt || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.transactionID || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.customer_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.bank_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.created_by_name || "").toLowerCase().includes(searchTerm.toLowerCase());
+
+        const itemDate = new Date(item.received_at);
+        const isAfterStart = startDate ? itemDate >= new Date(startDate) : true;
+        const isBeforeEnd = endDate ? itemDate <= new Date(endDate) : true;
+
+        return matchesSearch && isAfterStart && isBeforeEnd;
+    });
 
     const indexOfLastItem = currentPage * perPageData;
     const indexOfFirstItem = indexOfLastItem - perPageData;
@@ -156,14 +165,44 @@ const AdvanceReceiptList = () => {
                             <Card>
                                 <CardBody>
                                     <CardTitle className="mb-4">ADVANCE RECEIPTS</CardTitle>
-                                    <div className="mb-3">
-                                        <Input
-                                            type="text"
-                                            placeholder="Search by Receipt, Transaction ID, Customer, Bank, Created By"
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                        />
-                                    </div>
+                                    <Row className="mb-3">
+                                        <Col>
+                                            <Label>Search</Label>
+                                            <Input
+                                                type="text"
+                                                placeholder="Search by Receipt, Transaction ID, Customer, Bank, Created By"
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                            />
+                                        </Col>
+                                        <Col md={3}>
+                                            <Label>Start Date</Label>
+                                            <Input
+                                                type="date"
+                                                value={startDate}
+                                                onChange={(e) => setStartDate(e.target.value)}
+                                            />
+                                        </Col>
+                                        <Col md={3}>
+                                            <Label>End Date</Label>
+                                            <Input
+                                                type="date"
+                                                value={endDate}
+                                                onChange={(e) => setEndDate(e.target.value)}
+                                            />
+                                        </Col>
+                                        <Col md={3} className="d-flex align-items-end">
+                                            <Button
+                                                color="warning"
+                                                onClick={() => {
+                                                    setStartDate('');
+                                                    setEndDate('');
+                                                }}
+                                            >
+                                                Clear Date Filter
+                                            </Button>
+                                        </Col>
+                                    </Row>
                                     {loading ? (
                                         <Spinner color="primary" />
                                     ) : (

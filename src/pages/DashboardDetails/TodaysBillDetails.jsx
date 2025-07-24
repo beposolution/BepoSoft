@@ -66,23 +66,33 @@ const TodaysBillDetails = () => {
 
     // Show all today's orders for ADMIN, otherwise only matching family
     const todaysOrders = orders.filter(order => {
+        const isToday = order.order_date === today;
+
         if (role === "ADMIN") {
-            return order.order_date === today;
-        } else {
-            // If order.family_id and userData are both IDs
-            if (order.family_id && userData) {
-                return order.order_date === today && order.family_id === userData;
-            }
-            // If order.family_name and userData are both names
-            if (order.family_name && userData) {
-                return order.order_date === today && order.family_name === userData;
-            }
-            // If order.family is an object and userData is an object with id or name
-            if (typeof order.family === "object" && typeof userData === "object") {
-                return order.order_date === today && (order.family.id === userData.id || order.family.name === userData.name);
-            }
-            return false;
+            return isToday;
         }
+
+        if (role === "CSO") {
+            // Match either cycling or skating
+            return isToday && (order.family_name === "cycling" || order.family_name === "skating");
+        }
+
+        // If order.family_id and userData are both IDs
+        if (order.family_id && userData) {
+            return isToday && order.family_id === userData;
+        }
+
+        // If order.family_name and userData are both names
+        if (order.family_name && userData) {
+            return isToday && order.family_name === userData;
+        }
+
+        // If order.family is an object and userData is an object with id or name
+        if (typeof order.family === "object" && typeof userData === "object") {
+            return isToday && (order.family.id === userData.id || order.family.name === userData.name);
+        }
+
+        return false;
     });
 
     return (

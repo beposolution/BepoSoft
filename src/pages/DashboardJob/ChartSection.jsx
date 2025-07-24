@@ -269,7 +269,7 @@ const ChartSection = () => {
                     </>
                 )}
 
-                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === 'CSO') && (
+                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === 'CSO' || role === 'Marketing') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}
                             onClick={() => navigate("/dashboard/todaysbill-details")}>

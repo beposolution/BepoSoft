@@ -8,7 +8,7 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const InternalTransfer = () => {
+const InternalTransferList = () => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
     const token = localStorage.getItem("token");
@@ -90,4 +90,4 @@ const InternalTransfer = () => {
     );
 };
 
-export default InternalTransfer;
+export default InternalTransferList;

@@ -128,7 +128,7 @@ const AverageAmountReport = () => {
                                                 <th>#</th>
                                                 <th>Date</th>
                                                 <th>Parcel Service</th>
-                                                <th>Average Amount (₹)</th>
+                                                <th>Shipping Amount (₹)</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -138,7 +138,7 @@ const AverageAmountReport = () => {
                                                         <th scope="row">{index + 1}</th>
                                                         <td>{item.postoffice_date}</td>
                                                         <td>{item.parcel_service}</td>
-                                                        <td>₹ {item.averageAmount}</td>
+                                                        <td>₹ {item.parcel_amount}</td>
                                                     </tr>
                                                 ))
                                             ) : (

@@ -366,6 +366,8 @@ import AddParcelService from "../pages/ParcelServices/AddParcelService";
 import MonthlySalesReport from "../pages/Resports/MonthlySalesReport";
 import TrackingReport from "../pages/Resports/TrackingReport";
 import DivisionWiseReport from "../pages/Resports/DivisionWiseReport";
+import InternalTransfer from "../pages/Receipts/InternalTransfer";
+import InternalTransferList from "../pages/Receipts/InternalTransferList";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -437,6 +439,8 @@ const authProtectedRoutes = [
   { path: "/advance/receipt/view/", component: <AdvanceReceiptList /> },
   { path: "/other/receipt/view/", component: <OtherReceiptList /> },
   { path: "/order/receipt/view/", component: <OrderReceiptList /> },
+  { path: "/internal/bank/transfer/", component: <InternalTransfer /> },
+  { path: "/internal/bank/transfer/view/", component: <InternalTransferList /> },
 
   // company
 

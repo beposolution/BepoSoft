@@ -370,6 +370,9 @@ const SidebarContent = (props) => {
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
                   <li>
+                    <Link to="/internal/bank/transfer/">{props.t("Bank Transfer")}</Link>
+                  </li>
+                  <li>
                     <Link to="/order/receipt/">{props.t("Order Receipt")}</Link>
                   </li>
                   <li>
@@ -377,6 +380,9 @@ const SidebarContent = (props) => {
                   </li>
                   <li>
                     <Link to="/advance/receipt/">{props.t("Advance Receipt")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/internal/bank/transfer/view/">{props.t("Bank Transfer Details")}</Link>
                   </li>
                   <li>
                     <Link to="/all/receipt/">{props.t("All Receipt List")}</Link>

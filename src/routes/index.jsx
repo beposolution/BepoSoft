@@ -368,6 +368,7 @@ import TrackingReport from "../pages/Resports/TrackingReport";
 import DivisionWiseReport from "../pages/Resports/DivisionWiseReport";
 import InternalTransfer from "../pages/Receipts/InternalTransfer";
 import InternalTransferList from "../pages/Receipts/InternalTransferList";
+import ParcelServiceData from "../pages/DGM/ParcelServiceData";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -458,6 +459,7 @@ const authProtectedRoutes = [
   { path: "/order/postoffice/", component: < DGmTable2 /> },
   { path: "/order/packing/:id/progress/", component: < ParcelDetails /> }, ,
   { path: "/daily/good/movment/", component: < Dailygoodmovment /> },
+  { path: "/parcel/report/datewise/details/", component: <ParcelServiceData /> },
 
 
   ///warehouse....,

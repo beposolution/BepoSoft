@@ -5,19 +5,20 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import * as XLSX from "xlsx";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useNavigate } from "react-router-dom";
+import Paginations from "../../components/Common/Pagination";
 
 const AverageAmountReport = () => {
     const [warehouseData, setWarehouseData] = useState([]);
-    const [startDate, setStartDate] = useState(() => {
-        const today = new Date();
-        return today.toISOString().split("T")[0];
-    });
-    const [endDate, setEndDate] = useState(() => {
-        const today = new Date();
-        return today.toISOString().split("T")[0];
-    });
+    const [searchDate, setSearchDate] = useState("");
     const [filteredData, setFilteredData] = useState([]);
     const token = localStorage.getItem("token");
+    const [currentPage, setCurrentPage] = useState(1);
+    const perPageData = 15;
+
+    const indexOfLastItem = currentPage * perPageData;
+    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const currentData = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -32,53 +33,63 @@ const AverageAmountReport = () => {
                     }
                 });
                 setWarehouseData(warehouses);
+
+                // Initially display all data
+                groupAndSetFilteredData(warehouses);
             } catch (error) {
-                toast.error("Error fetching warehouse data:");
+                toast.error("Error fetching warehouse data");
             }
         };
 
         fetchData();
     }, [token]);
 
-    // Filter data between startDate and endDate and required fields, and calculate averageAmount
-    const handleSearch = () => {
-        const filtered = warehouseData
-            .filter(item =>
-                item.postoffice_date &&
-                item.parcel_amount &&
-                item.actual_weight &&
-                item.postoffice_date >= startDate &&
-                item.postoffice_date <= endDate
-            )
-            .map(item => ({
-                ...item,
-                averageAmount:
-                    parseFloat(item.actual_weight) !== 0
-                        ? (parseFloat(item.parcel_amount) / parseFloat(item.actual_weight)).toFixed(2)
-                        : "0.00",
-            }));
-        setFilteredData(filtered);
+    const groupAndSetFilteredData = (data) => {
+        const grouped = {};
+
+        data.forEach(item => {
+            const date = item.postoffice_date;
+            if (!grouped[date]) {
+                grouped[date] = {
+                    date,
+                    count: 0,
+                    totalAmount: 0,
+                    totalWeight: 0,
+                    items: []
+                };
+            }
+
+            grouped[date].count += 1;
+            grouped[date].totalAmount += parseFloat(item.parcel_amount || 0);
+            grouped[date].totalWeight += parseFloat(item.actual_weight || 0);
+            grouped[date].items.push(item);
+        });
+
+        const sorted = Object.values(grouped).sort((a, b) => new Date(b.date) - new Date(a.date));
+        setFilteredData(sorted);
     };
 
-    // Show current date data by default on load
-    useEffect(() => {
-        handleSearch();
-        // eslint-disable-next-line
-    }, [warehouseData, startDate, endDate]);
+    const handleSearch = () => {
+        if (!searchDate) {
+            toast.warning("Please select a date");
+            return;
+        }
 
-    const exportToExcel = () => {
-        const exportData = filteredData.map((item, index) => ({
-            "#": index + 1,
-            "Date": item.postoffice_date,
-            "Parcel Service": item.parcel_service,
-            "Average Amount (₹)": item.averageAmount,
-        }));
+        const filtered = warehouseData.filter(item => item.postoffice_date === searchDate);
+        groupAndSetFilteredData(filtered);
+    };
 
-        const worksheet = XLSX.utils.json_to_sheet(exportData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Parcel Report");
+    const handleClear = () => {
+        setSearchDate("");
+        groupAndSetFilteredData(warehouseData); // Reset to all data
+    };
 
-        XLSX.writeFile(workbook, "Parcel_Service_Report.xlsx");
+    const navigate = useNavigate();
+
+    const handleView = (date, items) => {
+        navigate(`/parcel/report/datewise/details/`, {
+            state: { date, items }
+        });
     };
 
     return (
@@ -90,33 +101,24 @@ const AverageAmountReport = () => {
                         <Card>
                             <CardBody>
                                 {/* Date Range Picker */}
-                                <Row className="mb-3">
-                                    <Col sm={3}>
+                                <Row className="mb-3 align-items-end">
+                                    <Col sm={4}>
+                                        <label className="form-label">Select Date</label>
                                         <Input
                                             type="date"
-                                            value={startDate}
-                                            onChange={(e) => setStartDate(e.target.value)}
-                                            placeholder="Start Date"
+                                            value={searchDate}
+                                            onChange={(e) => setSearchDate(e.target.value)}
                                         />
                                     </Col>
-                                    <Col sm={3}>
-                                        <Input
-                                            type="date"
-                                            value={endDate}
-                                            onChange={(e) => setEndDate(e.target.value)}
-                                            placeholder="End Date"
-                                        />
-                                    </Col>
-                                    <Col sm={3}>
+                                    <Col sm={2}>
                                         <Button color="primary" onClick={handleSearch}>
                                             Search
                                         </Button>
-                                    </Col >
-                                    <Col sm={3}>
-                                        <Button color="success" onClick={exportToExcel} className="ms-2">
-                                            Export to Excel
+                                    </Col>
+                                    <Col sm={2}>
+                                        <Button color="secondary" onClick={handleClear}>
+                                            Clear
                                         </Button>
-
                                     </Col>
                                 </Row>
 
@@ -127,29 +129,58 @@ const AverageAmountReport = () => {
                                             <tr>
                                                 <th>#</th>
                                                 <th>Date</th>
-                                                <th>Parcel Service</th>
-                                                <th>Shipping Amount (₹)</th>
+                                                <th>Count</th>
+                                                <th>Parcel Amount (₹)</th>
+                                                <th>Weight</th>
+                                                <th>Average</th>
+                                                <th>Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredData.length > 0 ? (
-                                                filteredData.map((item, index) => (
+                                            {currentData.length > 0 ? (
+                                                currentData.map((group, index) => (
                                                     <tr key={index}>
-                                                        <th scope="row">{index + 1}</th>
-                                                        <td>{item.postoffice_date}</td>
-                                                        <td>{item.parcel_service}</td>
-                                                        <td>₹ {item.parcel_amount}</td>
+                                                        <td>{indexOfFirstItem + index + 1}</td>
+                                                        <td>{group.date}</td>
+                                                        <td>{group.count}</td>
+                                                        <td>₹ {group.totalAmount.toFixed(2)}</td>
+                                                        <td>{group.totalWeight.toFixed(2)} g</td>
+                                                        <td>
+                                                            {group.totalAmount !== 0
+                                                                ? (group.totalWeight / group.totalAmount).toFixed(2)
+                                                                : "0.00"}
+                                                        </td>
+                                                        <td>
+                                                            <Button
+                                                                size="sm"
+                                                                color="info"
+                                                                onClick={() => handleView(group.date, group.items)}
+                                                            >
+                                                                View
+                                                            </Button>
+                                                        </td>
                                                     </tr>
                                                 ))
                                             ) : (
                                                 <tr>
-                                                    <td colSpan="4" className="text-center text-muted">
+                                                    <td colSpan="5" className="text-center text-muted">
                                                         No data available for the selected date range
                                                     </td>
                                                 </tr>
                                             )}
                                         </tbody>
                                     </Table>
+                                    <Paginations
+                                        perPageData={perPageData}
+                                        data={filteredData}
+                                        currentPage={currentPage}
+                                        setCurrentPage={setCurrentPage}
+                                        isShowingPageLength={true}
+                                        paginationDiv="col-auto"
+                                        paginationClass=""
+                                        indexOfFirstItem={indexOfFirstItem}
+                                        indexOfLastItem={indexOfLastItem}
+                                    />
                                 </div>
                             </CardBody>
                         </Card>

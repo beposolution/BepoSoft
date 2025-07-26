@@ -69,18 +69,20 @@ const OtherReceipt = () => {
     useEffect(() => {
         const allReceipts = receipts.receipts || [];
 
+        let filtered = allReceipts;
+
         if (startDate && endDate) {
-            const filtered = allReceipts.filter(receipt => {
+            filtered = allReceipts.filter(receipt => {
                 const receiptDate = new Date(receipt.received_at);
                 return (
                     receiptDate >= new Date(startDate) &&
                     receiptDate <= new Date(endDate)
                 );
             });
-            setFilteredReceipts(filtered);
-        } else {
-            setFilteredReceipts(allReceipts);
         }
+
+        setFilteredReceipts(filtered);
+        setCurrentPage(1);
     }, [receipts, startDate, endDate]);
 
     const getCustomerName = (id) => {
@@ -151,7 +153,7 @@ const OtherReceipt = () => {
                                                 <tbody>
                                                     {currentReceipts.length > 0 ? (
                                                         currentReceipts.map((receipt, index) => (
-                                                            <tr key={receipt.id || index}>
+                                                            <tr key={`${receipt.id ?? "receipt"}-${index}`}>
                                                                 <td>{indexOfFirstItem + index + 1}</td>
                                                                 <td>{receipt.received_at || "N/A"}</td>
                                                                 <td>{receipt?.order_name || "N/A"}</td>

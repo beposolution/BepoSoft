@@ -584,16 +584,18 @@ const SidebarContent = (props) => {
 ) : null} */}
 
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'CSO' ? (
+            {['ADMIN', 'Accounts / Accounting', 'IT', 'CEO', 'CSO'].includes(role) && (
               <li>
                 <Link to="/#" className="has-arrow">
                   <TbReportSearch size={20} style={{ marginRight: '8px' }} />
                   <span>{props.t("Reports")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/bank/bankmodule">{props.t("Finance Report")}</Link>
-                  </li>
+                  {role !== 'CSO' && (
+                    <li>
+                      <Link to="/bank/bankmodule">{props.t("Finance Report")}</Link>
+                    </li>
+                  )}
                   <li>
                     <Link to="/sales/reports/">{props.t("Sales Report")}</Link>
                   </li>
@@ -603,21 +605,17 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/COD/sales/resport/">{props.t("COD Sales Report")}</Link>
                   </li>
-
                   <li>
                     <Link to="/states/sales/resport/">{props.t("States Sales Report")}</Link>
                   </li>
                   <li>
                     <Link to="/division/wise/report/">{props.t("Division-Wise Report")}</Link>
                   </li>
-                  {role === 'CSO' ? (
+                  {role === 'CSO' && (
                     <li>
                       <Link to="/monthly/sales/report/">{props.t("Monthly Sales Report")}</Link>
                     </li>
-                  ) : null}
-                  <li>
-                    <Link to="/expense/report/">{props.t("Expense Report")}</Link>
-                  </li>
+                  )}
                   <li>
                     <Link to="/Delivery/report/">{props.t("Delivery Report")}</Link>
                   </li>
@@ -627,9 +625,11 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/product/stock/report/">{props.t("Product Stock Report")}</Link>
                   </li>
-                  <li>
-                    <Link to="/order/postoffice/">{props.t("Post Office Report")}</Link>
-                  </li>
+                  {role !== 'CSO' && (
+                    <li>
+                      <Link to="/order/postoffice/">{props.t("Post Office Report")}</Link>
+                    </li>
+                  )}
                   <li>
                     <Link to="/orders/tracking/report/">{props.t("Order Tracking Report")}</Link>
                   </li>
@@ -638,7 +638,7 @@ const SidebarContent = (props) => {
                   </li>
                 </ul>
               </li>
-            ) : null}
+            )}
 
             {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'CSO' ? (
               <li>

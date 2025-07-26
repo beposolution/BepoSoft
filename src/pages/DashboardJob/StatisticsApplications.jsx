@@ -197,53 +197,74 @@ const StatisticsApplications = () => {
         return acc;
     }, {});
 
-    const calculateCredit = (payments) => {
+    const calculateCredit = (payments, dateFilter) => {
         if (!payments || payments.length === 0) return 0;
-        return payments.reduce((total, payment) => total + parseFloat(payment.amount || 0), 0);
+
+        return payments.reduce((total, payment) => {
+            const paymentDate = new Date(payment.received_at).toISOString().split('T')[0];
+            const { start, end, date, before } = dateFilter;
+
+            const isInRange = start && end && paymentDate >= start && paymentDate <= end;
+            const isExact = date && paymentDate === date;
+            const isBefore = before && paymentDate < before;
+
+            if (isInRange || isExact || isBefore) {
+                return total + parseFloat(payment.amount);
+            }
+            return total;
+        }, 0);
     };
 
-    const calculateDebit = (banks) => {
+    const calculateDebit = (banks, dateFilter) => {
         if (!banks || banks.length === 0) return 0;
-        return banks.reduce((total, bank) => total + parseFloat(bank.amount || 0), 0);
+
+        return banks.reduce((total, bank) => {
+            const expenseDate = new Date(bank.expense_date).toISOString().split('T')[0];
+            const { start, end, date, before } = dateFilter;
+
+            const isInRange = start && end && expenseDate >= start && expenseDate <= end;
+            const isExact = date && expenseDate === date;
+            const isBefore = before && expenseDate < before;
+
+            if (isInRange || isExact || isBefore) {
+                return total + parseFloat(bank.amount);
+            }
+            return total;
+        }, 0);
     };
 
-    const processBankData = (data) => {
-        return data.map((customer) => {
-            const todayPayments = (customer.payments || []).filter(p => {
-                if (!p.date) return false;
-                const date = new Date(p.date);
-                return !isNaN(date) && date.toISOString().split('T')[0] === todayDate;
-            });
+    const formatDate = (d) => new Date(d).toISOString().split("T")[0];
+    const today = new Date();
+    const selectedDay = formatDate(today);
 
-            const todayBanks = (customer.banks || []).filter(b => {
-                if (!b.date) return false;
-                const date = new Date(b.date);
-                return !isNaN(date) && date.toISOString().split('T')[0] === todayDate;
-            });
+    const dateFilter = { date: selectedDay };
+    const priorFilter = { before: selectedDay };
 
-            const credit = calculateCredit(todayPayments);
-            const debit = calculateDebit(todayBanks);
-            const openBalance = parseFloat(customer.open_balance || 0);
-            const closingBalance = openBalance + credit - debit;
+    const processedBankData = (bankmodule || []).map((customer) => {
+        const priorCredit = calculateCredit(customer.payments, priorFilter);
+        const priorDebit = calculateDebit(customer.banks, priorFilter);
 
-            return {
-                ...customer,
-                credit,
-                debit,
-                closingBalance,
-                open_balance: openBalance,
-            };
-        });
-    };
+        const openBalance = parseFloat(customer.open_balance || 0) + priorCredit - priorDebit;
 
-    const processedBankData = processBankData(bankmodule);
+        const credit = calculateCredit(customer.payments, dateFilter);
+        const debit = calculateDebit(customer.banks, dateFilter);
+        const closingBalance = openBalance + credit - debit;
+
+        return {
+            ...customer,
+            open_balance: openBalance,
+            credit,
+            debit,
+            closingBalance,
+        };
+    });
 
     const total = processedBankData.reduce(
         (acc, customer) => {
-            acc.open_balance += customer.open_balance;
-            acc.credit += customer.credit;
-            acc.debit += customer.debit;
-            acc.closingBalance += customer.closingBalance;
+            acc.open_balance += parseFloat(customer.open_balance || 0);
+            acc.credit += parseFloat(customer.credit || 0);
+            acc.debit += parseFloat(customer.debit || 0);
+            acc.closingBalance += parseFloat(customer.closingBalance || 0);
             return acc;
         },
         { open_balance: 0, credit: 0, debit: 0, closingBalance: 0 }
@@ -301,7 +322,7 @@ const StatisticsApplications = () => {
                                         <div className="d-flex flex-column gap-3">
                                             {/* First Row (was Column 1) */}
                                             <div className="p-4 border rounded-4 shadow-sm bg-light d-flex flex-column justify-content-center align-items-center text-center">
-                                                <p className="text-muted fw-medium mb-2">Total Division Stats</p>
+                                                <p className="text-muted fw-medium mb-2">Total Division Status</p>
                                                 <h5 className="mb-1">Today's Total Volume : <span className='text-primary'>₹<strong>{overallTotals.totalAmount.toLocaleString()}</strong></span></h5>
                                                 <p className="text-muted fw-medium mb-0">
                                                     Today's Total Orders : <span className="fw-bold text-dark"><strong>{overallTotals.orderCount}</strong></span>
@@ -334,24 +355,62 @@ const StatisticsApplications = () => {
 
                                     <div className="p-4 border rounded-4 shadow-sm bg-light">
                                         <h5 className="text-center mb-3 text-primary">🏦 Bank Finance Totals</h5>
-                                        <ul className="list-group list-group-flush">
-                                            <li className="list-group-item d-flex justify-content-between">
-                                                <span className="fw-medium">Opening Balance:</span>
-                                                <span className="fw-bold">₹{total.open_balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                                            </li>
-                                            <li className="list-group-item d-flex justify-content-between">
-                                                <span className="fw-medium">Credit:</span>
-                                                <span className="fw-bold text-success">₹{total.credit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                                            </li>
-                                            <li className="list-group-item d-flex justify-content-between">
-                                                <span className="fw-medium">Debit:</span>
-                                                <span className="fw-bold text-danger">₹{total.debit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                                            </li>
-                                            <li className="list-group-item d-flex justify-content-between">
-                                                <span className="fw-medium">Closing Balance:</span>
-                                                <span className="fw-bold text-primary">₹{total.closingBalance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                                            </li>
-                                        </ul>
+                                        <Table borderless responsive className="mb-0">
+                                            <tbody>
+                                                <tr className="border-bottom">
+                                                    <td className="fw-medium">Opening Balance:</td>
+                                                    <td className="text-end fw-bold">
+                                                        {isNaN(total.open_balance)
+                                                            ? "-"
+                                                            : (total.open_balance < 0 ? "- " : "") +
+                                                            Math.abs(total.open_balance).toLocaleString("en-IN", {
+                                                                style: "currency",
+                                                                currency: "INR",
+                                                                minimumFractionDigits: 2,
+                                                            })}
+                                                    </td>
+                                                </tr>
+                                                <tr className="border-bottom">
+                                                    <td className="fw-medium">Credit:</td>
+                                                    <td className="text-end fw-bold text-success">
+                                                        {isNaN(total.credit)
+                                                            ? "-"
+                                                            : (total.credit < 0 ? "- " : "") +
+                                                            Math.abs(total.credit).toLocaleString("en-IN", {
+                                                                style: "currency",
+                                                                currency: "INR",
+                                                                minimumFractionDigits: 2,
+                                                            })}
+                                                    </td>
+                                                </tr>
+                                                <tr className="border-bottom">
+                                                    <td className="fw-medium">Debit:</td>
+                                                    <td className="text-end fw-bold text-danger">
+                                                        {isNaN(total.debit)
+                                                            ? "-"
+                                                            : (total.debit < 0 ? "- " : "") +
+                                                            Math.abs(total.debit).toLocaleString("en-IN", {
+                                                                style: "currency",
+                                                                currency: "INR",
+                                                                minimumFractionDigits: 2,
+                                                            })}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="fw-medium">Closing Balance:</td>
+                                                    <td className="text-end fw-bold text-primary">
+                                                        {isNaN(total.closingBalance)
+                                                            ? "-"
+                                                            : (total.closingBalance < 0 ? "- " : "") +
+                                                            Math.abs(total.closingBalance).toLocaleString("en-IN", {
+                                                                style: "currency",
+                                                                currency: "INR",
+                                                                minimumFractionDigits: 2,
+                                                            })}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </Table>
                                     </div>
                                 </div>
 

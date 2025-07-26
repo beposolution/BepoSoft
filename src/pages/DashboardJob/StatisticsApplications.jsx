@@ -380,19 +380,21 @@ const StatisticsApplications = () => {
                                         </div>
                                     </div>
 
-                                    <div className="p-4 border rounded-4 shadow-sm bg-light">
+                                    <div className="p-2 border rounded-4 shadow-sm bg-light">
                                         <h5 className="text-center mb-3 text-primary">🏦 Bank Finance Totals</h5>
                                         <Table bordered responsive className="mb-0 text-center">
                                             <thead>
                                                 <tr>
-                                                    <th>Particulars</th>
-                                                    <th>With Internal Transfer</th>
-                                                    <th>Without Internal Transfer</th>
+                                                    <th>With / Without</th>
+                                                    <th>Opening Balance</th>
+                                                    <th>Credit</th>
+                                                    <th>Debit</th>
+                                                    <th>Closing Balance</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    <td className="fw-medium">Opening Balance</td>
+                                                    <td className="fw-medium">With Internal Transfer</td>
                                                     <td>
                                                         <strong>
                                                             ₹{total?.open_balance?.toLocaleString("en-IN", {
@@ -400,19 +402,33 @@ const StatisticsApplications = () => {
                                                             })}
                                                         </strong>
                                                     </td>
-                                                    <td>
+                                                    <td className="text-success">
                                                         <strong>
-                                                            ₹{total?.open_balance?.toLocaleString("en-IN", {
+                                                            ₹{total?.credit?.toLocaleString("en-IN", {
+                                                                minimumFractionDigits: 2
+                                                            })}
+                                                        </strong>
+                                                    </td>
+                                                    <td className="text-danger">
+                                                        <strong>
+                                                            ₹{total?.debit?.toLocaleString("en-IN", {
+                                                                minimumFractionDigits: 2
+                                                            })}
+                                                        </strong>
+                                                    </td>
+                                                    <td className="text-primary">
+                                                        <strong>
+                                                            ₹{total?.closingBalance?.toLocaleString("en-IN", {
                                                                 minimumFractionDigits: 2
                                                             })}
                                                         </strong>
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <td className="fw-medium">Credit</td>
-                                                    <td className="text-success">
+                                                    <td className="fw-medium">Without Internal Transfer</td>
+                                                    <td>
                                                         <strong>
-                                                            ₹{total?.credit?.toLocaleString("en-IN", {
+                                                            ₹{total?.open_balance?.toLocaleString("en-IN", {
                                                                 minimumFractionDigits: 2
                                                             })}
                                                         </strong>
@@ -424,16 +440,6 @@ const StatisticsApplications = () => {
                                                             })}
                                                         </strong>
                                                     </td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="fw-medium">Debit</td>
-                                                    <td className="text-danger">
-                                                        <strong>
-                                                            ₹{total?.debit?.toLocaleString("en-IN", {
-                                                                minimumFractionDigits: 2
-                                                            })}
-                                                        </strong>
-                                                    </td>
                                                     <td className="text-danger">
                                                         <strong>
                                                             ₹{(total?.debit - totalInternalTransferAmountToday).toLocaleString("en-IN", {
@@ -441,23 +447,18 @@ const StatisticsApplications = () => {
                                                             })}
                                                         </strong>
                                                     </td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="fw-medium">Closing Balance</td>
                                                     <td className="text-primary">
                                                         <strong>
-                                                            ₹{total?.closingBalance?.toLocaleString("en-IN", {
+                                                            ₹{(
+                                                                total?.open_balance +
+                                                                (total?.credit - totalInternalTransferAmountToday) -
+                                                                (total?.debit - totalInternalTransferAmountToday)
+                                                            ).toLocaleString("en-IN", {
                                                                 minimumFractionDigits: 2
                                                             })}
                                                         </strong>
                                                     </td>
-                                                    <td className="text-primary">
-                                                        <strong>
-                                                            ₹{total?.closingBalance?.toLocaleString("en-IN", {
-                                                                minimumFractionDigits: 2
-                                                            })}
-                                                        </strong>
-                                                    </td>
+
                                                 </tr>
                                             </tbody>
                                         </Table>

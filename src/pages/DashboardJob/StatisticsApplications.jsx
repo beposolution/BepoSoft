@@ -385,7 +385,7 @@ const StatisticsApplications = () => {
                                         <Table bordered responsive className="mb-0 text-center">
                                             <thead>
                                                 <tr>
-                                                    <th>With / Without</th>
+                                                    <th>Transfer</th>
                                                     <th>Opening Balance</th>
                                                     <th>Credit</th>
                                                     <th>Debit</th>

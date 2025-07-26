@@ -36,6 +36,7 @@ const UpdateInformationPage = ({ refreshData }) => {
             status: '',
             billing_address: '',
             note: '',
+            accounts_note: '',
         },
         validationSchema: Yup.object({
             status: Yup.string().required('Status is required'),
@@ -55,6 +56,9 @@ const UpdateInformationPage = ({ refreshData }) => {
             }
             if (values.note && values.note !== original.note) {
                 payload.note = values.note;
+            }
+            if (values.accounts_note && values.accounts_note !== original.accounts_note) {
+                payload.accounts_note = values.accounts_note;
             }
 
             if (Object.keys(payload).length === 0) {
@@ -117,7 +121,7 @@ const UpdateInformationPage = ({ refreshData }) => {
 
                 // Access order and customer details from the response
                 const orderData = orderResponse.data.order;
-                const { status, note, billing_address } = orderData;
+                const { status, note, billing_address, accounts_note } = orderData;
                 const customerId = orderData.customerID;
 
                 // Set initial form values with status and note
@@ -125,12 +129,14 @@ const UpdateInformationPage = ({ refreshData }) => {
                     status: status || '',
                     billing_address: billing_address?.id || '',
                     note: note || '',
+                    accounts_note: accounts_note || '',
                 });
 
                 originalValuesRef.current = {
                     status: status || '',
                     billing_address: billing_address?.id || '',
                     note: note || '',
+                    accounts_note: accounts_note || '',
                 };
 
                 // Step 2: Fetch customer shipping addresses
@@ -233,26 +239,46 @@ const UpdateInformationPage = ({ refreshData }) => {
                                         </>
                                     )}
                                 </>
-                                <Col md={12}>
-                                    <div className="mb-3">
-                                        <Label htmlFor="formrow-note-Input">NOTE</Label>
-                                        <Input
-                                            type="textarea"
-                                            name="note"
-                                            className="form-control"
-                                            id="formrow-note-Input"
-                                            placeholder="Add a note"
-                                            value={formik.values.note}
-                                            onChange={formik.handleChange}
-                                            onBlur={formik.handleBlur}
-                                            disabled={
-                                                (role === "BDM" || role === "BDO") &&
-                                                !["Invoice Created"].includes(formik.values.status)
-                                            }
-                                            invalid={formik.touched.note && formik.errors.note}
-                                        />
-                                    </div>
-                                </Col>
+                                <>
+                                    <Col md={12}>
+                                        <div className="mb-3">
+                                            <Label htmlFor="formrow-note-Input">NOTE</Label>
+                                            <Input
+                                                type="textarea"
+                                                name="note"
+                                                className="form-control"
+                                                id="formrow-note-Input"
+                                                placeholder="Add a note"
+                                                value={formik.values.note}
+                                                onChange={formik.handleChange}
+                                                onBlur={formik.handleBlur}
+                                                disabled={
+                                                    (role === "BDM" || role === "BDO") &&
+                                                    !["Invoice Created"].includes(formik.values.status)
+                                                }
+                                                invalid={formik.touched.note && formik.errors.note}
+                                            />
+                                        </div>
+                                    </Col>
+                                    {(role === "Accounts / Accounting" || role == "ADMIN") && (
+                                        <Col md={12}>
+                                            <div className="mb-3">
+                                                <Label htmlFor="formrow-note-Input">ACCOUNTS NOTE</Label>
+                                                <Input
+                                                    type="textarea"
+                                                    name="accounts_note"
+                                                    className="form-control"
+                                                    id="formrow-note-Input"
+                                                    placeholder="Add a note"
+                                                    value={formik.values.accounts_note}
+                                                    onChange={formik.handleChange}
+                                                    onBlur={formik.handleBlur}
+                                                    invalid={formik.touched.accounts_note && formik.errors.accounts_note}
+                                                />
+                                            </div>
+                                        </Col>
+                                    )}
+                                </>
                             </Row>
 
                             <div>

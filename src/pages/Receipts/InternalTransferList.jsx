@@ -22,6 +22,9 @@ const InternalTransferList = () => {
     const [receiverBankOption, setReceiverBankOption] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const perPageData = 10;
+    const [searchTerm, setSearchTerm] = useState("");
+    const [fromDate, setFromDate] = useState("");
+    const [toDate, setToDate] = useState("");
 
     const toggleModal = () => setModal(!modal);
 
@@ -110,9 +113,30 @@ const InternalTransferList = () => {
         setFormData(prev => ({ ...prev, receiver_bank: selected ? selected.value : "" }));
     };
 
+    const filteredData = data.filter(item => {
+        const matchesSearch =
+            item.sender_bank_name?.toLowerCase().includes(searchTerm) ||
+            item.receiver_bank_name?.toLowerCase().includes(searchTerm) ||
+            item.transactionID?.toLowerCase().includes(searchTerm) ||
+            item.created_by_name?.toLowerCase().includes(searchTerm);
+
+        const itemDate = item.created_at?.substring(0, 10); // format: YYYY-MM-DD
+
+        const matchesDate =
+            (!fromDate || itemDate >= fromDate) &&
+            (!toDate || itemDate <= toDate);
+
+        return matchesSearch && matchesDate;
+    });
+
     const indexOfLastItem = currentPage * perPageData;
     const indexOfFirstItem = indexOfLastItem - perPageData;
-    const currentData = data.slice(indexOfFirstItem, indexOfLastItem);
+    const currentData = filteredData.slice(indexOfFirstItem, indexOfLastItem);
+
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value.toLowerCase());
+        setCurrentPage(1);
+    };
 
     return (
         <React.Fragment>
@@ -124,6 +148,55 @@ const InternalTransferList = () => {
                             <Card>
                                 <CardBody>
                                     <CardTitle className="mb-4">BANK TRANSFER DETAILS</CardTitle>
+                                    <Row className="mb-3">
+                                        <Col md={4}>
+                                            <Label>Search Transfers</Label>
+                                            <Input
+                                                type="text"
+                                                placeholder="Search by Sender, Receiver, Transaction ID, or Created By"
+                                                value={searchTerm}
+                                                onChange={(e) => {
+                                                    setSearchTerm(e.target.value.toLowerCase());
+                                                    setCurrentPage(1);
+                                                }}
+                                            />
+                                        </Col>
+                                        <Col md={3}>
+                                            <Label>From Date</Label>
+                                            <Input
+                                                type="date"
+                                                value={fromDate}
+                                                onChange={(e) => {
+                                                    setFromDate(e.target.value);
+                                                    setCurrentPage(1);
+                                                }}
+                                            />
+                                        </Col>
+                                        <Col md={3}>
+                                            <Label>To Date</Label>
+                                            <Input
+                                                type="date"
+                                                value={toDate}
+                                                onChange={(e) => {
+                                                    setToDate(e.target.value);
+                                                    setCurrentPage(1);
+                                                }}
+                                            />
+                                        </Col>
+                                        <Col md={2} className="d-flex align-items-end">
+                                            <Button
+                                                color="secondary"
+                                                onClick={() => {
+                                                    setSearchTerm("");
+                                                    setFromDate("");
+                                                    setToDate("");
+                                                    setCurrentPage(1);
+                                                }}
+                                            >
+                                                Clear Filters
+                                            </Button>
+                                        </Col>
+                                    </Row>
                                     {loading ? (
                                         <div className="text-center"><Spinner color="primary" /></div>
                                     ) : (
@@ -168,7 +241,7 @@ const InternalTransferList = () => {
                                             </Table>
                                             <Paginations
                                                 perPageData={perPageData}
-                                                data={data}
+                                                data={filteredData}
                                                 currentPage={currentPage}
                                                 setCurrentPage={setCurrentPage}
                                                 isShowingPageLength={true}

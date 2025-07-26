@@ -242,7 +242,7 @@ const UpdateInformationPage = ({ refreshData }) => {
                                 <>
                                     <Col md={12}>
                                         <div className="mb-3">
-                                            <Label htmlFor="formrow-note-Input">NOTE</Label>
+                                            <Label htmlFor="formrow-note-Input">WAREHOUSE NOTE</Label>
                                             <Input
                                                 type="textarea"
                                                 name="note"
@@ -260,24 +260,26 @@ const UpdateInformationPage = ({ refreshData }) => {
                                             />
                                         </div>
                                     </Col>
-                                    {(role === "Accounts / Accounting" || role == "ADMIN") && (
-                                        <Col md={12}>
-                                            <div className="mb-3">
-                                                <Label htmlFor="formrow-note-Input">ACCOUNTS NOTE</Label>
-                                                <Input
-                                                    type="textarea"
-                                                    name="accounts_note"
-                                                    className="form-control"
-                                                    id="formrow-note-Input"
-                                                    placeholder="Add a note"
-                                                    value={formik.values.accounts_note}
-                                                    onChange={formik.handleChange}
-                                                    onBlur={formik.handleBlur}
-                                                    invalid={formik.touched.accounts_note && formik.errors.accounts_note}
-                                                />
-                                            </div>
-                                        </Col>
-                                    )}
+                                    <Col md={12}>
+                                        <div className="mb-3">
+                                            <Label htmlFor="formrow-note-Input">ACCOUNTS NOTE</Label>
+                                            <Input
+                                                type="textarea"
+                                                name="accounts_note"
+                                                className="form-control"
+                                                id="formrow-note-Input"
+                                                placeholder="Add a note"
+                                                value={formik.values.accounts_note}
+                                                onChange={formik.handleChange}
+                                                onBlur={formik.handleBlur}
+                                                disabled={
+                                                    (role === "BDM" || role === "BDO") &&
+                                                    !["Invoice Created"].includes(formik.values.status)
+                                                }
+                                                invalid={formik.touched.accounts_note && formik.errors.accounts_note}
+                                            />
+                                        </div>
+                                    </Col>
                                 </>
                             </Row>
 

@@ -9,6 +9,7 @@ const StatisticsApplications = () => {
     const [role, setRole] = useState(null)
     const [userData, setUserData] = useState();
     const [orders, setOrders] = useState([]);
+    const [internalTransfers, setInternalTransfers] = useState([]);
     const [bankmodule, setBankModule] = useState([]);
     const todayDate = new Date().toISOString().split('T')[0];
     const [error, setError] = useState(null);
@@ -98,6 +99,20 @@ const StatisticsApplications = () => {
             }
         };
         fetchOrdersData();
+    }, []);
+
+    useEffect(() => {
+        const fetchInternalTransfersData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}internal/transfers/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setInternalTransfers(response?.data);
+            } catch (error) {
+                toast.error('Error fetching internal transfers data:');
+            }
+        };
+        fetchInternalTransfersData();
     }, []);
 
     useEffect(() => {
@@ -281,6 +296,18 @@ const StatisticsApplications = () => {
     const totalVolume = orders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
     const totalexpense = expense.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
 
+    // Get today's date in local time (not UTC)
+    const todayDates = new Date().toLocaleDateString('en-CA'); // "YYYY-MM-DD" format
+
+    const internalTransfersToday = internalTransfers.filter(transfer => {
+        const transferDate = new Date(transfer.created_at).toLocaleDateString('en-CA');
+        return transferDate === todayDates;
+    });
+
+    const totalInternalTransferAmountToday = internalTransfersToday.reduce((sum, transfer) => {
+        return sum + parseFloat(transfer.amount || 0);
+    }, 0);
+
     return (
         <React.Fragment>
             <Col lg={12}>
@@ -355,58 +382,81 @@ const StatisticsApplications = () => {
 
                                     <div className="p-4 border rounded-4 shadow-sm bg-light">
                                         <h5 className="text-center mb-3 text-primary">🏦 Bank Finance Totals</h5>
-                                        <Table borderless responsive className="mb-0">
+                                        <Table bordered responsive className="mb-0 text-center">
+                                            <thead>
+                                                <tr>
+                                                    <th>Particulars</th>
+                                                    <th>With Internal Transfer</th>
+                                                    <th>Without Internal Transfer</th>
+                                                </tr>
+                                            </thead>
                                             <tbody>
-                                                <tr className="border-bottom">
-                                                    <td className="fw-medium">Opening Balance:</td>
-                                                    <td className="text-end fw-bold">
-                                                        {isNaN(total.open_balance)
-                                                            ? "-"
-                                                            : (total.open_balance < 0 ? "- " : "") +
-                                                            Math.abs(total.open_balance).toLocaleString("en-IN", {
-                                                                style: "currency",
-                                                                currency: "INR",
-                                                                minimumFractionDigits: 2,
+                                                <tr>
+                                                    <td className="fw-medium">Opening Balance</td>
+                                                    <td>
+                                                        <strong>
+                                                            ₹{total?.open_balance?.toLocaleString("en-IN", {
+                                                                minimumFractionDigits: 2
                                                             })}
+                                                        </strong>
                                                     </td>
-                                                </tr>
-                                                <tr className="border-bottom">
-                                                    <td className="fw-medium">Credit:</td>
-                                                    <td className="text-end fw-bold text-success">
-                                                        {isNaN(total.credit)
-                                                            ? "-"
-                                                            : (total.credit < 0 ? "- " : "") +
-                                                            Math.abs(total.credit).toLocaleString("en-IN", {
-                                                                style: "currency",
-                                                                currency: "INR",
-                                                                minimumFractionDigits: 2,
+                                                    <td>
+                                                        <strong>
+                                                            ₹{total?.open_balance?.toLocaleString("en-IN", {
+                                                                minimumFractionDigits: 2
                                                             })}
-                                                    </td>
-                                                </tr>
-                                                <tr className="border-bottom">
-                                                    <td className="fw-medium">Debit:</td>
-                                                    <td className="text-end fw-bold text-danger">
-                                                        {isNaN(total.debit)
-                                                            ? "-"
-                                                            : (total.debit < 0 ? "- " : "") +
-                                                            Math.abs(total.debit).toLocaleString("en-IN", {
-                                                                style: "currency",
-                                                                currency: "INR",
-                                                                minimumFractionDigits: 2,
-                                                            })}
+                                                        </strong>
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <td className="fw-medium">Closing Balance:</td>
-                                                    <td className="text-end fw-bold text-primary">
-                                                        {isNaN(total.closingBalance)
-                                                            ? "-"
-                                                            : (total.closingBalance < 0 ? "- " : "") +
-                                                            Math.abs(total.closingBalance).toLocaleString("en-IN", {
-                                                                style: "currency",
-                                                                currency: "INR",
-                                                                minimumFractionDigits: 2,
+                                                    <td className="fw-medium">Credit</td>
+                                                    <td className="text-success">
+                                                        <strong>
+                                                            ₹{total?.credit?.toLocaleString("en-IN", {
+                                                                minimumFractionDigits: 2
                                                             })}
+                                                        </strong>
+                                                    </td>
+                                                    <td className="text-success">
+                                                        <strong>
+                                                            ₹{(total?.credit - totalInternalTransferAmountToday).toLocaleString("en-IN", {
+                                                                minimumFractionDigits: 2
+                                                            })}
+                                                        </strong>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="fw-medium">Debit</td>
+                                                    <td className="text-danger">
+                                                        <strong>
+                                                            ₹{total?.debit?.toLocaleString("en-IN", {
+                                                                minimumFractionDigits: 2
+                                                            })}
+                                                        </strong>
+                                                    </td>
+                                                    <td className="text-danger">
+                                                        <strong>
+                                                            ₹{(total?.debit - totalInternalTransferAmountToday).toLocaleString("en-IN", {
+                                                                minimumFractionDigits: 2
+                                                            })}
+                                                        </strong>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="fw-medium">Closing Balance</td>
+                                                    <td className="text-primary">
+                                                        <strong>
+                                                            ₹{total?.closingBalance?.toLocaleString("en-IN", {
+                                                                minimumFractionDigits: 2
+                                                            })}
+                                                        </strong>
+                                                    </td>
+                                                    <td className="text-primary">
+                                                        <strong>
+                                                            ₹{total?.closingBalance?.toLocaleString("en-IN", {
+                                                                minimumFractionDigits: 2
+                                                            })}
+                                                        </strong>
                                                     </td>
                                                 </tr>
                                             </tbody>

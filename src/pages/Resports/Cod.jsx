@@ -47,6 +47,7 @@ const BasicTable = () => {
     const perPageData = 10;
     const [states, setStates] = useState([]);
     const [stateFilter, setStateFilter] = useState("");
+    const [filteredStates, setFilteredStates] = useState([]);
 
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -127,6 +128,20 @@ const BasicTable = () => {
 
         fetchStates();
     }, [token]);
+
+    useEffect(() => {
+        if (staffFilter) {
+            const selectedStaff = allStaffs.find((staff) => staff.name === staffFilter);
+            if (selectedStaff && selectedStaff.allocated_states_names) {
+                setFilteredStates(selectedStaff.allocated_states_names);
+            } else {
+                setFilteredStates([]);
+            }
+        } else {
+            // If no staff selected, show all states
+            setFilteredStates(states.map((s) => s.name));
+        }
+    }, [staffFilter, allStaffs, states]);
 
     const filteredData = data
         .map((item) => {
@@ -246,9 +261,9 @@ const BasicTable = () => {
                                                     onChange={(e) => setStateFilter(e.target.value)}
                                                 >
                                                     <option value="">Select State</option>
-                                                    {states.map((state) => (
-                                                        <option key={state.id} value={state.name}>
-                                                            {state.name}
+                                                    {filteredStates.map((stateName, index) => (
+                                                        <option key={index} value={stateName}>
+                                                            {stateName}
                                                         </option>
                                                     ))}
                                                 </Input>

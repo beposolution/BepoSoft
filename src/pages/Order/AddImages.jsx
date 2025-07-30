@@ -19,9 +19,7 @@ const AddImages = ({ orderId }) => {
             const response = await axios.get(`${import.meta.env.VITE_APP_KEY}order/images/${orderId}/`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            setExistingImages(
-                (response.data.images || []).map(img => img.image)
-            );
+            setExistingImages(response.data.images || []);
         } catch (error) {
             console.error('Error fetching existing images:', error.response?.data || error.message);
         }
@@ -63,6 +61,25 @@ const AddImages = ({ orderId }) => {
         }
     };
 
+    const handleDeleteImage = async (imageId) => {
+        const confirmDelete = window.confirm("Are you sure you want to delete this image?");
+        if (!confirmDelete) return;
+
+        const token = localStorage.getItem('token');
+        try {
+            await axios.delete(`${import.meta.env.VITE_APP_KEY}order/images/delete/${imageId}/`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            alert('Image deleted successfully!');
+            fetchExistingImages();  // Refresh list
+        } catch (error) {
+            console.error('Delete failed:', error.response?.data || error.message);
+            alert('Image deletion failed!');
+        }
+    };
+
     return (
         <div className="page-content">
             <Container fluid>
@@ -95,9 +112,19 @@ const AddImages = ({ orderId }) => {
                                 {selectedFiles.length > 0 && (
                                     <div className="mt-3">
                                         <h6>Selected Files:</h6>
-                                        <ul>
-                                            {selectedFiles.map((file, i) => <li key={i}>{file.name}</li>)}
-                                        </ul>
+                                        <Row>
+                                            {selectedFiles.map((file, i) => (
+                                                <Col key={i} md={2} className="mb-3 text-center">
+                                                    <img
+                                                        src={URL.createObjectURL(file)}
+                                                        alt={`Selected ${i}`}
+                                                        className="img-thumbnail"
+                                                        style={{ height: '100px', objectFit: 'cover' }}
+                                                    />
+                                                    <div className="mt-2">{file.name}</div>
+                                                </Col>
+                                            ))}
+                                        </Row>
                                     </div>
                                 )}
 
@@ -105,14 +132,22 @@ const AddImages = ({ orderId }) => {
                                     <div className="mt-4">
                                         {/* <h6>Existing Images:</h6> */}
                                         <Row>
-                                            {existingImages.map((imgUrl, index) => (
-                                                <Col key={index} md={2} className="mb-3">
+                                            {existingImages.map((img, index) => (
+                                                <Col key={index} md={2} className="mb-3 text-center">
                                                     <img
-                                                        src={`${import.meta.env.VITE_APP_IMAGE}${imgUrl}`}
+                                                        src={`${import.meta.env.VITE_APP_IMAGE}${img.image}`}
                                                         alt={`Product ${index}`}
                                                         className="img-thumbnail"
                                                         style={{ height: '100px', objectFit: 'cover' }}
                                                     />
+                                                    <Button
+                                                        color="danger"
+                                                        size="sm"
+                                                        className="mt-2"
+                                                        onClick={() => handleDeleteImage(img.id)} // Now img.id will be valid
+                                                    >
+                                                        Delete
+                                                    </Button>
                                                 </Col>
                                             ))}
                                         </Row>

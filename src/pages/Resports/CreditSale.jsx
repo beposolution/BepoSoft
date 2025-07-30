@@ -288,6 +288,51 @@ const BasicTable = () => {
                                                             </tr>
                                                         );
                                                     })}
+                                                    <tr style={{ fontWeight: "bold", backgroundColor: "#f8f9fa" }}>
+                                                        <td colSpan="2">Total</td>
+                                                        <td>{filteredData.reduce((sum, item) => {
+                                                            return sum + item.orders.filter(order =>
+                                                                (!staffFilter || order.staff_name === staffFilter) &&
+                                                                (!familyFilter || order.family_name === familyFilter) &&
+                                                                (!debouncedSearchTerm || order.staff_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || order.family_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()))
+                                                            ).length;
+                                                        }, 0)}</td>
+                                                        <td>{filteredData.reduce((sum, item) => {
+                                                            return sum + item.orders.filter(order =>
+                                                                (!staffFilter || order.staff_name === staffFilter) &&
+                                                                (!familyFilter || order.family_name === familyFilter) &&
+                                                                (!debouncedSearchTerm || order.staff_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || order.family_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()))
+                                                            ).reduce((total, order) => total + order.total_amount, 0);
+                                                        }, 0).toFixed(2)}</td>
+                                                        <td>{filteredData.reduce((sum, item) => {
+                                                            return sum + item.orders.filter(order =>
+                                                                (!staffFilter || order.staff_name === staffFilter) &&
+                                                                (!familyFilter || order.family_name === familyFilter) &&
+                                                                (!debouncedSearchTerm || order.staff_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || order.family_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()))
+                                                            ).reduce((total, order) => total + order.recived_payment.reduce((a, b) => a + parseFloat(b.amount), 0), 0);
+                                                        }, 0).toFixed(2)}</td>
+                                                        <td>
+                                                            {(
+                                                                filteredData.reduce((sum, item) => {
+                                                                    return sum + item.orders.filter(order =>
+                                                                        (!staffFilter || order.staff_name === staffFilter) &&
+                                                                        (!familyFilter || order.family_name === familyFilter) &&
+                                                                        (!debouncedSearchTerm || order.staff_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || order.family_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()))
+                                                                    ).reduce((total, order) => total + order.total_amount, 0);
+                                                                }, 0)
+                                                                -
+                                                                filteredData.reduce((sum, item) => {
+                                                                    return sum + item.orders.filter(order =>
+                                                                        (!staffFilter || order.staff_name === staffFilter) &&
+                                                                        (!familyFilter || order.family_name === familyFilter) &&
+                                                                        (!debouncedSearchTerm || order.staff_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || order.family_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()))
+                                                                    ).reduce((total, order) => total + order.recived_payment.reduce((a, b) => a + parseFloat(b.amount), 0), 0);
+                                                                }, 0)
+                                                            ).toFixed(2)}
+                                                        </td>
+                                                        <td></td>
+                                                    </tr>
+
                                                 </tbody>
 
 

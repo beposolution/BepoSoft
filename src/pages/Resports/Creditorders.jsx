@@ -228,6 +228,13 @@ const BasicTable = () => {
                                                         </tr>
                                                     )}
                                                 </tbody>
+                                                <tr style={{ fontWeight: "bold", backgroundColor: "#f8f9fa" }}>
+                                                    <td colSpan="5" className="text-right">Total</td>
+                                                    <td>
+                                                        {filteredOrders.reduce((sum, order) => sum + order.total_amount, 0).toFixed(2)}
+                                                    </td>
+                                                    <td></td>
+                                                </tr>
                                             </Table>
                                         )}
                                     </div>

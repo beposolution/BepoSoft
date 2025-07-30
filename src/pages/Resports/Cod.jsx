@@ -45,6 +45,8 @@ const BasicTable = () => {
     const role = localStorage.getItem('active');
     const [currentPage, setCurrentPage] = useState(1);
     const perPageData = 10;
+    const [states, setStates] = useState([]);
+    const [stateFilter, setStateFilter] = useState("");
 
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -102,19 +104,43 @@ const BasicTable = () => {
         fetchData();
     }, [staffFilter, familyFilter]);
 
+    useEffect(() => {
+        const fetchStates = async () => {
+            try {
+                const response = await fetch(`${import.meta.env.VITE_APP_KEY}states/`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                const data = await response.json();
+
+                if (data.message === "State list successfully retrieved") {
+                    setStates(data.data);
+                } else {
+                    toast.error("Failed to fetch states");
+                }
+            } catch (error) {
+                toast.error("Error fetching states");
+            }
+        };
+
+        fetchStates();
+    }, [token]);
 
     const filteredData = data
         .map((item) => {
             const filteredOrders = item.orders.filter((order) => {
                 const matchesStaff = staffFilter ? order.staff_name === staffFilter : true;
                 const matchesFamily = familyFilter ? order.family_name === familyFilter : true;
+                const matchesState = stateFilter ? order.state === stateFilter : true;
                 const matchesSearch = debouncedSearchTerm
                     ? order.staff_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
                     order.family_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
                     : true;
                 const excludeBepocart = !(role === "CSO" && order.family_name === "bepocart");
 
-                return matchesStaff && matchesFamily && matchesSearch && excludeBepocart;
+                return matchesStaff && matchesFamily && matchesState && matchesSearch && excludeBepocart;
             });
 
             return filteredOrders.length > 0
@@ -175,7 +201,7 @@ const BasicTable = () => {
                             <Card>
                                 <CardBody>
                                     <Row className="mb-4">
-                                        <Col md={4}>
+                                        <Col md={2}>
                                             <FormGroup>
                                                 <label>Division</label>
                                                 <Input
@@ -192,7 +218,7 @@ const BasicTable = () => {
                                                 </Input>
                                             </FormGroup>
                                         </Col>
-                                        <Col md={4}>
+                                        <Col md={2}>
                                             <FormGroup>
                                                 <label>Staff</label>
                                                 <Input
@@ -211,7 +237,24 @@ const BasicTable = () => {
                                                 </Input>
                                             </FormGroup>
                                         </Col>
-                                        <Col md={4}>
+                                        <Col md={2}>
+                                            <FormGroup>
+                                                <label>State</label>
+                                                <Input
+                                                    type="select"
+                                                    value={stateFilter}
+                                                    onChange={(e) => setStateFilter(e.target.value)}
+                                                >
+                                                    <option value="">Select State</option>
+                                                    {states.map((state) => (
+                                                        <option key={state.id} value={state.name}>
+                                                            {state.name}
+                                                        </option>
+                                                    ))}
+                                                </Input>
+                                            </FormGroup>
+                                        </Col>
+                                        <Col md={2}>
                                             <FormGroup>
                                                 <label>Search</label>
                                                 <Input
@@ -222,7 +265,7 @@ const BasicTable = () => {
                                                 />
                                             </FormGroup>
                                         </Col>
-                                        <Col md={4}>
+                                        <Col md={2}>
                                             <Button color="success" onClick={exportToExcel}>
                                                 Export to Excel
                                             </Button>

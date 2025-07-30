@@ -108,6 +108,10 @@ const BasicTable = () => {
         return withinDateRange && matchesStaffFilter && matchesFamilyFilter && matchesSearchTerm;
     });
 
+    const filteredStaffs = familyFilter
+        ? allStaffs.filter((staff) => staff.family_name === familyFilter)
+        : allStaffs;
+
     const exportToExcel = () => {
         const formattedData = filteredData.map((item, index) => {
             const totalAmount = item.orders.reduce((sum, order) => sum + order.total_amount, 0);
@@ -173,23 +177,6 @@ const BasicTable = () => {
                                         </Col>
                                         <Col md={3}>
                                             <FormGroup>
-                                                <label>Staff</label>
-                                                <Input
-                                                    type="select"
-                                                    value={staffFilter}
-                                                    onChange={(e) => setStaffFilter(e.target.value)}
-                                                >
-                                                    <option value="">Select Staff</option>
-                                                    {allStaffs.map((staff) => (
-                                                        <option key={staff.id} value={staff.name}>
-                                                            {staff.name}
-                                                        </option>
-                                                    ))}
-                                                </Input>
-                                            </FormGroup>
-                                        </Col>
-                                        <Col md={3}>
-                                            <FormGroup>
                                                 <label>Division</label>
                                                 <Input
                                                     type="select"
@@ -200,6 +187,23 @@ const BasicTable = () => {
                                                     {allFamilies.map((family) => (
                                                         <option key={family.id} value={family.name}>
                                                             {family.name}
+                                                        </option>
+                                                    ))}
+                                                </Input>
+                                            </FormGroup>
+                                        </Col>
+                                        <Col md={3}>
+                                            <FormGroup>
+                                                <label>Staff</label>
+                                                <Input
+                                                    type="select"
+                                                    value={staffFilter}
+                                                    onChange={(e) => setStaffFilter(e.target.value)}
+                                                >
+                                                    <option value="">Select Staff</option>
+                                                    {filteredStaffs.map((staff) => (
+                                                        <option key={staff.id} value={staff.name}>
+                                                            {staff.name}
                                                         </option>
                                                     ))}
                                                 </Input>

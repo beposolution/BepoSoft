@@ -27,7 +27,7 @@ const BasicTable = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const name = localStorage.getItem('name');
-    document.title = `${name} Ledger | Beposoft`;
+    document.title = `Ledger | Beposoft`;
     const [advanceReceipts, setAdvanceReceipts] = useState([])
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
@@ -203,7 +203,13 @@ const BasicTable = () => {
         pdf.save(`${name}_Ledger.pdf`);
     };
 
-    const totalDebit = filteredOrders.reduce((total, order) => total + order.total_amount, 0);
+    const totalDebit = filteredOrders.reduce((total, order) => {
+        if (order.status !== "Invoice Rejected") {
+            return total + order.total_amount;
+        }
+        return total;
+    }, 0);
+
     const totalCredit = filteredOrders.reduce((total, order) => {
         const recivedSum = order.recived_payment.reduce(
             (sum, receipt) => sum + parseFloat(receipt.amount || 0),
@@ -305,18 +311,20 @@ const BasicTable = () => {
                                                 {filteredOrders.map((order, orderIndex) => (
                                                     <React.Fragment key={order.id}>
                                                         {/* Order row */}
-                                                        <tr>
-                                                            <th scope="row">{orderIndex + 1}</th>
-                                                            <td>{order.order_date}</td>
-                                                            <td>
-                                                                <a href={`/order/${order.id}/items/`} target="_blank" rel="noopener noreferrer">
-                                                                    {order.invoice}/{order.company}
-                                                                </a>
-                                                            </td>
-                                                            <td style={{ color: "red" }}>Goods Sale</td>
-                                                            <td>{order.total_amount.toFixed(2)}</td>
-                                                            <td>-</td>
-                                                        </tr>
+                                                        {order.status !== "Invoice Rejected" && (
+                                                            <tr>
+                                                                <th scope="row">{orderIndex + 1}</th>
+                                                                <td>{order.order_date}</td>
+                                                                <td>
+                                                                    <a href={`/order/${order.id}/items/`} target="_blank" rel="noopener noreferrer">
+                                                                        {order.invoice}/{order.company}
+                                                                    </a>
+                                                                </td>
+                                                                <td style={{ color: "red" }}>Goods Sale</td>
+                                                                <td>{order.total_amount.toFixed(2)}</td>
+                                                                <td>-</td>
+                                                            </tr>
+                                                        )}
 
                                                         {/* recived_payment rows */}
                                                         {order.recived_payment.map((receipt, index) => (

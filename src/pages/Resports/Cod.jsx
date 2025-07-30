@@ -174,26 +174,7 @@ const BasicTable = () => {
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
-
-                                    {/* Search Fields */}
                                     <Row className="mb-4">
-                                        <Col md={4}>
-                                            <FormGroup>
-                                                <label>Staff</label>
-                                                <Input
-                                                    type="select"
-                                                    value={staffFilter}
-                                                    onChange={(e) => setStaffFilter(e.target.value)}
-                                                >
-                                                    <option value="">Select Staff</option>
-                                                    {allStaffs.map((staff) => (
-                                                        <option key={staff.id} value={staff.name}>
-                                                            {staff.name}
-                                                        </option>
-                                                    ))}
-                                                </Input>
-                                            </FormGroup>
-                                        </Col>
                                         <Col md={4}>
                                             <FormGroup>
                                                 <label>Division</label>
@@ -208,6 +189,25 @@ const BasicTable = () => {
                                                             {family.name}
                                                         </option>
                                                     ))}
+                                                </Input>
+                                            </FormGroup>
+                                        </Col>
+                                        <Col md={4}>
+                                            <FormGroup>
+                                                <label>Staff</label>
+                                                <Input
+                                                    type="select"
+                                                    value={staffFilter}
+                                                    onChange={(e) => setStaffFilter(e.target.value)}
+                                                >
+                                                    <option value="">Select Staff</option>
+                                                    {allStaffs
+                                                        .filter((staff) => !familyFilter || staff.family_name === familyFilter)
+                                                        .map((staff) => (
+                                                            <option key={staff.id} value={staff.name}>
+                                                                {staff.name}
+                                                            </option>
+                                                        ))}
                                                 </Input>
                                             </FormGroup>
                                         </Col>

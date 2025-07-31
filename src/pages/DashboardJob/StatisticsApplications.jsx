@@ -191,24 +191,48 @@ const StatisticsApplications = () => {
             });
     }, []);
 
+    const codOrders = orders.filter(order => order.payment_status === "COD");
+    const codOrdersCount = codOrders.length;
+    const codOrdersTotalVolume = codOrders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
+
     const todayOrders = orders.filter(order => {
         const orderDate = new Date(order.order_date).toISOString().split('T')[0];
         return orderDate === todayDate;
     });
 
-    const familyStats = todayOrders.reduce((acc, order) => {
+    const familyStats = orders.reduce((acc, order) => {
+        const orderDate = new Date(order.order_date);
+        const orderDay = orderDate.toISOString().split('T')[0];
+        const orderMonth = orderDate.getMonth();
+        const orderYear = orderDate.getFullYear();
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const thisMonth = today.getMonth();
+        const thisYear = today.getFullYear();
+
         const family = order.family_name || "Unknown";
         const amount = parseFloat(order.total_amount) || 0;
 
         if (!acc[family]) {
             acc[family] = {
-                totalAmount: 0,
-                orderCount: 0
+                todayAmount: 0,
+                todayOrders: 0,
+                monthAmount: 0,
+                monthOrders: 0
             };
         }
 
-        acc[family].totalAmount += amount;
-        acc[family].orderCount += 1;
+        if (orderDay === todayStr) {
+            acc[family].todayAmount += amount;
+            acc[family].todayOrders += 1;
+        }
+
+        if (orderMonth === thisMonth && orderYear === thisYear) {
+            acc[family].monthAmount += amount;
+            acc[family].monthOrders += 1;
+        }
+
         return acc;
     }, {});
 
@@ -286,15 +310,25 @@ const StatisticsApplications = () => {
     );
 
     const overallTotals = Object.values(familyStats).reduce((acc, stat) => {
-        acc.totalAmount += stat.totalAmount;
-        acc.orderCount += stat.orderCount;
+        acc.totalAmount += stat.todayAmount;
+        acc.orderCount += stat.todayOrders;
+        acc.monthAmount += stat.monthAmount;
+        acc.monthOrders += stat.monthOrders;
         return acc;
-    }, { totalAmount: 0, orderCount: 0 });
+    }, { totalAmount: 0, orderCount: 0, monthAmount: 0, monthOrders: 0 });
 
     // const todayBills = chartsData?.find(item => item?.title === "Today Bills");
     const todayBills = orders.length;
     const totalVolume = orders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
     const totalexpense = expense.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
+
+    // Today's COD orders (all divisions)
+    const todayCodOrders = orders.filter(order => {
+        const orderDate = new Date(order.order_date).toISOString().split('T')[0];
+        return orderDate === todayDate && order.payment_status === "COD";
+    });
+    const todayCodOrdersCount = todayCodOrders.length;
+    const todayCodOrdersVolume = todayCodOrders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
 
     // Get today's date in local time (not UTC)
     const todayDates = new Date().toLocaleDateString('en-CA'); // "YYYY-MM-DD" format
@@ -319,27 +353,58 @@ const StatisticsApplications = () => {
                                 <div className="col-md-3">
                                     <h4 className="text-center mb-4 fw-bold text-primary">📊 Division-wise Order Statistics</h4>
                                     <div className="d-flex flex-wrap justify-content-center gap-3">
-                                        {Object.entries(familyStats).map(([family, stats]) => (
-                                            <div
-                                                className="card border-0 shadow-sm p-2 rounded-4"
-                                                style={{ width: "180px", transition: "0.3s" }}
-                                                key={family}
-                                            >
-                                                <div className="card-body text-center">
-                                                    <h5 className="card-title text-uppercase fw-semibold text-secondary">
-                                                        {family}
-                                                    </h5>
-                                                    <p className="card-text mb-2">
-                                                        <span className="text-muted">Total Amount:</span><br />
-                                                        <strong className="text-success fs-5">₹{stats?.totalAmount?.toLocaleString()}</strong>
-                                                    </p>
-                                                    <p className="card-text">
-                                                        <span className="text-muted">Total Orders:</span><br />
-                                                        <strong className="text-dark fs-5">{stats?.orderCount}</strong>
-                                                    </p>
+                                        {Object.entries(familyStats).map(([family, stats]) => {
+                                            const codFamilyOrders = orders.filter(
+                                                order => order.family_name === family && order.payment_status === "COD"
+                                            );
+                                            const codFamilyCount = codFamilyOrders.length;
+                                            const codFamilyVolume = codFamilyOrders.reduce(
+                                                (sum, order) => sum + Number(order.total_amount || 0), 0
+                                            );
+
+                                            // Today's COD for this family
+                                            const todayCodFamilyOrders = orders.filter(
+                                                order =>
+                                                    order.family_name === family &&
+                                                    order.payment_status === "COD" &&
+                                                    new Date(order.order_date).toISOString().split('T')[0] === todayDate
+                                            );
+                                            const todayCodFamilyCount = todayCodFamilyOrders.length;
+                                            const todayCodFamilyVolume = todayCodFamilyOrders.reduce(
+                                                (sum, order) => sum + Number(order.total_amount || 0), 0
+                                            );
+
+                                            return (
+                                                <div
+                                                    className="card border-0 shadow-sm p-2 rounded-4"
+                                                    style={{ width: "180px", transition: "0.3s" }}
+                                                    key={family}
+                                                >
+                                                    <div className="card-body text-center">
+                                                        <h5 className="card-title text-uppercase fw-semibold text-secondary">
+                                                            {family}
+                                                        </h5>
+                                                        <p className="card-text mb-2">
+                                                            <span className="text-muted">Today's Total:</span><br />
+                                                            <strong className="text-success fs-6">₹{stats?.todayAmount?.toLocaleString()} ({stats?.todayOrders} orders)</strong>
+                                                        </p>
+                                                        <p className="card-text mb-0">
+                                                            <span className="text-muted">Today's COD:</span><br />
+                                                            <strong className="text-warning fs-6">₹{todayCodFamilyVolume.toLocaleString()} ({todayCodFamilyCount} orders)</strong>
+                                                        </p>
+                                                        <hr />
+                                                        <p className="card-text mb-0">
+                                                            <span className="text-muted">This Month:</span><br />
+                                                            <strong className="text-primary fs-6">₹{stats?.monthAmount?.toLocaleString()} ({stats?.monthOrders} orders)</strong>
+                                                        </p>
+                                                        <p className="card-text ">
+                                                            <span className="text-muted">This Month COD:</span><br />
+                                                            <strong className="text-warning fs-6">₹{codFamilyVolume.toLocaleString()} ({codFamilyCount} orders)</strong>
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
@@ -351,9 +416,22 @@ const StatisticsApplications = () => {
                                             <div className="p-4 border rounded-4 shadow-sm bg-light d-flex flex-column justify-content-center align-items-center text-center">
                                                 <p className="text-muted fw-medium mb-2">Total Division Status</p>
                                                 <h5 className="mb-1">Today's Total Volume : <span className='text-primary'>₹<strong>{overallTotals.totalAmount.toLocaleString()}</strong></span></h5>
-                                                <p className="text-muted fw-medium mb-0">
+                                                <p className="text-muted fw-medium mb-1">
                                                     Today's Total Orders : <span className="fw-bold text-dark"><strong>{overallTotals.orderCount}</strong></span>
                                                 </p>
+                                                <h6 className="text-muted mb-1">
+                                                    Today's COD Orders : <span className="fw-bold text-dark"><strong>{todayCodOrdersCount}</strong></span> | ₹<span className="fw-bold text-dark"><strong>{todayCodOrdersVolume.toLocaleString()}</strong></span>
+                                                </h6>
+                                                <hr className="my-3" style={{ width: "60%" }} />
+                                                <h5 className="mb-1">
+                                                    This Month's Total Volume : <span className='text-primary'>₹<strong>{overallTotals.monthAmount.toLocaleString()}</strong></span>
+                                                </h5>
+                                                <p className="text-muted fw-medium mb-1">
+                                                    This Month's Total Orders : <span className="fw-bold text-dark"><strong>{overallTotals.monthOrders}</strong></span>
+                                                </p>
+                                                <h6 className="text-muted mb-1">
+                                                    COD Orders : <span className="fw-bold text-dark"><strong>{codOrdersCount}</strong></span> | ₹<span className="fw-bold text-dark"><strong>{codOrdersTotalVolume.toLocaleString()}</strong></span>
+                                                </h6>
                                             </div>
 
                                             {/* Second Row (was Column 2) */}

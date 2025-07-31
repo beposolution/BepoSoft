@@ -369,6 +369,7 @@ import DivisionWiseReport from "../pages/Resports/DivisionWiseReport";
 import InternalTransfer from "../pages/Receipts/InternalTransfer";
 import InternalTransferList from "../pages/Receipts/InternalTransferList";
 import ParcelServiceData from "../pages/DGM/ParcelServiceData";
+import CountryCode from "../pages/country/CountryCode";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -511,8 +512,7 @@ const authProtectedRoutes = [
   { path: "/all-families/", component: <Family /> },
   { path: "/attributes", component: <Attrubutes /> },
   { path: "/attribute-values/", component: <AttributeValues /> },
-
-
+  { path: "/add/view/country/code/", component: <CountryCode /> },
 
 
 

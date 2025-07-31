@@ -15,7 +15,7 @@ import { GiBassetHoundHead, GiExpense, GiPostOffice } from "react-icons/gi";
 import { TbReportSearch } from "react-icons/tb";
 import { MdOutlineVideogameAsset, MdLocalFireDepartment, MdAssignmentReturn, MdDetails } from "react-icons/md";
 import { IoMdInformationCircleOutline } from "react-icons/io";
-import { FaReceipt } from "react-icons/fa6";
+import { FaReceipt, FaEarthAmericas } from "react-icons/fa6";
 import { GrOrganization } from "react-icons/gr";
 import { RiOrderPlayLine } from "react-icons/ri";
 
@@ -677,17 +677,31 @@ const SidebarContent = (props) => {
             ) : null}
 
             {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
-              <li>
-                <Link to="/#" className="has-arrow">
-                  <FaUsers size={20} style={{ marginRight: '8px' }} />
-                  <span>{props.t("States")}</span>
-                </Link>
-                <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/all-states/">{props.t("States")}</Link>
-                  </li>
-                </ul>
-              </li>
+              <>
+                <li>
+                  <Link to="/#" className="has-arrow">
+                    <FaUsers size={20} style={{ marginRight: '8px' }} />
+                    <span>{props.t("States")}</span>
+                  </Link>
+                  <ul className="sub-menu" aria-expanded="false">
+                    <li>
+                      <Link to="/all-states/">{props.t("States")}</Link>
+                    </li>
+                  </ul>
+                </li>
+
+                <li>
+                  <Link to="/#" className="has-arrow">
+                    <FaEarthAmericas size={20} style={{ marginRight: '8px' }} />
+                    <span>{props.t("Country")}</span>
+                  </Link>
+                  <ul className="sub-menu" aria-expanded="false">
+                    <li>
+                      <Link to="/add/view/country/code/">{props.t("Country Code")}</Link>
+                    </li>
+                  </ul>
+                </li>
+              </>
             ) : null}
 
             {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (

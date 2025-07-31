@@ -167,7 +167,7 @@ const UpdateInformationPage = ({ refreshData }) => {
                         <Form onSubmit={formik.handleSubmit}>
                             <Row>
                                 <>
-                                    {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === "Marketing") && (
+                                    {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === "Marketing" || role === "CEO") && (
                                         <>
                                             <Col md={6}>
                                                 <div className="mb-3">

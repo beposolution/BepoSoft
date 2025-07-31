@@ -3,18 +3,43 @@ import axios from "axios";
 import { Col, Row, Label, Input, Container, Button, Table, Modal, ModalHeader, ModalBody, ModalFooter } from "reactstrap";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Select from "react-select";
 
 const AddWarehousePage = () => {
   const [warehouseData, setWarehouseData] = useState({
     name: "",
     location: "",
+    country_code: "",
   });
 
   const [warehouseDetails, setWarehouseDetails] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [modal, setModal] = useState(false); // Modal visibility state
-  const [selectedWarehouse, setSelectedWarehouse] = useState(null); // Selected warehouse for editing
+  const [selectedWarehouse, setSelectedWarehouse] = useState(null);
+  const [countryCodes, setCountryCodes] = useState([]);
+  const token = localStorage.getItem("token");
+
+  const fetchCountryCodes = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_APP_KEY}country/codes/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.data.status === 'success') {
+        setCountryCodes(response.data.data);
+      } else {
+        toast.error("Failed to fetch country codes.");
+      }
+    } catch (error) {
+      toast.error("Error fetching country codes.");
+    }
+  };
+
+  useEffect(() => {
+    fetchCountryCodes();
+  }, [token]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -47,7 +72,7 @@ const AddWarehousePage = () => {
       ]);
 
       // Clear the input fields
-      setWarehouseData({ name: "", location: "" });
+      setWarehouseData({ name: "", location: "", country_code: "" });
     } catch (error) {
       toast.error("Error adding warehouse");
     }
@@ -90,9 +115,13 @@ const AddWarehousePage = () => {
   };
 
   const editWarehouse = (warehouse) => {
-    setSelectedWarehouse(warehouse); // Set selected warehouse
-    setWarehouseData({ name: warehouse.name, location: warehouse.location }); // Pre-fill the form with data
-    setModal(true); // Show the modal
+    setSelectedWarehouse(warehouse);
+    setWarehouseData({
+      name: warehouse.name,
+      location: warehouse.location,
+      country_code: warehouse.country_code,
+    });
+    setModal(true);
   };
 
   const saveUpdatedWarehouse = async () => {
@@ -128,7 +157,7 @@ const AddWarehousePage = () => {
         <div className="page-content">
           <Container fluid={true}>
             <Row>
-              <Col lg={4}>
+              <Col lg={3}>
                 <div className="mb-3">
                   <Label htmlFor="formrow-Inputpurpose_of_payment">Warehouse Name</Label>
                   <input
@@ -142,7 +171,7 @@ const AddWarehousePage = () => {
                 </div>
               </Col>
 
-              <Col lg={4}>
+              <Col lg={3}>
                 <div className="mb-3">
                   <Label htmlFor="formrow-InputZip">Warehouse Location</Label>
                   <Input
@@ -157,7 +186,47 @@ const AddWarehousePage = () => {
                 </div>
               </Col>
 
-              <Col lg={4}>
+              <Col lg={3}>
+                <div className="mb-3">
+                  <Label htmlFor="formrow-InputZip">Country</Label>
+                  <Select
+                    name="country_code"
+                    options={countryCodes.map((country) => ({
+                      value: country.id, // Use id, not country_code string
+                      label: country.country_code,
+                    }))}
+                    value={
+                      countryCodes
+                        .map((country) => ({
+                          value: country.id,
+                          label: country.country_code,
+                        }))
+                        .find((option) => option.value === warehouseData.country_code) || null
+                    }
+                    onChange={(selected) =>
+                      setWarehouseData((prev) => ({
+                        ...prev,
+                        country_code: selected ? selected.value : "",
+                      }))
+                    }
+                    isClearable
+                    placeholder="Select Country"
+                    styles={{
+                      control: (provided) => ({
+                        ...provided,
+                        backgroundColor: "#fff",
+                      }),
+                      menu: (provided) => ({
+                        ...provided,
+                        backgroundColor: "#fff",
+                        zIndex: 9999,
+                      }),
+                    }}
+                  />
+                </div>
+              </Col>
+
+              <Col lg={3}>
                 <div className="mb-3 mt-4">
                   <Button onClick={addWarehouse}>Add Warehouse</Button>
                 </div>
@@ -171,6 +240,7 @@ const AddWarehousePage = () => {
                     <th scope="col">#</th>
                     <th scope="col">Warehouse</th>
                     <th scope="col">Location</th>
+                    <th scope="col">Country</th>
                     <th scope="col">Action</th>
                   </tr>
                 </thead>
@@ -181,6 +251,7 @@ const AddWarehousePage = () => {
                         <th scope="row">{index + 1}</th>
                         <td>{data.name}</td>
                         <td>{data.location}</td>
+                        <td>{data.country}</td>
                         <td>
                           <Button onClick={() => editWarehouse(data)}>Edit</Button>
                         </td>
@@ -210,6 +281,7 @@ const AddWarehousePage = () => {
               </div>
             </div>
           </Container>
+          <ToastContainer />
         </div>
       </React.Fragment>
 
@@ -234,6 +306,43 @@ const AddWarehousePage = () => {
             id="location"
             value={warehouseData.location}
             onChange={handleChange}
+          />
+          <Label for="country_code" style={{ marginTop: "10px" }}>
+            Country
+          </Label>
+          <Select
+            name="country_code"
+            options={countryCodes.map((country) => ({
+              value: country.id,
+              label: country.country_code,
+            }))}
+            value={
+              countryCodes
+                .map((country) => ({
+                  value: country.id,
+                  label: country.country_code,
+                }))
+                .find((option) => option.value === warehouseData.country_code) || null
+            }
+            onChange={(selected) =>
+              setWarehouseData((prev) => ({
+                ...prev,
+                country_code: selected ? selected.value : "",
+              }))
+            }
+            isClearable
+            placeholder="Select Country"
+            styles={{
+              control: (provided) => ({
+                ...provided,
+                backgroundColor: "#fff",
+              }),
+              menu: (provided) => ({
+                ...provided,
+                backgroundColor: "#fff",
+                zIndex: 9999,
+              }),
+            }}
           />
         </ModalBody>
         <ModalFooter>

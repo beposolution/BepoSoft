@@ -33,41 +33,36 @@ const StatisticsApplications = () => {
     }, []);
 
     useEffect(() => {
-        const today = new Date().toISOString().split('T')[0];
-
         // Filter today's warehouse entries
         const todaysData = warehouseData.filter(item => {
             if (!item.postoffice_date) return false;
-
             const date = new Date(item.postoffice_date);
             if (isNaN(date)) return false;
-
             const itemDate = date.toISOString().split('T')[0];
             return itemDate === todayDate;
         });
 
-        setFilteredData(todaysData);
-
-        // Group by parcel_service and calculate average
+        // Group by parcel_service and calculate average (actual_weight / parcel_amount)
         const grouped = {};
 
         todaysData.forEach(item => {
             const service = item.parcel_service || 'Unknown';
-            const amount = parseFloat(item.amount) || 0;
+            const actualWeight = parseFloat(item.actual_weight) || 0;
+            const parcelAmount = parseFloat(item.parcel_amount) || 0;
 
             if (!grouped[service]) {
-                grouped[service] = { totalAmount: 0, count: 0 };
+                grouped[service] = { totalWeight: 0, totalAmount: 0 };
             }
 
-            grouped[service].totalAmount += amount;
-            grouped[service].count += 1;
+            grouped[service].totalWeight += actualWeight;
+            grouped[service].totalAmount += parcelAmount;
         });
 
         // Convert grouped data into display format
-        const result = Object.entries(grouped).map(([service, { totalAmount, count }]) => ({
+        const result = Object.entries(grouped).map(([service, { totalWeight, totalAmount }]) => ({
             parcel_service: service,
-            averageAmount: (totalAmount / count).toFixed(2),
-            postoffice_date: today,
+            averageAmount: totalAmount > 0 ? (totalWeight / totalAmount).toFixed(2) : "0.00",
+            postoffice_date: todayDate,
         }));
 
         setFilteredData(result);

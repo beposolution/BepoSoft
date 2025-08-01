@@ -491,6 +491,20 @@ const SidebarContent = (props) => {
 
                   </ul>
                 </li>
+
+                {/* Rack Section */}
+                <li>
+                  <Link to="/#" className="has-arrow">
+                    <FaWarehouse size={20} style={{ marginRight: '8px' }} />
+                    <span>{props.t("Rack")}</span>
+                  </Link>
+                  <ul className="sub-menu" aria-expanded="false">
+                    <li>
+                      <Link to="/rack/details/">{props.t("Rack Details")}</Link>
+                    </li>
+
+                  </ul>
+                </li>
               </>
             )}
 

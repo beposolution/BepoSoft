@@ -25,7 +25,8 @@ const FormLayouts = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
-    const token = localStorage.getItem("token"); // Token fetching
+    const token = localStorage.getItem("token");
+    const [countryCodes, setCountryCodes] = useState([]);
     const { id } = useParams();
 
     // Formik setup
@@ -56,6 +57,7 @@ const FormLayouts = () => {
             signatur_up: "",
             family: "",
             check: "",
+            country_code: "",
         },
         validationSchema: Yup.object({
             // Basic Info
@@ -97,6 +99,7 @@ const FormLayouts = () => {
             employment_status: Yup.string().required("Please select employment status"),
             department_id: Yup.string().required("Please select a department"),
             supervisor_id: Yup.string().required("Please select a supervisor"),
+            country_code: Yup.string().required("Please select country code"),
 
             // Signature
             signatur_up: Yup.string(),
@@ -125,7 +128,7 @@ const FormLayouts = () => {
                         formData.append(key, values[key]); // Append the file
                     } else if (key === "allocated_states") {
                         values[key].forEach(state => formData.append('allocated_states', state)); // Append each state individually
-                    } 
+                    }
                     else if (key === "password") {
                         // Append password only if not empty or null
                         if (values[key] && values[key].trim() !== '') {
@@ -133,6 +136,8 @@ const FormLayouts = () => {
                         }
                     } else if (values[key] !== '') {
                         formData.append(key, values[key]); // Append other non-empty values
+                    } else if (values[key] !== '') {
+                        formData.append(key, values[key]);
                     }
                 }
 
@@ -150,6 +155,7 @@ const FormLayouts = () => {
 
                 if (response.status === 201 || response.status === 200) {
                     setSuccess("Form submitted successfully");
+                    toast.success("Staff updated successfully");
                 } else {
                     setError("Failed to submit the form");
                 }
@@ -179,13 +185,32 @@ const FormLayouts = () => {
 
     });
 
-
     useEffect(() => {
         setSelectedStates(
             states.filter(state => formik.values.allocated_states.includes(state.value))
         );
     }, [formik.values.allocated_states, states]);
 
+    const fetchCountryCodes = async () => {
+        try {
+            const response = await axios.get(`${import.meta.env.VITE_APP_KEY}country/codes/`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            if (response.data.status === 'success') {
+                setCountryCodes(response.data.data);
+            } else {
+                toast.error("Failed to fetch country codes.");
+            }
+        } catch (error) {
+            toast.error("Error fetching country codes.");
+        }
+    };
+
+    useEffect(() => {
+        fetchCountryCodes();
+    }, [token]);
 
     useEffect(() => {
         if (token) {
@@ -229,6 +254,7 @@ const FormLayouts = () => {
                             supervisor_id: staffData.supervisor_id || "",
                             department_id: staffData.department_id || "",
                             approval_status: staffData.approval_status || "",
+                            country_code: staffData.country_code || "",
                             signatur_up: "", // Assuming the signature is an uploaded file, keep this empty
                             check: "", // Assuming this is for any checks, adjust accordingly
                         });
@@ -447,7 +473,6 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
                                             <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-state-Input">State</Label>
@@ -474,9 +499,6 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
-
-
                                             <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label className="control-label">Allocated States</Label>
@@ -489,7 +511,6 @@ const FormLayouts = () => {
                                                     />
                                                 </div>
                                             </Col>
-
 
                                             <Col lg={4}>
                                                 <div className="mb-3">
@@ -515,7 +536,6 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
                                             <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-gender-Input">Gender</Label>
@@ -538,8 +558,6 @@ const FormLayouts = () => {
                                                     ) : null}
                                                 </div>
                                             </Col>
-
-
 
                                             <Col lg={4}>
                                                 <div className="mb-3">
@@ -584,9 +602,6 @@ const FormLayouts = () => {
                                                     </select>
                                                 </div>
                                             </Col>
-
-
-
 
                                             <Col md={4}>
                                                 <div className="mb-3">
@@ -638,7 +653,31 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col md={6}>
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-countrycode-Input">Country Code</Label>
+                                                    <select
+                                                        name="country_code"
+                                                        id="formrow-countrycode-Input"
+                                                        className={`form-control ${formik.touched.country_code && formik.errors.country_code ? 'is-invalid' : ''}`}
+                                                        value={formik.values.country_code}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                    >
+                                                        <option value="">Select Country Code</option>
+                                                        {countryCodes.map((item) => (
+                                                            <option key={item.id} value={item.id}>
+                                                                {item.country_code}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {formik.errors.country_code && formik.touched.country_code ? (
+                                                        <div className="invalid-feedback">{formik.errors.country_code}</div>
+                                                    ) : null}
+                                                </div>
+                                            </Col>
+
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-driving-Input">Driving License</Label>
                                                     <Input
@@ -663,7 +702,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col md={6}>
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Driving-date-Input">Driving License Exp Date</Label>
                                                     <Input
@@ -714,8 +753,6 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
-
                                             <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Designation">Designation</Label>
@@ -740,7 +777,6 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
                                             <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-InputJoinDate">Join Date</Label>
@@ -763,7 +799,6 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
-
 
                                             <Col lg={4}>
                                                 <div className="mb-3">
@@ -811,8 +846,6 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
-
                                             <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Supervisor-Input">Supervisor</Label>
@@ -840,8 +873,6 @@ const FormLayouts = () => {
                                                     ) : null}
                                                 </div>
                                             </Col>
-
-
 
                                             <Col lg={4}>
                                                 <div className="mb-3">
@@ -871,9 +902,6 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
-
-
                                             <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-status-Input">Approval Status</Label>
@@ -895,8 +923,6 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
-
                                             <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Signature-Input">Signature Upload</Label>
@@ -915,9 +941,6 @@ const FormLayouts = () => {
                                                     ) : null}
                                                 </div>
                                             </Col>
-
-
-
                                         </Row>
 
                                         <div className="mb-3">
@@ -947,17 +970,20 @@ const FormLayouts = () => {
                                                 ) : null
                                             }
                                         </div>
+
                                         <div className="mb-3">
                                             <Button type="submit" color="primary" disabled={formik.isSubmitting}>
                                                 {formik.isSubmitting ? "Submitting..." : "Submit"}
                                             </Button>
                                         </div>
+                                        
                                     </Form>
                                 </CardBody>
                             </Card>
                         </Col>
                     </Row>
                 </Container>
+                <ToastContainer />
             </div>
         </React.Fragment>
     );

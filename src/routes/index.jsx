@@ -370,6 +370,7 @@ import InternalTransfer from "../pages/Receipts/InternalTransfer";
 import InternalTransferList from "../pages/Receipts/InternalTransferList";
 import ParcelServiceData from "../pages/DGM/ParcelServiceData";
 import CountryCode from "../pages/country/CountryCode";
+import AddRack from "../pages/RackDetails/AddRack";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -464,10 +465,10 @@ const authProtectedRoutes = [
 
 
   ///warehouse....,
-
-
-
   { path: "/add/warehouse/", component: <AddWarehousePage /> },
+
+  // Rack Details
+  { path: "/rack/details/", component: <AddRack /> },
 
   //all supervisors
 

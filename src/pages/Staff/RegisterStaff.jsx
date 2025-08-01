@@ -23,6 +23,7 @@ const FormLayouts = () => {
     const [success, setSuccess] = useState(null);
     const token = localStorage.getItem("token");
     const [warehouseDetails, setWarehouseDetails] = useState([]);
+    const [countryCodes, setCountryCodes] = useState([]);
 
     const formik = useFormik({
         initialValues: {
@@ -51,7 +52,8 @@ const FormLayouts = () => {
             signatur_up: "",
             family: "",
             image: "",
-            warehouse_id: ""
+            warehouse_id: "",
+            country_code: ""
         },
         validationSchema: Yup.object({
             name: Yup.string().required("This field is required"),
@@ -86,6 +88,7 @@ const FormLayouts = () => {
             marital_status: Yup.string().required("Please select marital status"),
             country: Yup.string().required("This field is required"),
             state: Yup.string().required("This field is required"),
+            country_code: Yup.string().required("Please select a country code"),
             allocated_states: Yup.array()
                 .nullable(true)
                 .required("This field is required"),
@@ -160,6 +163,27 @@ const FormLayouts = () => {
             }
         }
     });
+
+    const fetchCountryCodes = async () => {
+        try {
+            const response = await axios.get(`${import.meta.env.VITE_APP_KEY}country/codes/`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            if (response.data.status === 'success') {
+                setCountryCodes(response.data.data);
+            } else {
+                toast.error("Failed to fetch country codes.");
+            }
+        } catch (error) {
+            toast.error("Error fetching country codes.");
+        }
+    };
+
+    useEffect(() => {
+        fetchCountryCodes();
+    }, [token]);
 
     useEffect(() => {
         if (token) {
@@ -330,6 +354,7 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
+
                                             <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-password-Input">Password</Label>
@@ -375,7 +400,6 @@ const FormLayouts = () => {
                                                     </select>
                                                 </div>
                                             </Col>
-
                                         </Row>
 
                                         <Row>
@@ -403,7 +427,6 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
                                             <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-state-Input">State</Label>
@@ -424,8 +447,6 @@ const FormLayouts = () => {
                                                     </select>
                                                 </div>
                                             </Col>
-
-
 
                                             <Col lg={4}>
                                                 <div className="mb-3">
@@ -464,7 +485,6 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
                                             <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-gender-Input">Gender</Label>
@@ -488,8 +508,6 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
-
                                             <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-MaritalStatus-Input">Marital Status</Label>
@@ -512,9 +530,6 @@ const FormLayouts = () => {
                                                     ) : null}
                                                 </div>
                                             </Col>
-
-
-
 
                                             <Col md={6}>
                                                 <div className="mb-3">
@@ -541,6 +556,54 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
+                                            <Col md={6}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-alt-phone-Input">Alt Phone</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="alternate_number"
+                                                        className="form-control"
+                                                        id="formrow-alt-phone-Input"
+                                                        placeholder="Enter Staff Alternate Phone"
+                                                        autoComplete="off"
+                                                        value={formik.values.alternate_number}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={
+                                                            formik.touched.alternate_number && formik.errors.alternate_number ? true : false
+                                                        }
+                                                    />
+                                                    {
+                                                        formik.errors.alternate_number && formik.touched.alternate_number ? (
+                                                            <FormFeedback type="invalid">{formik.errors.alternate_number}</FormFeedback>
+                                                        ) : null
+                                                    }
+                                                </div>
+                                            </Col>
+
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-countryCode">Country Code</Label>
+                                                    <select
+                                                        name="country_code"
+                                                        id="formrow-countryCode"
+                                                        className={`form-control ${formik.touched.country_code && formik.errors.country_code ? 'is-invalid' : ''}`}
+                                                        value={formik.values.country_code}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                    >
+                                                        <option value="">Select Country Code</option>
+                                                        {countryCodes.map((code) => (
+                                                            <option key={code.id} value={code.id}>
+                                                                {code.country_code}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {formik.errors.country_code && formik.touched.country_code && (
+                                                        <FormFeedback type="invalid">{formik.errors.country_code}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
 
                                             <Col md={4}>
                                                 <div className="mb-3">
@@ -564,31 +627,6 @@ const FormLayouts = () => {
                                                             <option disabled>No warehouse available</option>
                                                         )}
                                                     </select>
-                                                </div>
-                                            </Col>
-
-                                            <Col md={4}>
-                                                <div className="mb-3">
-                                                    <Label htmlFor="formrow-alt-phone-Input">Alt Phone</Label>
-                                                    <Input
-                                                        type="text"
-                                                        name="alternate_number"
-                                                        className="form-control"
-                                                        id="formrow-alt-phone-Input"
-                                                        placeholder="Enter Staff Alternate Phone"
-                                                        autoComplete="off"
-                                                        value={formik.values.alternate_number}
-                                                        onChange={formik.handleChange}
-                                                        onBlur={formik.handleBlur}
-                                                        invalid={
-                                                            formik.touched.alternate_number && formik.errors.alternate_number ? true : false
-                                                        }
-                                                    />
-                                                    {
-                                                        formik.errors.alternate_number && formik.touched.alternate_number ? (
-                                                            <FormFeedback type="invalid">{formik.errors.alternate_number}</FormFeedback>
-                                                        ) : null
-                                                    }
                                                 </div>
                                             </Col>
 
@@ -642,7 +680,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
+                                            <Col lg={6}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-employment-Input">Employment Status</Label>
                                                     <select
@@ -668,8 +706,6 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
-
                                             <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Designation">Designation</Label>
@@ -694,7 +730,6 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
                                             <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-InputJoinDate">Join Date</Label>
@@ -717,7 +752,6 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
-
 
                                             <Col lg={4}>
                                                 <div className="mb-3">
@@ -765,8 +799,6 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
-
                                             <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Supervisor-Input">Supervisor</Label>
@@ -794,8 +826,6 @@ const FormLayouts = () => {
                                                     ) : null}
                                                 </div>
                                             </Col>
-
-
 
                                             <Col lg={4}>
                                                 <div className="mb-3">
@@ -825,9 +855,6 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
-
-
                                             <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-status-Input">Approval Status</Label>
@@ -849,8 +876,6 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
-
                                             <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Signature-Input">Signature Upload</Label>
@@ -869,6 +894,7 @@ const FormLayouts = () => {
                                                     ) : null}
                                                 </div>
                                             </Col>
+
                                             <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Signature-Input">image Upload</Label>
@@ -887,7 +913,6 @@ const FormLayouts = () => {
                                                     ) : null}
                                                 </div>
                                             </Col>
-
                                         </Row>
                                         <div className="mb-3">
                                             <Button type="submit" color="primary" disabled={formik.isSubmitting}>

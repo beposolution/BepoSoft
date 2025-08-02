@@ -204,7 +204,7 @@ const BasicTable = () => {
     };
 
     const totalDebit = filteredOrders.reduce((total, order) => {
-        if (order.status !== "Invoice Rejected") {
+        if (order.status !== "Invoice Rejected" && order.status !== "Invoice Created") {
             return total + order.total_amount;
         }
         return total;
@@ -311,7 +311,7 @@ const BasicTable = () => {
                                                 {filteredOrders.map((order, orderIndex) => (
                                                     <React.Fragment key={order.id}>
                                                         {/* Order row */}
-                                                        {order.status !== "Invoice Rejected" && (
+                                                        {order.status !== "Invoice Rejected" && order.status !== "Invoice Created" && (
                                                             <tr>
                                                                 <th scope="row">{orderIndex + 1}</th>
                                                                 <td>{order.order_date}</td>

@@ -269,7 +269,7 @@ const ChartSection = () => {
                     </>
                 )}
 
-                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === 'CSO' || role === 'Marketing') && (
+                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === 'CSO' || role === 'Marketing' || role === 'COO') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}
                             onClick={() => navigate("/dashboard/todaysbill-details")}>
@@ -379,7 +379,7 @@ const ChartSection = () => {
                     </Col>
                 )}
 
-                {(role === "ADMIN" || role === "Accounts / Accounting") && (
+                {(role === "ADMIN" || role === "Accounts / Accounting" || role === 'COO') && (
                     <Col lg={3} style={{ cursor: "pointer" }}
                         onClick={() => navigate("/dashboard/waitingforconfirmation-details")}>
                         <Card className="mini-stats-wid">
@@ -406,7 +406,7 @@ const ChartSection = () => {
                     </Col>
                 )}
 
-                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting") && (
+                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === 'COO') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}
                             onClick={() => navigate("/dashboard/shipped-details")}>
@@ -435,7 +435,7 @@ const ChartSection = () => {
                     </Col>
                 )}
 
-                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting") && (
+                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === 'COO') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}
                             onClick={() => navigate("/perfoma/invoices/")}>
@@ -464,7 +464,7 @@ const ChartSection = () => {
                     </Col>
                 )}
 
-                {(role === "ADMIN" || role === "Accounts / Accounting") && (
+                {(role === "ADMIN" || role === "Accounts / Accounting" || role === 'COO') && (
                     <Col lg={3} style={{ cursor: "pointer" }}
                         onClick={() => navigate("/beposoft/grv/view/")}>
                         <Card className="mini-stats-wid">
@@ -491,7 +491,7 @@ const ChartSection = () => {
                     </Col>
                 )}
 
-                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting") && (
+                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === 'COO') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}
                             onClick={() => navigate("/dashboard/grvwaitingforconfirmation-details")}>
@@ -525,7 +525,7 @@ const ChartSection = () => {
                     </Col>
                 )}
 
-                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting") && (
+                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === 'COO') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}
                             onClick={() => navigate("/dashboard/waitingforapproval-details")}>

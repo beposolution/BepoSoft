@@ -1458,7 +1458,11 @@ const FormLayouts = () => {
                             </Card>
                         </Col>
                         <Col xl={12}>
-                            <Paymentrecipent closingBalance={totalPayableAmount} billingPhone={billingAddress.phone} />
+                            <Paymentrecipent
+                                billingPhone={billingAddress.phone}
+                                customerId={customerId}
+                                totalPayableAmountDisplay={totalPayableAmountDisplay}
+                            />
                             <Information refreshData={fetchOrderData} />
                             <Row>
                                 <Col xl={12}>

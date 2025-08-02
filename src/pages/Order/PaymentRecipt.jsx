@@ -7,7 +7,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 
-const ReceiptFormPage = ({ closingBalance, billingPhone }) => {
+const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }) => {
     const { id } = useParams();
     const [packing, setPacking] = useState([]);
     const [paymentRecipts, setPaymentRecipts] = useState([]);
@@ -23,6 +23,71 @@ const ReceiptFormPage = ({ closingBalance, billingPhone }) => {
     })
     const [selectedBoxId, setSelectedBoxId] = useState(null);
     const [isAddDisabled, setIsAddDisabled] = useState(false);
+    const [ledgerData, setLedgerData] = useState(null);
+    const [ledgerLoading, setLedgerLoading] = useState(true);
+    const [ledgerError, setLedgerError] = useState(null);
+
+    useEffect(() => {
+        if (!customerId && !id) return;
+
+        const fetchLedger = async () => {
+            setLedgerLoading(true);
+            setLedgerError(null);
+            try {
+                const token = localStorage.getItem("token");
+                const custId = customerId || id; // Prefer customerId if passed as prop
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}customer/${custId}/ledger/`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                setLedgerData(response.data.data);
+            } catch (err) {
+                setLedgerError("Could not fetch ledger data");
+            } finally {
+                setLedgerLoading(false);
+            }
+        };
+
+        fetchLedger();
+    }, [customerId, id]);
+
+    let closingBalance = 0;
+    if (ledgerData) {
+        if ('closing_balance' in ledgerData) {
+            closingBalance = Number(ledgerData.closing_balance);
+        } else {
+            const totalDebit = Array.isArray(ledgerData.ledger)
+                ? ledgerData.ledger.reduce(
+                    (acc, item) =>
+                        (item.status !== "Invoice Rejected" && item.status !== "Invoice Created")
+                            ? acc + Number(item.total_amount || 0)
+                            : acc,
+                    0
+                )
+                : 0;
+            const totalCredit =
+                (Array.isArray(ledgerData.ledger)
+                    ? ledgerData.ledger.reduce((acc, item) =>
+                        acc +
+                        (Array.isArray(item.recived_payment)
+                            ? item.recived_payment.reduce(
+                                (sum, rec) => sum + Number(rec.amount || 0),
+                                0
+                            )
+                            : 0)
+                        , 0)
+                    : 0) +
+                (Array.isArray(ledgerData.advance_receipts)
+                    ? ledgerData.advance_receipts.reduce(
+                        (sum, rec) => sum + Number(rec.amount || 0),
+                        0
+                    )
+                    : 0);
+            closingBalance = totalDebit - totalCredit;
+        }
+    }
+    const closingBalanceDebit = closingBalance > 0 ? closingBalance : 0;
+    const closingBalanceCredit = closingBalance < 0 ? Math.abs(closingBalance) : 0;
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -110,6 +175,14 @@ const ReceiptFormPage = ({ closingBalance, billingPhone }) => {
         }
     };
 
+    const getTotalPaymentAmount = (receipts) => {
+        if (!Array.isArray(receipts)) return 0;
+        return receipts.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+    };
+
+    const totalReceiptsAmount = getTotalPaymentAmount(paymentRecipts);
+    const balanceAmount = totalPayableAmountDisplay - totalReceiptsAmount;
+
     const handleSubmit = async (values, { resetForm }) => {
         setIsSubmitting(true);
         try {
@@ -185,7 +258,6 @@ const ReceiptFormPage = ({ closingBalance, billingPhone }) => {
                 toast.error("SMS sending failed");
             }
         } catch (error) {
-            console.error("SMS Error:", error.response?.data || error.message);
             toast.error("Error sending SMS. Try again.");
         }
     };
@@ -226,21 +298,21 @@ const ReceiptFormPage = ({ closingBalance, billingPhone }) => {
                         >
                             {closingBalance > 0 ? (
                                 <>
-                                    Customer Ledger Credit:{" "}
-                                    <span style={{ color: "green" }}>${closingBalance.toFixed(2)}</span>
+                                    Customer Ledger Debit:{" "}
+                                    <span style={{ color: "#dc3545" }}>₹{closingBalance.toFixed(2)}</span>
                                     <br />
-                                    Balance Payment Amount: <span style={{ color: "blue" }}>$0.00</span>
+                                    Balance Payable Amount: <span style={{ color: "blue" }}>₹{balanceAmount.toFixed(2)}</span>
                                 </>
                             ) : closingBalance < 0 ? (
                                 <>
-                                    Ledger Debited:{" "}
-                                    <span style={{ color: "#dc3545" }}>${Math.abs(closingBalance).toFixed(2)}</span>
+                                    Customer Ledger Credit:{" "}
+                                    <span style={{ color: "green" }}>₹{Math.abs(closingBalance).toFixed(2)}</span>
                                 </>
                             ) : (
                                 <>
-                                    Customer Ledger Credit: <span>$0.00</span>
+                                    Customer Ledger Credit: <span>₹0.00</span>
                                     <br />
-                                    Ledger Debited: <span>$0.00</span>
+                                    Ledger Debited: <span>₹0.00</span>
                                 </>
                             )}
                         </div>

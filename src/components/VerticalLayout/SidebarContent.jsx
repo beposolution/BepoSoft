@@ -267,7 +267,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'Marketing' || role === 'CEO' || role === 'CSO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'Marketing' || role === 'CEO' || role === 'CSO' || role === 'COO' ? (
 
               <li>
                 <Link to="/#" className="has-arrow">
@@ -285,7 +285,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'Marketing' || role === 'CEO' || role === 'CSO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'Marketing' || role === 'CEO' || role === 'CSO' || role === 'COO' ? (
 
 
               <li>
@@ -304,7 +304,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'BDO' || role === "BDM" || role === 'CEO' || role === 'CSO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'BDO' || role === "BDM" || role === 'CEO' || role === 'CSO' || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUsers size={20} style={{ marginRight: '8px' }} />
@@ -321,7 +321,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <AiFillProduct size={17} style={{ marginRight: '6px' }} />
@@ -344,7 +344,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'Warehouse Admin' || role === 'warehouse' || role === 'CEO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'Warehouse Admin' || role === 'warehouse' || role === 'CEO' || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <MdDetails size={20} style={{ marginRight: '8px' }} />
@@ -362,7 +362,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'CEO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'CEO' || role === 'COO' ? (
               <li>
                 <Link className="has-arrow" to="/#">
                   <FaReceipt size={20} style={{ marginRight: '8px' }} />
@@ -400,7 +400,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {(role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO') && (
+            {(role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO') && (
               <>
                 {/* Expense Section */}
                 <li>
@@ -426,7 +426,7 @@ const SidebarContent = (props) => {
               </>
             )}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'Warehouse Admin' || role === 'warehouse' || role === 'CEO' || role === 'CSO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'Warehouse Admin' || role === 'warehouse' || role === 'CEO' || role === 'CSO' || role === 'COO' ? (
 
               <li>
                 <Link to="/#" className="has-arrow">
@@ -446,7 +446,7 @@ const SidebarContent = (props) => {
 
             ) : null}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUsers size={20} style={{ marginRight: '8px' }} />
@@ -463,7 +463,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {(role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO') && (
+            {(role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO') && (
               <>
                 {/* parcel srvice Section */}
                 <li>
@@ -508,7 +508,7 @@ const SidebarContent = (props) => {
               </>
             )}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <MdLocalFireDepartment size={20} style={{ marginRight: '8px' }} />
@@ -522,7 +522,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUsers size={20} style={{ marginRight: '8px' }} />
@@ -536,7 +536,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <BiSolidBank size={20} style={{ marginRight: '8px' }} />
@@ -553,7 +553,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <GrOrganization size={20} style={{ marginRight: '8px' }} />
@@ -598,7 +598,7 @@ const SidebarContent = (props) => {
 ) : null} */}
 
 
-            {['ADMIN', 'Accounts / Accounting', 'IT', 'CEO', 'CSO'].includes(role) && (
+            {['ADMIN', 'Accounts / Accounting', 'IT', 'CEO', 'CSO', 'COO'].includes(role) && (
               <li>
                 <Link to="/#" className="has-arrow">
                   <TbReportSearch size={20} style={{ marginRight: '8px' }} />
@@ -654,7 +654,7 @@ const SidebarContent = (props) => {
               </li>
             )}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'CSO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'CSO' || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUserTie size={17} style={{ marginRight: '6px' }} />
@@ -673,7 +673,7 @@ const SidebarContent = (props) => {
 
             ) : null}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUsers size={20} style={{ marginRight: '8px' }} />
@@ -690,7 +690,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
               <>
                 <li>
                   <Link to="/#" className="has-arrow">
@@ -718,7 +718,7 @@ const SidebarContent = (props) => {
               </>
             ) : null}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
               <li>
                 <Link to="#" >
                   <BiCheckDouble size={20} style={{ marginRight: '8px' }} />
@@ -739,7 +739,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'Warehouse Admin' || role === 'ADMIN' || role === 'CEO' || role === "Accounts / Accounting" ? (
+            {role === 'Warehouse Admin' || role === 'ADMIN' || role === 'CEO' || role === "Accounts / Accounting" || role === 'COO' ? (
               <li>
                 <Link to="/warehouse/waitingproducts/" >
                   <BsArrowRightSquareFill size={20} style={{ marginRight: '8px' }} />
@@ -748,7 +748,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
               <li>
                 <Link to="#" >
                   <GiBassetHoundHead size={20} style={{ marginRight: '8px' }} />

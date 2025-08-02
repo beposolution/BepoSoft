@@ -371,6 +371,7 @@ import InternalTransferList from "../pages/Receipts/InternalTransferList";
 import ParcelServiceData from "../pages/DGM/ParcelServiceData";
 import CountryCode from "../pages/country/CountryCode";
 import AddRack from "../pages/RackDetails/AddRack";
+import FamilyDetails from "../pages/DashboardJob/FamilyDetails";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -381,6 +382,7 @@ const authProtectedRoutes = [
   { path: "/dashboard-crypto", component: <DashboardCrypto /> },
   { path: "/blog", component: <Blog /> },
   { path: "/dashboard/", component: <DashboardJob /> },
+  { path: "/dashboard/family/details", component: <FamilyDetails /> },
 
   //   //Crypto
   { path: "/crypto-wallet", component: <CryptoWallet /> },

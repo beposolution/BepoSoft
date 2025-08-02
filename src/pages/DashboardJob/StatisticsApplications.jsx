@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Table, Row, Col, Card, CardBody, Input, Button } from "reactstrap";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useNavigate } from "react-router-dom";
 
 const StatisticsApplications = () => {
     const token = localStorage.getItem("token")
@@ -26,6 +27,7 @@ const StatisticsApplications = () => {
         return today.toISOString().split("T")[0];
     });
     const [filteredData, setFilteredData] = useState([]);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -186,25 +188,30 @@ const StatisticsApplications = () => {
             });
     }, []);
 
-    const codOrders = orders.filter(order => order.payment_status === "COD");
-    const codOrdersCount = codOrders.length;
-    const codOrdersTotalVolume = codOrders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    const ordersThisMonth = orders.filter(order => {
+        if (!order.order_date) return false;
+        const orderDate = new Date(order.order_date);
+        return orderDate >= firstDayOfMonth && orderDate <= lastDayOfMonth;
+    });
+
+    // const codOrders = orders.filter(order => order.payment_status === "COD");
+    // const codOrdersCount = codOrders.length;
+    // const codOrdersTotalVolume = codOrders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
 
     const todayOrders = orders.filter(order => {
         const orderDate = new Date(order.order_date).toISOString().split('T')[0];
         return orderDate === todayDate;
     });
 
-    const familyStats = orders.reduce((acc, order) => {
+    const familyStats = ordersThisMonth.reduce((acc, order) => {
         const orderDate = new Date(order.order_date);
         const orderDay = orderDate.toISOString().split('T')[0];
-        const orderMonth = orderDate.getMonth();
-        const orderYear = orderDate.getFullYear();
-
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
-        const thisMonth = today.getMonth();
-        const thisYear = today.getFullYear();
 
         const family = order.family_name || "Unknown";
         const amount = parseFloat(order.total_amount) || 0;
@@ -223,10 +230,9 @@ const StatisticsApplications = () => {
             acc[family].todayOrders += 1;
         }
 
-        if (orderMonth === thisMonth && orderYear === thisYear) {
-            acc[family].monthAmount += amount;
-            acc[family].monthOrders += 1;
-        }
+        // All orders in ordersThisMonth are of this month, so accumulate for month
+        acc[family].monthAmount += amount;
+        acc[family].monthOrders += 1;
 
         return acc;
     }, {});
@@ -317,6 +323,10 @@ const StatisticsApplications = () => {
     const totalVolume = orders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
     const totalexpense = expense.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
 
+    const codOrdersThisMonth = ordersThisMonth.filter(order => order.payment_status === "COD");
+    const codOrdersCount = codOrdersThisMonth.length;
+    const codOrdersTotalVolume = codOrdersThisMonth.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
+
     // Today's COD orders (all divisions)
     const todayCodOrders = orders.filter(order => {
         const orderDate = new Date(order.order_date).toISOString().split('T')[0];
@@ -342,14 +352,14 @@ const StatisticsApplications = () => {
             <Col lg={12}>
                 <Card className="shadow-sm border-0">
                     <CardBody>
-                        {role === 'CEO' && (
+                        {role === 'CEO' || role === 'COO' && (
                             <div className="row">
                                 {/* Left Column - Division-wise Order Statistics */}
                                 <div className="col-md-3">
                                     <h4 className="text-center mb-4 fw-bold text-primary">📊 Division-wise Order Statistics</h4>
                                     <div className="d-flex flex-wrap justify-content-center gap-3">
                                         {Object.entries(familyStats).map(([family, stats]) => {
-                                            const codFamilyOrders = orders.filter(
+                                            const codFamilyOrders = ordersThisMonth.filter(
                                                 order => order.family_name === family && order.payment_status === "COD"
                                             );
                                             const codFamilyCount = codFamilyOrders.length;
@@ -372,8 +382,14 @@ const StatisticsApplications = () => {
                                             return (
                                                 <div
                                                     className="card border-0 shadow-sm p-2 rounded-4"
-                                                    style={{ width: "180px", transition: "0.3s" }}
+                                                    style={{
+                                                        width: "180px",
+                                                        transition: "0.3s",
+                                                        cursor: "pointer",
+                                                        background: "#f9fcff"
+                                                    }}
                                                     key={family}
+                                                    onClick={() => navigate("/dashboard/family/details")}
                                                 >
                                                     <div className="card-body text-center">
                                                         <h5 className="card-title text-uppercase fw-semibold text-secondary">
@@ -383,19 +399,19 @@ const StatisticsApplications = () => {
                                                             <span className="text-muted">Today's Total:</span><br />
                                                             <strong className="text-success fs-6">₹{stats?.todayAmount?.toLocaleString()} ({stats?.todayOrders} orders)</strong>
                                                         </p>
-                                                        <p className="card-text mb-0">
+                                                        {/* <p className="card-text mb-0">
                                                             <span className="text-muted">Today's COD:</span><br />
                                                             <strong className="text-warning fs-6">₹{todayCodFamilyVolume.toLocaleString()} ({todayCodFamilyCount} orders)</strong>
-                                                        </p>
+                                                        </p> */}
                                                         <hr />
                                                         <p className="card-text mb-0">
                                                             <span className="text-muted">This Month:</span><br />
                                                             <strong className="text-primary fs-6">₹{stats?.monthAmount?.toLocaleString()} ({stats?.monthOrders} orders)</strong>
                                                         </p>
-                                                        <p className="card-text ">
+                                                        {/* <p className="card-text ">
                                                             <span className="text-muted">This Month COD:</span><br />
                                                             <strong className="text-warning fs-6">₹{codFamilyVolume.toLocaleString()} ({codFamilyCount} orders)</strong>
-                                                        </p>
+                                                        </p> */}
                                                     </div>
                                                 </div>
                                             );

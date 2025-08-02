@@ -279,7 +279,7 @@ const ChartSection = () => {
                                         <div className="flex-grow-1">
                                             <p className="text-muted fw-medium">Todays Bill</p>
                                             <h4 className="mb-0">
-                                                {role === "ADMIN" || role === "CEO"
+                                                {role === "ADMIN" || role === "CEO" || role === 'COO'
                                                     ? allTodayOrdersCount
                                                     : role === "CSO"
                                                         ? skatingAndCyclingTodayCount

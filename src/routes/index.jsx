@@ -372,6 +372,7 @@ import ParcelServiceData from "../pages/DGM/ParcelServiceData";
 import CountryCode from "../pages/country/CountryCode";
 import AddRack from "../pages/RackDetails/AddRack";
 import FamilyDetails from "../pages/DashboardJob/FamilyDetails";
+import AddCategory from "../pages/Product/AddCategory";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -435,6 +436,7 @@ const authProtectedRoutes = [
   { path: "/product/:id/Images/", component: <Images /> },
   { path: "/add/products/bulk/", component: <BulkProduct /> },
   { path: "/warehouse/waitingproducts/", component: <WaitingProducts /> },
+  { path: "/product/category/", component: <AddCategory /> },
 
   // Receipts
   { path: "/advance/receipt/", component: <AdvanceReceipt /> },

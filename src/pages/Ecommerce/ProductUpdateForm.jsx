@@ -17,6 +17,9 @@ const EcommerenceAddProduct = () => {
     const [families, setFamilyOptions] = useState([]);
     const [message, setMessage] = useState(null); // To store success or error message
     const [messageType, setMessageType] = useState(null);
+    const [rackList, setRackList] = useState([]);
+    const [rackDetails, setRackDetails] = useState([]);
+    const [categories, setCategories] = useState([]);
 
     const token = localStorage.getItem('token');
 
@@ -30,12 +33,14 @@ const EcommerenceAddProduct = () => {
             tax: '',
             unit: "",
             selling_price: '',
-            stock: '',
+            // stock: '',
             color: '',
             size: '',
             image: null,
             groupID: '',
             landing_cost: '',
+            product_category: '',
+            rack_details: [],
         },
         validationSchema: yup.object().shape({
             name: yup.string().required('Please Enter Your Product Name'),
@@ -46,7 +51,7 @@ const EcommerenceAddProduct = () => {
             tax: yup.string().required('Please Enter Tax'),
             unit: yup.string().required('Please Enter Unit'),
             selling_price: yup.number().required('Please Enter Selling Price'),
-            stock: yup.number().required('Please Enter Stock Quantity'),
+            // stock: yup.number().required('Please Enter Stock Quantity'),
             // color: yup.string().required('Please Enter Color'),
             // size: yup.string().required('Please Enter Size'),
             groupID: yup.string().required('Please Enter groupID')
@@ -69,6 +74,18 @@ const EcommerenceAddProduct = () => {
             if (selectedFiles.length > 0) {
                 formData.append('image', selectedFiles[0]);
             }
+
+            formData.append('product_category', values.product_category);
+            formData.append('rack_details', JSON.stringify(
+                rackDetails
+                    .filter(r => r.rack_id && r.column_name && r.usability && r.rack_stock)
+                    .map(r => ({
+                        rack_id: Number(r.rack_id),
+                        column_name: r.column_name,
+                        usability: r.usability,
+                        rack_stock: Number(r.rack_stock)
+                    }))
+            ));
 
             try {
                 const response = await fetch(
@@ -109,6 +126,34 @@ const EcommerenceAddProduct = () => {
     ];
 
     useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}product/category/add/`, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                });
+                setCategories(response.data);
+            } catch {
+                toast.error('Error fetching categories.');
+            }
+        };
+        fetchCategories();
+    }, [token]);
+
+    useEffect(() => {
+        const fetchRacks = async () => {
+            try {
+                const res = await axios.get(`${import.meta.env.VITE_APP_KEY}rack/add/`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                setRackList(res?.data || []);
+            } catch {
+                toast.error('Failed to load rack data.');
+            }
+        };
+        fetchRacks();
+    }, [token]);
+
+    useEffect(() => {
         const fetchFamilyData = async () => {
             try {
                 const response = await axios.get(`${import.meta.env.VITE_APP_KEY}familys/`, {
@@ -118,7 +163,7 @@ const EcommerenceAddProduct = () => {
                 });
 
                 if (response.data && response.data.data) {
-                    setFamilyOptions(response.data.data); // Assuming response.data.data contains family options
+                    setFamilyOptions(response.data.data);
                 } else {
                     toast.error('Unexpected family data format:');
                 }
@@ -135,12 +180,11 @@ const EcommerenceAddProduct = () => {
                     },
                 });
                 const productData = await response.json();
-
                 if (response.ok && productData) {
                     formik.setValues({
                         name: productData.data.name || '',
                         hsn_code: productData.data.hsn_code || '',
-                        family: productData.data.family.map(family => family.id) || [],
+                        family: productData.data.family.map(id => id.toString()) || [],
                         purchase_rate: productData.data.purchase_rate || '',
                         type: productData.data.type || '',
                         tax: productData.data.tax || '',
@@ -151,8 +195,13 @@ const EcommerenceAddProduct = () => {
                         size: productData.data.size || '',
                         groupID: productData.data.groupID || '',
                         landing_cost: productData.data.landing_cost || '',
+                        product_category: productData.data.product_category !== undefined && productData.data.product_category !== null
+                            ? String(productData.data.product_category)
+                            : "",
+                        rack_details: productData.data.rack_details || [],
                         retail_price: productData.data.retail_price || ''
                     });
+                    setRackDetails(productData.data.rack_details || []);
                     if (productData.data.image) {
                         setImagePreview(productData.data.image);
                     }
@@ -486,6 +535,7 @@ const EcommerenceAddProduct = () => {
                                                         value={formik.values.stock}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
+                                                        readOnly
                                                         invalid={
                                                             formik.touched.stock && formik.errors.stock ? true : false
                                                         }
@@ -533,28 +583,16 @@ const EcommerenceAddProduct = () => {
                                                         name="family"
                                                         id="formrow-InputState"
                                                         className="form-control"
-                                                        value={formik.values.family.map(String)} // Convert values to string
+                                                        value={formik.values.family.map(String)}
                                                         onChange={(e) => {
                                                             const options = Array.from(e.target.selectedOptions, (option) => option.value);
-                                                            formik.setFieldValue('family', options); // Update Formik values dynamically
+                                                            formik.setFieldValue('family', options);
                                                         }}
                                                         onBlur={formik.handleBlur}
-                                                        multiple // Enable multiple selections
+                                                        multiple
                                                     >
-                                                        {/* Default Placeholder */}
-                                                        {formik.values.family.length === 0 && (
-                                                            <option disabled value="">
-                                                                Select Division
-                                                            </option>
-                                                        )}
-
-                                                        {/* Render Family Options & Ensure Pre-selection */}
                                                         {families.map((family) => (
-                                                            <option
-                                                                key={family.id}
-                                                                value={family.id.toString()}
-                                                                selected={formik.values.family.includes(family.id.toString())} // Pre-select matching family IDs
-                                                            >
+                                                            <option key={family.id} value={family.id.toString()}>
                                                                 {family.name}
                                                             </option>
                                                         ))}
@@ -611,6 +649,132 @@ const EcommerenceAddProduct = () => {
                                                     </div>
                                                 )}
 
+                                            </Col>
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-category-Input">Category</Label>
+                                                    <select
+                                                        name="product_category"
+                                                        className="form-control"
+                                                        value={formik.values.product_category}
+                                                        onChange={formik.handleChange}
+                                                    >
+                                                        <option value="">Choose...</option>
+                                                        {categories.map(cat => (
+                                                            <option key={cat.id} value={String(cat.id)}>
+                                                                {cat.category_name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {formik.touched.product_category && formik.errors.product_category && (
+                                                        <FormFeedback className="d-block">{formik.errors.product_category}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+                                        </Row>
+                                        <Row>
+                                            <Col md={12}>
+                                                <Label>Rack Details</Label>
+                                                {rackDetails.map((rack, idx) => {
+                                                    const racks = rackList; // (optionally filter by warehouse if needed)
+                                                    const getColumnsForRack = (rackId) => {
+                                                        const found = rackList.find(r => String(r.id) === String(rackId));
+                                                        return found ? found.column_names : [];
+                                                    };
+                                                    const columns = getColumnsForRack(rack.rack_id);
+
+                                                    return (
+                                                        <Row key={idx} className="align-items-end mb-2">
+                                                            <Col md={3}>
+                                                                <select
+                                                                    className="form-control"
+                                                                    value={rack.rack_id}
+                                                                    onChange={e => {
+                                                                        const arr = [...rackDetails];
+                                                                        arr[idx].rack_id = e.target.value;
+                                                                        arr[idx].column_name = '';
+                                                                        setRackDetails(arr);
+                                                                    }}
+                                                                    required
+                                                                >
+                                                                    <option value="">Select Rack</option>
+                                                                    {racks.map(r => (
+                                                                        <option key={r.id} value={r.id}>{r.rack_name}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </Col>
+                                                            <Col md={3}>
+                                                                <select
+                                                                    className="form-control"
+                                                                    value={rack.column_name}
+                                                                    onChange={e => {
+                                                                        const arr = [...rackDetails];
+                                                                        arr[idx].column_name = e.target.value;
+                                                                        setRackDetails(arr);
+                                                                    }}
+                                                                    required
+                                                                    disabled={!rack.rack_id}
+                                                                >
+                                                                    <option value="">Select Column</option>
+                                                                    {columns.map((col, colIdx) => (
+                                                                        <option key={colIdx} value={col}>{col}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </Col>
+                                                            <Col md={3}>
+                                                                <Input
+                                                                    type="select"
+                                                                    value={rack.usability}
+                                                                    onChange={e => {
+                                                                        const arr = [...rackDetails];
+                                                                        arr[idx].usability = e.target.value;
+                                                                        setRackDetails(arr);
+                                                                    }}
+                                                                    required
+                                                                >
+                                                                    <option value="">Usability</option>
+                                                                    <option value="usable">Usable</option>
+                                                                    <option value="damaged">Damaged</option>
+                                                                    <option value="partially_damaged">Partially Damaged</option>
+                                                                </Input>
+                                                            </Col>
+                                                            <Col md={2}>
+                                                                <Input
+                                                                    type="number"
+                                                                    placeholder="Rack Stock"
+                                                                    value={rack.rack_stock}
+                                                                    onChange={e => {
+                                                                        const arr = [...rackDetails];
+                                                                        arr[idx].rack_stock = e.target.value;
+                                                                        setRackDetails(arr);
+                                                                    }}
+                                                                    min={0}
+                                                                    required
+                                                                />
+                                                            </Col>
+                                                            <Col md={1}>
+                                                                <Button
+                                                                    color="danger"
+                                                                    size="sm"
+                                                                    onClick={() => setRackDetails(rackDetails.filter((_, i) => i !== idx))}
+                                                                >
+                                                                    Remove
+                                                                </Button>
+                                                            </Col>
+                                                        </Row>
+                                                    );
+                                                })}
+                                                <Button
+                                                    color="info"
+                                                    size="sm"
+                                                    className="mb-2"
+                                                    onClick={() => setRackDetails([
+                                                        ...rackDetails,
+                                                        { rack_id: '', column_name: '', usability: '', rack_stock: '' }
+                                                    ])}
+                                                >
+                                                    Add Rack
+                                                </Button>
                                             </Col>
                                         </Row>
                                         <div className="d-flex flex-wrap gap-2">

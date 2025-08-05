@@ -15,6 +15,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useLocation } from "react-router-dom";
 import { Link } from 'react-router-dom';
+import PaymentImages from "./PaymentImages";
 
 const FormLayouts = () => {
 
@@ -1458,6 +1459,7 @@ const FormLayouts = () => {
                             </Card>
                         </Col>
                         <Col xl={12}>
+                            <PaymentImages />
                             <Paymentrecipent
                                 billingPhone={billingAddress.phone}
                                 customerId={customerId}

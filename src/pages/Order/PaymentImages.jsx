@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-    Row, Col, Card, CardBody, CardTitle, Button, Form, Input
+    Row, Col, Card, CardBody, CardTitle, Button, Form, Input, Modal
 } from 'reactstrap';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -12,6 +12,8 @@ const PaymentImages = () => {
     const [images, setImages] = useState([]);
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [uploading, setUploading] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [previewImg, setPreviewImg] = useState(null);
 
     // Fetch images when order ID changes
     useEffect(() => {
@@ -88,6 +90,15 @@ const PaymentImages = () => {
         }
     };
 
+    const openPreview = (img) => {
+        setPreviewImg(img);
+        setPreviewOpen(true);
+    };
+    const closePreview = () => {
+        setPreviewOpen(false);
+        setPreviewImg(null);
+    };
+
     return (
         <Card>
             <CardBody>
@@ -149,7 +160,8 @@ const PaymentImages = () => {
                                         }
                                         alt={`Payment ${index}`}
                                         className="img-thumbnail"
-                                        style={{ height: '100px', objectFit: 'cover' }}
+                                        style={{ height: '100px', objectFit: 'cover', cursor: 'pointer' }}
+                                        onClick={() => openPreview(img)}
                                     />
                                     <Button
                                         color="danger"
@@ -164,6 +176,29 @@ const PaymentImages = () => {
                         </Row>
                     </div>
                 )}
+                <Modal isOpen={previewOpen} toggle={closePreview} centered size="lg">
+                    <div className="text-end p-2">
+                        <Button close onClick={closePreview}></Button>
+                    </div>
+                    <div className="text-center mb-3">
+                        {previewImg && (
+                            <img
+                                src={
+                                    previewImg.image?.startsWith('http')
+                                        ? previewImg.image
+                                        : `${import.meta.env.VITE_APP_IMAGE}${previewImg.image}`
+                                }
+                                alt="Preview"
+                                style={{
+                                    maxHeight: "80vh",
+                                    maxWidth: "98%",
+                                    borderRadius: 8,
+                                    boxShadow: "0 4px 24px rgba(0,0,0,0.25)"
+                                }}
+                            />
+                        )}
+                    </div>
+                </Modal>
                 <ToastContainer />
             </CardBody>
         </Card>

@@ -462,7 +462,7 @@ const EcommerenceAddProduct = () => {
                                                         value={formik.values.groupID}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
-                                                        readOnly
+                                                        // readOnly
                                                         invalid={
                                                             formik.touched.groupID && formik.errors.groupID ? true : false
                                                         }

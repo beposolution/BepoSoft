@@ -116,14 +116,15 @@ const FormLayouts = () => {
         const dataToSave = selectedProducts.map((product) => ({
             order: selectedOrder.id,
             product: product.name,
-            returnreason: product.returnReason || "Not specified",
+            returnreason: product.returnReason || "usable",
             price: product.rate,
             quantity: product.rowQuantity,
             remark: "return", // Assuming a fixed remark for this example
-            status: "pending",
+            status: "Waiting For Approval",
             note: product.note || "",
             date: currentDate,  // Add current date
             time: currentTime,
+            product_id: product.product,
         }));
 
         setLoading(true);
@@ -358,77 +359,42 @@ const FormLayouts = () => {
                                                         <td>₹{product.rate ? product.rate : "0.00"}</td> {/* Fixed here */}
                                                         <td>1</td>
                                                         <td>
-                                                            <div>
-                                                                <div>
-                                                                    <Input
-                                                                        type="radio"
-                                                                        name={`returnReason-${product.uniqueId}`}
-                                                                        id={`damaged-${product.uniqueId}`}
-                                                                        value="Damaged"
-                                                                        onChange={(e) => {
-                                                                            const selectedReason = e.target.value;
-                                                                            setSelectedProducts((prev) =>
-                                                                                prev.map((p) =>
-                                                                                    p.uniqueId === product.uniqueId
-                                                                                        ? { ...p, returnReason: selectedReason }
-                                                                                        : p
-                                                                                )
-                                                                            );
-                                                                        }}
-                                                                    />
-                                                                    <Label htmlFor={`damaged-${product.uniqueId}`} className="ms-1">
-                                                                        Damaged
-                                                                    </Label>
-                                                                </div>
-                                                                <div>
-                                                                    <Input
-                                                                        type="radio"
-                                                                        name={`returnReason-${product.uniqueId}`}
-                                                                        id={`partiallyDamaged-${product.uniqueId}`}
-                                                                        value="Partially Damaged"
-                                                                        onChange={(e) => {
-                                                                            const selectedReason = e.target.value;
-                                                                            setSelectedProducts((prev) =>
-                                                                                prev.map((p) =>
-                                                                                    p.uniqueId === product.uniqueId
-                                                                                        ? { ...p, returnReason: selectedReason }
-                                                                                        : p
-                                                                                )
-                                                                            );
-                                                                        }}
-                                                                    />
-                                                                    <Label htmlFor={`partiallyDamaged-${product.uniqueId}`} className="ms-1">
-                                                                        Partially Damaged
-                                                                    </Label>
-                                                                </div>
-                                                                <div>
-                                                                    <Input
-                                                                        type="radio"
-                                                                        name={`returnReason-${product.uniqueId}`}
-                                                                        id={`usable-${product.uniqueId}`}
-                                                                        value="Usable"
-                                                                        onChange={(e) => {
-                                                                            const selectedReason = e.target.value;
-                                                                            setSelectedProducts((prev) =>
-                                                                                prev.map((p) =>
-                                                                                    p.uniqueId === product.uniqueId
-                                                                                        ? { ...p, returnReason: selectedReason }
-                                                                                        : p
-                                                                                )
-                                                                            );
-                                                                        }}
-                                                                    />
-                                                                    <Label htmlFor={`usable-${product.uniqueId}`} className="ms-1">
-                                                                        Usable
-                                                                    </Label>
-                                                                </div>
-                                                                <div>
-                                                                    <Input
-                                                                        type="text"
-                                                                        name="note"
-                                                                    />
-                                                                </div>
-                                                            </div>
+                                                            <select
+                                                                className="form-select"
+                                                                value={product.returnReason || ""}
+                                                                onChange={(e) => {
+                                                                    const selectedReason = e.target.value;
+                                                                    setSelectedProducts((prev) =>
+                                                                        prev.map((p) =>
+                                                                            p.uniqueId === product.uniqueId
+                                                                                ? { ...p, returnReason: selectedReason }
+                                                                                : p
+                                                                        )
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <option value="">Select Reason</option>
+                                                                <option value="damaged">Damaged</option>
+                                                                <option value="partially_damaged">Partially Damaged</option>
+                                                                <option value="usable">Usable</option>
+                                                            </select>
+                                                            <Input
+                                                                type="text"
+                                                                name="note"
+                                                                value={product.note || ""}
+                                                                onChange={(e) => {
+                                                                    const value = e.target.value;
+                                                                    setSelectedProducts((prev) =>
+                                                                        prev.map((p) =>
+                                                                            p.uniqueId === product.uniqueId
+                                                                                ? { ...p, note: value }
+                                                                                : p
+                                                                        )
+                                                                    );
+                                                                }}
+                                                                placeholder="Add Description"
+                                                                className="mt-1"
+                                                            />
                                                         </td>
                                                         <td>
                                                             <Button

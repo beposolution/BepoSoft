@@ -48,7 +48,7 @@ const AddRack = () => {
         }
 
         try {
-            await axios.post(`${import.meta.env.VITE_APP_KEY}api/rack/add/`, {
+            await axios.post(`${import.meta.env.VITE_APP_KEY}rack/add/`, {
                 warehouse: selectedWarehouse,
                 rack_name: rackName,
                 number_of_columns: Number(numberOfColumns),

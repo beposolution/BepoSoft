@@ -13,7 +13,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 
-const   BasicTable = () => {
+const BasicTable = () => {
     // Meta title
     document.title = "GRV | beposoft grv data";
 
@@ -30,7 +30,7 @@ const   BasicTable = () => {
                         'Authorization': `Bearer ${token}`,
                     },
                 });
-                setTableData(response.data.data); // Assuming API returns an array of objects
+                setTableData(response.data.data);
             } catch (error) {
                 toast.error("Error fetching data:");
             }
@@ -110,7 +110,7 @@ const   BasicTable = () => {
                                                     <th>Condition / Qty</th>
                                                     <th>Invoice Created By</th>
                                                     <th>Customer</th>
-                                                    <th>Invoice Created</th>
+                                                    <th>Description</th>
                                                     <th>Invoice Delivered</th>
                                                     <th>Remark</th>
                                                     <th>Status</th>
@@ -125,7 +125,7 @@ const   BasicTable = () => {
                                                             <td>{item.returnreason}</td>
                                                             <td>{item.staff}</td>
                                                             <td>{item.customer}</td>
-                                                            <td>{item.date}- {item.time}</td>
+                                                            <td>{item.note || "N/A"}</td>
                                                             <td>{item.order_date}</td>
                                                             <td>
                                                                 <select
@@ -135,8 +135,9 @@ const   BasicTable = () => {
                                                                         handleChange(item.id, "remark", e.target.value)
                                                                     }
                                                                 >
-                                                                    <option value="return">return</option>
-                                                                    <option value="refund">refund</option>
+                                                                    <option value="return">Return</option>
+                                                                    <option value="refund">Refund</option>
+                                                                    <option value="exchange">Exchange</option>
                                                                 </select>
                                                             </td>
                                                             <td>
@@ -150,6 +151,7 @@ const   BasicTable = () => {
                                                                     <option value="pending">Pending</option>
                                                                     <option value="approved">Approved</option>
                                                                     <option value="rejected">Reject</option>
+                                                                    <option value="Waiting For Approval">Waiting For Approval</option>
                                                                 </select>
                                                             </td>
                                                         </tr>

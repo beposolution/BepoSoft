@@ -38,24 +38,25 @@ const VariantProductCreateForm = () => {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const response = await fetch(`${import.meta.env.VITE_APP_KEY}products/`, {
+                const response = await fetch(`${import.meta.env.VITE_APP_KEY}products/${id}/variants/`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`,
                         'Content-Type': 'application/json'
                     }
                 });
-
                 const data = await response.json();
-                const products = Array.isArray(data) ? data : data.data || [];
+
+                const productObj = data.products; // This is your product
+                const products = productObj ? [productObj] : []; // Wrap in array for dropdown
                 setProducts(products);
 
-                if (id) {
-                    const selectedProduct = products.find(product => product.id === parseInt(id, 10));
-                    if (selectedProduct) {
-                        setFormData(prevData => ({ ...prevData, product: selectedProduct.id }));
-                    }
+                if (id && productObj && String(productObj.id) === String(id)) {
+                    setFormData(prevData => ({ ...prevData, product: String(productObj.id) }));
+                } else {
+                    console.log('Product not found for id:', id);
                 }
+
             } catch (err) {
                 setError(err.message || "An error occurred while fetching products");
             }
@@ -316,14 +317,14 @@ const VariantProductCreateForm = () => {
                                                 type="select"
                                                 id="product"
                                                 name="product"
-                                                value={formData.product}
+                                                value={String(formData.product || "")}
                                                 onChange={(e) => {
                                                     setFormData(prevData => ({ ...prevData, product: e.target.value }));
                                                 }}
                                             >
                                                 <option value="">Select a product</option>
                                                 {products.map(product => (
-                                                    <option key={product.id} value={product.id}>
+                                                    <option key={product.id} value={String(product.id)}>
                                                         {product.name}
                                                     </option>
                                                 ))}
@@ -432,10 +433,10 @@ const VariantProductCreateForm = () => {
 
                                                                 <td>
                                                                     <img
-                                                                        src={ `${import.meta.env.VITE_APP_IMAGE}${item.image}`}
+                                                                        src={`${import.meta.env.VITE_APP_IMAGE}${item.image}`}
                                                                         alt={item.name || 'Image not available'}
                                                                         style={{ width: '50px', height: '50px', objectFit: 'cover' }}
-                                                                        // onError={(e) => { e.target.src = '/path/to/placeholder.png'; }}
+                                                                    // onError={(e) => { e.target.src = '/path/to/placeholder.png'; }}
                                                                     />
                                                                 </td>
 

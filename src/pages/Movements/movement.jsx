@@ -504,7 +504,7 @@ const Movement = () => {
                                         ))
                                     )}
                                     <tr className="total-row" style={{ backgroundColor: "#f0f0f0", color: "red", fontWeight: "bold", textAlign: "left" }}>
-                                        <td colSpan={5} style={{ border: "1px solid black" }}><strong>Total</strong></td>
+                                        <td colSpan={6} style={{ border: "1px solid black" }}><strong>Total</strong></td>
                                         <td style={{ border: "1px solid black" }}>{boxTotal}</td>
                                         <td style={{ border: "1px solid black" }}>{codTotal}</td>
                                         <td style={{ border: "1px solid black" }}>{weightTotal}</td>

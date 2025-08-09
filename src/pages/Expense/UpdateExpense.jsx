@@ -12,7 +12,7 @@ const UpdateExpense = () => {
     const [companies, setCompanies] = useState([]);
     const [banks, setBanks] = useState([]);
     const [staffs, setStaffs] = useState([]);
-    const [EmiDetails, setEmiDetails] = useState("");
+    const [EmiDetails, setEmiDetails] = useState([]);
     const [category, setCategory] = useState([]);
     const [purposeOfPayment, setPurposeOfPayment] = useState([]);
     const navigate = useNavigate();
@@ -50,6 +50,7 @@ const UpdateExpense = () => {
                     transaction_id: matchedExpense?.transaction_id || "",
                     description: matchedExpense?.description || "",
                     amount: matchedExpense?.amount || "",
+                    expense_type: matchedExpense?.expense_type || "",
                 });
             } catch (error) {
                 toast.error("Error fetching expense data:");
@@ -136,50 +137,61 @@ const UpdateExpense = () => {
     // Handle update submit
     const handleSubmit = async (e) => {
         e.preventDefault();
-        try {
-            const payload = {
-                ...formData,
-                expense_date: formData.date, // send correctly formatted date
-                ...(formData.purpose_of_pay === "emi" ? { loan: formData.emi_details } : {}),
-            };
 
-            let apiUrl = "";
-            // Condition 1: asset_types === "asset"
-            if (formData.asset_types === "assets") {
-                apiUrl = `${import.meta.env.VITE_APP_KEY}asset/update/${expenseId}/`;
-            } else if (formData.asset_types === "expenses") {
-                // You had some confusing logic; make sure it covers all cases correctly:
-                if (formData.purpose_of_pay === "emi") {
-                    apiUrl = `${import.meta.env.VITE_APP_KEY}expense/get/${expenseId}/`; // or the correct API for EMI update
-                } else {
-                    apiUrl = `${import.meta.env.VITE_APP_KEY}expense/addexpectemiupdate/${expenseId}/`;
-                }
-            }
-            // Condition 3: asset_types === "expense" and purpose_of_pay === "emi"
-            else {
-                alert("Invalid asset type or purpose of pay.");
+        const selectedPurpose = purposeOfPayment.find(
+            p => p.id.toString() === (formData.purpose_of_payment || "")
+        );
+        const isEmi = (selectedPurpose?.name || "").toLowerCase() === "emi";
+
+        // If EMI, require loan
+        if (isEmi) {
+            const loanId = parseInt(formData.emi_details, 10);
+            if (!Number.isInteger(loanId)) {
+                alert("Please select an EMI (loan) for EMI payments.");
                 return;
             }
+        }
 
-            await axios.put(
-                apiUrl,
-                payload,
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                    },
-                }
-            );
+        // If EMI, force asset_types to expenses
+        const assetType = isEmi ? "expenses" : (formData.asset_types || "expenses");
+
+        const payload = {
+            company: parseInt(formData.company, 10),
+            payed_by: parseInt(formData.payed_by, 10),
+            bank: parseInt(formData.bank, 10),
+            purpose_of_payment: formData.purpose_of_payment
+                ? parseInt(formData.purpose_of_payment, 10)
+                : null,
+            amount: formData.amount,
+            expense_date: formData.date,
+            transaction_id: formData.transaction_id,
+            description: formData.description,
+            expense_type: formData.expense_type || null,
+            asset_types: assetType,
+            ...(assetType === "assets" && {
+                name: formData.name,
+                quantity: formData.quantity ? parseInt(formData.quantity, 10) : null,
+                category: formData.category ? parseInt(formData.category, 10) : null,
+            }),
+            ...(isEmi && { loan: parseInt(formData.emi_details, 10) }),
+        };
+
+        // Pick the correct endpoint
+        const apiUrl = isEmi
+            ? `${import.meta.env.VITE_APP_KEY}expense/get/${expenseId}/`                // serializer includes "loan"
+            : (assetType === "assets"
+                ? `${import.meta.env.VITE_APP_KEY}asset/update/${expenseId}/`
+                : `${import.meta.env.VITE_APP_KEY}expense/addexpectemiupdate/${expenseId}/`);
+
+        try {
+            await axios.put(apiUrl, payload, { headers: { Authorization: `Bearer ${token}` } });
             alert("Expense updated successfully!");
             navigate("/expense/list");
         } catch (error) {
-            if (error.response && error.response.data) {
-                alert("Failed to update expense: " + JSON.stringify(error.response.data));
-            } else {
-                alert("Failed to update expense.");
-            }
-            toast.error(error);
+            const msg = error?.response?.data
+                ? JSON.stringify(error.response.data)
+                : "Failed to update expense.";
+            alert("Failed to update expense: " + msg);
         }
     };
 
@@ -194,7 +206,7 @@ const UpdateExpense = () => {
                             <CardBody>
                                 <Form onSubmit={handleSubmit}>
                                     <Row>
-                                        <Col md={4}>
+                                        <Col md={3}>
                                             <div className="mb-3">
                                                 <Label>Company</Label>
                                                 <select className="form-control"
@@ -212,7 +224,7 @@ const UpdateExpense = () => {
                                                 </select>
                                             </div>
                                         </Col>
-                                        <Col md={4}>
+                                        <Col md={3}>
                                             <div className="mb-3">
                                                 <Label>Payed By</Label>
                                                 <select className="form-control" name="payed_by" type="select" value={formData.payed_by || ""} onChange={handleChange} >
@@ -225,7 +237,7 @@ const UpdateExpense = () => {
                                                 </select>
                                             </div>
                                         </Col>
-                                        <Col md={6} lg={3}>
+                                        <Col md={3}>
                                             <div className="mb-3">
                                                 <Label>Bank</Label>
                                                 <select className="form-control" name="bank" type="select" value={formData.bank || ""} onChange={handleChange} >
@@ -238,7 +250,26 @@ const UpdateExpense = () => {
                                                 </select>
                                             </div>
                                         </Col>
-
+                                        <Col md={3}>
+                                            <div className="mb-3">
+                                                <Label htmlFor="formrow-expense-type">Type of Expense</Label>
+                                                <Input
+                                                    type="select"
+                                                    name="expense_type"
+                                                    id="formrow-expense-type"
+                                                    className="form-control"
+                                                    value={formData.expense_type || ""}
+                                                    onChange={handleChange}
+                                                >
+                                                    <option value="">Select Type</option>
+                                                    <option value="miscellaneous">Miscellaneous</option>
+                                                    <option value="permanent">Permanent</option>
+                                                    <option value="emi">EMI</option>
+                                                    <option value="cargo">Cargo</option>
+                                                    <option value="purchase">Purchase</option>
+                                                </Input>
+                                            </div>
+                                        </Col>
                                     </Row>
                                     <Row>
                                         <Col md={4}>
@@ -255,7 +286,7 @@ const UpdateExpense = () => {
                                             <>
                                                 <Col md={4}>
                                                     <div className="mb-3">
-                                                        <Label>Item</Label>
+                                                        <Label>Name</Label>
                                                         <Input name="name" value={formData.name || ""} onChange={handleChange} />
                                                     </div>
                                                 </Col>
@@ -314,14 +345,28 @@ const UpdateExpense = () => {
                                                 </button>
                                                 <select
                                                     name="purpose_of_payment"
-                                                    id="formrow-product_type-Input"
                                                     className="form-control"
                                                     value={formData.purpose_of_payment || ""}
-                                                    onChange={handleChange}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        setFormData(prev => ({ ...prev, purpose_of_payment: value }));
+                                                        const p = purposeOfPayment.find(pp => pp.id.toString() === value);
+                                                        const isEmi = (p?.name || "").toLowerCase() === "emi";
+                                                        if (isEmi) {
+                                                            // Flip to expenses, hide/clear asset-only fields
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                asset_types: "expenses",
+                                                                name: "",
+                                                                quantity: "",
+                                                                category: ""
+                                                            }));
+                                                        }
+                                                    }}
                                                 >
                                                     <option value="">Choose...</option>
                                                     {purposeOfPayment
-                                                        .filter((type) => type.name) // Only show items with a valid name
+                                                        .filter((type) => type.name)
                                                         .map((p) => (
                                                             <option key={p.id} value={p.id.toString()}>{p.name}</option>
                                                         ))}

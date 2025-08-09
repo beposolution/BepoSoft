@@ -5,6 +5,8 @@ import { Card, Col, Container, Row, CardBody, CardTitle, Table, Spinner, Input, 
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Paginations from '../../components/Common/Pagination';
+import Select from "react-select";
+
 
 const AdvanceReceiptList = () => {
     const [receipts, setReceipts] = useState([])
@@ -150,6 +152,26 @@ const AdvanceReceiptList = () => {
 
         return matchesSearch && isAfterStart && isBeforeEnd;
     });
+
+    // put near your other state/constants
+    const rsStyles = {
+        menuPortal: base => ({ ...base, zIndex: 9999 }),
+        menu: base => ({ ...base, zIndex: 9999, backgroundColor: "#fff" }),
+        menuList: base => ({ ...base, backgroundColor: "#fff" }),
+        option: (base, state) => ({
+            ...base,
+            backgroundColor: state.isFocused ? "#eef5ff" : "#fff",
+            color: "#212529",
+            cursor: "pointer",
+        }),
+        control: base => ({ ...base, minHeight: 38 }),
+    };
+
+    // turn customers into react-select options
+    const customerOptions = customer.map(c => ({
+        value: String(c.id),
+        label: c.name,
+    }));
 
     const indexOfLastItem = currentPage * perPageData;
     const indexOfFirstItem = indexOfLastItem - perPageData;
@@ -334,17 +356,16 @@ const AdvanceReceiptList = () => {
                                                         <Col md={6}>
                                                             <div className="mb-3">
                                                                 <Label>Customer Name</Label>
-                                                                <Input type='select' name='customer_name'
-                                                                    value={customerId}
-                                                                    onChange={(e) => setCustomerId(e.target.value)}
-                                                                >
-                                                                    <option value="">Select Customer</option>
-                                                                    {customer.map((customer) => (
-                                                                        <option key={customer.id} value={customer.id}>
-                                                                            {customer.name}
-                                                                        </option>
-                                                                    ))}
-                                                                </Input>
+                                                                <Select
+                                                                    options={customerOptions}
+                                                                    value={customerOptions.find(o => o.value === String(customerId)) || null}
+                                                                    onChange={(opt) => setCustomerId(opt?.value || "")}
+                                                                    placeholder="Select Customer"
+                                                                    isClearable
+                                                                    isSearchable
+                                                                    menuPortalTarget={document.body}
+                                                                    styles={rsStyles}
+                                                                />
                                                             </div>
                                                         </Col>
                                                         <Col md={6}>

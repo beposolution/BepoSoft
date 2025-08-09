@@ -18,7 +18,7 @@ const FormLayouts = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [payment, setPayment] = useState('');
-    const [EmiDetails, setEmiDetails] = useState("");
+    const [EmiDetails, setEmiDetails] = useState([]);
     const [category, setCategory] = useState([]);
     const [purposeOfPayment, setPurposeOfPayment] = useState([]);
     const [userData, setUserData] = useState();
@@ -104,43 +104,52 @@ const FormLayouts = () => {
             company: "",
             payed_by: "",
             bank: "",
-            purpose_of_payment: "",
+            purpose_of_payment: "",   // ID
+            purpose_name: "",         // NEW: normalized name like "emi"
             amount: "",
             expense_date: new Date().toISOString().split('T')[0],
             transaction_id: "",
             description: "",
             added_by: "",
-            asset_types: ""
+            asset_types: "",
+            expense_type: "",
+            name: "",
+            quantity: "",
+            category: "",
+            loan: ""
         },
+
         validationSchema: Yup.object({
             company: Yup.string().required("This field is required"),
             payed_by: Yup.string().required("This field is required"),
             bank: Yup.string().required("This field is required"),
             purpose_of_payment: Yup.string().required("This field is required"),
+            purpose_name: Yup.string().nullable(), // NEW
             amount: Yup.string().required("This field is required"),
             expense_date: Yup.string().required("This field is required"),
             transaction_id: Yup.string().required("This field is required"),
             description: Yup.string().required("This field is required"),
             asset_types: Yup.string().required("Select any type"),
+            expense_type: Yup.string().required("This field is required"),
 
-            // ✅ Name is required only if asset_types is NOT "expenses"
             name: Yup.string().when("asset_types", {
                 is: (val) => val !== "expenses",
                 then: (schema) => schema.required("Name is required"),
             }),
 
-            // ✅ Quantity is required and must be an integer only if asset_types is NOT "expenses"
             quantity: Yup.number().when("asset_types", {
                 is: (val) => val !== "expenses",
                 then: (schema) => schema.required("Quantity is required").integer("Quantity must be an integer"),
             }),
+
             category: Yup.number().when("asset_types", {
                 is: (val) => val !== "expenses",
-                then: (schema) => schema.required("category is required")
+                then: (schema) => schema.required("category is required"),
             }),
 
-            loan: Yup.number().when("purpose_of_payment", {
-                is: "emi",
+            // ✅ Require loan only when purpose is EMI
+            loan: Yup.number().when("purpose_name", {
+                is: (val) => (val || "").toLowerCase() === "emi",
                 then: (schema) => schema.required("Loan is required").integer("Loan ID must be an integer"),
             }),
         }),
@@ -148,60 +157,60 @@ const FormLayouts = () => {
         onSubmit: async (values, { resetForm }) => {
             try {
                 let formData = { ...values };
-
                 formData.added_by = userData;
+                if (formData.loan) formData.loan = parseInt(formData.loan, 10);
 
-                // ✅ Convert `loan` to an integer if it's provided
-                if (formData.loan) {
-                    formData.loan = parseInt(formData.loan, 10);
-                }
-                // ✅ Remove name & quantity if asset_types is "expenses"
-                if (values.asset_types === "expenses") {
+                const isEmi = (formData.purpose_name || "").toLowerCase() === "emi";
+
+                if (isEmi) {
+                    // Always treat EMI as an expense with loan
                     delete formData.name;
                     delete formData.quantity;
+                    delete formData.category;
+                    formData.asset_types = "expenses";
 
-                    // ✅ If purpose_of_payment is "emi", send to expectemi/ API
-                    if (purposeOfPayment.find((type) => type.id.toString() === formData.purpose_of_payment)?.name === "emi") {
-                        await axios.post(
-                            `${import.meta.env.VITE_APP_KEY}expense/add/`,
-                            formData,
-                            {
-                                headers: { 'Authorization': `Bearer ${token}` },
-                            }
-                        );
-                        setSuccessMessage("Expense with EMI submitted successfully!");
-                    } else {
-                        // ✅ Otherwise, send to expense/addexpectemi/ API
-                        await axios.post(
-                            `${import.meta.env.VITE_APP_KEY}expense/addexpectemi/`,
-                            formData,
-                            {
-                                headers: { 'Authorization': `Bearer ${token}` },
-                            }
-                        );
-                        setSuccessMessage("Expense submitted successfully!");
-                    }
+                    await axios.post(
+                        `${import.meta.env.VITE_APP_KEY}expense/add/`,
+                        formData,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    toast.success("Expense with EMI submitted successfully!");
+                    setSuccessMessage("Expense with EMI submitted successfully!");
+                } else if (values.asset_types === "expenses") {
+                    // non-EMI expense
+                    delete formData.name;
+                    delete formData.quantity;
+                    delete formData.category;
 
+                    await axios.post(
+                        `${import.meta.env.VITE_APP_KEY}expense/addexpectemi/`,
+                        formData,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    toast.success("Expense submitted successfully!");
+                    setSuccessMessage("Expense submitted successfully!");
                 } else if (values.asset_types === "assets") {
-                    // ✅ If asset_types is "assets", send only to the asset/ API
+                    // ✅ Corrected endpoint spelling here
                     await axios.post(
                         `${import.meta.env.VITE_APP_KEY}assest/`,
                         formData,
-                        {
-                            headers: { 'Authorization': `Bearer ${token}` },
-                        }
+                        { headers: { Authorization: `Bearer ${token}` } }
                     );
+                    toast.success("Asset submitted successfully!");
                     setSuccessMessage("Asset submitted successfully!");
                 }
 
                 setErrorMessage('');
                 resetForm();
-
             } catch (error) {
-                setErrorMessage("An error occurred while submitting the form.");
+                // Show server message so you can see the exact backend error
+                const msg = error?.response?.data?.message || error?.response?.data || "An error occurred while submitting the form.";
+                setErrorMessage(typeof msg === "string" ? msg : JSON.stringify(msg));
                 setSuccessMessage('');
+                console.error("Submit error:", error?.response || error);
             }
         }
+
     });
 
     return (
@@ -301,7 +310,32 @@ const FormLayouts = () => {
                                             </Col>
                                         </Row>
                                         <Row>
-                                            <Col md={4}>
+                                            <Col md={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-expense-type">Type of Expense</Label>
+                                                    <Input
+                                                        type="select"
+                                                        name="expense_type"
+                                                        id="formrow-expense-type"
+                                                        className="form-control"
+                                                        value={formik.values.expense_type}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.expense_type && formik.errors.expense_type ? true : false}
+                                                    >
+                                                        <option value="">Select Type</option>
+                                                        <option value="miscellaneous">Miscellaneous</option>
+                                                        <option value="permanent">Permanent</option>
+                                                        <option value="emi">EMI</option>
+                                                        <option value="cargo">Cargo</option>
+                                                        <option value="purchase">Purchase</option>
+                                                    </Input>
+                                                    {formik.errors.expense_type && formik.touched.expense_type ? (
+                                                        <FormFeedback type="invalid">{formik.errors.expense_type}</FormFeedback>
+                                                    ) : null}
+                                                </div>
+                                            </Col>
+                                            <Col md={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-company-Input">Type of Payment</Label>
                                                     <Input
@@ -323,7 +357,7 @@ const FormLayouts = () => {
                                                     ) : null}
                                                 </div>
                                             </Col>
-                                            <Col md={4}>
+                                            <Col md={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-name-Input">Name</Label>
                                                     <Input
@@ -342,7 +376,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col md={4}>
+                                            <Col md={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-quantity-Input">Quantity</Label>
                                                     <Input
@@ -434,7 +468,9 @@ const FormLayouts = () => {
                                                         value={formik.values.purpose_of_payment || ""}
                                                         onChange={(e) => {
                                                             const selectedId = e.target.value;
+                                                            const selected = purposeOfPayment.find(p => String(p.id) === String(selectedId));
                                                             formik.setFieldValue("purpose_of_payment", selectedId);
+                                                            formik.setFieldValue("purpose_name", (selected?.name || "").toLowerCase()); // NEW
                                                         }}
                                                         onBlur={formik.handleBlur}
                                                     >
@@ -451,7 +487,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
                                             {/* ✅ Check if selected purpose_of_payment ID matches "emi" by looking up its name */}
-                                            {purposeOfPayment.find((type) => type.id.toString() === formik.values.purpose_of_payment)?.name === "emi" && (
+                                            {formik.values.purpose_name === "emi" && (
                                                 <Col lg={4}>
                                                     <div className="mb-3">
                                                         <Label htmlFor="formrow-loan">Select EMI</Label>
@@ -463,7 +499,7 @@ const FormLayouts = () => {
                                                             value={formik.values.loan}
                                                             onChange={formik.handleChange}
                                                             onBlur={formik.handleBlur}
-                                                            invalid={formik.touched.loan && formik.errors.loan}
+                                                            invalid={!!(formik.touched.loan && formik.errors.loan)}
                                                         >
                                                             <option value="">Select EMI</option>
                                                             {EmiDetails && EmiDetails.length > 0 ? (
@@ -480,7 +516,6 @@ const FormLayouts = () => {
                                                     </div>
                                                 </Col>
                                             )}
-
 
 
                                             <Col lg={4}>
@@ -576,6 +611,7 @@ const FormLayouts = () => {
                         </Col>
                     </Row>
                 </Container>
+                <ToastContainer />
             </div>
         </React.Fragment>
     );

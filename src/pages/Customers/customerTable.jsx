@@ -181,6 +181,7 @@ const BasicTable = () => {
                                                             <th>#</th>
                                                             <th>Name</th>
                                                             <th>Email</th>
+                                                            <th>State</th>
                                                             <th>Phone</th>
                                                             <th>Action</th>
                                                         </tr>
@@ -191,6 +192,7 @@ const BasicTable = () => {
                                                                 <th scope="row">{indexOfFirstItem + index + 1}</th>
                                                                 <td>{customer.name}</td>
                                                                 <td>{customer.email || 'N/A'}</td>
+                                                                <td>{customer.state_name || 'N/A'}</td>
                                                                 <td>{customer.phone || 'N/A'}</td>
                                                                 <td>
                                                                     <Dropdown>

@@ -4,6 +4,7 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import { Card, Col, Container, Row, CardBody, CardTitle, Table, Spinner, Input, Modal, ModalHeader, ModalBody, Label, ModalFooter, Button } from "reactstrap";
 import Paginations from '../../components/Common/Pagination';
+import Select from "react-select";
 
 const OrderReceiptList = () => {
     const [receipts, setReceipts] = useState([])
@@ -171,6 +172,53 @@ const OrderReceiptList = () => {
         return matchesSearch && isAfterStart && isBeforeEnd;
     });
 
+    // put these above your return (or inside the component body)
+    const orderOptions = order.map(o => ({
+        value: String(o.id), // make types consistent
+        label: `${o.invoice} - ${o.customer?.name ?? ""} - ₹${o.total_amount ?? 0}`,
+    }));
+
+    const customerOptions = customer.map(c => ({
+        value: String(c.id),
+        label: c.name,
+    }));
+
+    const reactSelectStyles = {
+        menuPortal: base => ({ ...base, zIndex: 9999 }),
+    };
+
+    // If your state is numeric, normalize it to string once:
+    const selectedOrderValue = selectedOrderId ? String(selectedOrderId) : "";
+    const selectedCustomerValue = customerId ? String(customerId) : "";
+
+    const rsStyles = {
+        menuPortal: base => ({ ...base, zIndex: 9999 }),
+        menu: base => ({
+            ...base,
+            zIndex: 9999,
+            backgroundColor: '#fff',     // <-- force solid background
+            border: '1px solid #e9ecef',
+            boxShadow: '0 6px 20px rgba(0,0,0,.15)',
+        }),
+        menuList: base => ({
+            ...base,
+            backgroundColor: '#fff',     // <-- make list solid too
+        }),
+        option: (base, state) => ({
+            ...base,
+            cursor: 'pointer',
+            backgroundColor: state.isFocused ? '#eef5ff' : '#fff',
+            color: '#212529',
+        }),
+        control: base => ({
+            ...base,
+            minHeight: 38,
+            borderColor: '#ced4da',
+        }),
+        singleValue: base => ({ ...base, color: '#212529' }),
+        placeholder: base => ({ ...base, color: '#6c757d' }),
+    };
+
     const indexOfLastItem = currentPage * perPageData;
     const indexOfFirstItem = indexOfLastItem - perPageData;
     const currentReceipts = filteredReceipts.slice(indexOfFirstItem, indexOfLastItem);
@@ -305,18 +353,16 @@ const OrderReceiptList = () => {
                                                         <Col md={4}>
                                                             <div className="mb-3">
                                                                 <Label>Orders</Label>
-                                                                <Input
-                                                                    type="select"
-                                                                    value={selectedOrderId}
-                                                                    onChange={(e) => setSelectedOrderId(e.target.value)}
-                                                                >
-                                                                    <option value=''>Select Order</option>
-                                                                    {order.map((order) => (
-                                                                        <option key={order.id} value={order.id}>
-                                                                            {order.invoice} - {order.customer?.name} - ₹{order.total_amount}
-                                                                        </option>
-                                                                    ))}
-                                                                </Input>
+                                                                <Select
+                                                                    options={orderOptions}
+                                                                    value={orderOptions.find(opt => opt.value === selectedOrderValue) || null}
+                                                                    onChange={(opt) => setSelectedOrderId(opt?.value || "")}
+                                                                    placeholder="Select Order"
+                                                                    isClearable
+                                                                    isSearchable
+                                                                    menuPortalTarget={document.body}
+                                                                    styles={rsStyles}
+                                                                />
                                                             </div>
                                                         </Col>
                                                         <Col md={4}>
@@ -367,17 +413,16 @@ const OrderReceiptList = () => {
                                                         <Col md={4}>
                                                             <div className="mb-3">
                                                                 <Label>Customer Name</Label>
-                                                                <Input type='select' name='customer_name'
-                                                                    value={customerId}
-                                                                    onChange={(e) => setCustomerId(e.target.value)}
-                                                                >
-                                                                    <option value="">Select Customer</option>
-                                                                    {customer.map((customer) => (
-                                                                        <option key={customer.id} value={customer.id}>
-                                                                            {customer.name}
-                                                                        </option>
-                                                                    ))}
-                                                                </Input>
+                                                                <Select
+                                                                    options={customerOptions}
+                                                                    value={customerOptions.find(opt => opt.value === selectedCustomerValue) || null}
+                                                                    onChange={(opt) => setCustomerId(opt?.value || "")}
+                                                                    placeholder="Select Customer"
+                                                                    isClearable
+                                                                    isSearchable
+                                                                    menuPortalTarget={document.body}
+                                                                    styles={rsStyles}
+                                                                />
                                                             </div>
                                                         </Col>
                                                         <Col md={4}>

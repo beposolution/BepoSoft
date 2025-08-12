@@ -59,6 +59,7 @@ const FormLayouts = () => {
     const warehouseId = userData;
     const location = useLocation();
     const { orderIds = [] } = location.state || {};
+    const [rackSelections, setRackSelections] = useState({});
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -666,6 +667,16 @@ const FormLayouts = () => {
         }
     };
 
+    const handleRackStockChange = (itemId, rackIndex, value) => {
+        setRackSelections(prev => ({
+            ...prev,
+            [itemId]: {
+                ...(prev[itemId] || {}),
+                [rackIndex]: Number(value)
+            }
+        }));
+    };
+
     // Handle Quantity/Discount Change
     const handleItemChange = (index, field, value) => {
         const updatedItems = [...orderItems];
@@ -681,11 +692,35 @@ const FormLayouts = () => {
         }
         setOrderItems(updatedItems);
 
+        // Parse rack_details from products property if available
+        let rackDetails = [];
+        try {
+            if (updatedItems[index].products) {
+                let racks = [];
+                if (typeof updatedItems[index].products === "string" && updatedItems[index].products.trim().startsWith("[")) {
+                    const fixedJson = updatedItems[index].products.replace(/'/g, '"');
+                    racks = JSON.parse(fixedJson);
+                } else if (Array.isArray(updatedItems[index].products)) {
+                    racks = updatedItems[index].products;
+                }
+                rackDetails = racks
+                    .map((rack, rackIdx) => ({
+                        rack_id: rack.rack_id,
+                        quantity: rackSelections[productId]?.[rackIdx] ?? 0,
+                        column_name: rack.column_name
+                    }))
+                    .filter(rack => rack.quantity > 0); // Only include rows with quantity > 0
+            }
+        } catch (e) {
+            rackDetails = [];
+        }
+
         // Prepare the data to be sent to the backend
         const updateData = {
             quantity: updatedItems[index].quantity,
             discount: updatedItems[index].discount,
-            rate: updatedItems[index].rate
+            rate: updatedItems[index].rate,
+            rack_details: rackDetails
         };
 
         // Call the backend update function with productId in the URL
@@ -1308,6 +1343,76 @@ const FormLayouts = () => {
                                                         </tr>
                                                     </tbody>
                                                 </Table>
+                                                {orderItems.map((item, index) => {
+                                                    let racks = [];
+                                                    try {
+                                                        if (item.products && typeof item.products === "string" && item.products.trim().startsWith("[")) {
+                                                            const fixedJson = item.products.replace(/'/g, '"');
+                                                            racks = JSON.parse(fixedJson);
+                                                        } else if (Array.isArray(item.products)) {
+                                                            racks = item.products;
+                                                        }
+                                                    } catch (e) {
+                                                        racks = [];
+                                                    }
+                                                    // Filter only usable racks
+                                                    const usableRacks = racks.filter(rack => rack.usability === "usable");
+                                                    return (
+                                                        <div key={item.id} style={{ margin: "20px 0", padding: "15px", background: "#f9f9f9", borderRadius: "8px" }}>
+                                                            <h5>
+                                                                Rack Details for <span style={{ color: "#007bff" }}>{item.name}</span>
+                                                            </h5>
+                                                            {usableRacks.length > 0 ? (
+                                                                <Table bordered striped responsive style={{ marginBottom: "10px", background: "#fff" }}>
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th>#</th>
+                                                                            <th>Column Name</th>
+                                                                            <th>Rack Name</th>
+                                                                            <th>Usability</th>
+                                                                            <th>Available Stock</th>
+                                                                            <th>Locked Stock</th>
+                                                                            <th>Selected Quantity</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        {usableRacks.map((rack, rackIdx) => (
+                                                                            <tr key={rack.column_name || rackIdx}>
+                                                                                <td>{rackIdx + 1}</td>
+                                                                                <td>{rack.column_name}</td>
+                                                                                <td>{rack.rack_name}</td>
+                                                                                <td>{rack.usability}</td>
+                                                                                <td>{rack.rack_stock}</td>
+                                                                                <td>{rack.rack_lock}</td>
+                                                                                <td>
+                                                                                    <Input
+                                                                                        type="number"
+                                                                                        min={0}
+                                                                                        max={rack.rack_stock}
+                                                                                        value={rackSelections[item.id]?.[rackIdx] ?? 0}
+                                                                                        onChange={e => handleRackStockChange(item.id, rackIdx, e.target.value)}
+                                                                                        style={{ width: "80px", display: "inline-block" }}
+                                                                                    />
+                                                                                </td>
+                                                                            </tr>
+                                                                        ))}
+                                                                    </tbody>
+                                                                </Table>
+                                                            ) : (
+                                                                <div>No rack details available.</div>
+                                                            )}
+                                                            <Button
+                                                                color="primary"
+                                                                size="sm"
+                                                                style={{ marginTop: "10px" }}
+                                                                disabled={isAddDisabled}
+                                                                onClick={() => handleItemChange(index, 'rack_details', null)}
+                                                            >
+                                                                Save Rack Details
+                                                            </Button>
+                                                        </div>
+                                                    );
+                                                })}
                                                 <div className="container mt-5">
                                                     {/* Invoice Header */}
                                                     <div className="row">
@@ -1512,6 +1617,7 @@ const FormLayouts = () => {
                             </Row>
                         </Col>
                     </Row>
+                    <ToastContainer />
                 </Container>
             </div >
         </React.Fragment >

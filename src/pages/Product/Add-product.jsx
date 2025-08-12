@@ -82,7 +82,8 @@ const FormLayouts = () => {
                     rack_id: Number(r.rack_id),
                     column_name: r.column_name,
                     usability: r.usability,
-                    rack_stock: Number(r.rack_stock)
+                    rack_stock: Number(r.rack_stock),
+                    rack_lock: Number(r.rack_lock || 0),
                 }));
 
             // Attach fields to FormData
@@ -234,9 +235,10 @@ const FormLayouts = () => {
             ...rackDetails,
             {
                 rack_id: '',
-                column_name: '',
+                column_name: '',    
                 usability: '',
                 rack_stock: '',
+                rack_lock: 0,
             }
         ]);
     };

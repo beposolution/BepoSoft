@@ -60,6 +60,8 @@ const FormLayouts = () => {
     const location = useLocation();
     const { orderIds = [] } = location.state || {};
     const [rackSelections, setRackSelections] = useState({});
+    const role = localStorage.getItem("active");
+    const [editingRackFor, setEditingRackFor] = useState(null);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -785,6 +787,11 @@ const FormLayouts = () => {
         0
     ) + shippingCharge;
 
+    const showRackDetails =
+        (role === "ADMIN" || role === "Accounts / Accounting") &&
+        formik.values.status !== "Invoice Created" &&
+        formik.values.status !== "Invoice Approved";
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -1343,7 +1350,7 @@ const FormLayouts = () => {
                                                         </tr>
                                                     </tbody>
                                                 </Table>
-                                                {orderItems.map((item, index) => {
+                                                {showRackDetails && orderItems.map((item, index) => {
                                                     let racks = [];
                                                     try {
                                                         if (item.products && typeof item.products === "string" && item.products.trim().startsWith("[")) {
@@ -1355,64 +1362,114 @@ const FormLayouts = () => {
                                                     } catch (e) {
                                                         racks = [];
                                                     }
-                                                    // Filter only usable racks
+
+                                                    // Only usable racks
                                                     const usableRacks = racks.filter(rack => rack.usability === "usable");
+                                                    const isEditing = editingRackFor === item.id;
+
                                                     return (
                                                         <div key={item.id} style={{ margin: "20px 0", padding: "15px", background: "#f9f9f9", borderRadius: "8px" }}>
-                                                            <h5>
-                                                                Rack Details for <span style={{ color: "#007bff" }}>{item.name}</span>
-                                                            </h5>
-                                                            {usableRacks.length > 0 ? (
-                                                                <Table bordered striped responsive style={{ marginBottom: "10px", background: "#fff" }}>
-                                                                    <thead>
-                                                                        <tr>
-                                                                            <th>#</th>
-                                                                            <th>Column Name</th>
-                                                                            <th>Rack Name</th>
-                                                                            <th>Usability</th>
-                                                                            <th>Available Stock</th>
-                                                                            <th>Locked Stock</th>
-                                                                            <th>Selected Quantity</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        {usableRacks.map((rack, rackIdx) => (
-                                                                            <tr key={rack.column_name || rackIdx}>
-                                                                                <td>{rackIdx + 1}</td>
-                                                                                <td>{rack.column_name}</td>
-                                                                                <td>{rack.rack_name}</td>
-                                                                                <td>{rack.usability}</td>
-                                                                                <td>{rack.rack_stock}</td>
-                                                                                <td>{rack.rack_lock}</td>
-                                                                                <td>
-                                                                                    <Input
-                                                                                        type="number"
-                                                                                        min={0}
-                                                                                        max={rack.rack_stock}
-                                                                                        value={rackSelections[item.id]?.[rackIdx] ?? 0}
-                                                                                        onChange={e => handleRackStockChange(item.id, rackIdx, e.target.value)}
-                                                                                        style={{ width: "80px", display: "inline-block" }}
-                                                                                    />
-                                                                                </td>
-                                                                            </tr>
-                                                                        ))}
-                                                                    </tbody>
-                                                                </Table>
+                                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                                <h5 style={{ margin: 0 }}>
+                                                                    Rack Details for <span style={{ color: "#007bff" }}>{item.name}</span>
+                                                                </h5>
+
+                                                                {!isEditing ? (
+                                                                    <Button
+                                                                        color="secondary"
+                                                                        size="sm"
+                                                                        disabled={isAddDisabled}
+                                                                        onClick={() => setEditingRackFor(item.id)}
+                                                                    >
+                                                                        Add Rack Details
+                                                                    </Button>
+                                                                ) : (
+                                                                    <div style={{ display: "flex", gap: 8 }}>
+                                                                        <Button
+                                                                            color="primary"
+                                                                            size="sm"
+                                                                            disabled={isAddDisabled}
+                                                                            onClick={() => {
+                                                                                // Save (will send rack_details based on current inputs)
+                                                                                handleItemChange(index, 'rack_details', null);
+                                                                                toast.success("Rack details saved!");
+                                                                                setEditingRackFor(null);
+                                                                            }}
+                                                                        >
+                                                                            Save Rack Details
+                                                                        </Button>
+                                                                        <Button
+                                                                            color="light"
+                                                                            size="sm"
+                                                                            onClick={() => {
+                                                                                // Optional: clear unsaved selections for this item
+                                                                                setRackSelections(prev => {
+                                                                                    const next = { ...prev };
+                                                                                    delete next[item.id];
+                                                                                    return next;
+                                                                                });
+                                                                                setEditingRackFor(null);
+                                                                            }}
+                                                                        >
+                                                                            Cancel
+                                                                        </Button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Collapsed view when not editing: show nothing but header + button */}
+                                                            {!isEditing ? (
+                                                                <div style={{ marginTop: 8, color: "#666" }}>
+                                                                    {/* You can show a small summary here if you store saved rack details on the item */}
+                                                                    Click “Add Rack Details” to allocate from racks.
+                                                                </div>
                                                             ) : (
-                                                                <div>No rack details available.</div>
+                                                                <>
+                                                                    {usableRacks.length > 0 ? (
+                                                                        <Table bordered striped responsive style={{ marginTop: "10px", background: "#fff" }}>
+                                                                            <thead>
+                                                                                <tr>
+                                                                                    <th>#</th>
+                                                                                    <th>Column Name</th>
+                                                                                    <th>Rack Name</th>
+                                                                                    <th>Usability</th>
+                                                                                    <th>Available Stock</th>
+                                                                                    <th>Locked Stock</th>
+                                                                                    <th>Selected Quantity</th>
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody>
+                                                                                {usableRacks.map((rack, rackIdx) => (
+                                                                                    <tr key={rack.column_name || rackIdx}>
+                                                                                        <td>{rackIdx + 1}</td>
+                                                                                        <td>{rack.column_name}</td>
+                                                                                        <td>{rack.rack_name}</td>
+                                                                                        <td>{rack.usability}</td>
+                                                                                        <td>{rack.rack_stock}</td>
+                                                                                        <td>{rack.rack_lock}</td>
+                                                                                        <td>
+                                                                                            <Input
+                                                                                                type="number"
+                                                                                                min={0}
+                                                                                                max={rack.rack_stock}
+                                                                                                value={rackSelections[item.id]?.[rackIdx] ?? 0}
+                                                                                                onChange={e => handleRackStockChange(item.id, rackIdx, e.target.value)}
+                                                                                                style={{ width: "80px", display: "inline-block" }}
+                                                                                            />
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                ))}
+                                                                            </tbody>
+                                                                        </Table>
+                                                                    ) : (
+                                                                        <div style={{ marginTop: 10 }}>No rack details available.</div>
+                                                                    )}
+                                                                </>
                                                             )}
-                                                            <Button
-                                                                color="primary"
-                                                                size="sm"
-                                                                style={{ marginTop: "10px" }}
-                                                                disabled={isAddDisabled}
-                                                                onClick={() => handleItemChange(index, 'rack_details', null)}
-                                                            >
-                                                                Save Rack Details
-                                                            </Button>
                                                         </div>
                                                     );
                                                 })}
+
                                                 <div className="container mt-5">
                                                     {/* Invoice Header */}
                                                     <div className="row">

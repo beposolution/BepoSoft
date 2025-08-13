@@ -78,12 +78,17 @@ const FormLayouts = () => {
             // Clean up rackDetails: Remove empty, parse numbers
             const cleanRackDetails = rackDetails
                 .filter(r => r.rack_id && r.column_name && r.usability && r.rack_stock)
-                .map(r => ({
-                    rack_id: Number(r.rack_id),
-                    column_name: r.column_name,
-                    usability: r.usability,
-                    rack_stock: Number(r.rack_stock)
-                }));
+                .map(r => {
+                    const rackObj = rackList.find(rack => String(rack.id) === String(r.rack_id));
+                    return {
+                        rack_id: Number(r.rack_id),
+                        column_name: r.column_name,
+                        rack_name: rackObj ? rackObj.rack_name : "",
+                        usability: r.usability,
+                        rack_stock: Number(r.rack_stock),
+                        rack_lock: Number(r.rack_lock || 0),
+                    };
+                });
 
             // Attach fields to FormData
             Object.entries(values).forEach(([key, value]) => {
@@ -237,6 +242,7 @@ const FormLayouts = () => {
                 column_name: '',
                 usability: '',
                 rack_stock: '',
+                rack_lock: 0,
             }
         ]);
     };

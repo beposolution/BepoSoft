@@ -20,6 +20,8 @@ const EcommerenceAddProduct = () => {
     const [rackList, setRackList] = useState([]);
     const [rackDetails, setRackDetails] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [selectedWarehouse, setSelectedWarehouse] = useState(null);
+    const [selectedWarehouseName, setSelectedWarehouseName] = useState("");
 
     const token = localStorage.getItem('token');
 
@@ -54,6 +56,7 @@ const EcommerenceAddProduct = () => {
             // stock: yup.number().required('Please Enter Stock Quantity'),
             // color: yup.string().required('Please Enter Color'),
             // size: yup.string().required('Please Enter Size'),
+
             groupID: yup.string().required('Please Enter groupID')
 
         }),
@@ -79,12 +82,17 @@ const EcommerenceAddProduct = () => {
             formData.append('rack_details', JSON.stringify(
                 rackDetails
                     .filter(r => r.rack_id && r.column_name && r.usability && r.rack_stock)
-                    .map(r => ({
-                        rack_id: Number(r.rack_id),
-                        column_name: r.column_name,
-                        usability: r.usability,
-                        rack_stock: Number(r.rack_stock)
-                    }))
+                    .map(r => {
+                        const rackObj = rackList.find(rack => Number(rack.id) === Number(r.rack_id));
+                        return {
+                            rack_id: Number(r.rack_id),
+                            rack_name: rackObj ? rackObj.rack_name : "",
+                            column_name: r.column_name,
+                            usability: r.usability,
+                            rack_stock: Number(r.rack_stock),
+                            rack_lock: Number(r.rack_lock || 0)
+                        };
+                    })
             ));
 
             try {
@@ -180,6 +188,8 @@ const EcommerenceAddProduct = () => {
                     },
                 });
                 const productData = await response.json();
+                setSelectedWarehouse(productData.data.warehouse || null);
+                setSelectedWarehouseName(productData.data.warehouse_name || "");
                 if (response.ok && productData) {
                     formik.setValues({
                         name: productData.data.name || '',
@@ -676,7 +686,9 @@ const EcommerenceAddProduct = () => {
                                             <Col md={12}>
                                                 <Label>Rack Details</Label>
                                                 {rackDetails.map((rack, idx) => {
-                                                    const racks = rackList; // (optionally filter by warehouse if needed)
+                                                    const racks = selectedWarehouse !== null
+                                                        ? rackList.filter(r => String(r.warehouse) === String(selectedWarehouse))
+                                                        : rackList.filter(r => r.warehouse_name === selectedWarehouseName);
                                                     const getColumnsForRack = (rackId) => {
                                                         const found = rackList.find(r => String(r.id) === String(rackId));
                                                         return found ? found.column_names : [];

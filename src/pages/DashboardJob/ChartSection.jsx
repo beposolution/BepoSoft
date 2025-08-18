@@ -166,7 +166,7 @@ const ChartSection = () => {
     const familyIds = orders?.map(order => order.family_id);
     const orderDates = orders?.map(order => order.order_date);
     const waitingForConfirmationToday = orders?.filter(
-        order => order?.status === "Waiting For Confirmation" && order.order_date === today
+        order => order?.status === "Waiting For Confirmation"
     )?.length;
     const shippedOrdersToday = orders?.filter(
         order => order?.status === "Shipped" && order.order_date === today

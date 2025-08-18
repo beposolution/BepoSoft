@@ -212,7 +212,10 @@ const OtherReceiptList = () => {
             (item.payment_receipt || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (item.transactionID || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (item.bank_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (item.created_by_name || '').toLowerCase().includes(searchTerm.toLowerCase());
+            (item.remark || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.created_by_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            String(item.amount ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            Number(item.amount || 0).toFixed(2).includes(searchTerm);
 
         const receiptDate = new Date(item.received_at);
         const isAfterStart = startDate ? receiptDate >= new Date(startDate) : true;
@@ -268,7 +271,7 @@ const OtherReceiptList = () => {
                                             <Label>Search</Label>
                                             <Input
                                                 type="text"
-                                                placeholder="Search by Receipt, Transaction ID, Bank, Created By"
+                                                placeholder="Search by Receipt, Amount, Transaction ID, Bank, Remark, Created By"
                                                 value={searchTerm}
                                                 onChange={(e) => setSearchTerm(e.target.value)}
                                             />

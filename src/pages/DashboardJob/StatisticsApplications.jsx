@@ -352,7 +352,7 @@ const StatisticsApplications = () => {
             <Col lg={12}>
                 <Card className="shadow-sm border-0">
                     <CardBody>
-                        {role === 'CEO' || role === 'COO' && (
+                        {(role === 'CEO' || role === 'COO') && (
                             <div className="row">
                                 {/* Left Column - Division-wise Order Statistics */}
                                 <div className="col-md-3">

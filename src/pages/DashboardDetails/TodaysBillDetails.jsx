@@ -51,6 +51,8 @@ const TodaysBillDetails = () => {
         switch (status) {
             case 'Pending':
                 return { color: 'red' };
+            case 'Invoice Rejected':
+                return { color: 'red' };
             case 'Processing':
                 return { color: 'orange' };
             case 'Invoice Created':

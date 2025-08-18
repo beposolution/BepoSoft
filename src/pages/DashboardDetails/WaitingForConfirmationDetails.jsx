@@ -11,22 +11,24 @@ const WaitingForConfirmationDetails = () => {
     const token = localStorage.getItem("token")
 
     document.title = "Waiting For Confirmation Details | Beposoft";
+    const status = "Waiting For Confirmation";
 
     useEffect(() => {
         const fetchOrdersData = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}orders/`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}orders/${status}/`,
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
                 setOrders(response?.data?.results || []);
             } catch (error) {
-                toast.error('Error fetching order data:');
+                toast.error("Error fetching order data");
             }
         };
         fetchOrdersData();
-    }, []);
-
-    const waitingForConfirmation = orders.filter(order => order.status === "Waiting For Confirmation");
+    }, [status, token]);
 
     return (
         <React.Fragment>
@@ -50,12 +52,12 @@ const WaitingForConfirmationDetails = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {waitingForConfirmation.length === 0 ? (
+                                                {orders.length === 0 ? (
                                                     <tr>
                                                         <td colSpan="7" className="text-center">No orders for today</td>
                                                     </tr>
                                                 ) : (
-                                                    waitingForConfirmation.map((order, index) => (
+                                                    orders.map((order, index) => (
                                                         <tr key={order?.id}>
                                                             <td>{index + 1}</td>
                                                             <td>

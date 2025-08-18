@@ -13,6 +13,7 @@ const ShippedDetails = () => {
     const [userData, setUserData] = useState();
 
     document.title = "Shipped Details | Beposoft";
+    const status = "Shipped";
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -36,30 +37,40 @@ const ShippedDetails = () => {
     useEffect(() => {
         const fetchOrdersData = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}orders/`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}orders/${status}/`,
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
                 setOrders(response?.data?.results || []);
             } catch (error) {
-                toast.error('Error fetching order data:');
+                toast.error("Error fetching order data");
             }
         };
         fetchOrdersData();
-    }, []);
+    }, [token, status]);
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
-    const todaysOrders = orders.filter(order => {
-        const isToday = order.order_date === today;
-        const isShipped = order.status === "Shipped";
+    const isSameDay = (isoString) => {
+        if (!isoString) return false;
+        // Robust to timezone: compare local-date parts
+        const d = new Date(isoString);
+        const ymd = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+            .toISOString()
+            .slice(0, 10);
+        return ymd === today;
+    };
 
-        if (!isToday || !isShipped) return false;
+    const todaysOrders = orders.filter((order) => {
+        // Prefer updated_at (shipment moment); fallback to order_date
+        const shippedDateYmd = order.updated_at && isSameDay(order.updated_at);
+        const fallbackYmd = !order.updated_at && order.order_date === today;
 
-        if (role === "ADMIN") {
-            return true; // Admin sees all shipped orders for today
-        }
+        if (!(shippedDateYmd || fallbackYmd)) return false;
 
-        // Non-admins: show only if family_id matches userData
+        if (role === "ADMIN") return true;
         return order.family_id === userData;
     });
 

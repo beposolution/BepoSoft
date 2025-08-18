@@ -118,7 +118,10 @@ const InternalTransferList = () => {
             item.sender_bank_name?.toLowerCase().includes(searchTerm) ||
             item.receiver_bank_name?.toLowerCase().includes(searchTerm) ||
             item.transactionID?.toLowerCase().includes(searchTerm) ||
-            item.created_by_name?.toLowerCase().includes(searchTerm);
+            item.created_by_name?.toLowerCase().includes(searchTerm) ||
+            item.description?.toLowerCase().includes(searchTerm) ||
+            String(item.amount)?.toLowerCase().includes(searchTerm) ||
+            Number(item.amount || 0).toFixed(2).includes(searchTerm);
 
         const itemDate = item.created_at?.substring(0, 10); // format: YYYY-MM-DD
 
@@ -153,7 +156,7 @@ const InternalTransferList = () => {
                                             <Label>Search Transfers</Label>
                                             <Input
                                                 type="text"
-                                                placeholder="Search by Sender, Receiver, Transaction ID, or Created By"
+                                                placeholder="Search by Sender, Receiver, Transaction ID, Amount, Description or Created By"
                                                 value={searchTerm}
                                                 onChange={(e) => {
                                                     setSearchTerm(e.target.value.toLowerCase());

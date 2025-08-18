@@ -8,24 +8,14 @@ import { useNavigate } from "react-router-dom";
 const StatisticsApplications = () => {
     const token = localStorage.getItem("token")
     const [role, setRole] = useState(null)
-    const [userData, setUserData] = useState();
     const [orders, setOrders] = useState([]);
+    const [familyOrders, setFamilyOrders] = useState([]);
+    const [familyOrders2, setFamilyOrders2] = useState([]);
     const [internalTransfers, setInternalTransfers] = useState([]);
     const [bankmodule, setBankModule] = useState([]);
     const todayDate = new Date().toISOString().split('T')[0];
-    const [error, setError] = useState(null);
-    const [loading, setLoading] = useState(true);
     const [warehouseData, setWarehouseData] = useState([]);
-    const [chartsData, setChartsData] = useState();
     const [expense, setExpense] = useState([])
-    const [startDate, setStartDate] = useState(() => {
-        const today = new Date();
-        return today.toISOString().split("T")[0];
-    });
-    const [endDate, setEndDate] = useState(() => {
-        const today = new Date();
-        return today.toISOString().split("T")[0];
-    });
     const [filteredData, setFilteredData] = useState([]);
     const navigate = useNavigate();
 
@@ -71,20 +61,6 @@ const StatisticsApplications = () => {
     }, [warehouseData]);
 
     useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}profile/`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setUserData(response?.data?.data?.family);
-            } catch (error) {
-                toast.error('Error fetching user data:');
-            }
-        };
-        fetchUserData();
-    }, []);
-
-    useEffect(() => {
         const fetchOrdersData = async () => {
             try {
                 const response = await axios.get(`${import.meta.env.VITE_APP_KEY}orders/`, {
@@ -97,6 +73,36 @@ const StatisticsApplications = () => {
         };
         fetchOrdersData();
     }, []);
+
+    useEffect(() => {
+        const fetchOrdersData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}orders/summary/family/data/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setFamilyOrders(response?.data?.results);
+                setFamilyOrders2(response?.data?.overall);
+            } catch (error) {
+                toast.error('Error fetching order data:');
+            }
+        };
+        fetchOrdersData();
+    }, []);
+
+    const familyStats = React.useMemo(() => {
+        if (!familyOrders) return {};
+        const entries = familyOrders.map(r => [
+            r.family_name || "Unknown",
+            {
+                todayAmount: Number(r.today_total_amount || 0),
+                todayOrders: Number(r.today_count || 0),
+                monthAmount: Number(r.month_total_amount || 0),
+                monthOrders: Number(r.month_count || 0),
+                family_id: r.family_id
+            }
+        ]);
+        return Object.fromEntries(entries);
+    }, [familyOrders]);
 
     useEffect(() => {
         const fetchInternalTransfersData = async () => {
@@ -134,22 +140,6 @@ const StatisticsApplications = () => {
     }, [token]);
 
     useEffect(() => {
-        const fetchChartData = async () => {
-            try {
-                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}dashboard/`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setChartsData(response?.data?.data);
-                setLoading(false);
-            } catch (error) {
-                toast.error('Error fetching chart data:');
-                setLoading(false);
-            }
-        };
-        fetchChartData();
-    }, []);
-
-    useEffect(() => {
         axios.get(`${import.meta.env.VITE_APP_KEY}expense/add/`, {
             headers: {
                 Authorization: `Bearer ${token}`
@@ -160,7 +150,6 @@ const StatisticsApplications = () => {
             })
             .catch((error) => {
                 toast.error("There was an error fetching the data!");
-                setLoading(false);
             });
     }, []);
 
@@ -171,7 +160,6 @@ const StatisticsApplications = () => {
             })
             .then((response) => {
                 setBankModule(response?.data?.bank_data); // Keep full dataset
-                setLoading(false);
 
                 // Apply default filter for today's date
                 const today = new Date();
@@ -182,8 +170,6 @@ const StatisticsApplications = () => {
                     localStorage.removeItem("token");
                     alert("Your session has expired. Please log in again.");
                 } else {
-                    setError(err);
-                    setLoading(false);
                 }
             });
     }, []);
@@ -197,45 +183,6 @@ const StatisticsApplications = () => {
         const orderDate = new Date(order.order_date);
         return orderDate >= firstDayOfMonth && orderDate <= lastDayOfMonth;
     });
-
-    // const codOrders = orders.filter(order => order.payment_status === "COD");
-    // const codOrdersCount = codOrders.length;
-    // const codOrdersTotalVolume = codOrders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
-
-    const todayOrders = orders.filter(order => {
-        const orderDate = new Date(order.order_date).toISOString().split('T')[0];
-        return orderDate === todayDate;
-    });
-
-    const familyStats = ordersThisMonth.reduce((acc, order) => {
-        const orderDate = new Date(order.order_date);
-        const orderDay = orderDate.toISOString().split('T')[0];
-        const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
-
-        const family = order.family_name || "Unknown";
-        const amount = parseFloat(order.total_amount) || 0;
-
-        if (!acc[family]) {
-            acc[family] = {
-                todayAmount: 0,
-                todayOrders: 0,
-                monthAmount: 0,
-                monthOrders: 0
-            };
-        }
-
-        if (orderDay === todayStr) {
-            acc[family].todayAmount += amount;
-            acc[family].todayOrders += 1;
-        }
-
-        // All orders in ordersThisMonth are of this month, so accumulate for month
-        acc[family].monthAmount += amount;
-        acc[family].monthOrders += 1;
-
-        return acc;
-    }, {});
 
     const calculateCredit = (payments, dateFilter) => {
         if (!payments || payments.length === 0) return 0;
@@ -310,14 +257,6 @@ const StatisticsApplications = () => {
         { open_balance: 0, credit: 0, debit: 0, closingBalance: 0 }
     );
 
-    const overallTotals = Object.values(familyStats).reduce((acc, stat) => {
-        acc.totalAmount += stat.todayAmount;
-        acc.orderCount += stat.todayOrders;
-        acc.monthAmount += stat.monthAmount;
-        acc.monthOrders += stat.monthOrders;
-        return acc;
-    }, { totalAmount: 0, orderCount: 0, monthAmount: 0, monthOrders: 0 });
-
     // const todayBills = chartsData?.find(item => item?.title === "Today Bills");
     const todayBills = orders.length;
     const totalVolume = orders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
@@ -357,66 +296,51 @@ const StatisticsApplications = () => {
                                 {/* Left Column - Division-wise Order Statistics */}
                                 <div className="col-md-3">
                                     <h4 className="text-center mb-4 fw-bold text-primary">📊 Division-wise Order Statistics</h4>
-                                    <div className="d-flex flex-wrap justify-content-center gap-3">
-                                        {Object.entries(familyStats).map(([family, stats]) => {
-                                            const codFamilyOrders = ordersThisMonth.filter(
-                                                order => order.family_name === family && order.payment_status === "COD"
-                                            );
-                                            const codFamilyCount = codFamilyOrders.length;
-                                            const codFamilyVolume = codFamilyOrders.reduce(
-                                                (sum, order) => sum + Number(order.total_amount || 0), 0
-                                            );
 
-                                            // Today's COD for this family
-                                            const todayCodFamilyOrders = orders.filter(
-                                                order =>
-                                                    order.family_name === family &&
-                                                    order.payment_status === "COD" &&
-                                                    new Date(order.order_date).toISOString().split('T')[0] === todayDate
-                                            );
-                                            const todayCodFamilyCount = todayCodFamilyOrders.length;
-                                            const todayCodFamilyVolume = todayCodFamilyOrders.reduce(
-                                                (sum, order) => sum + Number(order.total_amount || 0), 0
-                                            );
+                                    {/* Guard for loading/empty */}
+                                    {!familyOrders?.length ? (
+                                        <div className="text-center text-muted">No data</div>
+                                    ) : (
+                                        <div className="d-flex flex-wrap justify-content-center gap-3">
+                                            {familyOrders.map((r) => {
+                                                const family = r.family_name || "Unknown";
+                                                const stats = familyStats[family] || {
+                                                    todayAmount: 0, todayOrders: 0, monthAmount: 0, monthOrders: 0
+                                                };
 
-                                            return (
-                                                <div
-                                                    className="card border-0 shadow-sm p-2 rounded-4"
-                                                    style={{
-                                                        width: "180px",
-                                                        transition: "0.3s",
-                                                        cursor: "pointer",
-                                                        background: "#f9fcff"
-                                                    }}
-                                                    key={family}
-                                                    onClick={() => navigate("/dashboard/family/details")}
-                                                >
-                                                    <div className="card-body text-center">
-                                                        <h5 className="card-title text-uppercase fw-semibold text-secondary">
-                                                            {family}
-                                                        </h5>
-                                                        <p className="card-text mb-2">
-                                                            <span className="text-muted">Today's Total:</span><br />
-                                                            <strong className="text-success fs-6">₹{stats?.todayAmount?.toLocaleString()} ({stats?.todayOrders} orders)</strong>
-                                                        </p>
-                                                        {/* <p className="card-text mb-0">
-                                                            <span className="text-muted">Today's COD:</span><br />
-                                                            <strong className="text-warning fs-6">₹{todayCodFamilyVolume.toLocaleString()} ({todayCodFamilyCount} orders)</strong>
-                                                        </p> */}
-                                                        <hr />
-                                                        <p className="card-text mb-0">
-                                                            <span className="text-muted">This Month:</span><br />
-                                                            <strong className="text-primary fs-6">₹{stats?.monthAmount?.toLocaleString()} ({stats?.monthOrders} orders)</strong>
-                                                        </p>
-                                                        {/* <p className="card-text ">
-                                                            <span className="text-muted">This Month COD:</span><br />
-                                                            <strong className="text-warning fs-6">₹{codFamilyVolume.toLocaleString()} ({codFamilyCount} orders)</strong>
-                                                        </p> */}
+                                                return (
+                                                    <div
+                                                        className="card border-0 shadow-sm p-2 rounded-4"
+                                                        style={{ width: "180px", transition: "0.3s", cursor: "pointer", background: "#f9fcff" }}
+                                                        key={r.family_id || family}
+                                                        onClick={() => navigate("/dashboard/family/details", { state: { family_id: r.family_id, family_name: family } })}
+                                                    >
+                                                        <div className="card-body text-center">
+                                                            <h5 className="card-title text-uppercase fw-semibold text-secondary">
+                                                                {family}
+                                                            </h5>
+
+                                                            <p className="card-text mb-2">
+                                                                <span className="text-muted">Today's Total:</span><br />
+                                                                <strong className="text-success fs-6">
+                                                                    ₹{stats.todayAmount.toLocaleString()} ({stats.todayOrders} orders)
+                                                                </strong>
+                                                            </p>
+
+                                                            <hr />
+
+                                                            <p className="card-text mb-0">
+                                                                <span className="text-muted">This Month:</span><br />
+                                                                <strong className="text-primary fs-6">
+                                                                    ₹{stats.monthAmount.toLocaleString()} ({stats.monthOrders} orders)
+                                                                </strong>
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Middle Column (optional content) */}
@@ -426,19 +350,19 @@ const StatisticsApplications = () => {
                                             {/* First Row (was Column 1) */}
                                             <div className="p-4 border rounded-4 shadow-sm bg-light d-flex flex-column justify-content-center align-items-center text-center">
                                                 <p className="text-muted fw-medium mb-2">Total Division Status</p>
-                                                <h5 className="mb-1">Today's Total Volume : <span className='text-primary'>₹<strong>{overallTotals.totalAmount.toLocaleString()}</strong></span></h5>
+                                                <h5 className="mb-1">Today's Total Volume : <span className='text-primary'>₹<strong>{familyOrders2?.today_total_amount}</strong></span></h5>
                                                 <p className="text-muted fw-medium mb-1">
-                                                    Today's Total Orders : <span className="fw-bold text-dark"><strong>{overallTotals.orderCount}</strong></span>
+                                                    Today's Total Orders : <span className="fw-bold text-dark"><strong>{familyOrders2?.today_count}</strong></span>
                                                 </p>
                                                 <h6 className="text-muted mb-1">
                                                     Today's COD Orders : <span className="fw-bold text-dark"><strong>{todayCodOrdersCount}</strong></span> | ₹<span className="fw-bold text-dark"><strong>{todayCodOrdersVolume.toLocaleString()}</strong></span>
                                                 </h6>
                                                 <hr className="my-3" style={{ width: "60%" }} />
                                                 <h5 className="mb-1">
-                                                    This Month's Total Volume : <span className='text-primary'>₹<strong>{overallTotals.monthAmount.toLocaleString()}</strong></span>
+                                                    This Month's Total Volume : <span className='text-primary'>₹<strong>{familyOrders2?.month_total_amount}</strong></span>
                                                 </h5>
                                                 <p className="text-muted fw-medium mb-1">
-                                                    This Month's Total Orders : <span className="fw-bold text-dark"><strong>{overallTotals.monthOrders}</strong></span>
+                                                    This Month's Total Orders : <span className="fw-bold text-dark"><strong>{familyOrders2?.month_count}</strong></span>
                                                 </p>
                                                 <h6 className="text-muted mb-1">
                                                     COD Orders : <span className="fw-bold text-dark"><strong>{codOrdersCount}</strong></span> | ₹<span className="fw-bold text-dark"><strong>{codOrdersTotalVolume.toLocaleString()}</strong></span>

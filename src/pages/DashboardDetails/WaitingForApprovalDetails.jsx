@@ -13,6 +13,7 @@ const WaitingForApprovalDetails = () => {
     const [userData, setUserData] = useState();
 
     document.title = "Shipped Details | Beposoft";
+    const status = "Invoice Created";
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -36,29 +37,20 @@ const WaitingForApprovalDetails = () => {
     useEffect(() => {
         const fetchOrdersData = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}orders/`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}orders/${status}/`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
                 setOrders(response?.data?.results || []);
             } catch (error) {
-                toast.error('Error fetching order data:');
+                toast.error("Error fetching order data");
             }
         };
         fetchOrdersData();
-    }, []);
+    }, [token, status]);
 
-    const waitingForApproval = orders.filter(order => {
-        const isInvoiceCreated = order.status === "Invoice Created";
-
-        if (!isInvoiceCreated) return false;
-
-        if (role === "ADMIN") {
-            return true; // Admin sees all shipped orders for today
-        }
-
-        // Non-admins: show only if family_id matches userData
-        return order.family_id === userData;
-    });
+    const waitingForApproval =
+        role === "ADMIN" ? orders : orders.filter((o) => o.family_id === userData);
 
     return (
         <React.Fragment>

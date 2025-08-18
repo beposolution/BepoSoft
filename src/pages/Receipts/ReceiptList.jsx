@@ -17,6 +17,7 @@ const OtherReceipt = () => {
     const [filteredReceipts, setFilteredReceipts] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const perPageData = 10;
+    const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
         const fetchReceiptData = async () => {
@@ -95,6 +96,44 @@ const OtherReceipt = () => {
         return bank ? bank.name : "N/A";
     };
 
+    useEffect(() => {
+        const allReceipts = receipts.receipts || [];
+        let filtered = allReceipts;
+
+        // Date filter
+        if (startDate && endDate) {
+            filtered = allReceipts.filter((receipt) => {
+                const receiptDate = new Date(receipt.received_at);
+                return receiptDate >= new Date(startDate) && receiptDate <= new Date(endDate);
+            });
+        }
+
+        // Search filter (Invoice, Customer, Bank, Amount, Reference)
+        const term = (searchTerm || "").toLowerCase().trim();
+        if (term) {
+            filtered = filtered.filter((r) => {
+                const invoice = (r?.order_name ?? "").toLowerCase();
+                const customerName = (customers.find((c) => c.id === r.customer)?.name ?? "").toLowerCase();
+                const bankName = (banks.find((b) => b.id === r.bank)?.name ?? "").toLowerCase();
+                const amountRaw = String(r?.amount ?? "");
+                const amountFixed = Number(r?.amount ?? 0).toFixed(2);
+                const reference = (r?.transactionID ?? "").toLowerCase();
+
+                return (
+                    invoice.includes(term) ||
+                    customerName.includes(term) ||
+                    bankName.includes(term) ||
+                    amountRaw.includes(term) ||
+                    amountFixed.includes(term) ||
+                    reference.includes(term)
+                );
+            });
+        }
+
+        setFilteredReceipts(filtered);
+        setCurrentPage(1);
+    }, [receipts, startDate, endDate, searchTerm, customers, banks]);
+
     const indexOfLastItem = currentPage * perPageData;
     const indexOfFirstItem = indexOfLastItem - perPageData;
     const currentReceipts = filteredReceipts.slice(indexOfFirstItem, indexOfLastItem);
@@ -114,6 +153,15 @@ const OtherReceipt = () => {
                                     ) : (
                                         <div>
                                             <Row className="mb-3">
+                                                <Col md={3}>
+                                                    <label>Search</label>
+                                                    <Input
+                                                        type="text"
+                                                        placeholder="Invoice, Customer, Bank, Amount, Reference"
+                                                        value={searchTerm}
+                                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                                    />
+                                                </Col>
                                                 <Col md={3}>
                                                     <label>Start Date</label>
                                                     <Input

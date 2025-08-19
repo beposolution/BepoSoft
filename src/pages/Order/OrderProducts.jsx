@@ -708,6 +708,7 @@ const FormLayouts = () => {
                 rackDetails = racks
                     .map((rack, rackIdx) => ({
                         rack_id: rack.rack_id,
+                        rack_name: rack.rack_name ?? "",
                         quantity: rackSelections[productId]?.[rackIdx] ?? 0,
                         column_name: rack.column_name
                     }))

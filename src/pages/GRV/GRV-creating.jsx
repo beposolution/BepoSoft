@@ -37,6 +37,7 @@ const FormLayouts = () => {
     const [orderid, setOrderId] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const date = new Date();
+    const status = "Shipped";
 
     const currentDate = date.toISOString().split('T')[0]; // This will give you the date in "YYYY-MM-DD" format
 
@@ -47,7 +48,7 @@ const FormLayouts = () => {
     useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const endpoint = `${import.meta.env.VITE_APP_KEY}orders/`;
+                const endpoint = `${import.meta.env.VITE_APP_KEY}orders/${status}/`;
                 const response = await axios.get(endpoint, {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -60,7 +61,7 @@ const FormLayouts = () => {
         };
 
         fetchOrders();
-    }, []);
+    }, [status]);
 
     const handleOrderChange = async (e) => {
         const selectedId = parseInt(e.target.value, 10);

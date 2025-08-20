@@ -62,6 +62,10 @@ const FormLayouts = () => {
     const [rackSelections, setRackSelections] = useState({});
     const role = localStorage.getItem("active");
     const [editingRackFor, setEditingRackFor] = useState(null);
+    const [rackModalOpen, setRackModalOpen] = useState(false);
+    const [rackItemCtx, setRackItemCtx] = useState(null);
+    const openRackModal = (item, index) => { setRackItemCtx({ item, index }); setRackModalOpen(true); };
+    const closeRackModal = () => { setRackModalOpen(false); setRackItemCtx(null); };
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -790,8 +794,30 @@ const FormLayouts = () => {
 
     const showRackDetails =
         (role === "ADMIN" || role === "Accounts / Accounting") &&
-        formik.values.status !== "Invoice Created" &&
-        formik.values.status !== "Invoice Approved";
+        formik.values.status !== "Invoice Created"
+
+    // ADD ONLY: cap per-rack input so total never exceeds the order line quantity
+    const setRackQtyCapped = (item, rackIdx, val, rackStock) => {
+        const q = Math.max(0, Number(val || 0));
+        const current = rackSelections[item.id] || {};
+
+        // sum of all other racks for this item (excluding the one being edited)
+        const otherSum = Object.entries(current).reduce(
+            (s, [k, v]) => s + (Number(k) === rackIdx ? 0 : (Number(v) || 0)),
+            0
+        );
+
+        // how much is still allowed for this order line
+        const allowedLeft = Math.max(0, Number(item.quantity) - otherSum);
+
+        // final capped value by remaining allowable and this rack's stock
+        const finalVal = Math.min(q, allowedLeft, Number(rackStock) || 0);
+
+        setRackSelections(prev => ({
+            ...prev,
+            [item.id]: { ...(prev[item.id] || {}), [rackIdx]: finalVal }
+        }));
+    };
 
     return (
         <React.Fragment>
@@ -1263,6 +1289,7 @@ const FormLayouts = () => {
                                                             <th>Price</th>
                                                             <th>Discount</th>
                                                             <th>Total Amount</th>
+                                                            {showRackDetails && <th>Rack</th>}
                                                             <th>Remove</th>
                                                         </tr>
                                                     </thead>
@@ -1317,6 +1344,18 @@ const FormLayouts = () => {
                                                                 </td>
 
                                                                 <td>{((item.rate - item.discount) * item.quantity).toFixed(2)}</td>
+                                                                {showRackDetails && (
+                                                                    <td>
+                                                                        <Button
+                                                                            color="secondary"
+                                                                            size="sm"
+                                                                            disabled={isAddDisabled}
+                                                                            onClick={() => openRackModal(item, index)}
+                                                                        >
+                                                                            Add Rack Details
+                                                                        </Button>
+                                                                    </td>
+                                                                )}
                                                                 <td>
                                                                     <Button
                                                                         color="danger"
@@ -1348,10 +1387,11 @@ const FormLayouts = () => {
                                                                     acc + ((item.rate - item.discount) * item.quantity), 0).toFixed(2)}
                                                             </td>
                                                             <td></td>
+                                                            <td></td>
                                                         </tr>
                                                     </tbody>
                                                 </Table>
-                                                {showRackDetails && orderItems.map((item, index) => {
+                                                {/* {showRackDetails && orderItems.map((item, index) => {
                                                     let racks = [];
                                                     try {
                                                         if (item.products && typeof item.products === "string" && item.products.trim().startsWith("[")) {
@@ -1364,7 +1404,6 @@ const FormLayouts = () => {
                                                         racks = [];
                                                     }
 
-                                                    // Only usable racks
                                                     const usableRacks = racks.filter(rack => rack.usability === "usable");
                                                     const isEditing = editingRackFor === item.id;
 
@@ -1391,7 +1430,7 @@ const FormLayouts = () => {
                                                                             size="sm"
                                                                             disabled={isAddDisabled}
                                                                             onClick={() => {
-                                                                                // Save (will send rack_details based on current inputs)
+                                                                               
                                                                                 handleItemChange(index, 'rack_details', null);
                                                                                 toast.success("Rack details saved!");
                                                                                 setEditingRackFor(null);
@@ -1403,7 +1442,7 @@ const FormLayouts = () => {
                                                                             color="light"
                                                                             size="sm"
                                                                             onClick={() => {
-                                                                                // Optional: clear unsaved selections for this item
+                                                                              
                                                                                 setRackSelections(prev => {
                                                                                     const next = { ...prev };
                                                                                     delete next[item.id];
@@ -1418,10 +1457,10 @@ const FormLayouts = () => {
                                                                 )}
                                                             </div>
 
-                                                            {/* Collapsed view when not editing: show nothing but header + button */}
+                                                            
                                                             {!isEditing ? (
                                                                 <div style={{ marginTop: 8, color: "#666" }}>
-                                                                    {/* You can show a small summary here if you store saved rack details on the item */}
+                                                                    
                                                                     Click “Add Rack Details” to allocate from racks.
                                                                 </div>
                                                             ) : (
@@ -1469,7 +1508,156 @@ const FormLayouts = () => {
                                                             )}
                                                         </div>
                                                     );
-                                                })}
+                                                })} */}
+                                                <Modal isOpen={rackModalOpen} toggle={closeRackModal} size="lg">
+                                                    <ModalHeader toggle={closeRackModal}>
+                                                        {rackItemCtx ? `Rack Details for ${rackItemCtx.item.name}` : "Rack Details"}
+                                                    </ModalHeader>
+                                                    <ModalBody>
+                                                        {!rackItemCtx ? (
+                                                            <div className="text-center">Loading...</div>
+                                                        ) : (
+                                                            (() => {
+                                                                const item = rackItemCtx.item;
+
+                                                                // Parse racks exactly like you already do
+                                                                let racks = [];
+                                                                try {
+                                                                    if (item.products && typeof item.products === "string" && item.products.trim().startsWith("[")) {
+                                                                        const fixedJson = item.products.replace(/'/g, '"');
+                                                                        racks = JSON.parse(fixedJson);
+                                                                    } else if (Array.isArray(item.products)) {
+                                                                        racks = item.products;
+                                                                    }
+                                                                } catch { racks = []; }
+
+                                                                const usableRacks = (racks || []).filter(r => r.usability === "usable");
+
+                                                                if (!usableRacks.length) return <div>No rack details available.</div>;
+
+                                                                const totalSelected = Object.values(rackSelections[item.id] || {})
+                                                                    .reduce((a, b) => a + (Number(b) || 0), 0);
+                                                                const remaining = Math.max(0, Number(item.quantity) - totalSelected);
+
+                                                                return (
+                                                                    <>
+                                                                        <div className="mb-2">
+                                                                            <strong className="text-danger">Remaining to allocate: {remaining}</strong>
+                                                                        </div>
+
+                                                                        <Table bordered striped responsive className="mb-3">
+                                                                            <thead>
+                                                                                <tr>
+                                                                                    <th>#</th>
+                                                                                    <th>Column Name</th>
+                                                                                    <th>Rack Name</th>
+                                                                                    <th>Usability</th>
+                                                                                    <th>Available Stock</th>
+                                                                                    <th>Locked Stock</th>
+                                                                                    <th>Select Qty</th>
+                                                                                </tr>
+                                                                            </thead>
+                                                                            {/* <tbody>
+                                                                            {usableRacks.map((rack, rackIdx) => (
+                                                                                <tr key={rack.column_name || rackIdx}>
+                                                                                    <td>{rackIdx + 1}</td>
+                                                                                    <td>{rack.column_name}</td>
+                                                                                    <td>{rack.rack_name}</td>
+                                                                                    <td>{rack.usability}</td>
+                                                                                    <td>{rack.rack_stock}</td>
+                                                                                    <td>{rack.rack_lock}</td>
+                                                                                    <td style={{ width: 120 }}>
+                                                                                        <Input
+                                                                                            type="number"
+                                                                                            min={0}
+                                                                                            max={rack.rack_stock}
+                                                                                            value={rackSelections[item.id]?.[rackIdx] ?? 0}
+                                                                                            onChange={e => handleRackStockChange(item.id, rackIdx, e.target.value)}
+                                                                                        />
+                                                                                    </td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody> */}
+                                                                            <tbody>
+                                                                                {usableRacks.map((rack, rackIdx) => {
+                                                                                    // ADD ONLY: compute safe max for this specific input
+                                                                                    const currentForRack = rackSelections[item.id]?.[rackIdx] ?? 0;
+                                                                                    const selectedOthers = Object.entries(rackSelections[item.id] || {})
+                                                                                        .reduce((s, [k, v]) => s + (Number(k) === rackIdx ? 0 : (Number(v) || 0)), 0);
+                                                                                    const remainingForThisInput = Math.max(0, Number(item.quantity) - selectedOthers);
+                                                                                    const inputMax = Math.min(Number(rack.rack_stock) || 0, remainingForThisInput + currentForRack);
+
+                                                                                    return (
+                                                                                        <tr key={rack.column_name || rackIdx}>
+                                                                                            <td>{rackIdx + 1}</td>
+                                                                                            <td>{rack.column_name}</td>
+                                                                                            <td>{rack.rack_name}</td>
+                                                                                            <td>{rack.usability}</td>
+                                                                                            <td>{rack.rack_stock}</td>
+                                                                                            <td>{rack.rack_lock}</td>
+                                                                                            <td style={{ width: 120 }}>
+                                                                                                <Input
+                                                                                                    type="number"
+                                                                                                    min={0}
+                                                                                                    max={inputMax} // ADD ONLY: HTML max to keep spinner in range
+                                                                                                    value={currentForRack}
+                                                                                                    onChange={e => setRackQtyCapped(item, rackIdx, e.target.value, rack.rack_stock)} // ADD ONLY
+                                                                                                />
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                    );
+                                                                                })}
+                                                                            </tbody>
+                                                                        </Table>
+                                                                    </>
+                                                                );
+                                                            })()
+                                                        )}
+                                                        <div className="d-flex justify-content-end gap-2">
+                                                            <Button color="light" onClick={closeRackModal}>Cancel</Button>
+                                                            <Button
+                                                                color="primary"
+                                                                disabled={isAddDisabled}
+                                                                onClick={async () => {
+                                                                    // Build rack_details exactly like your save path expects
+                                                                    const item = rackItemCtx.item;
+                                                                    let racks = [];
+                                                                    try {
+                                                                        if (item.products && typeof item.products === "string" && item.products.trim().startsWith("[")) {
+                                                                            const fixedJson = item.products.replace(/'/g, '"');
+                                                                            racks = JSON.parse(fixedJson);
+                                                                        } else if (Array.isArray(item.products)) {
+                                                                            racks = item.products;
+                                                                        }
+                                                                    } catch { racks = []; }
+                                                                    const usableRacks = (racks || []).filter(r => r.usability === "usable");
+
+                                                                    const rack_details = usableRacks
+                                                                        .map((r, rackIdx) => ({
+                                                                            rack_id: r.rack_id,
+                                                                            rack_name: r.rack_name ?? "",
+                                                                            column_name: r.column_name,
+                                                                            quantity: Number(rackSelections[item.id]?.[rackIdx] ?? 0),
+                                                                        }))
+                                                                        .filter(r => r.quantity > 0);
+
+                                                                    // Use your existing updater (no change to it)
+                                                                    await updateCartProduct(item.id, {
+                                                                        quantity: item.quantity,
+                                                                        discount: item.discount,
+                                                                        rate: item.rate,
+                                                                        rack_details,
+                                                                    });
+                                                                    toast.success("Rack details saved!");
+                                                                    closeRackModal();
+                                                                    // optional: await fetchOrderData();
+                                                                }}
+                                                            >
+                                                                Save Rack Details
+                                                            </Button>
+                                                        </div>
+                                                    </ModalBody>
+                                                </Modal>
 
                                                 <div className="container mt-5">
                                                     {/* Invoice Header */}

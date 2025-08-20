@@ -342,6 +342,24 @@ const FormLayouts = () => {
         updateCartTotal(updatedCartProducts);
     };
 
+    const handlePriceChange = (index, newPrice) => {
+        const v = parseFloat(newPrice);
+        const price = Number.isFinite(v) && v >= 0 ? v : 0;
+
+        const updated = [...cartProducts];
+        updated[index].price = price;
+
+        // (Optional) keep exclude_price in sync if you want base rate without tax
+        const taxPct = parseFloat(updated[index].tax) || 0;
+        if (taxPct >= 0) {
+            const base = price / (1 + taxPct / 100);
+            updated[index].exclude_price = Number(base.toFixed(2));
+        }
+
+        setCartProducts(updated);
+        updateCartProduct(updated[index].id, { price });  // Persist to API
+        updateCartTotal(updated);                         // Recalculate totals
+    };
 
     const updateCartTotal = (updatedProducts) => {
         let totalAmount = 0;
@@ -696,7 +714,17 @@ const FormLayouts = () => {
                                                                                             className="input-sm"
                                                                                         />
                                                                                     </td>
-                                                                                    <td>₹{(product.price || 0) - (product.discount || 0)}</td>
+                                                                                    {/* <td>₹{(product.price || 0) - (product.discount || 0)}</td> */}
+                                                                                    <td>
+                                                                                        <Input
+                                                                                            type="number"
+                                                                                            step="0.01"
+                                                                                            min="0"
+                                                                                            value={product.price ?? 0}
+                                                                                            onChange={(e) => handlePriceChange(index, e.target.value)}
+                                                                                            className="input-sm"
+                                                                                        />
+                                                                                    </td>
                                                                                     <td>
                                                                                         <Input
                                                                                             type="number"

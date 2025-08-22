@@ -15,7 +15,7 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 
 const BasicTable = () => {
     // Meta title
-    document.title = "GRV | beposoft grv data";
+    document.title = "GRV List | Beposoft";
 
     // State to hold table data
     const [tableData, setTableData] = useState([]);
@@ -107,7 +107,8 @@ const BasicTable = () => {
                                                 <tr>
                                                     <th>NO</th>
                                                     <th>Product / Invoice / Amount</th>
-                                                    <th>Condition / Qty</th>
+                                                    <th>Condition</th>
+                                                    <th>Quantity</th>
                                                     <th>Invoice Created By</th>
                                                     <th>Customer</th>
                                                     <th>Description</th>
@@ -123,6 +124,7 @@ const BasicTable = () => {
                                                             <th scope="row">{index + 1}</th>
                                                             <td>{item.product} / {item.order} / {item.price}</td>
                                                             <td>{item.returnreason}</td>
+                                                            <td>{item.quantity}</td>
                                                             <td>{item.staff}</td>
                                                             <td>{item.customer}</td>
                                                             <td>{item.note || "N/A"}</td>

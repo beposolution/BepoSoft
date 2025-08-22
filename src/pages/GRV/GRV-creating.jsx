@@ -26,7 +26,7 @@ import "react-toastify/dist/ReactToastify.css";
 const token = localStorage.getItem("token");
 
 const FormLayouts = () => {
-    document.title = "beposoft | New GRV";
+    document.title = "New GRV | Beposoft";
 
     const [orders, setOrders] = useState([]);
     const [selectedOrder, setSelectedOrder] = useState(null);
@@ -38,6 +38,250 @@ const FormLayouts = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const date = new Date();
     const status = "Shipped";
+    const [rackModal, setRackModal] = useState({
+        open: false,
+        productUniqueId: null,
+        racks: [],          // parsed racks for the product
+        allocations: {},    // { `${rack_id}|${column_name}`: qty }
+        maxQty: 1,          // product.rowQuantity (each row is 1 in your UI)
+        productName: "",
+    });
+    const [invoiceModal, setInvoiceModal] = useState({
+        open: false,
+        productName: "",
+        rackDetails: [], // parsed from product.products into rack_details
+    });
+    const [rackDetailsModal, setRackDetailsModal] = useState({
+        open: false,
+        productUniqueId: null,
+        racks: [],           // parsed racks for the product
+        allocations: {},     // { `${rack_id}|${column_name}`: qty }
+        maxQty: 1,           // rowQuantity of that line
+        productName: "",
+    });
+
+    // Parse the `products` field which may be a JSON-like string with single quotes
+    const parseRacks = (raw) => {
+        try {
+            if (!raw) return [];
+            if (Array.isArray(raw)) return raw;
+            // many backends send single-quoted pseudo-JSON
+            const normalized = raw.replaceAll("'", '"');
+            const parsed = JSON.parse(normalized);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
+        }
+    };
+
+    // Compute usable stock (optional: subtract locked quantity if present)
+    const rackUsable = (rack) => {
+        const stock = Number(rack?.rack_stock ?? 0);
+        const locked = Number(rack?.rack_lock ?? 0);
+        return Math.max(stock - locked, 0);
+    };
+
+    // Validate that every selected product has non-empty selected_racks
+    const allRowsHaveRacks = (rows) => rows.length > 0 && rows.every(r => Array.isArray(r.selected_racks) && r.selected_racks.length > 0);
+
+    const openRackSelector = (row) => {
+        const racks = parseRacks(row.products)
+            .map(r => ({
+                rack_id: r.rack_id,
+                rack_name: r.rack_name,
+                column_name: r.column_name,
+                usability: r.usability,
+                rack_stock: Number(r.rack_stock ?? 0),
+                rack_lock: Number(r.rack_lock ?? 0),
+                usable: rackUsable(r),
+            }))
+            // show usable racks first
+            .sort((a, b) => b.usable - a.usable);
+
+        // Prefill allocations if user already picked
+        const allocations = {};
+        if (Array.isArray(row.selected_racks)) {
+            row.selected_racks.forEach(sel => {
+                const key = `${sel.rack_id}|${sel.column_name}`;
+                allocations[key] = Number(sel.quantity || 0);
+            });
+        }
+
+        setRackModal({
+            open: true,
+            productUniqueId: row.uniqueId,
+            racks,
+            allocations,
+            maxQty: Number(row.rowQuantity ?? 1),
+            productName: row.name,
+        });
+    };
+
+    const saveRackAllocations = () => {
+        const { allocations, racks, productUniqueId, maxQty } = rackModal;
+
+        // Build array and validate
+        const picked = Object.entries(allocations)
+            .map(([key, qty]) => {
+                const q = Number(qty || 0);
+                if (q <= 0) return null;
+                const [rack_id_str, column_name] = key.split("|");
+                const rack_id = Number(rack_id_str);
+                const meta = racks.find(r => r.rack_id === rack_id && r.column_name === column_name) || {};
+                return {
+                    rack_id,
+                    column_name,
+                    rack_name: meta.rack_name,
+                    usability: meta.usability,
+                    quantity: q,
+                };
+            })
+            .filter(Boolean);
+
+        const total = picked.reduce((s, r) => s + Number(r.quantity || 0), 0);
+
+        if (total === 0) {
+            toast.error("Please allocate at least 1 unit.");
+            return;
+        }
+        if (total > maxQty) {
+            toast.error(`Allocated ${total}, but row quantity is ${maxQty}. Reduce allocation.`);
+            return;
+        }
+
+        // Optional: verify each pick doesn't exceed usable
+        for (const p of picked) {
+            const meta = rackModal.racks.find(r => r.rack_id === p.rack_id && r.column_name === p.column_name);
+            if (!meta) continue;
+            if (Number(p.quantity) > Number(meta.usable)) {
+                toast.error(`Rack ${meta.rack_name}-${meta.column_name} only has ${meta.usable} usable units.`);
+                return;
+            }
+        }
+
+        setSelectedProducts(prev =>
+            prev.map(row =>
+                row.uniqueId === productUniqueId
+                    ? { ...row, selected_racks: picked }
+                    : row
+            )
+        );
+
+        setRackModal(m => ({ ...m, open: false }));
+    };
+
+    const toInvoice = (row) => {
+        // Parse from the product's `products` field and compute usable qty
+        const racks = parseRacks(row.products).map(r => ({
+            rack_id: r.rack_id,
+            rack_name: r.rack_name,
+            column_name: r.column_name,
+            usability: r.usability,
+            rack_stock: Number(r.rack_stock ?? 0),
+            rack_lock: Number(r.rack_lock ?? 0),
+            usable: rackUsable(r),
+        }));
+
+        // Save rack_details onto this product row
+        setSelectedProducts(prev =>
+            prev.map(p =>
+                p.uniqueId === row.uniqueId ? { ...p, rack_details: racks } : p
+            )
+        );
+
+        // Show modal
+        setInvoiceModal({
+            open: true,
+            productName: row.name,
+            rackDetails: racks,
+        });
+    };
+
+    const openRackDetailsSelector = (row) => {
+        const racks = parseRacks(row.products)
+            .map(r => ({
+                rack_id: r.rack_id,
+                rack_name: r.rack_name,
+                column_name: r.column_name,
+                usability: r.usability,
+                rack_stock: Number(r.rack_stock ?? 0),
+                rack_lock: Number(r.rack_lock ?? 0),
+                usable: rackUsable(r),
+            }))
+            .sort((a, b) => b.usable - a.usable);
+
+        // Prefill from existing rack_details if any
+        const allocations = {};
+        if (Array.isArray(row.rack_details)) {
+            row.rack_details.forEach(sel => {
+                const key = `${sel.rack_id}|${sel.column_name}`;
+                allocations[key] = Number(sel.quantity || 0);
+            });
+        }
+
+        setRackDetailsModal({
+            open: true,
+            productUniqueId: row.uniqueId,
+            racks,
+            allocations,
+            maxQty: Number(row.rowQuantity ?? 1),
+            productName: row.name,
+        });
+    };
+
+    const saveRackDetailsAllocations = () => {
+        const { allocations, racks, productUniqueId, maxQty } = rackDetailsModal;
+
+        // Build array from allocations
+        const picked = Object.entries(allocations)
+            .map(([key, qty]) => {
+                const q = Number(qty || 0);
+                if (q <= 0) return null;
+                const [rack_id_str, column_name] = key.split("|");
+                const rack_id = Number(rack_id_str);
+                const meta = racks.find(r => r.rack_id === rack_id && r.column_name === column_name) || {};
+                return {
+                    rack_id,
+                    column_name,
+                    rack_name: meta.rack_name,
+                    usability: meta.usability,
+                    quantity: q,
+                };
+            })
+            .filter(Boolean);
+
+        const total = picked.reduce((s, r) => s + Number(r.quantity || 0), 0);
+
+        if (total === 0) {
+            toast.error("Please allocate at least 1 unit.");
+            return;
+        }
+        if (total > maxQty) {
+            toast.error(`Allocated ${total}, but row quantity is ${maxQty}. Reduce allocation.`);
+            return;
+        }
+
+        // Guard against exceeding usable per rack
+        for (const p of picked) {
+            const meta = rackDetailsModal.racks.find(r => r.rack_id === p.rack_id && r.column_name === p.column_name);
+            if (!meta) continue;
+            if (Number(p.quantity) > Number(meta.usable)) {
+                toast.error(`Rack ${meta.rack_name}-${meta.column_name} only has ${meta.usable} usable units.`);
+                return;
+            }
+        }
+
+        // Save into rack_details on that row
+        setSelectedProducts(prev =>
+            prev.map(row =>
+                row.uniqueId === productUniqueId
+                    ? { ...row, rack_details: picked }
+                    : row
+            )
+        );
+
+        setRackDetailsModal(m => ({ ...m, open: false }));
+    };
 
     const currentDate = date.toISOString().split('T')[0]; // This will give you the date in "YYYY-MM-DD" format
 
@@ -120,25 +364,30 @@ const FormLayouts = () => {
             returnreason: product.returnReason || "usable",
             price: product.rate,
             quantity: product.rowQuantity,
-            remark: "return", // Assuming a fixed remark for this example
+            remark: "return",
             status: "Waiting For Approval",
             note: product.note || "",
-            date: currentDate,  // Add current date
+            date: currentDate,
             time: currentTime,
             product_id: product.product,
+            selected_racks: product.selected_racks || [],
+            rack_details: product.rack_details || [],
         }));
+
+        // Optional: hard guard to ensure every row has racks
+        if (!allRowsHaveRacks(selectedProducts)) {
+            toast.error("Please select racks for all products before generating the invoice.");
+            return;
+        }
 
         setLoading(true);
         try {
-            const endpoint = `${import.meta.env.VITE_APP_KEY}grv/data/`; // Adjust the endpoint for your backend
-            const response = await axios.post(endpoint, dataToSave, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+            const endpoint = `${import.meta.env.VITE_APP_KEY}grv/data/`;
+            await axios.post(endpoint, dataToSave, {
+                headers: { Authorization: `Bearer ${token}` },
             });
-
             alert("Invoice saved successfully!");
-            setSelectedProducts([]); // Clear the selected products after saving
+            setSelectedProducts([]);
         } catch (error) {
             alert("Error saving invoice. Please try again.");
         } finally {
@@ -356,9 +605,42 @@ const FormLayouts = () => {
                                                                 }}
                                                             />
                                                         </td>
-                                                        <td>{product.name}</td>
+                                                        {/* <td>{product.name}</td> */}
+                                                        <td>
+                                                            {product.name}
+                                                            {Array.isArray(product.selected_racks) &&
+                                                                product.selected_racks.length > 0 && (
+                                                                    <div className="mt-1">
+                                                                        <small className="badge bg-light text-dark">
+                                                                            {product.selected_racks
+                                                                                .map(
+                                                                                    (r) =>
+                                                                                        `${r.rack_name}-${r.column_name} (${r.usability}):${r.quantity}`
+                                                                                )
+                                                                                .join(", ")}
+                                                                        </small>
+                                                                    </div>
+                                                                )}
+                                                        </td>
                                                         <td>₹{product.rate ? product.rate : "0.00"}</td> {/* Fixed here */}
-                                                        <td>1</td>
+                                                        {/* <td>1</td> */}
+                                                        <td style={{ maxWidth: 120 }}>
+                                                            <Input
+                                                                type="number"
+                                                                min="1"
+                                                                value={product.rowQuantity ?? 1}
+                                                                onChange={(e) => {
+                                                                    const q = Math.max(1, Number(e.target.value || 1));
+                                                                    setSelectedProducts(prev =>
+                                                                        prev.map(p =>
+                                                                            p.uniqueId === product.uniqueId
+                                                                                ? { ...p, rowQuantity: q }
+                                                                                : p
+                                                                        )
+                                                                    );
+                                                                }}
+                                                            />
+                                                        </td>
                                                         <td>
                                                             <select
                                                                 className="form-select"
@@ -397,7 +679,7 @@ const FormLayouts = () => {
                                                                 className="mt-1"
                                                             />
                                                         </td>
-                                                        <td>
+                                                        {/* <td>
                                                             <Button
                                                                 color="danger"
                                                                 onClick={() =>
@@ -408,21 +690,178 @@ const FormLayouts = () => {
                                                             >
                                                                 Remove
                                                             </Button>
+                                                        </td> */}
+                                                        <td className="d-flex gap-2">
+                                                            <Button
+                                                                color={product.selected_racks?.length ? "secondary" : "primary"}
+                                                                onClick={() => openRackSelector(product)}
+                                                            >
+                                                                {product.selected_racks?.length ? "Edit To Racks" : "To Racks"}
+                                                            </Button>
+
+                                                            <Button
+                                                                color="info"
+                                                                onClick={() => openRackDetailsSelector(product)}
+                                                            >
+                                                                To Invoice
+                                                            </Button>
+
+                                                            <Button
+                                                                color="danger"
+                                                                onClick={() =>
+                                                                    setSelectedProducts(prev => prev.filter(p => p.uniqueId !== product.uniqueId))
+                                                                }
+                                                            >
+                                                                Remove
+                                                            </Button>
                                                         </td>
                                                     </tr>
                                                 ))}
                                             </tbody>
 
                                         </Table>
+                                        <Modal isOpen={rackModal.open} toggle={() => setRackModal(m => ({ ...m, open: !m.open }))} size="lg">
+                                            <ModalHeader toggle={() => setRackModal(m => ({ ...m, open: !m.open }))}>
+                                                Select Racks — {rackModal.productName}
+                                            </ModalHeader>
+                                            <ModalBody>
+                                                {rackModal.racks.length ? (
+                                                    <Table bordered responsive>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>#</th>
+                                                                <th>Rack</th>
+                                                                <th>Column</th>
+                                                                <th>Usability</th>
+                                                                {/* <th>Usable Qty</th> */}
+                                                                <th>Allocate</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {rackModal.racks.map((r, idx) => {
+                                                                const key = `${r.rack_id}|${r.column_name}`;
+                                                                const value = rackModal.allocations[key] ?? "";
+                                                                return (
+                                                                    <tr key={key}>
+                                                                        <td>{idx + 1}</td>
+                                                                        <td>{r.rack_name}</td>
+                                                                        <td>{r.column_name}</td>
+                                                                        <td>{r.usability}</td>
+                                                                        {/* <td>{r.usable}</td> */}
+                                                                        <td style={{ maxWidth: 140 }}>
+                                                                            <Input
+                                                                                type="number"
+                                                                                min="0"
+                                                                                max={r.usable}
+                                                                                value={value}
+                                                                                onChange={(e) => {
+                                                                                    const val = e.target.value ? Math.max(0, Math.min(Number(e.target.value), r.usable)) : "";
+                                                                                    setRackModal(m => ({
+                                                                                        ...m,
+                                                                                        allocations: { ...m.allocations, [key]: val }
+                                                                                    }));
+                                                                                }}
+                                                                            />
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                    </Table>
+                                                ) : (
+                                                    <p className="mb-0">No rack info found for this product.</p>
+                                                )}
+                                                <div className="text-muted mt-2">
+                                                    Row Qty: <strong>{rackModal.maxQty}</strong> • Total Allocated:&nbsp;
+                                                    <strong>
+                                                        {Object.values(rackModal.allocations).reduce((s, v) => s + (Number(v) || 0), 0)}
+                                                    </strong>
+                                                </div>
+                                            </ModalBody>
+                                            <ModalFooter>
+                                                <Button color="primary" onClick={saveRackAllocations}>Save</Button>
+                                                <Button color="secondary" onClick={() => setRackModal(m => ({ ...m, open: false }))}>Cancel</Button>
+                                            </ModalFooter>
+                                        </Modal>
+                                        <Modal
+                                            isOpen={rackDetailsModal.open}
+                                            toggle={() => setRackDetailsModal(m => ({ ...m, open: !m.open }))}
+                                            size="lg"
+                                        >
+                                            <ModalHeader toggle={() => setRackDetailsModal(m => ({ ...m, open: !m.open }))}>
+                                                Select Racks (To Invoice) — {rackDetailsModal.productName}
+                                            </ModalHeader>
+                                            <ModalBody>
+                                                {rackDetailsModal.racks.length ? (
+                                                    <Table bordered responsive>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>#</th>
+                                                                <th>Rack</th>
+                                                                <th>Column</th>
+                                                                <th>Usability</th>
+                                                                <th>Usable</th>
+                                                                <th>Allocate</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {rackDetailsModal.racks.map((r, idx) => {
+                                                                const key = `${r.rack_id}|${r.column_name}`;
+                                                                const value = rackDetailsModal.allocations[key] ?? "";
+                                                                return (
+                                                                    <tr key={key}>
+                                                                        <td>{idx + 1}</td>
+                                                                        <td>{r.rack_name}</td>
+                                                                        <td>{r.column_name}</td>
+                                                                        <td>{r.usability}</td>
+                                                                        <td>{r.usable}</td>
+                                                                        <td style={{ maxWidth: 140 }}>
+                                                                            <Input
+                                                                                type="number"
+                                                                                min="0"
+                                                                                max={r.usable}
+                                                                                value={value}
+                                                                                onChange={(e) => {
+                                                                                    const val = e.target.value
+                                                                                        ? Math.max(0, Math.min(Number(e.target.value), r.usable))
+                                                                                        : "";
+                                                                                    setRackDetailsModal(m => ({
+                                                                                        ...m,
+                                                                                        allocations: { ...m.allocations, [key]: val }
+                                                                                    }));
+                                                                                }}
+                                                                            />
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                    </Table>
+                                                ) : (
+                                                    <p className="mb-0">No rack info found for this product.</p>
+                                                )}
+                                                <div className="text-muted mt-2">
+                                                    Row Qty: <strong>{rackDetailsModal.maxQty}</strong> • Total Allocated:&nbsp;
+                                                    <strong>
+                                                        {Object.values(rackDetailsModal.allocations).reduce((s, v) => s + (Number(v) || 0), 0)}
+                                                    </strong>
+                                                </div>
+                                            </ModalBody>
+                                            <ModalFooter>
+                                                <Button color="primary" onClick={saveRackDetailsAllocations}>Save</Button>
+                                                <Button color="secondary" onClick={() => setRackDetailsModal(m => ({ ...m, open: false }))}>Cancel</Button>
+                                            </ModalFooter>
+                                        </Modal>
                                     </div>
                                 </CardBody>
                                 <Button
                                     color="success"
                                     onClick={handleSaveInvoice}
-                                    disabled={loading || selectedProducts.length === 0}
+                                    disabled={loading || selectedProducts.length === 0 || !allRowsHaveRacks(selectedProducts)}
                                 >
                                     {loading ? "Generating Invoice..." : "Generate Invoice"}
                                 </Button>
+
                             </Card>
                         </Col>
 

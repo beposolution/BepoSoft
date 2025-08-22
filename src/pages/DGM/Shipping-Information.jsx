@@ -399,17 +399,18 @@ const BasicTable = () => {
                                                 ))}
                                             </select>
 
-                                            <label>Image Before Packing</label>
+                                            {/* <label>Image Before Packing</label>
                                             <input
                                                 type="file"
                                                 className="form-control mb-2"
                                                 onChange={(e) => setImageBeforeFile(e.target.files[0])}
-                                            />
+                                            /> */}
 
                                             <label>Image After Packing</label>
                                             <input
                                                 type="file"
                                                 className="form-control mb-2"
+                                                required
                                                 onChange={(e) => setImageAfterFile(e.target.files[0])}
                                             />
 

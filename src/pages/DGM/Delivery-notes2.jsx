@@ -147,7 +147,7 @@ const AverageAmountReport = () => {
                                                         <td>{group.totalWeight.toFixed(2)} g</td>
                                                         <td>
                                                             {group.totalAmount !== 0
-                                                                ? (group.totalWeight / group.totalAmount).toFixed(2)
+                                                                ? (group.totalAmount / group.totalWeight).toFixed(2)
                                                                 : "0.00"}
                                                         </td>
                                                         <td>

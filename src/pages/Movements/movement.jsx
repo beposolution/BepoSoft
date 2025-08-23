@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import * as XLSX from "xlsx";
+import { useMemo } from "react";
 
 const Movement = () => {
     const { id } = useParams();
@@ -15,6 +16,9 @@ const Movement = () => {
     const [checkedBy, setCheckedBy] = useState("");
     const [codCount, setCodCount] = useState(0);
     const [parcelAmounts, setParcelAmounts] = useState({});
+    const [parcelActualWeights, setParcelActualWeights] = useState({});
+    const [codParcelAmount, setCodParcelAmount] = useState(0);
+    const [codActualWeightG, setCodActualWeightG] = useState(0);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -124,19 +128,33 @@ const Movement = () => {
     useEffect(() => {
         const countParcels = {};
         const totalAmounts = {};
+        const totalActualWeights = {};
         let codOrderCount = 0;
+
+        // NEW: COD totals
+        let codAmtSum = 0;       // ₹
+        let codActualWSumG = 0;  // grams
 
         data.forEach((category) => {
             category.orders.forEach((order) => {
-                if (order.cod_amount && parseFloat(order.cod_amount) > 0) {
-                    codOrderCount += 1;
-                }
+                const isCOD = order.cod_amount && parseFloat(order.cod_amount) > 0;
+                if (isCOD) codOrderCount += 1;
 
                 order.warehouses.forEach((warehouse) => {
                     const serviceName = warehouse.parcel_service;
-                    if (serviceName) {
-                        countParcels[serviceName] = (countParcels[serviceName] || 0) + 1;
-                        totalAmounts[serviceName] = (totalAmounts[serviceName] || 0) + parseFloat(warehouse.parcel_amount || 0);
+                    if (!serviceName) return;
+
+                    countParcels[serviceName] = (countParcels[serviceName] || 0) + 1;
+                    totalAmounts[serviceName] =
+                        (totalAmounts[serviceName] || 0) + parseFloat(warehouse.parcel_amount || 0);
+
+                    totalActualWeights[serviceName] =
+                        (totalActualWeights[serviceName] || 0) + parseFloat(warehouse.actual_weight || 0);
+
+                    // NEW: If this order is COD, add this warehouse’s amounts/weights to COD totals
+                    if (isCOD) {
+                        codAmtSum += parseFloat(warehouse.parcel_amount || 0);
+                        codActualWSumG += parseFloat(warehouse.actual_weight || 0);
                     }
                 });
             });
@@ -144,8 +162,78 @@ const Movement = () => {
 
         setParcelCounts(countParcels);
         setParcelAmounts(totalAmounts);
+        setParcelActualWeights(totalActualWeights);
         setCodCount(codOrderCount);
+
+        // NEW: persist COD totals
+        setCodParcelAmount(codAmtSum);
+        setCodActualWeightG(codActualWSumG);
     }, [data]);
+
+    const codActualWeightKg = useMemo(
+        () => codActualWeightG / 1000,
+        [codActualWeightG]
+    );
+
+    const codAverage = useMemo(
+        () => (codActualWeightKg > 0 ? codParcelAmount / codActualWeightKg : 0),
+        [codParcelAmount, codActualWeightKg]
+    );
+
+    const codRollup = useMemo(() => {
+        let boxes = 0;
+        let amount = 0;
+        let weightG = 0;
+
+        Object.keys(parcelCounts).forEach((name) => {
+            const norm = (name || '').trim().toUpperCase();
+            if (norm.includes('COD')) {
+                boxes += parcelCounts[name] || 0;
+                amount += parcelAmounts[name] || 0;
+                weightG += parcelActualWeights[name] || 0;
+            }
+        });
+
+        const weightKg = weightG / 1000;
+        const avg = weightKg > 0 ? amount / weightKg : 0;
+
+        return { boxes, amount, weightG, weightKg, avg };
+    }, [parcelCounts, parcelAmounts, parcelActualWeights]);
+
+    const {
+        totalParcelAmountAllServices,
+        totalActualWeightAllServices, // in grams
+        globalAverageAllServices      // ₹ per kg (weighted)
+    } = useMemo(() => {
+        const amt = Object.values(parcelAmounts).reduce((s, v) => s + (+v || 0), 0);
+        const wtG = Object.values(parcelActualWeights).reduce((s, v) => s + (+v || 0), 0);
+        const wtKg = wtG / 1000;
+        const avg = wtKg > 0 ? amt / wtKg : 0; // ₹/kg
+        return {
+            totalParcelAmountAllServices: amt,
+            totalActualWeightAllServices: wtG, // grams
+            globalAverageAllServices: avg
+        };
+    }, [parcelAmounts, parcelActualWeights]);
+
+    const totalActualWeightAllServicesKg = useMemo(
+        () => totalActualWeightAllServices / 1000,
+        [totalActualWeightAllServices]
+    );
+
+    const serviceAverages = useMemo(() => {
+        return Object.entries(parcelCounts).map(([serviceName, count]) => {
+            const amount = parcelAmounts[serviceName] || 0;
+            const actualW = parcelActualWeights[serviceName] || 0;
+            const actualKg = actualW / 1000;
+            const avg = actualKg > 0 ? amount / actualKg : 0;
+            return { serviceName, count, amount, actualW, avg };
+        });
+    }, [parcelCounts, parcelAmounts, parcelActualWeights]);
+
+    const overallAverageAllServices = useMemo(() => {
+        return totalParcelAmountAllServices / totalActualWeightAllServicesKg;
+    }, [totalParcelAmountAllServices, totalActualWeightAllServicesKg]);
 
     const aggregatedParcelCounts = {
         BEPARCEL: (parcelCounts['BEPARCEL'] || 0) + (parcelCounts['BEPARCEL COD'] || 0),
@@ -533,27 +621,44 @@ const Movement = () => {
                             <thead className="printdata-header">
                                 <tr>
                                     <th style={{ border: "1px solid black" }}>Parcel Service</th>
-                                    <th style={{ border: "1px solid black" }}>Total Count</th>
+                                    <th style={{ border: "1px solid black" }}>Total Box</th>
+                                    <th style={{ border: "1px solid black" }}>Total Parcel Amount</th>
+                                    <th style={{ border: "1px solid black" }}>Total Actual Weight</th>
+                                    <th style={{ border: "1px solid black" }}>Average</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {Object.entries(parcelCounts).map(([serviceName, count]) => (
-                                    <tr key={serviceName}>
-                                        <td style={{ border: "1px solid black" }}><strong>{serviceName}</strong></td>
-                                        <td style={{ border: "1px solid black" }}><strong>{count}</strong></td>
-                                    </tr>
-                                ))}
+                                {Object.entries(parcelCounts).map(([serviceName, count]) => {
+                                    const amount = parcelAmounts[serviceName] || 0;
+                                    const actualWkg = (parcelActualWeights[serviceName] || 0) / 1000;
+                                    const avg = actualWkg > 0 ? amount / actualWkg : 0; // ₹/kg
+                                    return (
+                                        <tr key={serviceName}>
+                                            <td style={{ border: "1px solid black" }}><strong>{serviceName}</strong></td>
+                                            <td style={{ border: "1px solid black" }}><strong>{count}</strong></td>
+                                            <td style={{ border: "1px solid black" }}><strong>₹{amount.toFixed(2)}</strong></td>
+                                            <td style={{ border: "1px solid black" }}><strong>{actualWkg.toFixed(2)}</strong></td>
+                                            <td style={{ border: "1px solid black" }}><strong>₹{avg.toFixed(2)}</strong></td>
+                                        </tr>
+                                    );
+                                })}
                                 <tr className="total-row1" style={{ backgroundColor: '#e0e0e0' }}>
-                                    <td style={{ border: "1px solid black" }}><strong>TOTAL PARCEL COUNT</strong></td>
+                                    <td style={{ border: "1px solid black" }}><strong>TOTAL</strong></td>
                                     <td style={{ border: "1px solid black" }}>
                                         <strong>
                                             {Object.values(parcelCounts).reduce((acc, curr) => acc + curr, 0)}
                                         </strong>
                                     </td>
+                                    <td style={{ border: "1px solid black" }}><strong>₹{totalParcelAmountAllServices.toFixed(2)}</strong></td>
+                                    <td style={{ border: "1px solid black" }}><strong>{totalActualWeightAllServicesKg.toFixed(2)}</strong></td>
+                                    <td style={{ border: "1px solid black" }}><strong>₹{overallAverageAllServices.toFixed(2)}</strong></td>
                                 </tr>
                                 <tr className="total-row1" style={{ backgroundColor: '#f0f0f0' }}>
                                     <td style={{ border: "1px solid black" }}><strong>TOTAL COD ORDERS</strong></td>
-                                    <td style={{ border: "1px solid black" }}><strong>{codCount}</strong></td>
+                                    <td style={{ border: "1px solid black" }}><strong>{codRollup.boxes}</strong></td>
+                                    <td style={{ border: "1px solid black" }}><strong>₹{codRollup.amount.toFixed(2)}</strong></td>
+                                    <td style={{ border: "1px solid black" }}><strong>{codRollup.weightKg.toFixed(2)}</strong></td>
+                                    <td style={{ border: "1px solid black" }}><strong>₹{codRollup.avg.toFixed(2)}</strong></td>
                                 </tr>
                             </tbody>
                         </table>

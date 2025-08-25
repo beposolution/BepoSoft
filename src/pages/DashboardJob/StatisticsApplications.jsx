@@ -590,7 +590,7 @@ const StatisticsApplications = () => {
                                             {expenseSummary.length > 0 && (
                                                 <tfoot>
                                                     <tr>
-                                                        <td colSpan="2" className="text-end text-primary fw-semibold">Total ({expenseDateRange})</td>
+                                                        <td colSpan="2" className="text-center text-primary fw-semibold"><strong>TOTAL</strong></td>
                                                         <td className="fw-bold text-primary"><strong>₹ {fmtINR(totalExpenseMTD)}</strong></td>
                                                     </tr>
                                                 </tfoot>

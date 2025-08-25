@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Table, Row, Col, Card, CardBody, Input, Button } from "reactstrap";
+import { Table, Row, Col, Card, CardBody, Input, Button, Modal, ModalHeader, ModalBody } from "reactstrap";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +18,9 @@ const StatisticsApplications = () => {
     const [expense, setExpense] = useState([])
     const [filteredData, setFilteredData] = useState([]);
     const navigate = useNavigate();
+    const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+    const [selectedExpenseType, setSelectedExpenseType] = useState(null);
+    const [selectedExpenseRows, setSelectedExpenseRows] = useState([]);
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -152,6 +155,76 @@ const StatisticsApplications = () => {
                 toast.error("There was an error fetching the data!");
             });
     }, []);
+
+    // Helpers
+    const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+    const monthStartStr = `${todayStr.slice(0, 7)}-01`;
+
+    // Month-to-date expenses
+    const expensesThisMonth = React.useMemo(() => {
+        if (!Array.isArray(expense)) return [];
+        return expense.filter(e => {
+            const d = (e?.expense_date || '').slice(0, 10); // 'YYYY-MM-DD'
+            return d && d >= monthStartStr && d <= todayStr;
+        });
+    }, [expense]);
+
+    const expenseSummary = React.useMemo(() => {
+        if (expensesThisMonth.length === 0) return [];
+        const grouped = expensesThisMonth.reduce((acc, item) => {
+            const type = item?.expense_type || "Unknown";
+            const amt = parseFloat(item?.amount) || 0;
+            acc[type] = (acc[type] || 0) + amt;
+            return acc;
+        }, {});
+        return Object.entries(grouped).map(([type, total]) => ({
+            expense_type: type,
+            total: total.toFixed(2),
+        }));
+    }, [expensesThisMonth]);
+
+    // Open modal with filtered rows for this type (month-to-date)
+    const openExpenseModal = (type) => {
+        const normalized = type || "Unknown";
+        const rows = (expensesThisMonth || []).filter(
+            (e) => (e?.expense_type || "Unknown") === normalized
+        );
+        setSelectedExpenseType(normalized);
+        setSelectedExpenseRows(rows);
+        setIsExpenseModalOpen(true);
+    };
+
+    const closeExpenseModal = () => {
+        setIsExpenseModalOpen(false);
+        setSelectedExpenseType(null);
+        setSelectedExpenseRows([]);
+    };
+
+    // Small helpers
+    const fmtINR = (n) =>
+        Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("en-CA") : "");
+
+    const fmtRangeDate = (dateStr) => {
+        if (!dateStr) return "";
+        const d = new Date(dateStr);
+        return d.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+        });
+    };
+
+    const expenseDateRange = `${fmtRangeDate(monthStartStr)} - ${fmtRangeDate(todayStr)}`;
+
+    const totalExpenseMTD = React.useMemo(() => {
+        if (!expensesThisMonth?.length) return 0;
+        return expensesThisMonth.reduce(
+            (sum, e) => sum + (parseFloat(e?.amount) || 0),
+            0
+        );
+    }, [expensesThisMonth]);
 
     useEffect(() => {
         axios
@@ -480,6 +553,116 @@ const StatisticsApplications = () => {
 
                                 <div className="col-md-4">
                                     <div className="p-3 border rounded-4 shadow-sm bg-white">
+                                        <h5 className="text-center text-secondary mb-2">💰 Expense Summary</h5>
+                                        <p className="text-center text-muted mb-1">
+                                            {expenseDateRange}
+                                        </p>
+                                        <Table bordered responsive className="mb-0 text-center">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Expense Type</th>
+                                                    <th>Total (₹)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {expenseSummary.length > 0 ? (
+                                                    expenseSummary.map((item, index) => (
+                                                        <tr
+                                                            key={index}
+                                                            onClick={() => openExpenseModal(item.expense_type)}  // 👈 opens modal
+                                                            style={{ cursor: "pointer" }}
+                                                            title="Click to view all expenses in this category"
+                                                        >
+                                                            <td>{index + 1}</td>
+                                                            <td><strong>{(item?.expense_type || "UNKNOWN").toUpperCase()}</strong></td>
+                                                            <td><strong>₹ {item.total}</strong></td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan="3" className="text-muted text-center">
+                                                            No expense data available
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                            {expenseSummary.length > 0 && (
+                                                <tfoot>
+                                                    <tr>
+                                                        <td colSpan="2" className="text-end text-primary fw-semibold">Total ({expenseDateRange})</td>
+                                                        <td className="fw-bold text-primary"><strong>₹ {fmtINR(totalExpenseMTD)}</strong></td>
+                                                    </tr>
+                                                </tfoot>
+                                            )}
+                                        </Table>
+                                        <Modal isOpen={isExpenseModalOpen} toggle={closeExpenseModal} size="lg">
+                                            <ModalHeader toggle={closeExpenseModal}>
+                                                <div className="d-flex justify-content-between w-100 align-items-center">
+                                                    <span>Expenses — {(selectedExpenseType || "UNKNOWN").toUpperCase()}</span>
+                                                    <small className="text-muted m-2">{expenseDateRange}</small>
+                                                </div>
+                                            </ModalHeader>
+                                            <ModalBody>
+                                                {/* Header stats */}
+                                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                                    <div>
+                                                        <small className="text-muted">Records:</small>{" "}
+                                                        <strong>{selectedExpenseRows.length}</strong>
+                                                    </div>
+                                                    <div>
+                                                        <small className="text-muted">Total (₹):</small>{" "}
+                                                        <strong>
+                                                            ₹
+                                                            {fmtINR(
+                                                                selectedExpenseRows.reduce(
+                                                                    (s, r) => s + Number(r?.amount || 0),
+                                                                    0
+                                                                )
+                                                            )}
+                                                        </strong>
+                                                    </div>
+                                                </div>
+
+                                                {/* Data table */}
+                                                <Table bordered responsive className="mb-0 table-sm text-center">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>#</th>
+                                                            <th>Date</th>
+                                                            <th>Type</th>
+                                                            <th>Purpose / Notes</th>
+                                                            <th>Mode / Bank</th>
+                                                            <th>Amount (₹)</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {selectedExpenseRows.length ? (
+                                                            selectedExpenseRows.map((row, idx) => (
+                                                                <tr key={idx}>
+                                                                    <td>{idx + 1}</td>
+                                                                    <td>{fmtDate(row?.expense_date)}</td>
+                                                                    <td>{(row?.expense_type || "Unknown").toUpperCase()}</td>
+                                                                    <td>{row?.purpose || row?.description || "-"}</td>
+                                                                    <td>
+                                                                        {row?.payment_mode || row?.paymentType || row?.bank_name || "-"}
+                                                                    </td>
+                                                                    <td className="text-end">₹ {fmtINR(row?.amount)}</td>
+                                                                </tr>
+                                                            ))
+                                                        ) : (
+                                                            <tr>
+                                                                <td colSpan={6} className="text-center text-muted">
+                                                                    No expenses found.
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                    </tbody>
+                                                </Table>
+                                            </ModalBody>
+                                        </Modal>
+                                    </div>
+                                    <div className="p-3 mt-2 border rounded-4 shadow-sm bg-white">
                                         <h5 className="text-center text-secondary mb-3">📦 Parcel Summary</h5>
                                         <Table className="table table-bordered table-sm text-center mb-0">
                                             <thead>

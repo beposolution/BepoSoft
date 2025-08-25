@@ -158,7 +158,8 @@ const BasicTable = () => {
                                                 <tr>
                                                     <th>#</th>
                                                     <th>Company</th>
-                                                    <th>Payed By</th>
+                                                    <th>Bank</th>
+                                                    {/* <th>Payed By</th> */}
                                                     <th>Amount</th>
                                                     <th>Expense Date</th>
                                                     <th>Purpose</th>
@@ -172,7 +173,8 @@ const BasicTable = () => {
                                                     <tr key={expense?.id}>
                                                         <th scope="row">{indexOfFirstItem + index + 1}</th>
                                                         <td style={{ color: '#007bff' }}>{expense?.company?.name || 'N/A'}</td>
-                                                        <td style={{ color: '#28a745' }}>{expense?.payed_by?.name || 'N/A'}</td>
+                                                        <td >{expense?.bank?.name || 'N/A'}</td>
+                                                        {/* <td style={{ color: '#28a745' }}>{expense?.payed_by?.name || 'N/A'}</td> */}
                                                         <td style={{ color: '#28a745' }}>₹{expense?.amount}</td>
                                                         <td>{expense.expense_date}</td>
                                                         <td style={{ color: '#ff6f61' }}>{expense?.purpose_of_pay?.toUpperCase()}</td>

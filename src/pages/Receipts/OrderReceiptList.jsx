@@ -157,13 +157,18 @@ const OrderReceiptList = () => {
     };
 
     const filteredReceipts = receipts.filter((item) => {
+        const q = searchTerm.toLowerCase();
+        const norm = v => (v ?? '').toString().toLowerCase();
+
         const matchesSearch =
-            (item.payment_receipt || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (item.order_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (item.transactionID || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (item.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (item.bank_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (item.created_by_name || '').toLowerCase().includes(searchTerm.toLowerCase());
+            norm(item.payment_receipt).includes(q) ||
+            norm(item.order_name).includes(q) ||
+            norm(item.transactionID).includes(q) ||
+            norm(item.customer_name).includes(q) ||
+            norm(item.bank_name).includes(q) ||
+            norm(item.created_by_name).includes(q) ||
+            norm(item.remark).includes(q) ||  
+            norm(item.amount).includes(q);   
 
         const receiptDate = new Date(item.received_at);
         const isAfterStart = startDate ? receiptDate >= new Date(startDate) : true;
@@ -238,7 +243,7 @@ const OrderReceiptList = () => {
                                             <Label>Search</Label>
                                             <Input
                                                 type="text"
-                                                placeholder="Search by Receipt, Order, Transaction ID, Customer, Bank, Created By"
+                                                placeholder="Search by Receipt, Order, Amount, Transaction ID, Remark, Customer, Bank, Created By"
                                                 value={searchTerm}
                                                 onChange={(e) => setSearchTerm(e.target.value)}
                                             />

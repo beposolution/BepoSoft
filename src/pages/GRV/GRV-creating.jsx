@@ -351,6 +351,7 @@ const FormLayouts = () => {
                 ...product,
                 uniqueId: `${product.id}-${Math.random()}`, // Ensure unique row
                 rowQuantity: 1,
+                remark: "",
             }));
             setSelectedProducts((prev) => [...prev, ...newProducts]);
         }
@@ -364,7 +365,7 @@ const FormLayouts = () => {
             returnreason: product.returnReason || "usable",
             price: product.rate,
             quantity: product.rowQuantity,
-            remark: "return",
+            remark: product.remark || "",
             status: "Waiting For Approval",
             note: product.note || "",
             date: currentDate,
@@ -586,6 +587,7 @@ const FormLayouts = () => {
                                                     <th>Price</th>
                                                     <th>Quantity</th>
                                                     <th>Return Reason</th>
+                                                    <th>Remark</th>
                                                     <th>Action</th>
                                                 </tr>
                                             </thead>
@@ -679,6 +681,25 @@ const FormLayouts = () => {
                                                                 className="mt-1"
                                                             />
                                                         </td>
+                                                        <td>
+                                                            <select
+                                                                className="form-select"
+                                                                value={product.remark || ""}
+                                                                onChange={(e) => {
+                                                                    const value = e.target.value;
+                                                                    setSelectedProducts((prev) =>
+                                                                        prev.map((p) =>
+                                                                            p.uniqueId === product.uniqueId ? { ...p, remark: value } : p
+                                                                        )
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <option value="">Select Remark</option>
+                                                                <option value="return">Return</option>
+                                                                <option value="refund">Refund</option>
+                                                                <option value="exchange">Exchange</option>
+                                                            </select>
+                                                        </td>
                                                         {/* <td>
                                                             <Button
                                                                 color="danger"
@@ -696,14 +717,14 @@ const FormLayouts = () => {
                                                                 color={product.selected_racks?.length ? "secondary" : "primary"}
                                                                 onClick={() => openRackSelector(product)}
                                                             >
-                                                                {product.selected_racks?.length ? "Edit To Racks" : "To Racks"}
+                                                                {product.selected_racks?.length ? "Edit To Invoice" : "To Invoice"}
                                                             </Button>
 
                                                             <Button
                                                                 color="info"
                                                                 onClick={() => openRackDetailsSelector(product)}
                                                             >
-                                                                To Invoice
+                                                                To Racks
                                                             </Button>
 
                                                             <Button

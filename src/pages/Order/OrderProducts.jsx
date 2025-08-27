@@ -1391,124 +1391,7 @@ const FormLayouts = () => {
                                                         </tr>
                                                     </tbody>
                                                 </Table>
-                                                {/* {showRackDetails && orderItems.map((item, index) => {
-                                                    let racks = [];
-                                                    try {
-                                                        if (item.products && typeof item.products === "string" && item.products.trim().startsWith("[")) {
-                                                            const fixedJson = item.products.replace(/'/g, '"');
-                                                            racks = JSON.parse(fixedJson);
-                                                        } else if (Array.isArray(item.products)) {
-                                                            racks = item.products;
-                                                        }
-                                                    } catch (e) {
-                                                        racks = [];
-                                                    }
 
-                                                    const usableRacks = racks.filter(rack => rack.usability === "usable");
-                                                    const isEditing = editingRackFor === item.id;
-
-                                                    return (
-                                                        <div key={item.id} style={{ margin: "20px 0", padding: "15px", background: "#f9f9f9", borderRadius: "8px" }}>
-                                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                                                <h5 style={{ margin: 0 }}>
-                                                                    Rack Details for <span style={{ color: "#007bff" }}>{item.name}</span>
-                                                                </h5>
-
-                                                                {!isEditing ? (
-                                                                    <Button
-                                                                        color="secondary"
-                                                                        size="sm"
-                                                                        disabled={isAddDisabled}
-                                                                        onClick={() => setEditingRackFor(item.id)}
-                                                                    >
-                                                                        Add Rack Details
-                                                                    </Button>
-                                                                ) : (
-                                                                    <div style={{ display: "flex", gap: 8 }}>
-                                                                        <Button
-                                                                            color="primary"
-                                                                            size="sm"
-                                                                            disabled={isAddDisabled}
-                                                                            onClick={() => {
-                                                                               
-                                                                                handleItemChange(index, 'rack_details', null);
-                                                                                toast.success("Rack details saved!");
-                                                                                setEditingRackFor(null);
-                                                                            }}
-                                                                        >
-                                                                            Save Rack Details
-                                                                        </Button>
-                                                                        <Button
-                                                                            color="light"
-                                                                            size="sm"
-                                                                            onClick={() => {
-                                                                              
-                                                                                setRackSelections(prev => {
-                                                                                    const next = { ...prev };
-                                                                                    delete next[item.id];
-                                                                                    return next;
-                                                                                });
-                                                                                setEditingRackFor(null);
-                                                                            }}
-                                                                        >
-                                                                            Cancel
-                                                                        </Button>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-
-                                                            
-                                                            {!isEditing ? (
-                                                                <div style={{ marginTop: 8, color: "#666" }}>
-                                                                    
-                                                                    Click “Add Rack Details” to allocate from racks.
-                                                                </div>
-                                                            ) : (
-                                                                <>
-                                                                    {usableRacks.length > 0 ? (
-                                                                        <Table bordered striped responsive style={{ marginTop: "10px", background: "#fff" }}>
-                                                                            <thead>
-                                                                                <tr>
-                                                                                    <th>#</th>
-                                                                                    <th>Column Name</th>
-                                                                                    <th>Rack Name</th>
-                                                                                    <th>Usability</th>
-                                                                                    <th>Available Stock</th>
-                                                                                    <th>Locked Stock</th>
-                                                                                    <th>Selected Quantity</th>
-                                                                                </tr>
-                                                                            </thead>
-                                                                            <tbody>
-                                                                                {usableRacks.map((rack, rackIdx) => (
-                                                                                    <tr key={rack.column_name || rackIdx}>
-                                                                                        <td>{rackIdx + 1}</td>
-                                                                                        <td>{rack.column_name}</td>
-                                                                                        <td>{rack.rack_name}</td>
-                                                                                        <td>{rack.usability}</td>
-                                                                                        <td>{rack.rack_stock}</td>
-                                                                                        <td>{rack.rack_lock}</td>
-                                                                                        <td>
-                                                                                            <Input
-                                                                                                type="number"
-                                                                                                min={0}
-                                                                                                max={rack.rack_stock}
-                                                                                                value={rackSelections[item.id]?.[rackIdx] ?? 0}
-                                                                                                onChange={e => handleRackStockChange(item.id, rackIdx, e.target.value)}
-                                                                                                style={{ width: "80px", display: "inline-block" }}
-                                                                                            />
-                                                                                        </td>
-                                                                                    </tr>
-                                                                                ))}
-                                                                            </tbody>
-                                                                        </Table>
-                                                                    ) : (
-                                                                        <div style={{ marginTop: 10 }}>No rack details available.</div>
-                                                                    )}
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })} */}
                                                 <Modal isOpen={rackModalOpen} toggle={closeRackModal} size="lg">
                                                     <ModalHeader toggle={closeRackModal}>
                                                         {rackItemCtx ? `Rack Details for ${rackItemCtx.item.name}` : "Rack Details"}
@@ -1557,51 +1440,36 @@ const FormLayouts = () => {
                                                                                     <th>Select Qty</th>
                                                                                 </tr>
                                                                             </thead>
-                                                                            {/* <tbody>
-                                                                            {usableRacks.map((rack, rackIdx) => (
-                                                                                <tr key={rack.column_name || rackIdx}>
-                                                                                    <td>{rackIdx + 1}</td>
-                                                                                    <td>{rack.column_name}</td>
-                                                                                    <td>{rack.rack_name}</td>
-                                                                                    <td>{rack.usability}</td>
-                                                                                    <td>{rack.rack_stock}</td>
-                                                                                    <td>{rack.rack_lock}</td>
-                                                                                    <td style={{ width: 120 }}>
-                                                                                        <Input
-                                                                                            type="number"
-                                                                                            min={0}
-                                                                                            max={rack.rack_stock}
-                                                                                            value={rackSelections[item.id]?.[rackIdx] ?? 0}
-                                                                                            onChange={e => handleRackStockChange(item.id, rackIdx, e.target.value)}
-                                                                                        />
-                                                                                    </td>
-                                                                                </tr>
-                                                                            ))}
-                                                                        </tbody> */}
+
                                                                             <tbody>
                                                                                 {usableRacks.map((rack, rackIdx) => {
-                                                                                    // ADD ONLY: compute safe max for this specific input
+                                                                                    const rackStock = Number(rack.rack_stock) || 0;
+                                                                                    const rackLock = Number(rack.rack_lock) || 0;
+
+                                                                                    const isFullyLocked = rackStock === rackLock; // condition
+
                                                                                     const currentForRack = rackSelections[item.id]?.[rackIdx] ?? 0;
-                                                                                    const selectedOthers = Object.entries(rackSelections[item.id] || {})
-                                                                                        .reduce((s, [k, v]) => s + (Number(k) === rackIdx ? 0 : (Number(v) || 0)), 0);
-                                                                                    const remainingForThisInput = Math.max(0, Number(item.quantity) - selectedOthers);
-                                                                                    const inputMax = Math.min(Number(rack.rack_stock) || 0, remainingForThisInput + currentForRack);
 
                                                                                     return (
-                                                                                        <tr key={rack.column_name || rackIdx}>
+                                                                                        <tr
+                                                                                            key={rack.column_name || rackIdx}
+                                                                                            style={isFullyLocked ? { backgroundColor: "#f8d7da", color: "#721c24" } : {}}
+                                                                                        >
                                                                                             <td>{rackIdx + 1}</td>
                                                                                             <td>{rack.column_name}</td>
                                                                                             <td>{rack.rack_name}</td>
                                                                                             <td>{rack.usability}</td>
-                                                                                            <td>{rack.rack_stock}</td>
-                                                                                            <td>{rack.rack_lock}</td>
+                                                                                            <td>{rackStock}</td>
+                                                                                            <td>{rackLock}</td>
                                                                                             <td style={{ width: 120 }}>
                                                                                                 <Input
                                                                                                     type="number"
                                                                                                     min={0}
-                                                                                                    max={inputMax} // ADD ONLY: HTML max to keep spinner in range
                                                                                                     value={currentForRack}
-                                                                                                    onChange={e => setRackQtyCapped(item, rackIdx, e.target.value, rack.rack_stock)} // ADD ONLY
+                                                                                                    disabled={isFullyLocked}              // disable input
+                                                                                                    onChange={e =>
+                                                                                                        setRackQtyCapped(item, rackIdx, e.target.value, rackStock - rackLock)
+                                                                                                    }
                                                                                                 />
                                                                                             </td>
                                                                                         </tr>

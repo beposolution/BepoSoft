@@ -21,7 +21,8 @@ const FormLayouts = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
-    const token = localStorage.getItem("token"); // Token fetching
+    const token = localStorage.getItem("token");
+    const [customerdetails, setCustomerDetails] = useState([]);
 
     // Formik setup
     const formik = useFormik({
@@ -37,6 +38,7 @@ const FormLayouts = () => {
             manager: "",
             city: "",
             commend: "",
+            customer_type: "",
         },
         validationSchema: Yup.object({
             name: Yup.string().required("This field is required"),
@@ -47,6 +49,7 @@ const FormLayouts = () => {
             manager: Yup.string().required("Please select a manager"),
             city: Yup.string().required("City is required"),
             state: Yup.string().required("State is required"),
+            customer_type: Yup.string().required("Customer Type is required"),
         }),
 
         onSubmit: async (values) => {
@@ -85,6 +88,22 @@ const FormLayouts = () => {
         },
 
     });
+
+    useEffect(() => {
+        const fetchCustomerDetails = async () => {
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}customer-types/`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                setCustomerDetails(response?.data);
+            } catch (error) {
+                toast.error("Error fetching customer types");
+            }
+        };
+        fetchCustomerDetails();
+    }, [token]);
+
 
     useEffect(() => {
         if (token) {
@@ -196,7 +215,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col md={6}>
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-email-Input">Email</Label>
                                                     <Input
@@ -219,7 +238,7 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
-                                            <Col md={6}>
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-password-Input">Address</Label>
                                                     <Input
@@ -241,6 +260,30 @@ const FormLayouts = () => {
                                                             <FormFeedback type="invalid">{formik.errors.address}</FormFeedback>
                                                         ) : null
                                                     }
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={4}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="customer_type">Customer Type</Label>
+                                                    <select
+                                                        name="customer_type"
+                                                        id="customer_type"
+                                                        className={`form-control ${formik.touched.customer_type && formik.errors.customer_type ? "is-invalid" : ""}`}
+                                                        value={formik.values.customer_type}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                    >
+                                                        <option value="">Select Type</option>
+                                                        {customerdetails.map((t) => (
+                                                            <option key={t.id} value={t.id}>
+                                                                {t.type_name ?? t.name ?? t.type ?? t.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {formik.touched.customer_type && formik.errors.customer_type && (
+                                                        <FormFeedback type="invalid">{formik.errors.customer_type}</FormFeedback>
+                                                    )}
                                                 </div>
                                             </Col>
 
@@ -447,7 +490,7 @@ const FormLayouts = () => {
                                                 ) : null
                                             }
                                         </div> */}
-                                        
+
                                         <div className="mb-3">
                                             <button type="submit" className="btn btn-primary w-md" disabled={loading}>
                                                 {loading ? 'Submitting...' : 'Submit'}

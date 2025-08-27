@@ -373,6 +373,7 @@ import CountryCode from "../pages/country/CountryCode";
 import AddRack from "../pages/RackDetails/AddRack";
 import FamilyDetails from "../pages/DashboardJob/FamilyDetails";
 import AddCategory from "../pages/Product/AddCategory";
+import CustomerType from "../pages/CustomerType/CustomerType";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -428,6 +429,7 @@ const authProtectedRoutes = [
   { path: "/customer/:id/ledger/", component: <Ledger /> },
   { path: "/customer/:id/edit/", component: <CustomerEdit /> },
   { path: "/customers/beposoft", component: <Bulkcustomers /> },
+  { path: "/customer/type", component: <CustomerType /> },
 
 
   // {path: "/all-customers/",component:<CustomerTable />},

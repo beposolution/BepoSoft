@@ -17,6 +17,7 @@ const FormLayouts = () => {
     const [userData, setUserData] = useState();
     const [user, setUser] = useState();
     const [role, setRole] = useState("");
+    const [customerdetails, setCustomerDetails] = useState([]);
 
     useEffect(() => {
         const storedRole = localStorage.getItem("active");
@@ -39,6 +40,21 @@ const FormLayouts = () => {
         };
         fetchUserData();
     }, []);
+
+    useEffect(() => {
+        const fetchCustomerDetails = async () => {
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}customer-types/`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                setCustomerDetails(response?.data);
+            } catch (error) {
+                toast.error("Error fetching customer types");
+            }
+        };
+        fetchCustomerDetails();
+    }, [token]);
 
     useEffect(() => {
         const fetchManagers = async () => {
@@ -92,17 +108,23 @@ const FormLayouts = () => {
     }, [id, token]);
 
     useEffect(() => {
-        if (customerData && managers.length > 0 && states.length > 0) {
+        if (customerData && managers.length > 0 && states.length > 0 && customerdetails.length > 0) {
             const managerObj = managers.find(m => m.name === customerData.manager);
-            const stateObj = states.find(s => s.name === customerData.state)
+            const stateObj = states.find(s => s.name === customerData.state);
+            const typeObj = customerdetails.find(t =>
+                (t.type_name || t.name || t.type || t.label) === customerData.customer_type
+            );
+
             formik.setValues({
+                ...formik.values, // keep existing defaults in case something missing
                 ...customerData,
-                manager: managerObj ? managerObj.id.toString() : "",
-                state: stateObj ? stateObj.id.toString() : "",
+                manager: managerObj ? String(managerObj.id) : "",
+                state: stateObj ? String(stateObj.id) : "",
+                customer_type: typeObj ? String(typeObj.id) : "",   // 👈 set the ID
             });
         }
         // eslint-disable-next-line
-    }, [customerData, managers, states]);
+    }, [customerData, managers, states, customerdetails]);
 
     const formik = useFormik({
         initialValues: {
@@ -117,6 +139,7 @@ const FormLayouts = () => {
             city: "",
             state: "",
             comment: "",
+            customer_type: "",
         },
         validationSchema: Yup.object({
             name: Yup.string(),
@@ -130,6 +153,7 @@ const FormLayouts = () => {
             city: Yup.string(),
             state: Yup.string(),
             comment: Yup.string(),
+            customer_type: Yup.string(),
         }),
         onSubmit: async (values) => {
             try {
@@ -184,7 +208,7 @@ const FormLayouts = () => {
 
                                         </div>
                                         <Row>
-                                            <Col md={6}>
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="name">Name</Label>
                                                     <Input
@@ -200,7 +224,30 @@ const FormLayouts = () => {
                                                     <FormFeedback>{formik.errors.name}</FormFeedback>
                                                 </div>
                                             </Col>
-                                            <Col md={6}>
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="customer_type">Customer Type</Label>
+                                                    <Input
+                                                        type="select"
+                                                        name="customer_type"
+                                                        id="customer_type"
+                                                        className="form-control"
+                                                        value={formik.values.customer_type}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.customer_type && !!formik.errors.customer_type}
+                                                    >
+                                                        <option value="">Select Type</option>
+                                                        {customerdetails.map((t) => (
+                                                            <option key={t.id} value={String(t.id)}>
+                                                                {t.type_name ?? t.name ?? t.type ?? t.label}
+                                                            </option>
+                                                        ))}
+                                                    </Input>
+                                                    <FormFeedback>{formik.errors.customer_type}</FormFeedback>
+                                                </div>
+                                            </Col>
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="gst">Manager</Label>
                                                     <Input

@@ -1281,6 +1281,7 @@ const FormLayouts = () => {
                                                             <th>ID</th>
                                                             <th>Image</th>
                                                             <th>Name</th>
+                                                            <th>Description</th>
                                                             <th>Actual Price</th>
                                                             <th>Rate</th>
                                                             <th>Tax %</th>
@@ -1311,6 +1312,7 @@ const FormLayouts = () => {
 
                                                                 </td>
                                                                 <td>{item.name}</td>
+                                                                <td>{item.description}</td>
                                                                 <td>{item.rate}</td>
                                                                 <td>{item.exclude_price}</td>
                                                                 <td>{item.tax} %</td>

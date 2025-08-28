@@ -247,7 +247,7 @@ const BasicTable = () => {
                                                                         </Table>
                                                                     )}
                                                             </td>
-                                                            <td>{order?.total_amount}</td>
+                                                            <td>{order?.total_amount?.toFixed(2)}</td>
                                                             <td>{order?.order_date?.substring(0, 10)}</td>
                                                         </tr>
                                                     ))}

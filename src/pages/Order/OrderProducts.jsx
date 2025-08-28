@@ -1418,11 +1418,36 @@ const FormLayouts = () => {
 
                                                                 const usableRacks = (racks || []).filter(r => r.usability === "usable");
 
+                                                                // ---- PREFILL HELPERS (add here) ----
+                                                                const saved = Array.isArray(item.rack_details) ? item.rack_details : [];
+
+                                                                const prefillFor = (rack) => {
+                                                                    const hit = saved.find(
+                                                                        s =>
+                                                                            Number(s.rack_id) === Number(rack.rack_id) &&
+                                                                            String(s.column_name) === String(rack.column_name)
+                                                                    );
+                                                                    return Number(hit?.quantity || 0);
+                                                                };
+
+                                                                const getCurrentQty = (rackIdx, rack) =>
+                                                                    Number(
+                                                                        (rackSelections[item.id]?.[rackIdx] ?? prefillFor(rack)) || 0
+                                                                    );
+
+                                                                const totalSelected = usableRacks.reduce(
+                                                                    (sum, r, i) => sum + getCurrentQty(i, r),
+                                                                    0
+                                                                );
+                                                                const remaining = Math.max(0, Number(item.quantity) - totalSelected);
+                                                                // -------------------------------------
+
+
                                                                 if (!usableRacks.length) return <div>No rack details available.</div>;
 
-                                                                const totalSelected = Object.values(rackSelections[item.id] || {})
-                                                                    .reduce((a, b) => a + (Number(b) || 0), 0);
-                                                                const remaining = Math.max(0, Number(item.quantity) - totalSelected);
+                                                                // const totalSelected = Object.values(rackSelections[item.id] || {})
+                                                                //     .reduce((a, b) => a + (Number(b) || 0), 0);
+                                                                // const remaining = Math.max(0, Number(item.quantity) - totalSelected);
 
                                                                 return (
                                                                     <>
@@ -1450,7 +1475,9 @@ const FormLayouts = () => {
 
                                                                                     const isFullyLocked = rackStock === rackLock; // condition
 
-                                                                                    const currentForRack = rackSelections[item.id]?.[rackIdx] ?? 0;
+                                                                                    // const currentForRack = rackSelections[item.id]?.[rackIdx] ?? 0;
+                                                                                    const currentForRack = getCurrentQty(rackIdx, rack);
+
 
                                                                                     return (
                                                                                         <tr
@@ -1485,7 +1512,7 @@ const FormLayouts = () => {
                                                         )}
                                                         <div className="d-flex justify-content-end gap-2">
                                                             <Button color="light" onClick={closeRackModal}>Cancel</Button>
-                                                            <Button
+                                                            {/* <Button
                                                                 color="primary"
                                                                 disabled={isAddDisabled}
                                                                 onClick={async () => {
@@ -1524,7 +1551,45 @@ const FormLayouts = () => {
                                                                 }}
                                                             >
                                                                 Save Rack Details
+                                                            </Button> */}
+                                                            <Button
+                                                                color="primary"
+                                                                disabled={isAddDisabled}
+                                                                onClick={async () => {
+                                                                    const item = rackItemCtx.item;
+                                                                    let racks = [];
+                                                                    try {
+                                                                        if (item.products && typeof item.products === "string" && item.products.trim().startsWith("[")) {
+                                                                            const fixedJson = item.products.replace(/'/g, '"');
+                                                                            racks = JSON.parse(fixedJson);
+                                                                        } else if (Array.isArray(item.products)) {
+                                                                            racks = item.products;
+                                                                        }
+                                                                    } catch { racks = []; }
+                                                                    const usableRacks = (racks || []).filter(r => r.usability === "usable");
+
+                                                                    const rack_details = usableRacks
+                                                                        .map((r, rackIdx) => ({
+                                                                            rack_id: r.rack_id,
+                                                                            rack_name: r.rack_name ?? "",
+                                                                            column_name: r.column_name,
+                                                                            quantity: Number(rackSelections[item.id]?.[rackIdx] ?? 0),  // <-- change this line
+                                                                        }))
+                                                                        .filter(r => r.quantity > 0);
+
+                                                                    await updateCartProduct(item.id, {
+                                                                        quantity: item.quantity,
+                                                                        discount: item.discount,
+                                                                        rate: item.rate,
+                                                                        rack_details,
+                                                                    });
+                                                                    toast.success("Rack details saved!");
+                                                                    closeRackModal();
+                                                                }}
+                                                            >
+                                                                Save Rack Details
                                                             </Button>
+
                                                         </div>
                                                     </ModalBody>
                                                 </Modal>

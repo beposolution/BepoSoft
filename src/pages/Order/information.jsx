@@ -31,6 +31,23 @@ const UpdateInformationPage = ({ refreshData }) => {
         setRole(role);
     }, []);
 
+    const logStatusChange = async (beforeStatus, afterStatus) => {
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                {
+                    order: Number(id),
+                    before_data: { status: beforeStatus },
+                    after_data: { status: afterStatus },
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+        } catch (err) {
+            // don’t block the main update if logging fails
+            console.warn("DataLog write failed:", err?.response?.data || err.message);
+        }
+    };
+
     const formik = useFormik({
         initialValues: {
             status: '',
@@ -47,7 +64,6 @@ const UpdateInformationPage = ({ refreshData }) => {
             const payload = {};
             const original = originalValuesRef.current;
 
-            // Compare each field
             if (values.status && values.status !== original.status) {
                 payload.status = values.status;
             }
@@ -67,21 +83,26 @@ const UpdateInformationPage = ({ refreshData }) => {
             }
 
             try {
+                // 1) update the order
                 await axios.put(
                     `${import.meta.env.VITE_APP_KEY}shipping/${id}/order/`,
                     payload,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
+                    { headers: { Authorization: `Bearer ${token}` } }
                 );
-                toast.success("Order information updated successfully!");
-                if (refreshData) {
-                    refreshData();
+
+                // 2) log only if status changed
+                if (payload.status && payload.status !== original.status) {
+                    await logStatusChange(original.status, payload.status);
                 }
+
+                toast.success("Order information updated successfully!");
+                if (refreshData) refreshData();
+
+                // 3) keep originals in sync for future diffs
+                originalValuesRef.current = { ...originalValuesRef.current, ...payload };
             } catch (error) {
                 toast.error("Error updating order!");
+                console.warn(error?.response?.data || error.message);
             }
         }
     });

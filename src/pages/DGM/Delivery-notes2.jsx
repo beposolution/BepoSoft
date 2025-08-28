@@ -61,7 +61,7 @@ const AverageAmountReport = () => {
 
             grouped[date].count += 1;
             grouped[date].totalAmount += parseFloat(item.parcel_amount || 0);
-            grouped[date].totalWeight += parseFloat(item.actual_weight || 0);
+            grouped[date].totalWeight += parseFloat(item.actual_weight || 0) / 1000;
             grouped[date].items.push(item);
         });
 
@@ -144,7 +144,7 @@ const AverageAmountReport = () => {
                                                         <td>{group.date}</td>
                                                         <td>{group.count}</td>
                                                         <td>₹ {group.totalAmount.toFixed(2)}</td>
-                                                        <td>{group.totalWeight.toFixed(2)} g</td>
+                                                        <td>{group.totalWeight.toFixed(2)} kg</td>
                                                         <td>
                                                             {group.totalAmount !== 0
                                                                 ? (group.totalAmount / group.totalWeight).toFixed(2)

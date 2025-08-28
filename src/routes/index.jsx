@@ -374,6 +374,7 @@ import AddRack from "../pages/RackDetails/AddRack";
 import FamilyDetails from "../pages/DashboardJob/FamilyDetails";
 import AddCategory from "../pages/Product/AddCategory";
 import CustomerType from "../pages/CustomerType/CustomerType";
+import DataLog from "../pages/DataLog/DataLog"
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -495,7 +496,7 @@ const authProtectedRoutes = [
   { path: "/staff/order/list/", component: <StaffOrdersList /> },
 
 
-
+  { path: "/data/log/details/", component: <DataLog /> },
 
   { path: "/create/perfoma/invoice/", component: <InvoiceTable /> },
   { path: "/perfoma/invoices/", component: <InvoiceList /> },

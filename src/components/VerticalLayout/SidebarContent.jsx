@@ -6,7 +6,7 @@ import { Link, useLocation } from "react-router-dom";
 import withRouter from "../Common/withRouter";
 import { withTranslation } from "react-i18next";
 import { useCallback } from "react";
-import { FaUsers, FaUserTie, FaWarehouse } from 'react-icons/fa';
+import { FaUsers, FaUserTie, FaWarehouse, FaBlogger } from 'react-icons/fa';
 import { AiFillProduct } from "react-icons/ai";
 import { BiCheckDouble, BiSolidBank } from "react-icons/bi";
 import { BsArrowRightSquareFill } from "react-icons/bs";
@@ -525,6 +525,20 @@ const SidebarContent = (props) => {
                 </li>
               </>
             )}
+
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'CEO' || role === 'COO' ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaBlogger size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("Log Details")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li>
+                    <Link to="/data/log/details/">{props.t("Log Details")}</Link>
+                  </li>
+                </ul>
+              </li>
+            ) : null}
 
             {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
               <li>

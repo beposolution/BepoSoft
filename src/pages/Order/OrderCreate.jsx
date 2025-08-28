@@ -87,6 +87,10 @@ const FormLayouts = () => {
                 );
 
                 if (response.status === 201) {
+                    const orderId = response?.data?.data?.id;
+                    if (orderId) {
+                        await writeCreateLog(orderId, token);
+                    }
 
                     // Reset form fields after successful submission
                     resetForm();
@@ -117,6 +121,22 @@ const FormLayouts = () => {
         },
 
     });
+
+    const writeCreateLog = async (orderId, token) => {
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                {
+                    order: Number(orderId),
+                    before_data: { status: "N/A" },
+                    after_data: { status: "Invoice Created" }
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+        } catch (err) {
+            console.warn("DataLog write failed:", err?.response?.data || err.message);
+        }
+    };
 
     const orderMode = [
         { name: "Invoice Created", value: "Invoice Created" },

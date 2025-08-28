@@ -31,19 +31,18 @@ const UpdateInformationPage = ({ refreshData }) => {
         setRole(role);
     }, []);
 
-    const logStatusChange = async (beforeStatus, afterStatus) => {
+    const logChanges = async (beforeObj, afterObj) => {
         try {
             await axios.post(
                 `${import.meta.env.VITE_APP_KEY}datalog/create/`,
                 {
                     order: Number(id),
-                    before_data: { status: beforeStatus },
-                    after_data: { status: afterStatus },
+                    before_data: beforeObj,
+                    after_data: afterObj,
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
         } catch (err) {
-            // don’t block the main update if logging fails
             console.warn("DataLog write failed:", err?.response?.data || err.message);
         }
     };
@@ -60,27 +59,32 @@ const UpdateInformationPage = ({ refreshData }) => {
             // billing_address: Yup.string().required('Address is required'),
             // note: Yup.string().max(500, 'Note cannot exceed 500 characters'),
         }),
+        // 2) replace your onSubmit with this version
         onSubmit: async (values) => {
             const payload = {};
             const original = originalValuesRef.current;
 
-            if (values.status && values.status !== original.status) {
-                payload.status = values.status;
-            }
-            if (values.billing_address && values.billing_address !== original.billing_address) {
-                payload.billing_address = values.billing_address;
-            }
-            if (values.note && values.note !== original.note) {
-                payload.note = values.note;
-            }
-            if (values.accounts_note && values.accounts_note !== original.accounts_note) {
-                payload.accounts_note = values.accounts_note;
-            }
+            // detect changes (add any new fields here if needed)
+            ["status", "billing_address", "note", "accounts_note"].forEach((key) => {
+                const before = original?.[key] ?? "";
+                const after = values?.[key] ?? "";
+                if (after !== "" && after !== before) {
+                    payload[key] = after;
+                }
+            });
 
             if (Object.keys(payload).length === 0) {
                 toast.info("No changes to update.");
                 return;
             }
+
+            // build delta snapshots for the log
+            const beforeDelta = {};
+            const afterDelta = {};
+            Object.keys(payload).forEach((k) => {
+                beforeDelta[k] = original?.[k] ?? null;
+                afterDelta[k] = values?.[k] ?? null;
+            });
 
             try {
                 // 1) update the order
@@ -90,15 +94,37 @@ const UpdateInformationPage = ({ refreshData }) => {
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
 
-                // 2) log only if status changed
-                if (payload.status && payload.status !== original.status) {
-                    await logStatusChange(original.status, payload.status);
-                }
+                // 2) write the data log (any changed fields)
+                // build delta snapshots for the log
+                const beforeDelta = {};
+                const afterDelta = {};
+                Object.keys(payload).forEach((k) => {
+                    let beforeVal = original?.[k] ?? null;
+                    let afterVal = values?.[k] ?? null;
+
+                    // special case: billing_address, replace ID with label
+                    if (k === "billing_address") {
+                        const beforeObj = customerAddresses.find(a => a.id === Number(beforeVal));
+                        const afterObj = customerAddresses.find(a => a.id === Number(afterVal));
+                        beforeVal = beforeObj
+                            ? `${beforeObj.name}-${beforeObj.city}-${beforeObj.state}-${beforeObj.zipcode}-${beforeObj.address}-${beforeObj.phone}-${beforeObj.email}`
+                            : beforeVal;
+                        afterVal = afterObj
+                            ? `${afterObj.name}-${afterObj.city}-${afterObj.state}-${afterObj.zipcode}-${afterObj.address}-${afterObj.phone}-${afterObj.email}`
+                            : afterVal;
+                    }
+
+                    beforeDelta[k] = beforeVal;
+                    afterDelta[k] = afterVal;
+                });
+
+                // then send to datalog
+                await logChanges(beforeDelta, afterDelta);
 
                 toast.success("Order information updated successfully!");
                 if (refreshData) refreshData();
 
-                // 3) keep originals in sync for future diffs
+                // 3) sync originals so future diffs work
                 originalValuesRef.current = { ...originalValuesRef.current, ...payload };
             } catch (error) {
                 toast.error("Error updating order!");

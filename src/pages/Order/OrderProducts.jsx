@@ -819,6 +819,41 @@ const FormLayouts = () => {
         }));
     };
 
+    // true if any order item still has unallocated racks
+    const hasUnallocated = orderItems.some(item => {
+        let racks = [];
+        try {
+            if (item.products && typeof item.products === "string" && item.products.trim().startsWith("[")) {
+                racks = JSON.parse(item.products.replace(/'/g, '"'));
+            } else if (Array.isArray(item.products)) {
+                racks = item.products;
+            }
+        } catch { racks = []; }
+
+        const usableRacks = (racks || []).filter(r => r.usability === "usable");
+
+        const saved = Array.isArray(item.rack_details) ? item.rack_details : [];
+
+        const prefillFor = (rack) => {
+            const hit = saved.find(
+                s =>
+                    Number(s.rack_id) === Number(rack.rack_id) &&
+                    String(s.column_name) === String(rack.column_name)
+            );
+            return Number(hit?.quantity || 0);
+        };
+
+        const getCurrentQty = (rackIdx, rack) =>
+            Number((rackSelections[item.id]?.[rackIdx] ?? prefillFor(rack)) || 0);
+
+        const totalSelected = usableRacks.reduce(
+            (sum, r, i) => sum + getCurrentQty(i, r),
+            0
+        );
+
+        return totalSelected < Number(item.quantity);
+    });
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -1751,7 +1786,7 @@ const FormLayouts = () => {
                                 customerId={customerId}
                                 totalPayableAmountDisplay={totalPayableAmountDisplay}
                             />
-                            <Information refreshData={fetchOrderData} />
+                            <Information refreshData={fetchOrderData} hasUnallocated={hasUnallocated} />
                             <Row>
                                 <Col xl={12}>
                                     <Card>

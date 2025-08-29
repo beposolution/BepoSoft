@@ -18,7 +18,7 @@ import {
 } from 'reactstrap';
 
 
-const UpdateInformationPage = ({ refreshData }) => {
+const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
     const token = localStorage.getItem("token");
     const { id } = useParams();
     const [customerAddresses, setCustomerAddresses] = useState([]);
@@ -203,6 +203,10 @@ const UpdateInformationPage = ({ refreshData }) => {
         fetchOrderAndCustomerData();
     }, [id, token]);
 
+    const isBlockedTransition =
+        hasUnallocated &&
+        originalValuesRef.current?.status === "Invoice Approved" &&
+        formik.values.status === "Waiting For Confirmation";
 
     return (
         <Row>
@@ -228,6 +232,7 @@ const UpdateInformationPage = ({ refreshData }) => {
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
                                                         invalid={formik.touched.status && formik.errors.status}
+                                                        disabled={isBlockedTransition}
                                                     >
                                                         <option value="">Select Status</option>
                                                         {(() => {
@@ -254,6 +259,11 @@ const UpdateInformationPage = ({ refreshData }) => {
                                                             ));
                                                         })()}
                                                     </Input>
+                                                    {isBlockedTransition && (
+                                                        <small className="text-danger">
+                                                            ⚠ You must allocate all rack quantities before moving to "Waiting For Confirmation".
+                                                        </small>
+                                                    )}
                                                     {formik.errors.status && formik.touched.status ? (
                                                         <FormFeedback type="invalid">{formik.errors.status}</FormFeedback>
                                                     ) : null}

@@ -22,6 +22,7 @@ const EcommerenceAddProduct = () => {
     const [categories, setCategories] = useState([]);
     const [selectedWarehouse, setSelectedWarehouse] = useState(null);
     const [selectedWarehouseName, setSelectedWarehouseName] = useState("");
+    const [beforeData, setBeforeData] = useState(null);
 
     const token = localStorage.getItem('token');
 
@@ -113,6 +114,25 @@ const EcommerenceAddProduct = () => {
                 }
                 setMessage('Product updated successfully!');
                 setMessageType('success');
+
+                const prevSnap = buildBeforeSnapshot(beforeData);                 // original from server
+                const nextSnap = buildAfterSnapshot(values, rackDetails);         // current form state
+
+                // 3) Compute only-changed fields
+                const { before, after } = diffObjects(prevSnap, nextSnap);
+
+                // 4) If anything changed, log it
+                if (Object.keys(after).length > 0) {
+                    await axios.post(
+                        `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                        {
+                            before_data: before,
+                            after_data: after,
+                        },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                }
+
                 formik.resetForm();
                 setImagePreview("");
             } catch (error) {
@@ -191,6 +211,9 @@ const EcommerenceAddProduct = () => {
                 setSelectedWarehouse(productData.data.warehouse || null);
                 setSelectedWarehouseName(productData.data.warehouse_name || "");
                 if (response.ok && productData) {
+
+                    setBeforeData(productData.data);
+
                     formik.setValues({
                         name: productData.data.name || '',
                         hsn_code: productData.data.hsn_code || '',
@@ -243,6 +266,164 @@ const EcommerenceAddProduct = () => {
         const calculatedLandingCost = rate + (rate * taxValue / 100);
         formik.setFieldValue("landing_cost", calculatedLandingCost.toFixed(2));
     }, [formik.values.purchase_rate, formik.values.tax]);
+
+    // stable key per rack row
+    const rackKey = (r) =>
+        `${Number(r.rack_id)}|${String(r.column_name || "")}|${String(r.usability || "")}`;
+
+    // normalize & sort for deterministic equality
+    const normalizeRackDetails = (arr) => {
+        if (!Array.isArray(arr)) return [];
+        const norm = arr.map((r) => ({
+            rack_id: Number(r.rack_id),
+            rack_name: r.rack_name ?? "",
+            column_name: r.column_name ?? "",
+            usability: r.usability ?? "",
+            rack_stock: Number(r.rack_stock ?? 0),
+            rack_lock: Number(r.rack_lock ?? 0),
+        }));
+        // sort by composite key
+        return norm.sort((a, b) => rackKey(a).localeCompare(rackKey(b)));
+    };
+
+    const getCategoryName = (id) => {
+        if (id == null || id === "") return null;
+        const c = categories.find((x) => String(x.id) === String(id));
+        return c ? c.category_name : null;   // fallback handled below
+    };
+
+    const buildAfterSnapshot = (values, rackDetailsLocal) => ({
+        name: values.name || "",
+        hsn_code: values.hsn_code || "",
+        family: Array.isArray(values.family) ? values.family.map(Number).sort((a, b) => a - b) : [],
+        purchase_rate: Number(values.purchase_rate ?? 0),
+        type: values.type || "",
+        tax: Number(values.tax ?? 0),
+        unit: values.unit || "",
+        selling_price: Number(values.selling_price ?? 0),
+        stock: Number(values.stock ?? 0),
+        color: values.color ?? "",
+        size: values.size ?? "",
+        groupID: values.groupID || "",
+        landing_cost: Number(values.landing_cost ?? 0),
+        product_category: values.product_category ? Number(values.product_category) : null,
+        rack_details: normalizeRackDetails(rackDetailsLocal),
+        retail_price: Number(values.retail_price ?? 0),
+        product_category: getCategoryName(values.product_category) ?? values.product_category,
+        rack_details: normalizeRackDetails(rackDetailsLocal),
+    });
+
+    const buildBeforeSnapshot = (raw) => {
+        if (!raw) return {};
+        return {
+            name: raw.name || "",
+            hsn_code: raw.hsn_code || "",
+            family: Array.isArray(raw.family) ? [...raw.family].map(Number).sort((a, b) => a - b) : [],
+            purchase_rate: Number(raw.purchase_rate ?? 0),
+            type: raw.type || "",
+            tax: Number(raw.tax ?? 0),
+            unit: raw.unit || "",
+            selling_price: Number(raw.selling_price ?? 0),
+            stock: Number(raw.stock ?? 0),
+            color: raw.color ?? "",
+            size: raw.size ?? "",
+            groupID: raw.groupID || "",
+            landing_cost: Number(raw.landing_cost ?? 0),
+            product_category: raw.product_category != null ? Number(raw.product_category) : null,
+            rack_details: normalizeRackDetails(raw.rack_details),
+            retail_price: Number(raw.retail_price ?? 0),
+            product_category: getCategoryName(raw.product_category) ?? raw.product_category,
+            rack_details: normalizeRackDetails(raw.rack_details),
+        };
+    };
+
+    // Compare two normalized arrays of rack rows.
+    // Returns only the changed racks (added/removed/modified).
+    const diffRackDetails = (prevArr, nextArr) => {
+        const before = [];
+        const after = [];
+
+        const prevMap = new Map(prevArr.map((r) => [rackKey(r), r]));
+        const nextMap = new Map(nextArr.map((r) => [rackKey(r), r]));
+        const keys = new Set([...prevMap.keys(), ...nextMap.keys()]);
+
+        for (const k of keys) {
+            const p = prevMap.get(k);
+            const n = nextMap.get(k);
+
+            if (!p && n) {
+                // added
+                before.push({ ...n, _change: "added" });   // optional tag for readability
+                after.push({ ...n, _change: "added" });
+                continue;
+            }
+            if (p && !n) {
+                // removed
+                before.push({ ...p, _change: "removed" });
+                after.push({ ...p, _change: "removed" });
+                continue;
+            }
+            // present in both: check stock/lock deltas (ignore rack_name)
+            if (p && n) {
+                const changed =
+                    p.rack_stock !== n.rack_stock || p.rack_lock !== n.rack_lock;
+
+                if (changed) {
+                    // log only fields that matter + identity
+                    before.push({
+                        rack_id: p.rack_id,
+                        column_name: p.column_name,
+                        usability: p.usability,
+                        rack_stock: p.rack_stock,
+                        rack_lock: p.rack_lock,
+                    });
+                    after.push({
+                        rack_id: n.rack_id,
+                        column_name: n.column_name,
+                        usability: n.usability,
+                        rack_stock: n.rack_stock,
+                        rack_lock: n.rack_lock,
+                    });
+                }
+            }
+        }
+
+        return { before, after };
+    };
+
+    // Strict deep equality for primitives/objects/arrays after normalization
+    const deepEqual = (a, b) => {
+        try { return JSON.stringify(a) === JSON.stringify(b); }
+        catch { return false; }
+    };
+
+    // Diff top-level fields, with special handling for rack_details
+    const diffObjects = (prev, next) => {
+        const before = {};
+        const after = {};
+
+        const keys = new Set([...Object.keys(prev || {}), ...Object.keys(next || {})]);
+        for (const k of keys) {
+            if (k === "rack_details") {
+                const prevR = normalizeRackDetails(prev?.rack_details);
+                const nextR = normalizeRackDetails(next?.rack_details);
+                const { before: rb, after: ra } = diffRackDetails(prevR, nextR);
+                if (rb.length || ra.length) {
+                    before[k] = rb;
+                    after[k] = ra;
+                }
+                continue;
+            }
+
+            // default compare
+            if (!deepEqual(prev?.[k], next?.[k])) {
+                before[k] = prev?.[k];
+                after[k] = next?.[k];
+            }
+        }
+
+        return { before, after };
+    };
 
     return (
         <React.Fragment>

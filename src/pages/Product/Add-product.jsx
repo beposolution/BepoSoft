@@ -82,9 +82,9 @@ const FormLayouts = () => {
                     const rackObj = rackList.find(rack => String(rack.id) === String(r.rack_id));
                     return {
                         rack_id: Number(r.rack_id),
-                        column_name: r.column_name,
                         rack_name: rackObj ? rackObj.rack_name : "",
-                        usability: r.usability,
+                        column_name: r.column_name,
+                        usability: r.usability,                // usable | damaged | partially_damaged
                         rack_stock: Number(r.rack_stock),
                         rack_lock: Number(r.rack_lock || 0),
                     };
@@ -93,11 +93,12 @@ const FormLayouts = () => {
             // Attach fields to FormData
             Object.entries(values).forEach(([key, value]) => {
                 if (key === 'family') {
+                    // multi-select divisions as repeated keys
                     value.forEach(item => formData.append('family', item));
                 } else if (key === 'image' && value) {
                     formData.append('image', value);
                 } else if (key === 'warehouse' || key === 'product_category') {
-                    formData.append(key, Number(value)); // Ensure numeric
+                    formData.append(key, Number(value));
                 } else {
                     formData.append(key, value);
                 }
@@ -109,7 +110,8 @@ const FormLayouts = () => {
             setIsLoading(true);
 
             try {
-                const response = await axios.post(
+                // 1) Create product
+                const productRes = await axios.post(
                     `${import.meta.env.VITE_APP_KEY}add/product/`,
                     formData,
                     {
@@ -119,6 +121,45 @@ const FormLayouts = () => {
                         },
                     }
                 );
+
+                // 2) Build product data for DataLog
+                const divisionNames = getDivisionNames(values.family);
+                const productData = {
+                    NAME: values.name,
+                    "HSN CODE": values.hsn_code,
+                    "GROUP ID": values.groupID,
+                    "CHOOSE WAREHOUSE": {
+                        id: Number(values.warehouse),
+                        name: getWarehouseName(values.warehouse),
+                    },
+                    UNIT: values.unit,
+                    DIVISION: divisionNames,                // array of division names
+                    "PRODUCT TYPE": values.type,            // single | variant
+                    STOCKS: cleanRackDetails.map(s => ({
+                        rack_id: s.rack_id,
+                        rack_name: s.rack_name,
+                        column_name: s.column_name,
+                        usability: s.usability,
+                        qty: s.rack_stock,
+                        lock: s.rack_lock,
+                    })),
+                };
+
+                // 3) Send DataLog entry
+                // NOTE: If your API expects extra fields (e.g., product id, user),
+                // add them here alongside before_data/after_data.
+                const before = { Action: "New product added" };     // or { status: "Waiting For Confirmation" }
+                const after = productData;                       // or { status: "Invoice Rejected" }
+
+                await axios.post(
+                    `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                    {
+                        before_data: before,
+                        after_data: after,
+                    },
+                    { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
+                );
+
                 setSuccessMessage("Form submitted successfully.");
                 setErrorMessage('');
                 resetForm();
@@ -132,6 +173,19 @@ const FormLayouts = () => {
             }
         }
     });
+
+    // Resolve division names from selected IDs
+    const getDivisionNames = (ids) => {
+        if (!Array.isArray(ids)) return [];
+        const mapById = new Map(family.map(f => [String(f.id), f.name]));
+        return ids.map(id => mapById.get(String(id))).filter(Boolean);
+    };
+
+    // Resolve warehouse name by id
+    const getWarehouseName = (id) => {
+        const found = warehouseDetails.find(w => String(w.id) === String(id));
+        return found ? found.name : "";
+    };
 
     const viewRacks = async () => {
         try {

@@ -38,7 +38,7 @@ const OrderReceipt = () => {
     if (!selectedOrderId) return; // nothing to log without order
     const payload = {
       order: Number(selectedOrderId),
-      before_data: { Action: "Pending" },
+      before_data: { Action: "Adding Order Receipt" },
       // You asked for: { "Data": "Amount, Bank" }
       // also including structured fields for better debugging/reporting.
       after_data: {

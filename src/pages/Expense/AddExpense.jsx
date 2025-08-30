@@ -9,7 +9,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const FormLayouts = () => {
-    document.title = "Form Layouts | Skote - Vite React Admin & Dashboard Template";
+    document.title = "Expenses | Beposoft";
     const token = localStorage.getItem('token');
 
     const [companies, setCompanies] = useState([]);

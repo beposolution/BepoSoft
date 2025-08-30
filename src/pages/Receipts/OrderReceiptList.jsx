@@ -119,6 +119,13 @@ const OrderReceiptList = () => {
 
     const handleUpdate = async () => {
         try {
+            // Save old data before updating
+            const beforeData = {
+                message: "Order Receipt Updated",
+                ...selectedReceipt
+            };
+
+            // Make update API call
             const response = await axios.put(
                 `${import.meta.env.VITE_APP_KEY}orderreceipt/view/${selectedReceipt.id}/`,
                 {
@@ -139,12 +146,43 @@ const OrderReceiptList = () => {
                     }
                 }
             );
+
             if (response.status === 200 || response.status === 204) {
                 toast.success("Receipt updated successfully!");
                 setModalOpen(false);
                 fetchReceiptData();
+
+                // Prepare after data (use response.data if your API returns updated receipt)
+                const afterData = response.data ? response.data : {
+                    payment_receipt: formData.payment_receipt,
+                    order: selectedOrderId,
+                    bank: formData.bank,
+                    amount: formData.amount,
+                    transactionID: formData.transactionID,
+                    received_at: formData.received_at,
+                    customer: customerId,
+                    remark: formData.remark,
+                    created_by: selectedReceipt.created_by,
+                };
+
+                // Send log to create/datalog/
+                await axios.post(
+                    `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                    {
+                        order: selectedOrderId, // order id
+                        before_data: beforeData,
+                        after_data: afterData,
+                    },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json"
+                        }
+                    }
+                );
             }
         } catch (error) {
+            console.error(error);
             toast.error("Failed to update receipt.");
         }
     };
@@ -167,8 +205,8 @@ const OrderReceiptList = () => {
             norm(item.customer_name).includes(q) ||
             norm(item.bank_name).includes(q) ||
             norm(item.created_by_name).includes(q) ||
-            norm(item.remark).includes(q) ||  
-            norm(item.amount).includes(q);   
+            norm(item.remark).includes(q) ||
+            norm(item.amount).includes(q);
 
         const receiptDate = new Date(item.received_at);
         const isAfterStart = startDate ? receiptDate >= new Date(startDate) : true;

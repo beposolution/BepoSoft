@@ -794,7 +794,7 @@ const FormLayouts = () => {
 
     const showRackDetails =
         (role === "ADMIN" || role === "Accounts / Accounting") &&
-        formik.values.status === "Invoice Approved"
+        ["Invoice Approved", "Waiting For Confirmation", "To Print", "Packed", "Packing under progress"].includes(formik.values.status);
 
     // ADD ONLY: cap per-rack input so total never exceeds the order line quantity
     const setRackQtyCapped = (item, rackIdx, val, rackStock) => {

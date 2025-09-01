@@ -375,6 +375,15 @@ import FamilyDetails from "../pages/DashboardJob/FamilyDetails";
 import AddCategory from "../pages/Product/AddCategory";
 import CustomerType from "../pages/CustomerType/CustomerType";
 import DataLog from "../pages/DataLog/DataLog"
+import InvoiceApproved from "../pages/Order/InvoiceApproved";
+import WaitingForConfirmation from "../pages/Order/WaitingForConfirmation";
+import ToPrint from "../pages/Order/ToPrint";
+import InvoiceCreated from "../pages/Order/InvoiceCreated";
+import PackingUnderProgress from "../pages/Order/PackingUnderProgress";
+import Packed from "../pages/Order/Packed";
+import ReadyToShip from "../pages/Order/ReadyToShip";
+import Shipped from "../pages/Order/Shipped";
+import InvoiceRejected from "../pages/Order/InvoiceRejected";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -488,6 +497,15 @@ const authProtectedRoutes = [
   { path: "/order/:id/items/", component: <OrderItems /> },
   { path: "/order/:id/stafforder/", component: <Stafforder /> },
   { path: "/warehouseorder/:id/items", component: <OrderwarehouseConform /> },
+  { path: "/orders/invoicecreated", component: <InvoiceCreated /> },
+  { path: "/orders/invoiceapproved", component: <InvoiceApproved /> },
+  { path: "/orders/waitingforconfirmation", component: <WaitingForConfirmation /> },
+  { path: "/orders/toprint", component: <ToPrint /> },
+  { path: "/orders/packingunderprogress", component: <PackingUnderProgress /> },
+  { path: "/orders/packed", component: <Packed /> },
+  { path: "/orders/readytoship", component: <ReadyToShip /> },
+  { path: "/orders/shipped", component: <Shipped /> },
+  { path: "/orders/invoicerejected", component: <InvoiceRejected /> },
 
   { path: "/order/warehousee/", component: <Warehouseorders /> },
 

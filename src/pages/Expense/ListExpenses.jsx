@@ -14,7 +14,26 @@ const EXPENSE_TYPES = [
   { value: "emi", label: "EMI" },
   { value: "cargo", label: "Cargo" },
   { value: "purchase", label: "Purchase" },
+  { value: "others", label: "Others" }, // bucket for any unknown types
 ];
+
+const KNOWN_TYPES = new Set([
+  "miscellaneous",
+  "permanent",
+  "emi",
+  "cargo",
+  "purchase",
+]);
+
+function normalizeExpenseType(v) {
+  const s = (v ?? "").toString().trim().toLowerCase();
+  return KNOWN_TYPES.has(s) ? s : "others";
+}
+
+function labelForExpenseType(v) {
+  const entry = EXPENSE_TYPES.find((t) => t.value === v);
+  return (entry?.label ?? v).toUpperCase();
+}
 
 const BasicTable = () => {
   const [expenses, setExpenses] = useState([]);
@@ -24,7 +43,7 @@ const BasicTable = () => {
   const [endDate, setEndDate] = useState("");
   const [purposeOfPayment, setPurposeOfPayment] = useState([]);
   const [purposeFilter, setPurposeFilter] = useState(""); // purpose id (string) or "" for all
-  const [expenseTypeFilter, setExpenseTypeFilter] = useState(""); // <-- NEW: expense type value or ""
+  const [expenseTypeFilter, setExpenseTypeFilter] = useState(""); // normalized type ("", or one of EXPENSE_TYPES values)
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [perPageData] = useState(10);
@@ -38,6 +57,7 @@ const BasicTable = () => {
     return m;
   }, [purposeOfPayment]);
 
+  // Fetch purpose list
   useEffect(() => {
     const fetchPurposeOfPayment = async () => {
       try {
@@ -53,19 +73,17 @@ const BasicTable = () => {
     fetchPurposeOfPayment();
   }, [token]);
 
+  // Fetch expenses
   useEffect(() => {
     const fetchExpenses = async () => {
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_APP_KEY}expense/add/`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await fetch(`${import.meta.env.VITE_APP_KEY}expense/add/`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (!response.ok) throw new Error("Failed to fetch expenses");
 
@@ -81,39 +99,36 @@ const BasicTable = () => {
     fetchExpenses();
   }, [token]);
 
-  // Apply all filters (search, date, purpose, expense type)
-  useEffect(() => {
-    let filteredData = [...expenses];
+  const baseFiltered = useMemo(() => {
+    let data = [...expenses];
 
     // Search across fields
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
-      filteredData = filteredData.filter((expense) => {
+      data = data.filter((expense) => {
         const company = expense.company?.name?.toLowerCase() || "";
         const payedBy = expense.payed_by?.name?.toLowerCase() || "";
-        const purposeName = expense.purpose_of_pay?.toLowerCase() || "";
+        const purposeName = (expense.purpose_of_pay || "").toLowerCase();
         const amount = (expense.amount ?? "").toString().toLowerCase();
-        const type = expense.expense_type?.toLowerCase() || "";
+        const rawType = (expense.expense_type ?? "").toString().toLowerCase();
         return (
           company.includes(q) ||
           payedBy.includes(q) ||
           purposeName.includes(q) ||
           amount.includes(q) ||
-          type.includes(q)
+          rawType.includes(q)
         );
       });
     }
 
     // Date range
     if (startDate) {
-      filteredData = filteredData.filter(
-        (e) => new Date(e.expense_date) >= new Date(startDate)
-      );
+      const sd = new Date(startDate);
+      data = data.filter((e) => new Date(e.expense_date) >= sd);
     }
     if (endDate) {
-      filteredData = filteredData.filter(
-        (e) => new Date(e.expense_date) <= new Date(endDate)
-      );
+      const ed = new Date(endDate);
+      data = data.filter((e) => new Date(e.expense_date) <= ed);
     }
 
     // Purpose filter (by id or fallback to name)
@@ -121,34 +136,56 @@ const BasicTable = () => {
       const selectedPurposeId = purposeFilter; // string
       const selectedPurposeName =
         purposeIdToName.get(selectedPurposeId)?.toLowerCase() || "";
-      filteredData = filteredData.filter((e) => {
-        const rowPurposeId =
-          e.purpose_id != null ? String(e.purpose_id) : undefined;
+      data = data.filter((e) => {
+        const rowPurposeId = e.purpose_id != null ? String(e.purpose_id) : undefined;
         const rowPurposeName = (e.purpose_of_pay || "").toString().toLowerCase();
         if (rowPurposeId) return rowPurposeId === selectedPurposeId;
         return selectedPurposeName && rowPurposeName === selectedPurposeName;
       });
     }
 
-    // NEW: Expense Type filter (compares canonical lowercase values)
+    return data;
+  }, [expenses, searchTerm, startDate, endDate, purposeFilter, purposeIdToName]);
+
+  useEffect(() => {
+    let data = [...baseFiltered];
     if (expenseTypeFilter) {
-      filteredData = filteredData.filter(
-        (e) => (e.expense_type || "").toString().toLowerCase() === expenseTypeFilter
+      data = data.filter(
+        (e) => normalizeExpenseType(e.expense_type) === expenseTypeFilter
       );
     }
+    setFilteredExpenses(data);
+    setCurrentPage(1);
+  }, [baseFiltered, expenseTypeFilter]);
 
-    setFilteredExpenses(filteredData);
-    setCurrentPage(1); // reset pagination when filters change
-  }, [
-    searchTerm,
-    startDate,
-    endDate,
-    purposeFilter,
-    expenseTypeFilter, // <-- depend on new filter
-    expenses,
-    purposeIdToName,
-  ]);
+  const summaryByType = useMemo(() => {
+    // initialize all buckets so order is stable
+    const init = {};
+    for (const t of EXPENSE_TYPES.map((t) => t.value)) {
+      init[t] = { count: 0, amount: 0 };
+    }
+    for (const e of baseFiltered) {
+      const key = normalizeExpenseType(e.expense_type);
+      const amt = parseFloat(e.amount || 0) || 0;
+      if (!init[key]) init[key] = { count: 0, amount: 0 };
+      init[key].count += 1;
+      init[key].amount += amt;
+    }
+    return init;
+  }, [baseFiltered]);
 
+  // Pagination
+  const indexOfLastItem = currentPage * perPageData;
+  const indexOfFirstItem = indexOfLastItem - perPageData;
+  const currentExpenses = filteredExpenses.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Footer total for the currently displayed (filtered) data
+  const totalAmount = filteredExpenses.reduce((sum, expense) => {
+    const val = parseFloat(expense.amount || 0);
+    return sum + (isNaN(val) ? 0 : val);
+  }, 0);
+
+  // Actions
   const handleExportToExcel = () => {
     const ws = XLSX.utils.json_to_sheet(filteredExpenses);
     const wb = XLSX.utils.book_new();
@@ -160,15 +197,7 @@ const BasicTable = () => {
     navigate(`/expense/update/${id}/`);
   };
 
-  const indexOfLastItem = currentPage * perPageData;
-  const indexOfFirstItem = indexOfLastItem - perPageData;
-  const currentExpenses = filteredExpenses.slice(indexOfFirstItem, indexOfLastItem);
-
-  const totalAmount = filteredExpenses.reduce((sum, expense) => {
-    const val = parseFloat(expense.amount || 0);
-    return sum + (isNaN(val) ? 0 : val);
-  }, 0);
-
+  // Document title
   document.title = "Beposoft | Expense Data";
 
   return (
@@ -176,91 +205,127 @@ const BasicTable = () => {
       <div className="page-content">
         <div className="container-fluid">
           <Breadcrumbs title="Tables" breadcrumbItem="EXPENSE DATA" />
+
+          {/* Filters */}
+          <Row className="mb-3 g-2">
+            <Col md={2}>
+              <Input
+                type="text"
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </Col>
+
+            <Col md={2}>
+              <Input
+                type="date"
+                placeholder="Start Date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </Col>
+
+            <Col md={2}>
+              <Input
+                type="date"
+                placeholder="End Date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </Col>
+
+            {/* Purpose filter (from API) */}
+            <Col md={2}>
+              <Input
+                type="select"
+                value={purposeFilter}
+                onChange={(e) => setPurposeFilter(e.target.value)}
+              >
+                <option value="">All Purposes</option>
+                {purposeOfPayment?.map((p) => (
+                  <option key={p.id} value={String(p.id)}>
+                    {p.name}
+                  </option>
+                ))}
+              </Input>
+            </Col>
+
+            {/* Type filter (also controlled by the summary buttons) */}
+            <Col md={2}>
+              <Input
+                type="select"
+                value={expenseTypeFilter}
+                onChange={(e) => setExpenseTypeFilter(e.target.value)}
+              >
+                <option value="">All Types</option>
+                {EXPENSE_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </Input>
+            </Col>
+
+            <Col md={2} className="d-flex gap-2">
+              <Button color="primary" onClick={handleExportToExcel}>
+                Export to Excel
+              </Button>
+            </Col>
+          </Row>
+
+          {/* Cumulative summary (based on baseFiltered) */}
+          <Row className="g-2 mb-3">
+            <Col md="auto">
+              <Button
+                outline
+                color={expenseTypeFilter ? "secondary" : "primary"}
+                onClick={() => setExpenseTypeFilter("")}
+                title="Show all types"
+              >
+                Show All
+              </Button>
+            </Col>
+
+            {EXPENSE_TYPES.map((t) => {
+              const s = summaryByType[t.value] || { count: 0, amount: 0 };
+              return (
+                <Col md="auto" key={t.value}>
+                  <Button
+                    color={expenseTypeFilter === t.value ? "primary" : "light"}
+                    onClick={() => setExpenseTypeFilter(t.value)}
+                    style={{ minWidth: 210, textAlign: "left" }}
+                    title={`Filter by ${t.label}`}
+                  >
+                    <div style={{ fontWeight: 600 }}>{t.label}</div>
+                    <div style={{ fontSize: 12 }}>
+                      Count: {s.count} &nbsp;|&nbsp; ₹ {s.amount.toFixed(2)}
+                    </div>
+                  </Button>
+                </Col>
+              );
+            })}
+          </Row>
+
+          {/* Total for current filtered set */}
+          <Row className="mb-2">
+            <Col md={12} className="d-flex justify-content-end">
+              <strong>
+                Total Expense: ₹{" "}
+                <Button color="success">
+                  <span style={{ color: "#fff", fontSize: "1rem" }}>
+                    {totalAmount.toFixed(2)}
+                  </span>
+                </Button>
+              </strong>
+            </Col>
+          </Row>
+
+          {/* Table */}
           <Row>
             <Col xl={12}>
               <Card>
                 <CardBody>
-                  {/* Search and Filters */}
-                  <Row className="mb-3 g-2">
-                    <Col md={2}>
-                      <Input
-                        type="text"
-                        placeholder="Search..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </Col>
-
-                    <Col md={2}>
-                      <Input
-                        type="date"
-                        placeholder="Start Date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                      />
-                    </Col>
-
-                    <Col md={2}>
-                      <Input
-                        type="date"
-                        placeholder="End Date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                      />
-                    </Col>
-
-                    {/* Purpose filter (from API) */}
-                    <Col md={2}>
-                      <Input
-                        type="select"
-                        value={purposeFilter}
-                        onChange={(e) => setPurposeFilter(e.target.value)}
-                      >
-                        <option value="">All Purposes</option>
-                        {purposeOfPayment?.map((p) => (
-                          <option key={p.id} value={String(p.id)}>
-                            {p.name}
-                          </option>
-                        ))}
-                      </Input>
-                    </Col>
-
-                    {/* NEW: Expense Type filter */}
-                    <Col md={2}>
-                      <Input
-                        type="select"
-                        value={expenseTypeFilter}
-                        onChange={(e) => setExpenseTypeFilter(e.target.value)}
-                      >
-                        <option value="">All Types</option>
-                        {EXPENSE_TYPES.map((t) => (
-                          <option key={t.value} value={t.value}>
-                            {t.label}
-                          </option>
-                        ))}
-                      </Input>
-                    </Col>
-
-                    <Col md={2} className="d-flex gap-2">
-                      <Button color="primary" onClick={handleExportToExcel}>
-                        Export to Excel
-                      </Button>
-                    </Col>
-                  </Row>
-
-                  <Row className="mb-2">
-                    <Col md={12} className="d-flex justify-content-end">
-                      <strong>
-                        Total Expense: ₹{" "}
-                        <Button color="success">
-                          <span style={{ color: "#fff", fontSize: "1rem" }}>
-                            {totalAmount.toFixed(2)}
-                          </span>
-                        </Button>
-                      </strong>
-                    </Col>
-                  </Row>
-
                   <div className="table-responsive">
                     <Table className="table table-hover mb-0">
                       <thead>
@@ -287,19 +352,28 @@ const BasicTable = () => {
                             </td>
                             <td>{expense?.bank?.name || "N/A"}</td>
                             {/* <td style={{ color: '#28a745' }}>{expense?.payed_by?.name || 'N/A'}</td> */}
-                            <td style={{ color: "#28a745" }}>₹{expense?.amount}</td>
-                            <td>{expense.expense_date}</td>
+                            <td style={{ color: "#28a745" }}>
+                              ₹{expense?.amount ?? "0.00"}
+                            </td>
+                            <td>{expense?.expense_date || "N/A"}</td>
                             <td style={{ color: "#ff6f61" }}>
-                              {(expense?.purpose_of_pay ||
+                              {(
+                                expense?.purpose_of_pay ||
                                 purposeIdToName.get(String(expense?.purpose_id)) ||
                                 "N/A"
-                              ).toString().toUpperCase()}
+                              )
+                                .toString()
+                                .toUpperCase()}
                             </td>
                             <td>
-                              {(expense?.expense_type || "N/A").toString().toUpperCase()}
+                              {labelForExpenseType(
+                                normalizeExpenseType(expense?.expense_type)
+                              )}
                             </td>
-                            <td>{expense?.description}</td>
-                            <td style={{ fontWeight: "bold" }}>{expense?.added_by}</td>
+                            <td>{expense?.description ?? ""}</td>
+                            <td style={{ fontWeight: "bold" }}>
+                              {expense?.added_by ?? ""}
+                            </td>
                             <td>
                               <button
                                 onClick={() => updateExpense(expense?.id)}
@@ -334,6 +408,7 @@ const BasicTable = () => {
               </Card>
             </Col>
           </Row>
+
           <ToastContainer />
         </div>
       </div>

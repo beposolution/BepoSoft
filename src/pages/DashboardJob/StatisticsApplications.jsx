@@ -428,7 +428,15 @@ const StatisticsApplications = () => {
                                                     Today's Total Orders : <span className="fw-bold text-dark"><strong>{familyOrders2?.today_count}</strong></span>
                                                 </p>
                                                 <h6 className="text-muted mb-1">
-                                                    Today's COD Orders : <span className="fw-bold text-dark"><strong>{todayCodOrdersCount}</strong></span> | ₹<span className="fw-bold text-dark"><strong>{todayCodOrdersVolume.toLocaleString()}</strong></span>
+                                                    Today's COD Orders : <span className="fw-bold text-dark"><strong>{Number(familyOrders2?.payment_status_summary?.today?.COD?.count || 0)}</strong>
+                                                    </span> | ₹<span className="fw-bold text-dark">
+                                                        <strong>
+                                                            {Number(familyOrders2?.payment_status_summary?.today?.COD?.total || 0).toLocaleString("en-IN", {
+                                                                minimumFractionDigits: 2,
+                                                                maximumFractionDigits: 2,
+                                                            })}
+                                                        </strong>
+                                                    </span>
                                                 </h6>
                                                 <hr className="my-3" style={{ width: "60%" }} />
                                                 <h5 className="mb-1">
@@ -438,7 +446,15 @@ const StatisticsApplications = () => {
                                                     This Month's Total Orders : <span className="fw-bold text-dark"><strong>{familyOrders2?.month_count}</strong></span>
                                                 </p>
                                                 <h6 className="text-muted mb-1">
-                                                    COD Orders : <span className="fw-bold text-dark"><strong>{codOrdersCount}</strong></span> | ₹<span className="fw-bold text-dark"><strong>{codOrdersTotalVolume.toLocaleString()}</strong></span>
+                                                    COD Orders : <span className="fw-bold text-dark"><strong>{Number(familyOrders2?.payment_status_summary?.month?.COD?.count || 0)}</strong>
+                                                    </span> | ₹<span className="fw-bold text-dark">
+                                                        <strong>
+                                                            {Number(familyOrders2?.payment_status_summary?.month?.COD?.total || 0).toLocaleString("en-IN", {
+                                                                minimumFractionDigits: 2,
+                                                                maximumFractionDigits: 2,
+                                                            })}
+                                                        </strong>
+                                                    </span>
                                                 </h6>
                                             </div>
 

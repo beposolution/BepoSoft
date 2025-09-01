@@ -30,7 +30,7 @@ const OtherReceipt = () => {
   const postDataLog = async () => {
     const payload = {
       // No order/customer context for "Other Receipt"; logging the action only.
-      before_data: { Action: "Pending" },
+      before_data: { Action: "Creating Bank Receipt" },
       after_data: {
         Data: "Amount, Bank",
         amount: Number(formData.amount || 0),

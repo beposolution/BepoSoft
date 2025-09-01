@@ -24,6 +24,7 @@ const AdvanceReceiptList = () => {
     const perPageData = 10;
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
+    const [beforeSnapshot, setBeforeSnapshot] = useState(null);
 
     useEffect(() => {
         const fetchCustomers = async () => {
@@ -93,6 +94,16 @@ const AdvanceReceiptList = () => {
                 received_at: data.received_at
             });
             setCustomerId(data.customer)
+
+            setBeforeSnapshot(pickFields({
+                payment_receipt: data.payment_receipt,
+                bank: data.bank,
+                amount: data.amount,
+                transactionID: data.transactionID,
+                received_at: data.received_at,
+                customer: data.customer,
+                remark: data.remark,
+            }));
         } catch (error) {
             toast.error("Error fetching receipt details:");
         } finally {
@@ -102,29 +113,71 @@ const AdvanceReceiptList = () => {
 
     const handleUpdate = async () => {
         try {
-            const response = await axios.put(
+            const payload = {
+                payment_receipt: formData.payment_receipt,
+                bank: formData.bank,
+                amount: formData.amount,
+                transactionID: formData.transactionID,
+                received_at: formData.received_at,
+                customer: customerId,
+                remark: formData.remark,
+                created_by: selectedReceipt.created_by,
+            };
+
+            const resp = await axios.put(
                 `${import.meta.env.VITE_APP_KEY}advancereceipt/view/${selectedReceipt.id}/`,
-                {
-                    payment_receipt: formData.payment_receipt,
-                    bank: formData.bank,
-                    amount: formData.amount,
-                    transactionID: formData.transactionID,
-                    received_at: formData.received_at,
-                    customer: customerId,
-                    remark: formData.remark,
-                    created_by: selectedReceipt.created_by,
-                },
+                payload,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    }
+                        "Content-Type": "application/json",
+                    },
                 }
             );
-            if (response.status === 200 || response.status === 204) {
+
+            if (resp.status === 200 || resp.status === 204) {
+                // Build the "after" snapshot from what we just sent
+                const afterSnapshot = pickFields({
+                    payment_receipt: payload.payment_receipt,
+                    bank: payload.bank,
+                    amount: payload.amount,
+                    transactionID: payload.transactionID,
+                    received_at: payload.received_at,
+                    customer: payload.customer,
+                    remark: payload.remark,
+                });
+
+                // Compute only changed keys
+                const { before_data, after_data } = computeDiff(beforeSnapshot, afterSnapshot);
+
+                // Only log if something actually changed
+                if (Object.keys(before_data).length > 0) {
+                    try {
+                        await axios.post(
+                            `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                            {
+                                before_data,
+                                after_data,
+                            },
+                            {
+                                headers: {
+                                    Authorization: `Bearer ${token}`,
+                                    "Content-Type": "application/json",
+                                },
+                            }
+                        );
+                    } catch (logErr) {
+                        // don't block the user if logging fails
+                        console.error("Failed to create datalog:", logErr);
+                    }
+                }
+
                 toast.success("Receipt updated successfully!");
                 setModalOpen(false);
                 fetchReceiptData();
+
+                // refresh baseline snapshot to the new values in case user reopens without closing page
+                setBeforeSnapshot(afterSnapshot);
             }
         } catch (error) {
             toast.error("Failed to update receipt.");
@@ -136,6 +189,55 @@ const AdvanceReceiptList = () => {
             ...formData,
             [e.target.name]: e.target.value
         });
+    };
+
+    // fields we care about comparing / logging
+    const RECEIPT_FIELDS = [
+        "payment_receipt",
+        "bank",
+        "amount",
+        "transactionID",
+        "received_at",
+        "customer",
+        "remark",
+    ];
+
+    /** Safely normalize values for comparison (trim strings, keep null as null) */
+    const norm = (v) => {
+        if (v === undefined) return null;
+        if (typeof v === "string") return v.trim();
+        return v;
+    };
+
+    /** Pick only fields we care about */
+    const pickFields = (obj) => {
+        const out = {};
+        RECEIPT_FIELDS.forEach((k) => {
+            if (obj && Object.prototype.hasOwnProperty.call(obj, k)) {
+                out[k] = obj[k];
+            }
+        });
+        return out;
+    };
+
+    /** Compute {before_data, after_data} with only changed keys */
+    const computeDiff = (prev, next) => {
+        const before_data = {};
+        const after_data = {};
+
+        RECEIPT_FIELDS.forEach((k) => {
+            const a = norm(prev?.[k]);
+            const b = norm(next?.[k]);
+            // compare loosely but safely (stringify numbers so 10 vs "10" doesn't log noise)
+            const sa = a === null ? null : String(a);
+            const sb = b === null ? null : String(b);
+            if (sa !== sb) {
+                before_data[k] = prev?.[k] ?? null;
+                after_data[k] = next?.[k] ?? null;
+            }
+        });
+
+        return { before_data, after_data };
     };
 
     const filteredReceipts = receipts.filter((item) => {

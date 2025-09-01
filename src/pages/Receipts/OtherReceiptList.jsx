@@ -32,6 +32,7 @@ const OtherReceiptList = () => {
     const perPageData = 10;
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [originalReceipt, setOriginalReceipt] = useState(null);
 
     useEffect(() => {
         const fetchBanks = async () => {
@@ -107,6 +108,7 @@ const OtherReceiptList = () => {
             });
             const data = response.data;
             setSelectedReceipt(data);
+            setOriginalReceipt(data);
             setFormData({
                 bank: data.bank,
                 amount: data.amount,
@@ -123,9 +125,132 @@ const OtherReceiptList = () => {
         }
     };
 
+    const normalize = (v) => {
+        if (v === null || v === undefined) return '';
+        if (typeof v === 'string') return v.trim();
+        return String(v);
+    };
+
+    const bankNameById = (id) => (banks.find(b => b.id === Number(id))?.name ?? '');
+    const customerNameById = (id) => (customers.find(c => c.id === Number(id))?.name ?? '');
+    const orderLabelById = (id) => {
+        const o = orders.find(or => or.id === Number(id));
+        if (!o) return '';
+        const nm = o.customer?.name ?? '';
+        return `${o.invoice ?? ''}${nm ? ' - ' + nm : ''}${o.total_amount ? ' - ₹' + o.total_amount : ''}`;
+    };
+
+    /**
+     * Build diffs only for changed keys. Optionally map IDs to human names.
+     * @param {object} before - originalReceipt
+     * @param {object} after  - formData
+     * @param {string} mode   - 'update' | 'toAdvance' | 'toOrder' (for clarity if needed)
+     */
+    const buildChangeSet = (before, after, mode = 'update') => {
+        // keys we care about
+        const keys = ['payment_receipt', 'bank', 'amount', 'transactionID', 'received_at', 'remark', 'customer', 'order'];
+
+        const before_data = {};
+        const after_data = {};
+
+        keys.forEach(k => {
+            let b = '';
+            let a = '';
+
+            // map from your original receipt payload
+            if (k === 'bank') {
+                b = normalize(before?.bank);                  // id on original
+                a = normalize(after?.bank);                   // id on form
+                const bName = bankNameById(b);
+                const aName = bankNameById(a);
+                if (bName !== aName) { before_data.bank = bName; after_data.bank = aName; }
+                return;
+            }
+
+            if (k === 'customer') {
+                // original doesn't have customer for "bankreceipt"—treat as empty
+                b = '';
+                a = normalize(after?.customer);
+                const aName = customerNameById(a);
+                if (aName) { before_data.customer = b; after_data.customer = aName; }
+                return;
+            }
+
+            if (k === 'order') {
+                b = '';
+                a = normalize(after?.order);
+                const aLbl = orderLabelById(a);
+                if (aLbl) { before_data.order = b; after_data.order = aLbl; }
+                return;
+            }
+
+            // plain fields present on the original receipt
+            switch (k) {
+                case 'payment_receipt':
+                    b = normalize(before?.payment_receipt);
+                    a = normalize(after?.payment_receipt);
+                    break;
+                case 'amount':
+                    b = normalize(before?.amount);
+                    a = normalize(after?.amount);
+                    break;
+                case 'transactionID':
+                    b = normalize(before?.transactionID);
+                    a = normalize(after?.transactionID);
+                    break;
+                case 'received_at':
+                    b = normalize(before?.received_at);
+                    a = normalize(after?.received_at);
+                    break;
+                case 'remark':
+                    b = normalize(before?.remark);
+                    a = normalize(after?.remark);
+                    break;
+                default:
+                    break;
+            }
+
+            if (b !== a) {
+                before_data[k] = b;
+                after_data[k] = a;
+            }
+        });
+
+        // Optional: if converting, you can include a small hint field (still “only changed”)
+        if (mode === 'toAdvance') {
+            before_data.conversion = '';
+            after_data.conversion = 'Advance Receipt';
+        }
+        if (mode === 'toOrder') {
+            before_data.conversion = '';
+            after_data.conversion = 'Order Receipt';
+        }
+
+        return { before_data, after_data };
+    };
+
+    const postDataLog = async (beforeObj, afterObj, mode = 'update') => {
+        const { before_data, after_data } = buildChangeSet(beforeObj, afterObj, mode);
+        // skip if nothing changed
+        if (!Object.keys(before_data).length && !Object.keys(after_data).length) return;
+
+        try {
+            await axios.post(`${import.meta.env.VITE_APP_KEY}datalog/create/`, {
+                before_data,
+                after_data,
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+        } catch (err) {
+            // Don’t block UX if logging fails; just let devs know
+            console.error('Failed to create datalog:', err);
+        }
+    };
+
     const handleUpdate = async () => {
         try {
             let shouldDeleteOriginalReceipt = false;
+            let convertMode = null; // 'toAdvance' | 'toOrder' | null
 
             if (formData.customer) {
                 const response = await axios.post(`${import.meta.env.VITE_APP_KEY}advancereceipt/`, {
@@ -141,6 +266,10 @@ const OtherReceiptList = () => {
 
                 toast.success("Advance Receipt created successfully");
                 shouldDeleteOriginalReceipt = true;
+                convertMode = 'toAdvance';
+
+                // ✅ Log the changes (only changed fields)
+                if (originalReceipt) await postDataLog(originalReceipt, formData, convertMode);
 
             } else if (formData.order) {
                 const response = await axios.post(`${import.meta.env.VITE_APP_KEY}payment/${formData.order}/reciept/`, {
@@ -155,6 +284,11 @@ const OtherReceiptList = () => {
 
                 toast.success("Order Receipt created successfully");
                 shouldDeleteOriginalReceipt = true;
+                convertMode = 'toOrder';
+
+                // ✅ Log the changes (only changed fields)
+                if (originalReceipt) await postDataLog(originalReceipt, formData, convertMode);
+
             } else {
                 // Regular PUT update
                 const response = await axios.put(
@@ -178,22 +312,23 @@ const OtherReceiptList = () => {
 
                 if (response.status === 200 || response.status === 204) {
                     toast.success("Receipt updated successfully!");
+                    // ✅ Log only changed fields versus the original
+                    if (originalReceipt) await postDataLog(originalReceipt, formData, 'update');
                     fetchReceiptData();
                 }
             }
 
-            // DELETE only if conversion to advance/order receipt was successful
+            // DELETE original bank receipt only if conversion succeeded
             if (shouldDeleteOriginalReceipt && selectedReceipt?.id) {
                 await axios.delete(`${import.meta.env.VITE_APP_KEY}bankreceipt/view/${selectedReceipt.id}/`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
+                    headers: { Authorization: `Bearer ${token}` }
                 });
                 toast.success("Original bank receipt deleted.");
-                fetchReceiptData(); // refresh the list
+                fetchReceiptData();
             }
 
             setModalOpen(false);
+            setOriginalReceipt(null); // reset snapshot
         } catch (error) {
             console.error("Error:", error);
             toast.error("Failed to update receipt.");

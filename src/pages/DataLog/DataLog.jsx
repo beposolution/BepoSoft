@@ -16,7 +16,7 @@ const DataLog = () => {
 
   // pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [perPageData] = useState(10);
+  const [perPageData] = useState(20);
 
   // -------------------- Parsing helpers --------------------
   const parseLooseJSON = (s) => {

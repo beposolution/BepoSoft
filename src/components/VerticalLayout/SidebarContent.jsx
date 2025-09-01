@@ -315,6 +315,33 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/Orders/">{props.t("order list")}</Link>
                   </li>
+                  <li>
+                    <Link to="/orders/invoicecreated">{props.t("Invoice Created")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/orders/invoiceapproved">{props.t("Invoice Approved")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/orders/waitingforconfirmation">{props.t("Waiting For Confirmation")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/orders/toprint">{props.t("To Print")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/orders/packingunderprogress">{props.t("Packing Under Progress")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/orders/packed">{props.t("Packed")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/orders/readytoship">{props.t("Ready to Ship")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/orders/shipped">{props.t("Shipped")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/orders/invoicerejected">{props.t("Invoice Rejected")}</Link>
+                  </li>
                 </ul>
               </li>
             ) : null}

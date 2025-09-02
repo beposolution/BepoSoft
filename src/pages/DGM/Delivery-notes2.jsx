@@ -92,6 +92,11 @@ const AverageAmountReport = () => {
         });
     };
 
+    const totalCount = filteredData.reduce((sum, group) => sum + group.count, 0);
+    const totalAmount = filteredData.reduce((sum, group) => sum + group.totalAmount, 0);
+    const totalWeight = filteredData.reduce((sum, group) => sum + group.totalWeight, 0);
+    const totalAverage = totalWeight !== 0 ? (totalAmount / totalWeight).toFixed(2) : "0.00";
+
     return (
         <div className="page-content">
             <div className="container-fluid">
@@ -138,32 +143,44 @@ const AverageAmountReport = () => {
                                         </thead>
                                         <tbody>
                                             {currentData.length > 0 ? (
-                                                currentData.map((group, index) => (
-                                                    <tr key={index}>
-                                                        <td>{indexOfFirstItem + index + 1}</td>
-                                                        <td>{group.date}</td>
-                                                        <td>{group.count}</td>
-                                                        <td>₹ {group.totalAmount.toFixed(2)}</td>
-                                                        <td>{group.totalWeight.toFixed(2)} kg</td>
-                                                        <td>
-                                                            {group.totalAmount !== 0
-                                                                ? (group.totalAmount / group.totalWeight).toFixed(2)
-                                                                : "0.00"}
-                                                        </td>
-                                                        <td>
-                                                            <Button
-                                                                size="sm"
-                                                                color="info"
-                                                                onClick={() => handleView(group.date, group.items)}
-                                                            >
-                                                                View
-                                                            </Button>
-                                                        </td>
+                                                <>
+                                                    {currentData.map((group, index) => (
+                                                        <tr key={index}>
+                                                            <td>{indexOfFirstItem + index + 1}</td>
+                                                            <td>{group.date}</td>
+                                                            <td>{group.count}</td>
+                                                            <td>₹ {group.totalAmount.toFixed(2)}</td>
+                                                            <td>{group.totalWeight.toFixed(2)} kg</td>
+                                                            <td>
+                                                                {group.totalAmount !== 0
+                                                                    ? (group.totalAmount / group.totalWeight).toFixed(2)
+                                                                    : "0.00"}
+                                                            </td>
+                                                            <td>
+                                                                <Button
+                                                                    size="sm"
+                                                                    color="info"
+                                                                    onClick={() => handleView(group.date, group.items)}
+                                                                >
+                                                                    View
+                                                                </Button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+
+                                                    {/* Totals Row */}
+                                                    <tr className="fw-bold bg-light">
+                                                        <td colSpan="2">Total</td>
+                                                        <td>{totalCount}</td>
+                                                        <td>₹ {totalAmount.toFixed(2)}</td>
+                                                        <td>{totalWeight.toFixed(2)} kg</td>
+                                                        <td>{totalAverage}</td>
+                                                        <td>—</td>
                                                     </tr>
-                                                ))
+                                                </>
                                             ) : (
                                                 <tr>
-                                                    <td colSpan="5" className="text-center text-muted">
+                                                    <td colSpan="7" className="text-center text-muted">
                                                         No data available for the selected date range
                                                     </td>
                                                 </tr>

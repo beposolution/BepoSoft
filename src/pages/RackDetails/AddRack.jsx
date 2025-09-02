@@ -40,6 +40,20 @@ const AddRack = () => {
         }
     };
 
+    const postDataLog = async (payload) => {
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                payload,
+                { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+            );
+        } catch (err) {
+            // don't block UX on log failure
+            console.warn("DataLog create failed:", err?.response?.data || err?.message);
+            toast.warn("Rack created, but logging failed.");
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!selectedWarehouse || !rackName || !numberOfColumns) {
@@ -48,13 +62,37 @@ const AddRack = () => {
         }
 
         try {
-            await axios.post(`${import.meta.env.VITE_APP_KEY}rack/add/`, {
-                warehouse: selectedWarehouse,
-                rack_name: rackName,
+            const payload = {
+                warehouse: Number(selectedWarehouse),
+                rack_name: rackName.trim(),
                 number_of_columns: Number(numberOfColumns),
-            }, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            };
+
+            const createRes = await axios.post(
+                `${import.meta.env.VITE_APP_KEY}rack/add/`,
+                payload,
+                { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+            );
+
+            const created = createRes?.data;
+
+            const ORDER_ID_FOR_LOG = null;
+
+            const afterSnapshot = {
+                id: created?.id,
+                warehouse: created?.warehouse ?? payload.warehouse,
+                warehouse_name: created?.warehouse_name,
+                rack_name: created?.rack_name ?? payload.rack_name,
+                number_of_columns: created?.number_of_columns ?? payload.number_of_columns,
+                column_names: created?.column_names ?? [],
+            };
+
+            const datalogPayload = {
+                ...(ORDER_ID_FOR_LOG ? { order: ORDER_ID_FOR_LOG } : {}),
+                before_data: { Action: "New rack Adding" },
+                after_data: { Data: afterSnapshot },
+            };
+            postDataLog(datalogPayload);
 
             toast.success("Rack added successfully");
             setRackName("");
@@ -62,10 +100,15 @@ const AddRack = () => {
             setSelectedWarehouse("");
             viewRacks();
         } catch (error) {
-            toast.error("Failed to add rack");
+            const msg =
+                error?.response?.data?.detail ||
+                error?.response?.data?.error ||
+                error?.message ||
+                "Failed to add rack";
+            console.error("Rack create failed:", error?.response || error);
+            toast.error(msg);
         }
     };
-
     useEffect(() => {
         viewWarehouse();
         viewRacks();

@@ -487,7 +487,7 @@ const StatisticsApplications = () => {
                                         <Table bordered responsive className="mb-0 text-center">
                                             <thead>
                                                 <tr>
-                                                    <th>Transfer</th>
+                                                    <th>DBR</th>
                                                     <th>Opening Balance</th>
                                                     <th>Credit</th>
                                                     <th>Debit</th>
@@ -686,7 +686,7 @@ const StatisticsApplications = () => {
                                                     <th>#</th>
                                                     <th>Date</th>
                                                     <th>Parcel Service</th>
-                                                    <th>Average Amount (₹)</th>
+                                                    <th>Average</th>
                                                 </tr>
                                             </thead>
                                             <tbody>

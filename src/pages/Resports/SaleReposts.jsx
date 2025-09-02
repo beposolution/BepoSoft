@@ -40,17 +40,28 @@ const BasicTable = () => {
             .then((response) => {
                 const rawData = response.data.sales_report;
 
-                let processedData = rawData;
+                let processedData = rawData.map(entry => {
+                    // remove Invoice Rejected orders
+                    const filteredOrders = (entry.order_details || []).filter(
+                        order => order.status !== "Invoice Rejected"
+                    );
+
+                    return {
+                        ...entry,
+                        order_details: filteredOrders
+                    };
+                }).filter(entry => entry.order_details.length > 0); // keep only valid entries
 
                 if (role === "CSO") {
-                    processedData = rawData.map(entry => {
-                        const filteredOrders = (entry.order_details || []).filter(order => order.family__name?.toLowerCase() !== "bepocart");
-
+                    processedData = processedData.map(entry => {
+                        const filteredOrders = (entry.order_details || []).filter(
+                            order => order.family__name?.toLowerCase() !== "bepocart"
+                        );
                         return {
                             ...entry,
                             order_details: filteredOrders,
                         };
-                    }).filter(entry => entry.order_details.length > 0); // Only keep entries with valid orders
+                    }).filter(entry => entry.order_details.length > 0);
                 }
 
                 setSalesData(processedData);

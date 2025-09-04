@@ -130,7 +130,7 @@ const BasicTable = () => {
                                                                 {orders.reduce((sum, order) => sum + (Number(order.total_weight) || 0), 0)} KG
                                                             </td>
                                                             <td>
-                                                                {orders.reduce((sum, order) => sum + (Number(order.total_parcel_amount) || 0), 0)}
+                                                                {orders.reduce((sum, order) => sum + (Number(order.total_parcel_amount) || 0), 0).toFixed(2)}
                                                             </td>
                                                             <td></td>
                                                         </tr>

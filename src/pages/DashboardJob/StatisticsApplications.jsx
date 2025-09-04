@@ -423,7 +423,7 @@ const StatisticsApplications = () => {
                                             {/* First Row (was Column 1) */}
                                             <div className="p-4 border rounded-4 shadow-sm bg-light d-flex flex-column justify-content-center align-items-center text-center">
                                                 <p className="text-muted fw-medium mb-2">Total Division Status</p>
-                                                <h5 className="mb-1">Today's Total Volume : <span className='text-primary'>₹<strong>{familyOrders2?.today_total_amount}</strong></span></h5>
+                                                <h5 className="mb-1">Today's Total Volume : <span className='text-primary'>₹<strong>{familyOrders2?.today_total_amount?.toFixed(2)}</strong></span></h5>
                                                 <p className="text-muted fw-medium mb-1">
                                                     Today's Total Orders : <span className="fw-bold text-dark"><strong>{familyOrders2?.today_count}</strong></span>
                                                 </p>
@@ -440,7 +440,7 @@ const StatisticsApplications = () => {
                                                 </h6>
                                                 <hr className="my-3" style={{ width: "60%" }} />
                                                 <h5 className="mb-1">
-                                                    This Month's Total Volume : <span className='text-primary'>₹<strong>{familyOrders2?.month_total_amount}</strong></span>
+                                                    This Month's Total Volume : <span className='text-primary'>₹<strong>{familyOrders2?.month_total_amount?.toFixed(2)}</strong></span>
                                                 </h5>
                                                 <p className="text-muted fw-medium mb-1">
                                                     This Month's Total Orders : <span className="fw-bold text-dark"><strong>{familyOrders2?.month_count}</strong></span>

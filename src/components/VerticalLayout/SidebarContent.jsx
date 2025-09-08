@@ -707,6 +707,9 @@ const SidebarContent = (props) => {
                     <Link to="/orders/tracking/report/">{props.t("Order Tracking Report")}</Link>
                   </li>
                   <li>
+                    <Link to="/gst/report/">{props.t("GST Report")}</Link>
+                  </li>
+                  <li>
                     <Link to="/calllog/reports/">{props.t("Call Log Report")}</Link>
                   </li>
                 </ul>

@@ -384,6 +384,7 @@ import Packed from "../pages/Order/Packed";
 import ReadyToShip from "../pages/Order/ReadyToShip";
 import Shipped from "../pages/Order/Shipped";
 import InvoiceRejected from "../pages/Order/InvoiceRejected";
+import GSTReport from "../pages/Resports/GSTReport";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -607,6 +608,7 @@ const authProtectedRoutes = [
   { path: "/product/add-excel/", component: <ExcelOrderCreation /> },
   { path: "/monthly/sales/report/", component: <MonthlySalesReport /> },
   { path: "/orders/tracking/report/", component: <TrackingReport /> },
+  { path: "/gst/report/", component: <GSTReport /> },
 
 
 

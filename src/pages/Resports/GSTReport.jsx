@@ -67,7 +67,7 @@ const GSTReport = () => {
         "Daman & Diu": "25",
         "Dadra & Nagar Haveli": "26",
         "Maharashtra": "27",
-        "Andhra Pradesh": "28",
+        // "Andhra Pradesh": "28",
         "Karnataka": "29",
         "Goa": "30",
         "Lakshadweep": "31",

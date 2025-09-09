@@ -306,11 +306,9 @@ const EcommerenceAddProduct = () => {
         size: values.size ?? "",
         groupID: values.groupID || "",
         landing_cost: Number(values.landing_cost ?? 0),
-        product_category: values.product_category ? Number(values.product_category) : null,
-        rack_details: normalizeRackDetails(rackDetailsLocal),
-        retail_price: Number(values.retail_price ?? 0),
         product_category: getCategoryName(values.product_category) ?? values.product_category,
         rack_details: normalizeRackDetails(rackDetailsLocal),
+        retail_price: Number(values.retail_price ?? 0),
     });
 
     const buildBeforeSnapshot = (raw) => {
@@ -329,11 +327,9 @@ const EcommerenceAddProduct = () => {
             size: raw.size ?? "",
             groupID: raw.groupID || "",
             landing_cost: Number(raw.landing_cost ?? 0),
-            product_category: raw.product_category != null ? Number(raw.product_category) : null,
-            rack_details: normalizeRackDetails(raw.rack_details),
-            retail_price: Number(raw.retail_price ?? 0),
             product_category: getCategoryName(raw.product_category) ?? raw.product_category,
             rack_details: normalizeRackDetails(raw.rack_details),
+            retail_price: Number(raw.retail_price ?? 0),
         };
     };
 

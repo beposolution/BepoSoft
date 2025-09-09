@@ -8,6 +8,7 @@ import Select from "react-select";
 const AddWarehousePage = () => {
   const [warehouseData, setWarehouseData] = useState({
     name: "",
+    address: "",
     location: "",
     country_code: "",
   });
@@ -15,7 +16,7 @@ const AddWarehousePage = () => {
   const [warehouseDetails, setWarehouseDetails] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [modal, setModal] = useState(false); // Modal visibility state
+  const [modal, setModal] = useState(false);
   const [selectedWarehouse, setSelectedWarehouse] = useState(null);
   const [countryCodes, setCountryCodes] = useState([]);
   const token = localStorage.getItem("token");
@@ -67,12 +68,12 @@ const AddWarehousePage = () => {
         ...prev,
         {
           ...warehouseData,
-          id: response.data.id, // Assuming the response contains the ID of the new warehouse
+          id: response.data.id,
         },
       ]);
 
       // Clear the input fields
-      setWarehouseData({ name: "", location: "", country_code: "" });
+      setWarehouseData({ name: "", address: "", location: "", country_code: "" });
     } catch (error) {
       toast.error("Error adding warehouse");
     }
@@ -118,6 +119,7 @@ const AddWarehousePage = () => {
     setSelectedWarehouse(warehouse);
     setWarehouseData({
       name: warehouse.name,
+      address: warehouse.address,
       location: warehouse.location,
       country_code: warehouse.country_code,
     });
@@ -157,7 +159,7 @@ const AddWarehousePage = () => {
         <div className="page-content">
           <Container fluid={true}>
             <Row>
-              <Col lg={3}>
+              <Col lg={2}>
                 <div className="mb-3">
                   <Label htmlFor="formrow-Inputpurpose_of_payment">Warehouse Name</Label>
                   <input
@@ -171,7 +173,22 @@ const AddWarehousePage = () => {
                 </div>
               </Col>
 
-              <Col lg={3}>
+              <Col lg={2}>
+                <div className="mb-3">
+                  <Label htmlFor="formrow-InputZip">Warehouse Address</Label>
+                  <Input
+                    type="text"
+                    name="address"
+                    className="form-control"
+                    id="warehouse-address"
+                    placeholder="Enter warehouse address"
+                    onChange={handleChange}
+                    value={warehouseData.address}
+                  />
+                </div>
+              </Col>
+
+              <Col lg={2}>
                 <div className="mb-3">
                   <Label htmlFor="formrow-InputZip">Warehouse Location</Label>
                   <Input
@@ -186,7 +203,7 @@ const AddWarehousePage = () => {
                 </div>
               </Col>
 
-              <Col lg={3}>
+              <Col lg={2}>
                 <div className="mb-3">
                   <Label htmlFor="formrow-InputZip">Country</Label>
                   <Select
@@ -239,6 +256,7 @@ const AddWarehousePage = () => {
                   <tr>
                     <th scope="col">#</th>
                     <th scope="col">Warehouse</th>
+                    <th scope="col">Address</th>
                     <th scope="col">Location</th>
                     <th scope="col">Country</th>
                     <th scope="col">Action</th>
@@ -250,6 +268,7 @@ const AddWarehousePage = () => {
                       <tr key={index}>
                         <th scope="row">{index + 1}</th>
                         <td>{data.name}</td>
+                        <td>{data.address}</td>
                         <td>{data.location}</td>
                         <td>{data.country}</td>
                         <td>
@@ -295,6 +314,14 @@ const AddWarehousePage = () => {
             name="name"
             id="name"
             value={warehouseData.name}
+            onChange={handleChange}
+          />
+          <Label for="address" style={{ marginTop: "10px" }}>Warehouse Address</Label>
+          <Input
+            type="text"
+            name="address"
+            id="address"
+            value={warehouseData.address}
             onChange={handleChange}
           />
           <Label for="location" style={{ marginTop: "10px" }}>

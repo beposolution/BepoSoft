@@ -177,6 +177,7 @@ const BasicTable = () => {
                                                             <th>#</th>
                                                             <th>INVOICE NO</th>
                                                             <th>CUSTOMER</th>
+                                                            <th>STAFF</th>
                                                             <th>STATUS</th>
                                                             <th>BILL AMOUNT</th>
                                                             <th>CREATED AT</th>
@@ -196,6 +197,7 @@ const BasicTable = () => {
                                                                     <th scope="row">{indexOfFirstItem + index + 1}</th>
                                                                     <td>{order.invoice}</td>
                                                                     <td>{order.customer.name}</td>
+                                                                    <td>{order.manage_staff}</td>
                                                                     <td>{order.status}</td>
                                                                     <td>{order.total_amount}</td>
                                                                     <td>{order.order_date}</td>

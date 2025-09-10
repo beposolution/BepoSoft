@@ -825,7 +825,11 @@ const FormLayouts = () => {
                                                                 isOpen={modalOpen}
                                                                 toggle={toggleModal}
                                                                 onSelectProduct={handleProductSelect}
-                                                                warehouseId={formik.values.warehouses || ''}
+                                                                warehouseId={
+                                                                    formik.values.warehouses
+                                                                        ? formik.values.warehouses
+                                                                        : (loggedUser && loggedUser.warehouse_id ? loggedUser.warehouse_id : '')
+                                                                }
                                                             />
                                                         </CardBody>
                                                     </Card>

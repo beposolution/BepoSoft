@@ -385,6 +385,9 @@ import ReadyToShip from "../pages/Order/ReadyToShip";
 import Shipped from "../pages/Order/Shipped";
 import InvoiceRejected from "../pages/Order/InvoiceRejected";
 import GSTReport from "../pages/Resports/GSTReport";
+import WarehouseToWarehouseOrderCreation from "../pages/Order/WarehouseToWarehouseOrderCreation";
+import WarehouseToWarehouseOrderList from "../pages/Order/WarehouseToWarehouseOrderList";
+import WarehouseOrderDetails from "../pages/Order/WarehouseToWarehouseOrderDetails";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -507,6 +510,9 @@ const authProtectedRoutes = [
   { path: "/orders/readytoship", component: <ReadyToShip /> },
   { path: "/orders/shipped", component: <Shipped /> },
   { path: "/orders/invoicerejected", component: <InvoiceRejected /> },
+  { path: "/create/warehouse/order/", component: <WarehouseToWarehouseOrderCreation /> },
+  { path: "/view/warehouse/order/", component: <WarehouseToWarehouseOrderList /> },
+  { path: "/warehouse/orders/list/:invoice", component: <WarehouseOrderDetails /> },
 
   { path: "/order/warehousee/", component: <Warehouseorders /> },
 

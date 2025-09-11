@@ -346,6 +346,23 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <RiOrderPlayLine size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("Purchase Requests")}</span>
+                </Link>
+                <ul>
+                  <li>
+                    <Link to="/create/warehouse/order/">{props.t("Purchase Creation")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/view/warehouse/order/">{props.t("Purchase List")}</Link>
+                  </li>
+                </ul>
+              </li>
+            ) : null}
+
             {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'BDO' || role === "BDM" || role === 'CEO' || role === 'CSO' || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">

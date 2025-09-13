@@ -240,10 +240,10 @@ const WarehouseToWarehouseOrderCreation = () => {
                         <Label>From Warehouse</Label>
                         <Input
                           type="select"
-                          {...formik.getFieldProps("from_warehouse")}
+                          {...formik.getFieldProps("to_warehouse")}
                           invalid={
-                            formik.touched.from_warehouse &&
-                            !!formik.errors.from_warehouse
+                            formik.touched.to_warehouse &&
+                            !!formik.errors.to_warehouse
                           }
                         >
                           <option value="">Select</option>
@@ -261,10 +261,10 @@ const WarehouseToWarehouseOrderCreation = () => {
                         <Label>Request To</Label>
                         <Input
                           type="select"
-                          {...formik.getFieldProps("to_warehouse")}
+                          {...formik.getFieldProps("from_warehouse")}
                           invalid={
-                            formik.touched.to_warehouse &&
-                            !!formik.errors.to_warehouse
+                            formik.touched.from_warehouse &&
+                            !!formik.errors.from_warehouse
                           }
                         >
                           <option value="">Select</option>

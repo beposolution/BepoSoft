@@ -19,11 +19,10 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 const WarehouseOrderDetails = () => {
     const { invoice } = useParams();
     const [orderDetails, setOrderDetails] = useState(null);
-    console.log("orderDetails", orderDetails);
     const [loading, setLoading] = useState(true);
     const token = localStorage.getItem("token");
+
     const [rackModalOpen, setRackModalOpen] = useState(false);
-    const [selectedRackDetails, setSelectedRackDetails] = useState([]);
     const [selectedItemId, setSelectedItemId] = useState(null);
     const [rackEdits, setRackEdits] = useState([]);
 
@@ -74,7 +73,7 @@ const WarehouseOrderDetails = () => {
         try {
             await axios.put(
                 `${import.meta.env.VITE_APP_KEY}warehouse/order/item/update/${selectedItemId}/`,
-                { rack_details: rackEdits },                 // send the edited array
+                { rack_details: rackEdits }, // now has `quantity`
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             toast.success("Rack details updated");
@@ -182,8 +181,6 @@ const WarehouseOrderDetails = () => {
                                             <p><strong>Name:</strong> {orderDetails.receiiver_warehouse_name}</p>
                                             <p><strong>Company:</strong> {orderDetails.company_name}</p>
                                             <p><strong>Status:</strong> {orderDetails.status}</p>
-                                            {/* <p><strong>Shipping Charge:</strong> ₹{orderDetails.shipping_charge}</p> */}
-                                            {/* <p><strong>Updated At:</strong> {new Date(orderDetails.updated_at).toLocaleString()}</p> */}
                                         </div>
                                     </div>
                                 </CardBody>
@@ -236,7 +233,7 @@ const WarehouseOrderDetails = () => {
                                                                 onClick={() => {
                                                                     const parsed = parseRackDetails(it.product_rack).map(r => ({
                                                                         ...r,
-                                                                        qty: r.rack_lock || r.locked_qty || 0,   // pre-fill current locked qty
+                                                                        quantity: r.rack_lock || r.locked_qty || 0, // renamed field
                                                                     }));
                                                                     setSelectedItemId(it.id);
                                                                     setRackEdits(parsed);
@@ -277,7 +274,6 @@ const WarehouseOrderDetails = () => {
                             <Card className="bordered-card">
                                 <CardBody>
                                     <CardTitle className="h4 mb-3">Update Order Status</CardTitle>
-
                                     <div
                                         style={{
                                             display: "flex",
@@ -327,6 +323,7 @@ const WarehouseOrderDetails = () => {
                 </Container>
             </div>
 
+            {/* Rack Details Modal */}
             <Modal isOpen={rackModalOpen} toggle={() => setRackModalOpen(false)} size="lg">
                 <ModalHeader toggle={() => setRackModalOpen(false)}>Rack Details</ModalHeader>
                 <ModalBody>
@@ -342,7 +339,7 @@ const WarehouseOrderDetails = () => {
                                     <th>Usability</th>
                                     <th>Rack Stock</th>
                                     <th>Locked Qty</th>
-                                    <th>Qty</th> {/* new editable column */}
+                                    <th>Quantity</th> {/* renamed column */}
                                 </tr>
                             </thead>
                             <tbody>
@@ -355,14 +352,14 @@ const WarehouseOrderDetails = () => {
                                             <td>{rack.column_name}</td>
                                             <td>{rack.usability}</td>
                                             <td>{rack.rack_stock}</td>
-                                            <td>{rack.rack_lock ?? rack.locked_qty ?? 0}</td> {/* read-only */}
+                                            <td>{rack.rack_lock ?? rack.locked_qty ?? 0}</td>
                                             <td>
                                                 <input
                                                     type="number"
                                                     className="form-control form-control-sm"
                                                     min={0}
                                                     max={maxQty}
-                                                    value={rack.qty ?? 0}
+                                                    value={rack.quantity ?? 0}
                                                     onChange={e => {
                                                         const value = Math.min(
                                                             maxQty,
@@ -370,7 +367,7 @@ const WarehouseOrderDetails = () => {
                                                         );
                                                         setRackEdits(prev =>
                                                             prev.map((r, idx) =>
-                                                                idx === i ? { ...r, qty: value } : r
+                                                                idx === i ? { ...r, quantity: value } : r
                                                             )
                                                         );
                                                     }}

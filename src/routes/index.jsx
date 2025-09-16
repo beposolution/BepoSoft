@@ -388,6 +388,7 @@ import GSTReport from "../pages/Resports/GSTReport";
 import WarehouseToWarehouseOrderCreation from "../pages/Order/WarehouseToWarehouseOrderCreation";
 import WarehouseToWarehouseOrderList from "../pages/Order/WarehouseToWarehouseOrderList";
 import WarehouseOrderDetails from "../pages/Order/WarehouseToWarehouseOrderDetails";
+import DateProductReport from "../pages/Resports/DateProductReport";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -615,6 +616,7 @@ const authProtectedRoutes = [
   { path: "/monthly/sales/report/", component: <MonthlySalesReport /> },
   { path: "/orders/tracking/report/", component: <TrackingReport /> },
   { path: "/gst/report/", component: <GSTReport /> },
+  { path: "/date/product/report/", component: <DateProductReport /> },
 
 
 

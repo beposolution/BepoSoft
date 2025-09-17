@@ -366,6 +366,7 @@ const FormLayouts = () => {
             price: product.rate,
             quantity: product.rowQuantity,
             remark: product.remark || "",
+            cod_amount: product.cod_amount || null,
             status: "Waiting For Approval",
             note: product.note || "",
             date: currentDate,
@@ -681,6 +682,26 @@ const FormLayouts = () => {
                                                                 className="mt-1"
                                                             />
                                                         </td>
+                                                        {/* <td>
+                                                            <select
+                                                                className="form-select"
+                                                                value={product.remark || ""}
+                                                                onChange={(e) => {
+                                                                    const value = e.target.value;
+                                                                    setSelectedProducts((prev) =>
+                                                                        prev.map((p) =>
+                                                                            p.uniqueId === product.uniqueId ? { ...p, remark: value } : p
+                                                                        )
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <option value="">Select Remark</option>
+                                                                <option value="return">Return</option>
+                                                                <option value="cod_return">COD Return</option>
+                                                                <option value="refund">Refund</option>
+                                                                <option value="exchange">Exchange</option>
+                                                            </select>
+                                                        </td> */}
                                                         <td>
                                                             <select
                                                                 className="form-select"
@@ -696,9 +717,31 @@ const FormLayouts = () => {
                                                             >
                                                                 <option value="">Select Remark</option>
                                                                 <option value="return">Return</option>
+                                                                <option value="cod_return">COD Return</option>
                                                                 <option value="refund">Refund</option>
                                                                 <option value="exchange">Exchange</option>
                                                             </select>
+
+                                                            {product.remark === "cod_return" && (
+                                                                <Input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    step="0.01"
+                                                                    placeholder="COD Amount"
+                                                                    className="mt-1"
+                                                                    value={product.cod_amount || ""}
+                                                                    onChange={(e) => {
+                                                                        const val = e.target.value;
+                                                                        setSelectedProducts((prev) =>
+                                                                            prev.map((p) =>
+                                                                                p.uniqueId === product.uniqueId
+                                                                                    ? { ...p, cod_amount: val }
+                                                                                    : p
+                                                                            )
+                                                                        );
+                                                                    }}
+                                                                />
+                                                            )}
                                                         </td>
                                                         {/* <td>
                                                             <Button

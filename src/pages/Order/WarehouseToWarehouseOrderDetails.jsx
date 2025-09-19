@@ -19,12 +19,14 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 const WarehouseOrderDetails = () => {
     const { invoice } = useParams();
     const [orderDetails, setOrderDetails] = useState(null);
+    // console.log("orderDetails", orderDetails)
     const [loading, setLoading] = useState(true);
     const token = localStorage.getItem("token");
 
     const [rackModalOpen, setRackModalOpen] = useState(false);
     const [selectedItemId, setSelectedItemId] = useState(null);
     const [rackEdits, setRackEdits] = useState([]);
+    const [currentItemQty, setCurrentItemQty] = useState(0);
 
     useEffect(() => {
         const fetchOrderDetails = async () => {
@@ -70,6 +72,11 @@ const WarehouseOrderDetails = () => {
     };
 
     const handleRackSave = async () => {
+        const totalSelected = rackEdits.reduce((sum, r) => sum + (r.quantity || 0), 0);
+        if (totalSelected !== currentItemQty) {
+            toast.error(`Total rack quantity (${totalSelected}) must equal ordered quantity (${currentItemQty}).`);
+            return;
+        }
         try {
             await axios.put(
                 `${import.meta.env.VITE_APP_KEY}warehouse/order/item/update/${selectedItemId}/`,
@@ -227,21 +234,44 @@ const WarehouseOrderDetails = () => {
                                                         <td>{it.product_name}</td>
                                                         <td>{it.quantity}</td>
                                                         <td>
-                                                            <Button
+                                                            {/* <Button
                                                                 color="info"
                                                                 size="sm"
                                                                 onClick={() => {
                                                                     const parsed = parseRackDetails(it.product_rack).map(r => ({
                                                                         ...r,
-                                                                        quantity: r.rack_lock || r.locked_qty || 0, // renamed field
+                                                                        quantity: r.quantity ?? 0,
                                                                     }));
                                                                     setSelectedItemId(it.id);
                                                                     setRackEdits(parsed);
+                                                                    setCurrentItemQty(it.quantity);
+                                                                    setRackModalOpen(true);
+                                                                }}
+                                                            >
+                                                                Edit
+                                                            </Button> */}
+
+                                                            <Button
+                                                                color="info"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    // Parse product_rack string into an array
+                                                                    const parsed = parseRackDetails(it.product_rack).map(r => ({
+                                                                        ...r,
+                                                                        // prefill quantity if available in rack_details, else 0
+                                                                        quantity:
+                                                                            (it.rack_details?.find(rd => rd.rack_id === r.rack_id)?.quantity) ?? 0,
+                                                                    }));
+                                                                    setSelectedItemId(it.id);
+                                                                    setRackEdits(parsed);
+                                                                    setCurrentItemQty(it.quantity);
                                                                     setRackModalOpen(true);
                                                                 }}
                                                             >
                                                                 Edit
                                                             </Button>
+
+
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -307,12 +337,12 @@ const WarehouseOrderDetails = () => {
                                             ))}
                                         </select>
 
-                                        <Button
+                                        {/* <Button
                                             color="primary"
                                             onClick={() => updateStatus(orderDetails.id, orderDetails.status)}
                                         >
                                             Save
-                                        </Button>
+                                        </Button> */}
                                     </div>
                                 </CardBody>
                             </Card>
@@ -330,55 +360,68 @@ const WarehouseOrderDetails = () => {
                     {rackEdits.length === 0 ? (
                         <p className="text-center m-0">No rack details available.</p>
                     ) : (
-                        <Table bordered responsive>
-                            <thead className="table-light">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Rack Name</th>
-                                    <th>Column</th>
-                                    <th>Usability</th>
-                                    <th>Rack Stock</th>
-                                    <th>Locked Qty</th>
-                                    <th>Quantity</th> {/* renamed column */}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {rackEdits.map((rack, i) => {
-                                    const maxQty = (rack.rack_stock || 0) - (rack.rack_lock || rack.locked_qty || 0);
-                                    return (
-                                        <tr key={i}>
-                                            <td>{i + 1}</td>
-                                            <td>{rack.rack_name}</td>
-                                            <td>{rack.column_name}</td>
-                                            <td>{rack.usability}</td>
-                                            <td>{rack.rack_stock}</td>
-                                            <td>{rack.rack_lock ?? rack.locked_qty ?? 0}</td>
-                                            <td>
-                                                <input
-                                                    type="number"
-                                                    className="form-control form-control-sm"
-                                                    min={0}
-                                                    max={maxQty}
-                                                    value={rack.quantity ?? 0}
-                                                    onChange={e => {
-                                                        const value = Math.min(
-                                                            maxQty,
-                                                            Math.max(0, parseInt(e.target.value || 0, 10))
-                                                        );
-                                                        setRackEdits(prev =>
-                                                            prev.map((r, idx) =>
-                                                                idx === i ? { ...r, quantity: value } : r
-                                                            )
-                                                        );
-                                                    }}
-                                                />
-                                                <small className="text-muted">max {maxQty}</small>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </Table>
+                        <>
+                            <Table bordered responsive>
+                                <thead className="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Rack Name</th>
+                                        <th>Column</th>
+                                        <th>Usability</th>
+                                        <th>Rack Stock</th>
+                                        <th>Locked Qty</th>
+                                        <th>Quantity</th> {/* renamed column */}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rackEdits.map((rack, i) => {
+                                        const maxQty = (rack.rack_stock || 0) - (rack.rack_lock || rack.locked_qty || 0);
+                                        return (
+                                            <tr key={i}>
+                                                <td>{i + 1}</td>
+                                                <td>{rack.rack_name}</td>
+                                                <td>{rack.column_name}</td>
+                                                <td>{rack.usability}</td>
+                                                <td>{rack.rack_stock}</td>
+                                                <td>{rack.rack_lock ?? rack.locked_qty ?? 0}</td>
+                                                <td>
+                                                    <input
+                                                        type="number"
+                                                        className="form-control form-control-sm"
+                                                        min={0}
+                                                        max={maxQty}
+                                                        value={rack.quantity ?? 0}
+                                                        onChange={e => {
+                                                            const value = Math.min(
+                                                                maxQty,
+                                                                Math.max(0, parseInt(e.target.value || 0, 10))
+                                                            );
+                                                            setRackEdits(prev =>
+                                                                prev.map((r, idx) =>
+                                                                    idx === i ? { ...r, quantity: value } : r
+                                                                )
+                                                            );
+                                                        }}
+                                                    />
+                                                    <small className="text-muted">max {maxQty}</small>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </Table>
+                            {rackEdits.length > 0 && (
+                                <div className="mt-3">
+                                    <strong>Total Selected: </strong>
+                                    {rackEdits.reduce((sum, r) => sum + (r.quantity || 0), 0)} / {currentItemQty}
+                                    {rackEdits.reduce((sum, r) => sum + (r.quantity || 0), 0) !== currentItemQty && (
+                                        <p className="text-danger mt-1">
+                                            ⚠ Total quantity across racks must equal {currentItemQty}.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+                        </>
                     )}
                 </ModalBody>
                 <ModalFooter>

@@ -19,7 +19,6 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 const WarehouseOrderDetails = () => {
     const { invoice } = useParams();
     const [orderDetails, setOrderDetails] = useState(null);
-    // console.log("orderDetails", orderDetails)
     const [loading, setLoading] = useState(true);
     const token = localStorage.getItem("token");
 
@@ -114,6 +113,11 @@ const WarehouseOrderDetails = () => {
 
     const { items = [] } = orderDetails;
     const totalQty = items.reduce((sum, it) => sum + (it.quantity || 0), 0);
+
+    const handleDeliveryNote = () => {
+        const deliverynoteurl = `${import.meta.env.VITE_APP_IMAGE}/warehouse/deliverynote/${orderDetails.id}/`;
+        window.open(deliverynoteurl, "_blank");
+    }
 
     return (
         <React.Fragment>
@@ -344,6 +348,29 @@ const WarehouseOrderDetails = () => {
                                             Save
                                         </Button> */}
                                     </div>
+                                </CardBody>
+                            </Card>
+                        </Col>
+                    </Row>
+
+                    <Row>
+                        <Col xl={12}>
+                            <Card>
+                                <CardBody>
+                                    <CardTitle className="mb-4">DOWNLOAD DELIVERY NOTE</CardTitle>
+                                    <Row>
+                                        <Col md={4}>
+                                            <div className="d-flex align-items-center mb-3">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-primary w-100"
+                                                    onClick={() => handleDeliveryNote()}
+                                                >
+                                                    Download Delivery Note
+                                                </button>
+                                            </div>
+                                        </Col>
+                                    </Row>
                                 </CardBody>
                             </Card>
                         </Col>

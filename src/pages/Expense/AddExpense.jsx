@@ -97,15 +97,28 @@ const FormLayouts = () => {
         fetchData();
     }, [token]);
 
-
+    const sendDatalog = async (formData) => {
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                {
+                    before_data: { status: "Expense Created" },
+                    after_data: { data: formData },
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+        } catch (err) {
+            console.error("Failed to send datalog:", err?.response || err);
+        }
+    };
 
     const formik = useFormik({
         initialValues: {
             company: "",
             payed_by: "",
             bank: "",
-            purpose_of_payment: "",   // ID
-            purpose_name: "",         // NEW: normalized name like "emi"
+            purpose_of_payment: "",
+            purpose_name: "",
             amount: "",
             expense_date: new Date().toISOString().split('T')[0],
             transaction_id: "",
@@ -147,7 +160,6 @@ const FormLayouts = () => {
                 then: (schema) => schema.required("category is required"),
             }),
 
-            // ✅ Require loan only when purpose is EMI
             loan: Yup.number().when("purpose_name", {
                 is: (val) => (val || "").toLowerCase() === "emi",
                 then: (schema) => schema.required("Loan is required").integer("Loan ID must be an integer"),
@@ -175,7 +187,7 @@ const FormLayouts = () => {
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
                     toast.success("Expense with EMI submitted successfully!");
-                    setSuccessMessage("Expense with EMI submitted successfully!");
+                    await sendDatalog(formData);
                 } else if (values.asset_types === "expenses") {
                     // non-EMI expense
                     delete formData.name;
@@ -188,16 +200,15 @@ const FormLayouts = () => {
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
                     toast.success("Expense submitted successfully!");
-                    setSuccessMessage("Expense submitted successfully!");
+                    await sendDatalog(formData);
                 } else if (values.asset_types === "assets") {
-                    // ✅ Corrected endpoint spelling here
                     await axios.post(
                         `${import.meta.env.VITE_APP_KEY}assest/`,
                         formData,
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
                     toast.success("Asset submitted successfully!");
-                    setSuccessMessage("Asset submitted successfully!");
+                    await sendDatalog(formData);
                 }
 
                 setErrorMessage('');

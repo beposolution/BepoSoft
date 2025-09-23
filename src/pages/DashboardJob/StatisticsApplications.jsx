@@ -21,6 +21,7 @@ const StatisticsApplications = () => {
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
     const [selectedExpenseType, setSelectedExpenseType] = useState(null);
     const [selectedExpenseRows, setSelectedExpenseRows] = useState([]);
+    const [serviceTotals, setServiceTotals] = useState([]);
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -62,6 +63,55 @@ const StatisticsApplications = () => {
 
         setFilteredData(result);
     }, [warehouseData]);
+
+    useEffect(() => {
+        if (!Array.isArray(warehouseData) || warehouseData.length === 0) return;
+
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+        const monthData = warehouseData.filter(item => {
+            if (!item.postoffice_date) return false;
+            const d = new Date(item.postoffice_date);
+            return d >= firstDay && d <= lastDay;
+        });
+
+        // Group by parcel_service and calculate totals
+        const grouped = {};
+        monthData.forEach(item => {
+            const service = item.parcel_service || 'Unknown';
+            const amt = parseFloat(item.parcel_amount) || 0;
+            const wt = (parseFloat(item.actual_weight) || 0) / 1000;
+
+            if (!grouped[service]) {
+                grouped[service] = { totalAmount: 0, totalWeight: 0 };
+            }
+            grouped[service].totalAmount += amt;
+            grouped[service].totalWeight += wt;
+        });
+
+        // Convert to array for the table
+        const rows = Object.entries(grouped).map(([service, { totalAmount, totalWeight }]) => ({
+            parcel_service: service,
+            totalAmount,
+            totalWeight,
+            average: totalWeight > 0 ? (totalAmount / totalWeight).toFixed(2) : "0.00"
+        }));
+
+        setServiceTotals(rows);
+    }, [warehouseData]);
+
+    const grandTotalAmount = serviceTotals.reduce(
+        (sum, item) => sum + (item.totalAmount || 0),
+        0
+    );
+    const grandTotalWeight = serviceTotals.reduce(
+        (sum, item) => sum + (item.totalWeight || 0),
+        0
+    );
+
+    const grandTotalAverage = grandTotalAmount / grandTotalWeight;
 
     useEffect(() => {
         const fetchOrdersData = async () => {
@@ -250,6 +300,10 @@ const StatisticsApplications = () => {
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = now;
+
+    const monthRangeLabel = `${fmtRangeDate(firstDay)} - ${fmtRangeDate(lastDay)}`;
 
     const ordersThisMonth = orders.filter(order => {
         if (!order.order_date) return false;
@@ -679,12 +733,14 @@ const StatisticsApplications = () => {
                                         </Modal>
                                     </div>
                                     <div className="p-3 mt-2 border rounded-4 shadow-sm bg-white">
-                                        <h5 className="text-center text-secondary mb-3">📦 Parcel Summary</h5>
+                                        <h5 className="text-center text-secondary mb-2">📦 Parcel Summary</h5>
+                                        <div className="text-center text-muted mb-1">
+                                            {fmtRangeDate(todayDate)}
+                                        </div>
                                         <Table className="table table-bordered table-sm text-center mb-0">
                                             <thead>
                                                 <tr>
                                                     <th>#</th>
-                                                    <th>Date</th>
                                                     <th>Parcel Service</th>
                                                     <th>Average</th>
                                                 </tr>
@@ -694,7 +750,6 @@ const StatisticsApplications = () => {
                                                     filteredData.map((item, index) => (
                                                         <tr key={index}>
                                                             <th scope="row">{index + 1}</th>
-                                                            <td>{item.postoffice_date}</td>
                                                             <td>{item.parcel_service}</td>
                                                             <td>₹ {item.averageAmount}</td>
                                                         </tr>
@@ -707,6 +762,54 @@ const StatisticsApplications = () => {
                                                     </tr>
                                                 )}
                                             </tbody>
+                                        </Table>
+                                    </div>
+                                    <div className="p-3 mt-2 border rounded-4 shadow-sm bg-white">
+                                        <h5 className="text-center text-secondary mb-2">
+                                            📦 Monthly Parcel Summary
+                                        </h5>
+                                        <p className="text-center text-muted mb-1">
+                                            {monthRangeLabel}
+                                        </p>
+                                        <Table className="table table-bordered table-sm text-center mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Parcel Service</th>
+                                                    <th>Parcel Amount (₹)</th>
+                                                    <th>Actual Weight (kg)</th>
+                                                    <th>Average (₹/kg)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {serviceTotals.length > 0 ? (
+                                                    serviceTotals.map((item, idx) => (
+                                                        <tr key={idx}>
+                                                            <td>{idx + 1}</td>
+                                                            <td>{item.parcel_service}</td>
+                                                            <td>{item.totalAmount.toFixed(2)}</td>
+                                                            <td>{item.totalWeight.toFixed(2)}</td>
+                                                            <td>{item.average}</td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan="5" className="text-center text-muted">
+                                                            No monthly data available
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                            {serviceTotals.length > 0 && (
+                                                <tfoot>
+                                                    <tr className="table-primary fw-bold">
+                                                        <td colSpan="2">Grand Total</td>
+                                                        <td>{grandTotalAmount.toFixed(2)}</td>
+                                                        <td>{grandTotalWeight.toFixed(2)}</td>
+                                                        <td>{grandTotalAverage.toFixed(2)}</td>
+                                                    </tr>
+                                                </tfoot>
+                                            )}
                                         </Table>
                                     </div>
                                 </div>

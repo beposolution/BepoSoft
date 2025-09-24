@@ -16,6 +16,7 @@ const FormLayouts = () => {
     document.title = "New Order | Beposoft";
 
     const token = localStorage.getItem("token");
+    const role = localStorage.getItem("active");
     const [states, setStates] = useState([]);
     const [staffs, setStaffs] = useState([]);
     const [customers, setCustomers] = useState([]);
@@ -35,13 +36,34 @@ const FormLayouts = () => {
     const [banks, setBank] = useState([]);
     const [companys, setCompany] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-
-
+    const [userData, setUserData] = useState();
     const [cartTotalAmount, setCartTotalAmount] = useState(0);
     const [cartTotalDiscount, setCartTotalDiscount] = useState(0);
     const [finalAmount, setFinalAmount] = useState(0);
 
+    const isMarketing = role === "Marketing";
+
     const toggleModal = () => setModalOpen(!modalOpen);
+
+    useEffect(() => {
+        if (isMarketing && userData) {
+            formik.setFieldValue("warehouses", userData);
+        }
+    }, [isMarketing, userData]);
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}profile/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setUserData(response?.data?.data?.warehouse_id);
+            } catch (error) {
+                toast.error('Error fetching user data:', error);
+            }
+        };
+        fetchUserData();
+    }, []);
 
     // Formik setup
     const formik = useFormik({
@@ -690,6 +712,7 @@ const FormLayouts = () => {
                                                         value={formik.values.warehouses}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
+                                                        disabled={isMarketing}
                                                         invalid={formik.touched.warehouses && formik.errors.warehouses}
                                                     >
                                                         <option value="">Choose...</option>

@@ -12,7 +12,6 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const FormLayouts = () => {
-    // Meta title
     document.title = "New Order | Beposoft";
 
     const token = localStorage.getItem("token");
@@ -41,7 +40,7 @@ const FormLayouts = () => {
     const [cartTotalDiscount, setCartTotalDiscount] = useState(0);
     const [finalAmount, setFinalAmount] = useState(0);
 
-    const isMarketing = role === "Marketing";
+    const isMarketing = role === "Marketing" || "BDO" || "BDM";
 
     const toggleModal = () => setModalOpen(!modalOpen);
 

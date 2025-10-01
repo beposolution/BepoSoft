@@ -15,8 +15,10 @@ import { saveAs } from "file-saver";
 import Paginations from "../../components/Common/Pagination";
 
 const GSTReport = () => {
-  const [allData, setAllData] = useState([]);   // unfiltered master copy
-  const [gstData, setGSTData] = useState([]);   // filtered list
+  const [allData, setAllData] = useState([]);
+  // console.log("allData", allData)
+  const [gstData, setGSTData] = useState([]);
+  // console.log("gstData", gstData)
   const [currentPage, setCurrentPage] = useState(1);
   const [perPageData] = useState(10);
   const token = localStorage.getItem("token");
@@ -89,30 +91,144 @@ const GSTReport = () => {
   const currentData = gstData.slice(indexOfFirstItem, indexOfLastItem);
 
   // Excel Export
-  const exportToExcel = () => {
+  // const exportToExcel = () => {
+  //   if (!gstData.length) {
+  //     toast.warning("No data to export");
+  //     return;
+  //   }
+
+  //   const exportRows = [];
+  //   gstData.forEach((row, index) => {
+  //     const groupedByTax = row.items.reduce((acc, item) => {
+  //       (acc[item.tax] = acc[item.tax] || []).push(item);
+  //       return acc;
+  //     }, {});
+  //     Object.entries(groupedByTax).forEach(([taxRate]) => {
+  //       exportRows.push({
+  //         "#": index + 1,
+  //         "GSTIN/UIN Number": row.gst,
+  //         "Receiver Name": row.customerName,
+  //         "Invoice Number": row.invoice,
+  //         "Invoice Date": row.order_date
+  //           ? new Date(row.order_date).toLocaleDateString("en-GB", {
+  //             day: "2-digit",
+  //             month: "short",
+  //             year: "2-digit",
+  //           }).replace(/ /g, "-")
+  //           : "",
+  //         "Invoice Value": "",
+  //         "Place of Supply": stateCodes[row.address]
+  //           ? `${stateCodes[row.address]}-${row.address}`
+  //           : row.address,
+  //         "Reverse Charge": "N",
+  //         "Applicable % of Tax": "",
+  //         "Invoice Type": "Regular B2B",
+  //         "E-Commerce GSTIN": "",
+  //         "Rate": `${taxRate}%`,
+  //         "Taxable Value": "",
+  //         "Cess Amount": "",
+  //       });
+  //     });
+  //   });
+
+  //   const worksheet = XLSX.utils.json_to_sheet(exportRows);
+  //   const workbook = XLSX.utils.book_new();
+  //   XLSX.utils.book_append_sheet(workbook, worksheet, "GST Report");
+  //   const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+  //   saveAs(new Blob([excelBuffer], { type: "application/octet-stream" }), "GST_Report.xlsx");
+  // };
+
+  // const exportToHSNSummary = () => {
+  //   if (!gstData.length) {
+  //     toast.warning("No data to export");
+  //     return;
+  //   }
+
+  //   const summaryMap = {};
+
+  //   gstData.forEach((row) => {
+  //     row.items.forEach((item) => {
+  //       const key = `${item.name}-${item.product}`;
+  //       if (!summaryMap[key]) {
+  //         summaryMap[key] = {
+  //           Description: item.name,
+  //           HSN: item.hsn || "",       // make sure your API gives HSN
+  //           measurement: item.unit || "PCS", // adjust based on your model
+  //           TotalQuantity: 0,
+  //           TaxRate: item.tax,
+  //           TotalTaxableValue: 0,
+  //           IGST: 0,
+  //           CentralTax: 0,
+  //           StateTax: 0,
+  //           Cess: 0,
+  //           TOTAL: 0,
+  //         };
+  //       }
+
+  //       const taxable = parseFloat(item.exclude_price) || 0;
+  //       const qty = item.quantity || 0;
+  //       const rate = parseFloat(item.tax) || 0;
+
+  //       summaryMap[key].TotalQuantity += qty;
+  //       summaryMap[key].TotalTaxableValue += taxable;
+  //       const taxAmount = (taxable * rate) / 100;
+
+  //       // assuming intra-state (CGST+SGST) if gst is available, else IGST
+  //       if (row.gst) {
+  //         summaryMap[key].IGST += taxAmount;
+  //       } else {
+  //         summaryMap[key].CentralTax += taxAmount / 2;
+  //         summaryMap[key].StateTax += taxAmount / 2;
+  //       }
+  //       summaryMap[key].TOTAL =
+  //         summaryMap[key].TotalTaxableValue +
+  //         summaryMap[key].IGST +
+  //         summaryMap[key].CentralTax +
+  //         summaryMap[key].StateTax;
+  //     });
+  //   });
+
+  //   const exportRows = Object.values(summaryMap);
+
+  //   const worksheet = XLSX.utils.json_to_sheet(exportRows);
+  //   const workbook = XLSX.utils.book_new();
+  //   XLSX.utils.book_append_sheet(workbook, worksheet, "HSN Summary");
+  //   const excelBuffer = XLSX.write(workbook, {
+  //     bookType: "xlsx",
+  //     type: "array",
+  //   });
+  //   saveAs(
+  //     new Blob([excelBuffer], { type: "application/octet-stream" }),
+  //     "HSN_Summary.xlsx"
+  //   );
+  // };
+  const exportCombinedExcel = () => {
     if (!gstData.length) {
       toast.warning("No data to export");
       return;
     }
 
-    const exportRows = [];
+    // -------- GST Report Sheet --------
+    const gstRows = [];
     gstData.forEach((row, index) => {
       const groupedByTax = row.items.reduce((acc, item) => {
         (acc[item.tax] = acc[item.tax] || []).push(item);
         return acc;
       }, {});
       Object.entries(groupedByTax).forEach(([taxRate]) => {
-        exportRows.push({
+        gstRows.push({
           "#": index + 1,
           "GSTIN/UIN Number": row.gst,
           "Receiver Name": row.customerName,
           "Invoice Number": row.invoice,
           "Invoice Date": row.order_date
-            ? new Date(row.order_date).toLocaleDateString("en-GB", {
+            ? new Date(row.order_date)
+              .toLocaleDateString("en-GB", {
                 day: "2-digit",
                 month: "short",
                 year: "2-digit",
-              }).replace(/ /g, "-")
+              })
+              .replace(/ /g, "-")
             : "",
           "Invoice Value": "",
           "Place of Supply": stateCodes[row.address]
@@ -128,12 +244,65 @@ const GSTReport = () => {
         });
       });
     });
+    const gstSheet = XLSX.utils.json_to_sheet(gstRows);
 
-    const worksheet = XLSX.utils.json_to_sheet(exportRows);
+    // -------- HSN Summary Sheet --------
+    const summaryMap = {};
+    gstData.forEach((row) => {
+      row.items.forEach((item) => {
+        const key = `${item.name}-${item.product}`;
+        if (!summaryMap[key]) {
+          summaryMap[key] = {
+            Description: item.name,
+            HSN: item.hsn || "",
+            measurement: item.unit || "PCS",
+            TotalQuantity: 0,
+            TaxRate: item.tax,
+            TotalTaxableValue: 0,
+            IGST: 0,
+            CentralTax: 0,
+            StateTax: 0,
+            Cess: 0,
+            TOTAL: 0,
+          };
+        }
+
+        const taxable = parseFloat(item.exclude_price) || 0;
+        const qty = item.quantity || 0;
+        const rate = parseFloat(item.tax) || 0;
+
+        summaryMap[key].TotalQuantity += qty;
+        summaryMap[key].TotalTaxableValue += taxable;
+        const taxAmount = (taxable * rate) / 100;
+
+        if (row.gst) {
+          summaryMap[key].IGST += taxAmount;
+        } else {
+          summaryMap[key].CentralTax += taxAmount / 2;
+          summaryMap[key].StateTax += taxAmount / 2;
+        }
+
+        summaryMap[key].TOTAL =
+          summaryMap[key].TotalTaxableValue +
+          summaryMap[key].IGST +
+          summaryMap[key].CentralTax +
+          summaryMap[key].StateTax;
+      });
+    });
+
+    const hsnRows = Object.values(summaryMap);
+    const hsnSheet = XLSX.utils.json_to_sheet(hsnRows);
+
+    // -------- Create Workbook with 2 Sheets --------
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "GST Report");
+    XLSX.utils.book_append_sheet(workbook, gstSheet, "GST Report");
+    XLSX.utils.book_append_sheet(workbook, hsnSheet, "HSN Summary");
+
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    saveAs(new Blob([excelBuffer], { type: "application/octet-stream" }), "GST_Report.xlsx");
+    saveAs(
+      new Blob([excelBuffer], { type: "application/octet-stream" }),
+      "GST_Report_With_HSN.xlsx"
+    );
   };
 
   return (
@@ -171,11 +340,27 @@ const GSTReport = () => {
                       Filter
                     </Button>
                   </Col>
-                  <Col md={3} className="d-flex align-items-end">
+                  {/* <Col md={3} className="d-flex align-items-end">
                     <Button color="success" onClick={exportToExcel}>
                       Export to Excel
                     </Button>
                   </Col>
+                  <Col md={3} className="d-flex align-items-end">
+                    <Button color="success" onClick={exportToExcel}>
+                      Export GST Report
+                    </Button>
+                  </Col>
+                  <Col md={3} className="d-flex align-items-end">
+                    <Button color="info" onClick={exportToHSNSummary}>
+                      Export HSN Summary
+                    </Button>
+                  </Col> */}
+                  <Col md={3} className="d-flex align-items-end">
+                    <Button color="success" onClick={exportCombinedExcel}>
+                      Export GST + HSN Excel
+                    </Button>
+                  </Col>
+
                 </Row>
 
                 {/* Data Table */}
@@ -215,10 +400,10 @@ const GSTReport = () => {
                               <td>
                                 {row.order_date
                                   ? new Date(row.order_date).toLocaleDateString("en-GB", {
-                                      day: "2-digit",
-                                      month: "short",
-                                      year: "2-digit",
-                                    }).replace(/ /g, "-")
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "2-digit",
+                                  }).replace(/ /g, "-")
                                   : ""}
                               </td>
                               <td></td>

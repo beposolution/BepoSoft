@@ -428,13 +428,13 @@ const TrackingReport = () => {
                             </tr>
                             <tr>
                               <td style={{ border: "1px solid black" }}>
-                                <strong>Total Post Office Weight</strong>
+                                <strong>Total Actual Weight</strong>
                               </td>
                               <td style={{ border: "1px solid black" }}>
                                 <strong>{totals.postWeight.toFixed(2)}</strong>
                               </td>
                               <td style={{ border: "1px solid black" }}>
-                                <strong>Total Actual Weight</strong>
+                                <strong>Total Post Office Weight</strong>
                               </td>
                               <td style={{ border: "1px solid black" }}>
                                 <strong>

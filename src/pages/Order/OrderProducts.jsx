@@ -1157,7 +1157,7 @@ const FormLayouts = () => {
                                             <p><strong>City:</strong> {billingAddress.city}</p>
                                             <p><strong>State:</strong> {billingAddress.state}</p>
                                             <p><strong>Zip Code:</strong> {billingAddress.zipcode}</p>
-                                            <p><strong>GST:</strong> {billingAddress.gst}</p>
+                                            <p><strong>GST:</strong> {billingAddress.gst || "nil"}</p>
                                         </div>
 
                                     </div>

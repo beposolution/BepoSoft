@@ -85,7 +85,7 @@ const BasicTable = () => {
     const filteredOrders = orders.filter(order => {
         const invoice = order.invoice?.toString().toLowerCase() || "";
         const customerName = order.customer?.name?.toLowerCase() || "";
-        const updatedAt = order.updated_at ? new Date(order.updated_at) : null;
+        const order_date = order.order_date ? new Date(order.order_date) : null;
 
         const matchesSearch =
             searchTerm === "" ||
@@ -99,9 +99,19 @@ const BasicTable = () => {
         const matchesStaff =
             selectedStaff === "" || order.manage_staff === selectedStaff;
 
-        const matchesDate =
-            (!startDate || (updatedAt && updatedAt >= new Date(startDate))) &&
-            (!endDate || (updatedAt && updatedAt <= new Date(endDate + "T23:59:59")));
+        const matchesDate = (() => {
+            if (!startDate && !endDate) return true;
+            if (!order_date) return false;
+
+            // Convert to India local date boundaries
+            const localUpdated = new Date(order_date.getTime() - order_date.getTimezoneOffset() * 60000);
+            const start = startDate ? new Date(`${startDate}T00:00:00+05:30`) : null;
+            const end = endDate ? new Date(`${endDate}T23:59:59+05:30`) : null;
+
+            if (start && localUpdated < start) return false;
+            if (end && localUpdated > end) return false;
+            return true;
+        })();
 
         return matchesSearch && matchesStatus && matchesStaff && matchesDate;
     });

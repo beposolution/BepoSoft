@@ -32,6 +32,8 @@ const BasicTable = () => {
     const [role, setRole] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const perPageData = 25;
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
 
     document.title = "Orders | Beposoft";
 
@@ -83,18 +85,25 @@ const BasicTable = () => {
     const filteredOrders = orders.filter(order => {
         const invoice = order.invoice?.toString().toLowerCase() || "";
         const customerName = order.customer?.name?.toLowerCase() || "";
+        const updatedAt = order.updated_at ? new Date(order.updated_at) : null;
 
-        const matchesSearch = searchTerm === "" ||
+        const matchesSearch =
+            searchTerm === "" ||
             invoice.includes(searchTerm.toLowerCase()) ||
             customerName.includes(searchTerm.toLowerCase());
 
-        const matchesStatus = selectedState === "" ||
+        const matchesStatus =
+            selectedState === "" ||
             order.status?.toLowerCase() === selectedState.toLowerCase();
 
-        const matchesStaff = selectedStaff === "" ||
-            order.manage_staff === selectedStaff;
+        const matchesStaff =
+            selectedStaff === "" || order.manage_staff === selectedStaff;
 
-        return matchesSearch && matchesStatus && matchesStaff;
+        const matchesDate =
+            (!startDate || (updatedAt && updatedAt >= new Date(startDate))) &&
+            (!endDate || (updatedAt && updatedAt <= new Date(endDate + "T23:59:59")));
+
+        return matchesSearch && matchesStatus && matchesStaff && matchesDate;
     });
 
     const indexOfLastItem = currentPage * perPageData;
@@ -151,7 +160,7 @@ const BasicTable = () => {
                                 <Input type="text" placeholder="Search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                             </FormGroup>
                         </Col>
-                        <Col md={3}>
+                        <Col md={4}>
                             <FormGroup>
                                 <Label>Filter by Status</Label>
                                 <Input type="select" value={selectedState} onChange={(e) => setSelectedState(e.target.value)}>
@@ -170,7 +179,7 @@ const BasicTable = () => {
                                 </Input>
                             </FormGroup>
                         </Col>
-                        <Col md={3}>
+                        <Col md={4}>
                             <FormGroup>
                                 <Label>Filter by Staff</Label>
                                 <Input type="select" value={selectedStaff} onChange={(e) => setSelectedStaff(e.target.value)}>
@@ -181,7 +190,31 @@ const BasicTable = () => {
                                 </Input>
                             </FormGroup>
                         </Col>
-                        <Col md={2} className="d-flex justify-content-end">
+
+                    </Row>
+                    <Row className="align-items-end mb-3">
+                        <Col md={4}>
+                            <FormGroup>
+                                <Label>From Date</Label>
+                                <Input
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                />
+                            </FormGroup>
+                        </Col>
+
+                        <Col md={4}>
+                            <FormGroup>
+                                <Label>To Date</Label>
+                                <Input
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                />
+                            </FormGroup>
+                        </Col>
+                        <Col md={3} className="d-flex justify-content-end">
                             <Button color="success" onClick={exportToExcel}>Export to Excel</Button>
                         </Col>
                     </Row>

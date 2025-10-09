@@ -164,13 +164,13 @@ const BasicTable = () => {
                 <div className="container-fluid">
                     <Breadcrumbs title="Tables" breadcrumbItem="ORDERS LIST" />
                     <Row className="align-items-end mb-3">
-                        <Col md={4}>
+                        <Col md={3}>
                             <FormGroup>
                                 <Label>Search by Invoice or Customer</Label>
                                 <Input type="text" placeholder="Search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                             </FormGroup>
                         </Col>
-                        <Col md={4}>
+                        <Col md={2}>
                             <FormGroup>
                                 <Label>Filter by Status</Label>
                                 <Input type="select" value={selectedState} onChange={(e) => setSelectedState(e.target.value)}>
@@ -189,7 +189,7 @@ const BasicTable = () => {
                                 </Input>
                             </FormGroup>
                         </Col>
-                        <Col md={4}>
+                        <Col md={2}>
                             <FormGroup>
                                 <Label>Filter by Staff</Label>
                                 <Input type="select" value={selectedStaff} onChange={(e) => setSelectedStaff(e.target.value)}>
@@ -201,9 +201,8 @@ const BasicTable = () => {
                             </FormGroup>
                         </Col>
 
-                    </Row>
-                    <Row className="align-items-end mb-3">
-                        <Col md={4}>
+                   
+                        <Col md={2}>
                             <FormGroup>
                                 <Label>From Date</Label>
                                 <Input
@@ -214,7 +213,7 @@ const BasicTable = () => {
                             </FormGroup>
                         </Col>
 
-                        <Col md={4}>
+                        <Col md={2}>
                             <FormGroup>
                                 <Label>To Date</Label>
                                 <Input
@@ -224,8 +223,10 @@ const BasicTable = () => {
                                 />
                             </FormGroup>
                         </Col>
-                        <Col md={3} className="d-flex justify-content-end">
-                            <Button color="success" onClick={exportToExcel}>Export to Excel</Button>
+                        <Col md={1} >
+                            <FormGroup>
+                                <Button color="success" onClick={exportToExcel}>Export to Excel</Button>
+                            </FormGroup>
                         </Col>
                     </Row>
                     <Row>

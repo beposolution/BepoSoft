@@ -141,6 +141,7 @@ const BasicTable = () => {
         const formattedData = orders.map((order, index) => ({
             "Order #": index + 1,
             "Invoice No": order.invoice,
+            "Company Name": order.company,
             "Order Date": order.order_date,
             "Status": order.status,
             "Customer Name": order.customer.name,
@@ -201,7 +202,7 @@ const BasicTable = () => {
                             </FormGroup>
                         </Col>
 
-                   
+
                         <Col md={2}>
                             <FormGroup>
                                 <Label>From Date</Label>

@@ -13,17 +13,14 @@ const DataLog = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const token = localStorage.getItem("token");
-
-  // pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [perPageData] = useState(20);
 
-  // -------------------- Parsing helpers --------------------
   const parseLooseJSON = (s) => {
     if (typeof s !== "string") return null;
     try {
       return JSON.parse(s);
-    } catch (_) {}
+    } catch (_) { }
 
     try {
       let t = s.trim();
@@ -35,9 +32,7 @@ const DataLog = () => {
       )
         return null;
 
-      // quote unquoted keys: id: 1 -> "id": 1
       t = t.replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*:)/g, '$1"$2"$3');
-      // single quotes to double quotes
       t = t.replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"');
 
       return JSON.parse(t);
@@ -67,7 +62,6 @@ const DataLog = () => {
     return obj;
   };
 
-  // pretty renderers
   const renderKVList = (obj) => {
     if (!obj || typeof obj !== "object") return <span>{String(obj)}</span>;
     const entries = Object.entries(obj);
@@ -103,27 +97,44 @@ const DataLog = () => {
     return <span>{String(val)}</span>;
   };
 
-  // -------------------- Fetch + normalize --------------------
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const { data } = await axios.get(
-          `${import.meta.env.VITE_APP_KEY}datalog/`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        setLogs([]);
+        const allLogs = [];
+        let page = 1;
+        let totalPages = 1;
 
-        const normalized = (data || []).map((log) => {
-          const before = unwrapDataIfLoose(normalizeAny(log.before_data));
-          const after = unwrapDataIfLoose(normalizeAny(log.after_data));
-          return { ...log, before_data: before, after_data: after };
-        });
+        toast.info("Fetching logs, please wait...");
 
-        setLogs(normalized);
+        while (page <= totalPages) {
+          const { data } = await axios.get(
+            `${import.meta.env.VITE_APP_KEY}datalog/?page=${page}&page_size=500`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          const logsArray = Array.isArray(data) ? data : data.results || [];
+          const normalized = logsArray.map((log) => {
+            const before = unwrapDataIfLoose(normalizeAny(log.before_data));
+            const after = unwrapDataIfLoose(normalizeAny(log.after_data));
+            return { ...log, before_data: before, after_data: after };
+          });
+
+          allLogs.push(...normalized);
+          setLogs([...allLogs]);
+
+          const total = data.count || 0;
+          const pageSize = data.page_size || 500;
+          totalPages = Math.ceil(total / pageSize);
+          page++;
+        }
+        toast.success(`Loaded ${allLogs.length} logs successfully`);
       } catch (error) {
         toast.error("Error fetching logs");
       }
     };
-    fetchLogs();
+
+    if (token) fetchLogs();
   }, [token]);
 
   // -------------------- Filters --------------------
@@ -157,12 +168,10 @@ const DataLog = () => {
     setCurrentPage(1);
   }, [searchQuery, startDate, endDate]);
 
-  // -------------------- Pagination --------------------
   const indexOfLastItem = currentPage * perPageData;
   const indexOfFirstItem = indexOfLastItem - perPageData;
   const currentRows = filteredLogs.slice(indexOfFirstItem, indexOfLastItem);
 
-  // -------------------- Export helpers --------------------
   const formatDateTime = (iso) => {
     try {
       return new Date(iso).toLocaleString();
@@ -216,9 +225,9 @@ const DataLog = () => {
             ? before[k]
             : "-";
         const aVal =
-            after && Object.prototype.hasOwnProperty.call(after, k)
-              ? after[k]
-              : "-";
+          after && Object.prototype.hasOwnProperty.call(after, k)
+            ? after[k]
+            : "-";
 
         details.push({
           Staff: log.user_name || "",
@@ -250,9 +259,9 @@ const DataLog = () => {
       const day = isNaN(d.getTime())
         ? "Invalid"
         : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-            2,
-            "0"
-          )}-${String(d.getDate()).padStart(2, "0")}`;
+          2,
+          "0"
+        )}-${String(d.getDate()).padStart(2, "0")}`;
       byDateMap.set(day, (byDateMap.get(day) || 0) + 1);
     });
     const byDate = Array.from(byDateMap.entries())

@@ -15,6 +15,8 @@ const DataLog = () => {
   const token = localStorage.getItem("token");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPageData] = useState(20);
+  const [deleting, setDeleting] = useState(false);
+  const role = localStorage.getItem("active");
 
   const parseLooseJSON = (s) => {
     if (typeof s !== "string") return null;
@@ -97,43 +99,43 @@ const DataLog = () => {
     return <span>{String(val)}</span>;
   };
 
-  useEffect(() => {
-    const fetchLogs = async () => {
-      try {
-        setLogs([]);
-        const allLogs = [];
-        let page = 1;
-        let totalPages = 1;
+  const fetchLogs = async () => {
+    try {
+      setLogs([]);
+      const allLogs = [];
+      let page = 1;
+      let totalPages = 1;
 
-        toast.info("Fetching logs, please wait...");
+      toast.info("Fetching logs, please wait...");
 
-        while (page <= totalPages) {
-          const { data } = await axios.get(
-            `${import.meta.env.VITE_APP_KEY}datalog/?page=${page}&page_size=500`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
+      while (page <= totalPages) {
+        const { data } = await axios.get(
+          `${import.meta.env.VITE_APP_KEY}datalog/?page=${page}&page_size=500`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-          const logsArray = Array.isArray(data) ? data : data.results || [];
-          const normalized = logsArray.map((log) => {
-            const before = unwrapDataIfLoose(normalizeAny(log.before_data));
-            const after = unwrapDataIfLoose(normalizeAny(log.after_data));
-            return { ...log, before_data: before, after_data: after };
-          });
+        const logsArray = Array.isArray(data) ? data : data.results || [];
+        const normalized = logsArray.map((log) => {
+          const before = unwrapDataIfLoose(normalizeAny(log.before_data));
+          const after = unwrapDataIfLoose(normalizeAny(log.after_data));
+          return { ...log, before_data: before, after_data: after };
+        });
 
-          allLogs.push(...normalized);
-          setLogs([...allLogs]);
+        allLogs.push(...normalized);
+        setLogs([...allLogs]);
 
-          const total = data.count || 0;
-          const pageSize = data.page_size || 500;
-          totalPages = Math.ceil(total / pageSize);
-          page++;
-        }
-        toast.success(`Loaded ${allLogs.length} logs successfully`);
-      } catch (error) {
-        toast.error("Error fetching logs");
+        const total = data.count || 0;
+        const pageSize = data.page_size || 500;
+        totalPages = Math.ceil(total / pageSize);
+        page++;
       }
-    };
+      toast.success(`Loaded ${allLogs.length} logs successfully`);
+    } catch (error) {
+      toast.error("Error fetching logs");
+    }
+  };
 
+  useEffect(() => {
     if (token) fetchLogs();
   }, [token]);
 
@@ -271,6 +273,27 @@ const DataLog = () => {
     return { byStaff, byDate };
   };
 
+  const handleDeleteOldLogs = async () => {
+    if (deleting) return; // prevent double click
+
+    if (!window.confirm("Are you sure you want to delete the 100 oldest DataLog entries?")) return;
+
+    try {
+      setDeleting(true);
+      toast.info("Deleting 50 oldest DataLog entries...");
+      const res = await axios.delete(`${import.meta.env.VITE_APP_KEY}datalog/delete/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success(res.data.message || "Deleted successfully");
+      await fetchLogs(); // refresh
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || "Failed to delete logs");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const exportToExcel = () => {
     const rows = filteredLogs;
 
@@ -381,6 +404,18 @@ const DataLog = () => {
                         Export to Excel
                       </Button>
                     </Col>
+                    {role === "ADMIN" && (
+                      <Col md={1} className="d-flex align-items-end mb-2">
+                        <Button
+                          color="danger"
+                          className="w-100"
+                          onClick={handleDeleteOldLogs}
+                          disabled={deleting}
+                        >
+                          {deleting ? "Deleting..." : "Delete"}
+                        </Button>
+                      </Col>
+                    )}
                   </Row>
 
                   <div className="table-responsive">

@@ -144,7 +144,7 @@ const FormLayouts = () => {
         <React.Fragment>
             <div className="page-content">
                 <Container fluid={true}>
-                    <Breadcrumbs title="Forms" breadcrumbItem="Staff Form" />
+                    <Breadcrumbs title="Forms" breadcrumbItem="Customer Form" />
                     <Row>
                         <Col xl={12}>
                             <Card>

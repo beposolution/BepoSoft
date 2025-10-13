@@ -280,7 +280,7 @@ const DataLog = () => {
 
     try {
       setDeleting(true);
-      toast.info("Deleting 50 oldest DataLog entries...");
+      toast.info("Deleting 100 oldest DataLog entries...");
       const res = await axios.delete(`${import.meta.env.VITE_APP_KEY}datalog/delete/`, {
         headers: { Authorization: `Bearer ${token}` },
       });

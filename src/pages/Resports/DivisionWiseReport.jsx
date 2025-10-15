@@ -11,7 +11,9 @@ import * as XLSX from "xlsx";
 const DivisionWiseProductReport = () => {
     const token = localStorage.getItem("token");
     const [reportData, setReportData] = useState([]);
+    // console.log("report", reportData)
     const [transformedData, setTransformedData] = useState({});
+    // console.log("transformedData", transformedData)
     const [allProducts, setAllProducts] = useState([]);
     const [staffData, setStaffData] = useState([]);
     const [productsData, setProductsData] = useState([]);
@@ -114,11 +116,90 @@ const DivisionWiseProductReport = () => {
         }
     }, [staffData, selectedFamily, startDate, endDate]);
 
+    // const transformData = (data, filteredStaffList) => {
+    //     const result = {};
+    //     const allProductsSet = new Set();
+
+    //     // Ensure all products are included regardless of date filter
+    //     productsData.forEach(product => {
+    //         if (product.type === "single") {
+    //             allProductsSet.add(product.name);
+    //         } else if (product.type === "variant" && Array.isArray(product.variantIDs)) {
+    //             product.variantIDs.forEach(variant => {
+    //                 allProductsSet.add(variant.name);
+    //             });
+    //         }
+    //     });
+    //     const staffStatesMap = {};
+
+    //     // Step 1: Create a map of display names using productsData
+    //     const productNameMap = {};
+
+    //     productsData.forEach(product => {
+    //         if (product.type === "single") {
+    //             productNameMap[product.name] = product.name;
+    //         } else if (product.type === "variant" && Array.isArray(product.variantIDs)) {
+    //             product.variantIDs.forEach(variant => {
+    //                 productNameMap[variant.name] = variant.name;
+    //             });
+    //         }
+    //     });
+
+    //     // Step 2: Process report data
+    //     data.forEach(entry => {
+    //         const { staff_id, staff_name, allocated_states, order_state, product_name, quantity } = entry;
+
+    //         // Get display name from map or fallback
+    //         const displayName = productNameMap[product_name] || product_name;
+    //         allProductsSet.add(displayName);
+
+    //         if (!staffStatesMap[staff_id]) {
+    //             staffStatesMap[staff_id] = {
+    //                 name: staff_name,
+    //                 allocatedStates: new Set(allocated_states),
+    //             };
+    //         } else {
+    //             allocated_states.forEach(state => staffStatesMap[staff_id].allocatedStates.add(state));
+    //         }
+
+    //         if (!allocated_states.includes(order_state)) return;
+
+    //         if (!result[staff_id]) result[staff_id] = {};
+    //         if (!result[staff_id][order_state]) result[staff_id][order_state] = {};
+    //         if (!result[staff_id][order_state][displayName]) result[staff_id][order_state][displayName] = 0;
+
+    //         result[staff_id][order_state][displayName] += quantity;
+    //     });
+
+    //     // Step 3: Fill missing products/states with 0 for filtered staff
+    //     filteredStaffList.forEach(staff => {
+    //         const staffId = staff.id;
+    //         const allocatedStates = staff.allocated_states_names || [];
+
+    //         if (!result[staffId]) result[staffId] = {};
+
+    //         allocatedStates.forEach(state => {
+    //             if (!result[staffId][state]) result[staffId][state] = {};
+    //             allProductsSet.forEach(prod => {
+    //                 if (!result[staffId][state][prod]) {
+    //                     result[staffId][state][prod] = 0;
+    //                 }
+    //             });
+    //         });
+    //     });
+
+    //     setTransformedData(result);
+    //     setAllProducts(Array.from(allProductsSet).sort());
+    // };
+
+
+    // Calculate total quantity for each product
+
     const transformData = (data, filteredStaffList) => {
         const result = {};
+        const invoiceCounts = {}; // 🆕 store invoice totals
         const allProductsSet = new Set();
 
-        // Ensure all products are included regardless of date filter
         productsData.forEach(product => {
             if (product.type === "single") {
                 allProductsSet.add(product.name);
@@ -128,11 +209,8 @@ const DivisionWiseProductReport = () => {
                 });
             }
         });
-        const staffStatesMap = {};
 
-        // Step 1: Create a map of display names using productsData
         const productNameMap = {};
-
         productsData.forEach(product => {
             if (product.type === "single") {
                 productNameMap[product.name] = product.name;
@@ -143,54 +221,54 @@ const DivisionWiseProductReport = () => {
             }
         });
 
-        // Step 2: Process report data
         data.forEach(entry => {
-            const { staff_id, staff_name, allocated_states, order_state, product_name, quantity } = entry;
-
-            // Get display name from map or fallback
+            const { staff_id, staff_name, allocated_states, order_state, product_name, quantity, invoice } = entry;
             const displayName = productNameMap[product_name] || product_name;
             allProductsSet.add(displayName);
-
-            if (!staffStatesMap[staff_id]) {
-                staffStatesMap[staff_id] = {
-                    name: staff_name,
-                    allocatedStates: new Set(allocated_states),
-                };
-            } else {
-                allocated_states.forEach(state => staffStatesMap[staff_id].allocatedStates.add(state));
-            }
-
-            if (!allocated_states.includes(order_state)) return;
 
             if (!result[staff_id]) result[staff_id] = {};
             if (!result[staff_id][order_state]) result[staff_id][order_state] = {};
             if (!result[staff_id][order_state][displayName]) result[staff_id][order_state][displayName] = 0;
 
             result[staff_id][order_state][displayName] += quantity;
+
+            // 🆕 Invoice counting logic
+            if (!invoiceCounts[staff_id]) invoiceCounts[staff_id] = {};
+            if (!invoiceCounts[staff_id][order_state]) invoiceCounts[staff_id][order_state] = new Set();
+            invoiceCounts[staff_id][order_state].add(invoice);
         });
 
-        // Step 3: Fill missing products/states with 0 for filtered staff
+        // Fill missing states/products
         filteredStaffList.forEach(staff => {
             const staffId = staff.id;
             const allocatedStates = staff.allocated_states_names || [];
 
             if (!result[staffId]) result[staffId] = {};
+            if (!invoiceCounts[staffId]) invoiceCounts[staffId] = {};
 
             allocatedStates.forEach(state => {
                 if (!result[staffId][state]) result[staffId][state] = {};
+                if (!invoiceCounts[staffId][state]) invoiceCounts[staffId][state] = new Set();
+
                 allProductsSet.forEach(prod => {
-                    if (!result[staffId][state][prod]) {
-                        result[staffId][state][prod] = 0;
-                    }
+                    if (!result[staffId][state][prod]) result[staffId][state][prod] = 0;
                 });
             });
         });
 
-        setTransformedData(result);
+        // Convert invoice set lengths to numbers
+        const invoiceTotals = {};
+        Object.entries(invoiceCounts).forEach(([staffId, states]) => {
+            invoiceTotals[staffId] = {};
+            Object.entries(states).forEach(([state, invSet]) => {
+                invoiceTotals[staffId][state] = invSet.size;
+            });
+        });
+
+        setTransformedData({ result, invoiceTotals });
         setAllProducts(Array.from(allProductsSet).sort());
     };
 
-    // Calculate total quantity for each product
     const productTotals = {};
     allProducts.forEach(prod => {
         productTotals[prod] = 0;
@@ -353,6 +431,7 @@ const DivisionWiseProductReport = () => {
                                                 <tr>
                                                     <th className="sticky-col sticky-col-0" style={{ border: "1px solid #dee2e6", width: "60px" }}>#</th>
                                                     <th className="sticky-col sticky-col-1" style={{ border: "1px solid #dee2e6", width: "140px" }}>Staff</th>
+                                                    <th style={{ border: "1px solid #dee2e6", width: "100px" }}>Invoices</th>
                                                     <th className="sticky-col sticky-col-2" style={{ border: "1px solid #dee2e6", width: "200px" }}>Allocated States</th>
                                                     {allProducts.map((prod, i) => (
                                                         <th key={i}>{prod}</th>
@@ -365,7 +444,8 @@ const DivisionWiseProductReport = () => {
                                                         <td colSpan={3 + allProducts.length}>No data available</td>
                                                     </tr>
                                                 ) : (
-                                                    Object.entries(transformedData).map(([staffId, states], staffIdx) => {
+                                                    // Object.entries(transformedData).map(([staffId, states], staffIdx) => {
+                                                    Object.entries(transformedData.result || {}).map(([staffId, states], staffIdx) => {
                                                         const stateEntries = Object.entries(states);
                                                         const staff = staffData.find((s) => String(s.id) === String(staffId));
 
@@ -386,6 +466,9 @@ const DivisionWiseProductReport = () => {
                                                                             rowSpan={stateEntries.length}
                                                                         >
                                                                             {staff ? staff.name : "Unknown"}
+                                                                        </td>
+                                                                        <td rowSpan={stateEntries.length} style={{ fontWeight: "500" }}>
+                                                                            {Object.values(transformedData.invoiceTotals[staffId] || {}).reduce((a, b) => a + b, 0)}
                                                                         </td>
                                                                     </>
                                                                 )}

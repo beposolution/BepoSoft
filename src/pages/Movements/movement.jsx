@@ -256,7 +256,7 @@ const Movement = () => {
             wsData.push([`${category.family?.toUpperCase()} FAMILY`]);
             // Header
             wsData.push([
-                "SL No", "Invoice No", "Customer", "Phone", "Pincode", "Box", "COD (₹)", "Weight (g)",
+                "SL No", "Invoice No", "Customer", "Phone", "Pincode", "State", "Box", "COD (₹)", "Weight (g)",
                 "Volume Weight (kg)", "Actual Weight (g)", "Parcel Amount (₹)", "Tracking ID",
                 "Parcel Service", "Packed By", "Verified By"
             ]);
@@ -280,6 +280,7 @@ const Movement = () => {
                         warehouse.customer,
                         warehouse.phone,
                         warehouse.zip_code,
+                        warehouse.order_state,
                         warehouse.box,
                         order.cod_amount,
                         warehouse.weight,

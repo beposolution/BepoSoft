@@ -244,6 +244,7 @@ const BasicTable = () => {
                                                         <th>Image</th>
                                                         <th>Name</th>
                                                         <th>HSN CODE</th>
+                                                        <th>category</th>
                                                         <th>TYPE</th>
                                                         <th>UNIT</th>
                                                         <th>STOCK</th>
@@ -274,6 +275,7 @@ const BasicTable = () => {
                                                                     {truncateText(product.name, 30)}
                                                                 </td>
                                                                 <td>{product?.hsn_code}</td>
+                                                                <td>{product?.product_category}</td>
                                                                 <td>{product?.type}</td>
                                                                 <td>{product?.unit}</td>
                                                                 <td>{product.stock}</td>

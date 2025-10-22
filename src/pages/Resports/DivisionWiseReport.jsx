@@ -16,7 +16,6 @@ const DivisionWiseProductReport = () => {
     // console.log("transformedData", transformedData)
     const [allProducts, setAllProducts] = useState([]);
     const [staffData, setStaffData] = useState([]);
-    const [productsData, setProductsData] = useState([]);
     const [familyData, setFamilyData] = useState([]);
     const [selectedFamily, setSelectedFamily] = useState(null);
     const [startDate, setStartDate] = useState("");
@@ -36,22 +35,6 @@ const DivisionWiseProductReport = () => {
         };
 
         fetchFamilyData();
-    }, []);
-
-    useEffect(() => {
-        const fetchProductsData = async () => {
-            try {
-                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}products/`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-
-                setProductsData(response?.data?.data || []);
-            } catch (error) {
-                toast.error("Error fetching staff data");
-            }
-        };
-
-        fetchProductsData();
     }, []);
 
     useEffect(() => {
@@ -116,129 +99,46 @@ const DivisionWiseProductReport = () => {
         }
     }, [staffData, selectedFamily, startDate, endDate]);
 
-    // const transformData = (data, filteredStaffList) => {
-    //     const result = {};
-    //     const allProductsSet = new Set();
-
-    //     // Ensure all products are included regardless of date filter
-    //     productsData.forEach(product => {
-    //         if (product.type === "single") {
-    //             allProductsSet.add(product.name);
-    //         } else if (product.type === "variant" && Array.isArray(product.variantIDs)) {
-    //             product.variantIDs.forEach(variant => {
-    //                 allProductsSet.add(variant.name);
-    //             });
-    //         }
-    //     });
-    //     const staffStatesMap = {};
-
-    //     // Step 1: Create a map of display names using productsData
-    //     const productNameMap = {};
-
-    //     productsData.forEach(product => {
-    //         if (product.type === "single") {
-    //             productNameMap[product.name] = product.name;
-    //         } else if (product.type === "variant" && Array.isArray(product.variantIDs)) {
-    //             product.variantIDs.forEach(variant => {
-    //                 productNameMap[variant.name] = variant.name;
-    //             });
-    //         }
-    //     });
-
-    //     // Step 2: Process report data
-    //     data.forEach(entry => {
-    //         const { staff_id, staff_name, allocated_states, order_state, product_name, quantity } = entry;
-
-    //         // Get display name from map or fallback
-    //         const displayName = productNameMap[product_name] || product_name;
-    //         allProductsSet.add(displayName);
-
-    //         if (!staffStatesMap[staff_id]) {
-    //             staffStatesMap[staff_id] = {
-    //                 name: staff_name,
-    //                 allocatedStates: new Set(allocated_states),
-    //             };
-    //         } else {
-    //             allocated_states.forEach(state => staffStatesMap[staff_id].allocatedStates.add(state));
-    //         }
-
-    //         if (!allocated_states.includes(order_state)) return;
-
-    //         if (!result[staff_id]) result[staff_id] = {};
-    //         if (!result[staff_id][order_state]) result[staff_id][order_state] = {};
-    //         if (!result[staff_id][order_state][displayName]) result[staff_id][order_state][displayName] = 0;
-
-    //         result[staff_id][order_state][displayName] += quantity;
-    //     });
-
-    //     // Step 3: Fill missing products/states with 0 for filtered staff
-    //     filteredStaffList.forEach(staff => {
-    //         const staffId = staff.id;
-    //         const allocatedStates = staff.allocated_states_names || [];
-
-    //         if (!result[staffId]) result[staffId] = {};
-
-    //         allocatedStates.forEach(state => {
-    //             if (!result[staffId][state]) result[staffId][state] = {};
-    //             allProductsSet.forEach(prod => {
-    //                 if (!result[staffId][state][prod]) {
-    //                     result[staffId][state][prod] = 0;
-    //                 }
-    //             });
-    //         });
-    //     });
-
-    //     setTransformedData(result);
-    //     setAllProducts(Array.from(allProductsSet).sort());
-    // };
-
-
-    // Calculate total quantity for each product
 
     const transformData = (data, filteredStaffList) => {
         const result = {};
-        const invoiceCounts = {}; // 🆕 store invoice totals
-        const allProductsSet = new Set();
+        const invoiceCounts = {};
+        const allCategoriesSet = new Set();
 
-        productsData.forEach(product => {
-            if (product.type === "single") {
-                allProductsSet.add(product.name);
-            } else if (product.type === "variant" && Array.isArray(product.variantIDs)) {
-                product.variantIDs.forEach(variant => {
-                    allProductsSet.add(variant.name);
-                });
-            }
-        });
-
-        const productNameMap = {};
-        productsData.forEach(product => {
-            if (product.type === "single") {
-                productNameMap[product.name] = product.name;
-            } else if (product.type === "variant" && Array.isArray(product.variantIDs)) {
-                product.variantIDs.forEach(variant => {
-                    productNameMap[variant.name] = variant.name;
-                });
-            }
-        });
-
+        // Collect all categories from data
         data.forEach(entry => {
-            const { staff_id, staff_name, allocated_states, order_state, product_name, quantity, invoice } = entry;
-            const displayName = productNameMap[product_name] || product_name;
-            allProductsSet.add(displayName);
-
-            if (!result[staff_id]) result[staff_id] = {};
-            if (!result[staff_id][order_state]) result[staff_id][order_state] = {};
-            if (!result[staff_id][order_state][displayName]) result[staff_id][order_state][displayName] = 0;
-
-            result[staff_id][order_state][displayName] += quantity;
-
-            // 🆕 Invoice counting logic
-            if (!invoiceCounts[staff_id]) invoiceCounts[staff_id] = {};
-            if (!invoiceCounts[staff_id][order_state]) invoiceCounts[staff_id][order_state] = new Set();
-            invoiceCounts[staff_id][order_state].add(invoice);
+            const catName = entry.category_name || "Uncategorized";
+            allCategoriesSet.add(catName);
         });
 
-        // Fill missing states/products
+        // Main aggregation
+        data.forEach(entry => {
+            const {
+                staff_id,
+                order_state,
+                category_name,
+                quantity,
+                invoice,
+            } = entry;
+
+            const catName = category_name || "Uncategorized";
+            const state = order_state || "Unknown";
+
+            // Initialize staff/state/category hierarchy
+            if (!result[staff_id]) result[staff_id] = {};
+            if (!result[staff_id][state]) result[staff_id][state] = {};
+            if (!result[staff_id][state][catName]) result[staff_id][state][catName] = 0;
+
+            // Sum quantity
+            result[staff_id][state][catName] += quantity || 0;
+
+            // Track unique invoices
+            if (!invoiceCounts[staff_id]) invoiceCounts[staff_id] = {};
+            if (!invoiceCounts[staff_id][state]) invoiceCounts[staff_id][state] = new Set();
+            invoiceCounts[staff_id][state].add(invoice);
+        });
+
+        // Ensure every staff/state has all categories (even if zero)
         filteredStaffList.forEach(staff => {
             const staffId = staff.id;
             const allocatedStates = staff.allocated_states_names || [];
@@ -250,13 +150,13 @@ const DivisionWiseProductReport = () => {
                 if (!result[staffId][state]) result[staffId][state] = {};
                 if (!invoiceCounts[staffId][state]) invoiceCounts[staffId][state] = new Set();
 
-                allProductsSet.forEach(prod => {
-                    if (!result[staffId][state][prod]) result[staffId][state][prod] = 0;
+                allCategoriesSet.forEach(cat => {
+                    if (!result[staffId][state][cat]) result[staffId][state][cat] = 0;
                 });
             });
         });
 
-        // Convert invoice set lengths to numbers
+        // Convert invoice sets to counts
         const invoiceTotals = {};
         Object.entries(invoiceCounts).forEach(([staffId, states]) => {
             invoiceTotals[staffId] = {};
@@ -266,15 +166,17 @@ const DivisionWiseProductReport = () => {
         });
 
         setTransformedData({ result, invoiceTotals });
-        setAllProducts(Array.from(allProductsSet).sort());
+        setAllProducts(Array.from(allCategoriesSet).sort());
     };
+
 
     const productTotals = {};
     allProducts.forEach(prod => {
         productTotals[prod] = 0;
     });
 
-    Object.values(transformedData).forEach(states => {
+    // Use transformedData.result instead of transformedData
+    Object.values(transformedData.result || {}).forEach(states => {
         Object.values(states).forEach(products => {
             allProducts.forEach(prod => {
                 productTotals[prod] += products[prod] || 0;
@@ -493,6 +395,7 @@ const DivisionWiseProductReport = () => {
                                                     <td className="sticky-col sticky-col-2" style={{ fontWeight: "bold", background: "#f0f0f0", border: "1px solid #dee2e6" }}>
                                                         {grandTotal}
                                                     </td>
+                                                    <td className="sticky-col sticky-col-0" style={{ fontWeight: "bold", background: "#f0f0f0", border: "1px solid #dee2e6" }}></td>
                                                     {allProducts.map((prod, i) => (
                                                         <td key={`total-${i}`} style={{ fontWeight: "bold", background: "#f0f0f0", border: "1px solid #dee2e6" }}>
                                                             {productTotals[prod] || 0}

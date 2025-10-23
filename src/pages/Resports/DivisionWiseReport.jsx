@@ -166,6 +166,13 @@ const DivisionWiseProductReport = () => {
 
         setTransformedData({ result, invoiceTotals });
         setAllProducts(Array.from(allCategoriesSet).sort());
+
+        // Compute grand total of invoices
+        const totalInvoices = Object.values(invoiceTotals).reduce((sum, states) => {
+            return sum + Object.values(states).reduce((s, v) => s + v, 0);
+        }, 0);
+
+        setTransformedData({ result, invoiceTotals, totalInvoices });
     };
 
 
@@ -331,12 +338,12 @@ const DivisionWiseProductReport = () => {
                                         <Table bordered className="text-center">
                                             <thead className="table-light">
                                                 <tr>
-                                                    <th className="sticky-col sticky-col-0" style={{ border: "1px solid #dee2e6", width: "60px" }}>#</th>
-                                                    <th className="sticky-col sticky-col-1" style={{ border: "1px solid #dee2e6", width: "140px" }}>Staff</th>
+                                                    <th className="sticky-col sticky-col-0" style={{ border: "1px solid #dee2e6", width: "60px", background: "#00bdb4" }}>#</th>
+                                                    <th className="sticky-col sticky-col-1" style={{ border: "1px solid #dee2e6", width: "140px", background: "#00bdb4" }}>Staff</th>
                                                     <th style={{ border: "1px solid #dee2e6", width: "100px" }}>Invoices</th>
-                                                    <th className="sticky-col sticky-col-2" style={{ border: "1px solid #dee2e6", width: "200px" }}>Allocated States</th>
+                                                    <th className="sticky-col sticky-col-2" style={{ border: "1px solid #dee2e6", width: "200px", background: "#00bdb4" }}>Allocated States</th>
                                                     {allProducts.map((prod, i) => (
-                                                        <th key={i}>{prod}</th>
+                                                        <th style={{ border: "1px solid #dee2e6", width: "200px", background: "#00bdb4" }} key={i}>{prod}</th>
                                                     ))}
                                                 </tr>
                                             </thead>
@@ -390,14 +397,16 @@ const DivisionWiseProductReport = () => {
                                             </tbody>
                                             <tfoot>
                                                 <tr>
-                                                    <td className="sticky-col sticky-col-0" style={{ fontWeight: "bold", background: "#f0f0f0", border: "1px solid #dee2e6" }}>Total</td>
-                                                    <td className="sticky-col sticky-col-1" style={{ fontWeight: "bold", background: "#f0f0f0", border: "1px solid #dee2e6" }}></td>
-                                                    <td className="sticky-col sticky-col-0" style={{ fontWeight: "bold", background: "#f0f0f0", border: "1px solid #dee2e6" }}></td>
-                                                    <td className="sticky-col sticky-col-2" style={{ fontWeight: "bold", background: "#f0f0f0", border: "1px solid #dee2e6" }}>
+                                                    <td className="sticky-col sticky-col-0" style={{ fontWeight: "bold", background: "#00bdb4", color: "#0a0a0aff", border: "1px solid #dee2e6" }}>Total</td>
+                                                    <td className="sticky-col sticky-col-1" style={{ fontWeight: "bold", background: "#00bdb4", color: "#0a0a0aff", border: "1px solid #dee2e6" }}></td>
+                                                    <td style={{ fontWeight: "bold",  border: "1px solid #dee2e6" }}>
+                                                        {transformedData.totalInvoices || 0}
+                                                    </td>
+                                                    <td className="sticky-col sticky-col-2" style={{ fontWeight: "bold", background: "#00bdb4", color: "#0a0a0aff", border: "1px solid #dee2e6" }}>
                                                         {grandTotal}
                                                     </td>
                                                     {allProducts.map((prod, i) => (
-                                                        <td key={`total-${i}`} style={{ fontWeight: "bold", background: "#f0f0f0", border: "1px solid #dee2e6" }}>
+                                                        <td key={`total-${i}`} style={{ fontWeight: "bold", background: "#00bdb4", color: "#0a0a0aff", border: "1px solid #dee2e6" }}>
                                                             {productTotals[prod] || 0}
                                                         </td>
                                                     ))}

@@ -391,10 +391,10 @@ const DivisionWiseProductReport = () => {
                                                 <tr>
                                                     <td className="sticky-col sticky-col-0" style={{ fontWeight: "bold", background: "#f0f0f0", border: "1px solid #dee2e6" }}>Total</td>
                                                     <td className="sticky-col sticky-col-1" style={{ fontWeight: "bold", background: "#f0f0f0", border: "1px solid #dee2e6" }}></td>
+                                                    <td className="sticky-col sticky-col-0" style={{ fontWeight: "bold", background: "#f0f0f0", border: "1px solid #dee2e6" }}></td>
                                                     <td className="sticky-col sticky-col-2" style={{ fontWeight: "bold", background: "#f0f0f0", border: "1px solid #dee2e6" }}>
                                                         {grandTotal}
                                                     </td>
-                                                    <td className="sticky-col sticky-col-0" style={{ fontWeight: "bold", background: "#f0f0f0", border: "1px solid #dee2e6" }}></td>
                                                     {allProducts.map((prod, i) => (
                                                         <td key={`total-${i}`} style={{ fontWeight: "bold", background: "#f0f0f0", border: "1px solid #dee2e6" }}>
                                                             {productTotals[prod] || 0}

@@ -189,29 +189,30 @@ const DivisionWiseProductReport = () => {
         const rows = [];
 
         // Header Row
-        const header = ["#", "Staff", "State", ...allProducts];
+        const header = ["#", "Staff", "State", "Invoices", ...allProducts];
         rows.push(header);
 
-        // Data Rows
         let count = 1;
-        Object.entries(transformedData).forEach(([staffId, states]) => {
+
+        // Use transformedData.result instead of transformedData
+        Object.entries(transformedData.result || {}).forEach(([staffId, states]) => {
             const staff = staffData.find((s) => String(s.id) === String(staffId));
             const staffName = staff ? staff.name : "Unknown";
 
-            Object.entries(states).forEach(([state, products]) => {
-                const row = [count++, staffName, state];
+            Object.entries(states).forEach(([stateName, products]) => {
+                const invoiceCount = transformedData.invoiceTotals?.[staffId]?.[stateName] || 0;
+                const row = [count++, staffName, stateName, invoiceCount];
+
                 allProducts.forEach(prod => {
                     row.push(products[prod] || 0);
                 });
+
                 rows.push(row);
             });
         });
 
-        // Total Row
-        const totalRow = ["Total", "", grandTotal];
-        allProducts.forEach(prod => {
-            totalRow.push(productTotals[prod] || 0);
-        });
+        // Add total row
+        const totalRow = ["Total", "", "", "", ...allProducts.map(prod => productTotals[prod] || 0)];
         rows.push(totalRow);
 
         // Create and download Excel file

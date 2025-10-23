@@ -60,19 +60,18 @@ const DivisionWiseProductReport = () => {
     useEffect(() => {
         const fetchReportData = async () => {
             try {
-                const res = await axios.get(`${import.meta.env.VITE_APP_KEY}product-wise/report/`, {
-                    headers: { Authorization: `Bearer ${token}` }
+                const params = {};
+
+                if (selectedFamily) params.family = selectedFamily;
+                if (startDate) params.start_date = startDate;
+                if (endDate) params.end_date = endDate;
+
+                const res = await axios.get(`${import.meta.env.VITE_APP_KEY}product-wise/filter/report/`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                    params: params,
                 });
 
-                let data = res?.data?.data || [];
-
-                // Date filtering logic
-                if (startDate) {
-                    data = data.filter(d => new Date(d.order_date) >= new Date(startDate));
-                }
-                if (endDate) {
-                    data = data.filter(d => new Date(d.order_date) <= new Date(endDate));
-                }
+                const data = res?.data?.data || [];
 
                 const filteredStaff = staffData.filter(
                     staff =>

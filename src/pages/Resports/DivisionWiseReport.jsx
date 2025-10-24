@@ -386,9 +386,15 @@ const DivisionWiseProductReport = () => {
                                                                     style={{ border: "1px solid #dee2e6", background: "white" }}
                                                                 >
                                                                     {state}
+                                                                    <div style={{ fontSize: "12px", color: "gray" }}>
+                                                                        ({transformedData.invoiceTotals?.[staffId]?.[state] || 0} invoices)
+                                                                    </div>
                                                                 </td>
+
                                                                 {allProducts.map((prod, i) => (
-                                                                    <td style={{ border: "1px solid #dee2e6" }} key={i}>{products[prod] || 0}</td>
+                                                                    <td style={{ border: "1px solid #dee2e6" }} key={i}>
+                                                                        {products[prod] || 0}
+                                                                    </td>
                                                                 ))}
                                                             </tr>
                                                         ));
@@ -399,7 +405,7 @@ const DivisionWiseProductReport = () => {
                                                 <tr>
                                                     <td className="sticky-col sticky-col-0" style={{ fontWeight: "bold", background: "#00bdb4", color: "#0a0a0aff", border: "1px solid #dee2e6" }}>Total</td>
                                                     <td className="sticky-col sticky-col-1" style={{ fontWeight: "bold", background: "#00bdb4", color: "#0a0a0aff", border: "1px solid #dee2e6" }}></td>
-                                                    <td style={{ fontWeight: "bold",  border: "1px solid #dee2e6" }}>
+                                                    <td style={{ fontWeight: "bold", border: "1px solid #dee2e6" }}>
                                                         {transformedData.totalInvoices || 0}
                                                     </td>
                                                     <td className="sticky-col sticky-col-2" style={{ fontWeight: "bold", background: "#00bdb4", color: "#0a0a0aff", border: "1px solid #dee2e6" }}>

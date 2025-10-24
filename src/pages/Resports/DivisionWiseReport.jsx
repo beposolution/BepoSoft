@@ -201,29 +201,106 @@ const DivisionWiseProductReport = () => {
 
         let count = 1;
 
-        // Use transformedData.result instead of transformedData
+        // Grand totals
+        let grandInvoiceTotal = 0;
+        const grandProductTotals = {};
+        allProducts.forEach((prod) => (grandProductTotals[prod] = 0));
+
+        // Loop for each staff
         Object.entries(transformedData.result || {}).forEach(([staffId, states]) => {
             const staff = staffData.find((s) => String(s.id) === String(staffId));
             const staffName = staff ? staff.name : "Unknown";
 
-            Object.entries(states).forEach(([stateName, products]) => {
-                const invoiceCount = transformedData.invoiceTotals?.[staffId]?.[stateName] || 0;
-                const row = [count++, staffName, stateName, invoiceCount];
+            let staffInvoiceTotal = 0;
+            const staffProductTotals = {};
+            allProducts.forEach((prod) => (staffProductTotals[prod] = 0));
 
-                allProducts.forEach(prod => {
-                    row.push(products[prod] || 0);
+            // Loop through states
+            Object.entries(states).forEach(([stateName, products]) => {
+                const invoiceCount =
+                    transformedData.invoiceTotals?.[staffId]?.[stateName] || 0;
+                staffInvoiceTotal += invoiceCount;
+
+                // accumulate product totals per staff
+                allProducts.forEach((prod) => {
+                    staffProductTotals[prod] += products[prod] || 0;
                 });
 
+                const row = [count++, staffName, stateName, invoiceCount];
+                allProducts.forEach((prod) => row.push(products[prod] || 0));
                 rows.push(row);
+            });
+
+            // Add TOTAL row for staff
+            const totalRow = [
+                "",
+                `${staffName} TOTAL`,
+                "",
+                staffInvoiceTotal,
+                ...allProducts.map((prod) => staffProductTotals[prod] || 0),
+            ];
+            rows.push(totalRow);
+
+            // Add empty spacer row for readability
+            const emptyRow = new Array(header.length).fill("");
+            rows.push(emptyRow);
+
+            // accumulate grand totals
+            grandInvoiceTotal += staffInvoiceTotal;
+            allProducts.forEach((prod) => {
+                grandProductTotals[prod] += staffProductTotals[prod];
             });
         });
 
-        // Add total row
-        const totalRow = ["Total", "", "", "", ...allProducts.map(prod => productTotals[prod] || 0)];
-        rows.push(totalRow);
+        // Add GRAND TOTAL row at the end
+        const grandRow = [
+            "",
+            "GRAND TOTAL (All Staffs)",
+            "",
+            grandInvoiceTotal,
+            ...allProducts.map((prod) => grandProductTotals[prod] || 0),
+        ];
+        rows.push(grandRow);
 
-        // Create and download Excel file
+        // Workbook Creation
         const ws = XLSX.utils.aoa_to_sheet(rows);
+
+        // 🔸 Apply styles
+        const range = XLSX.utils.decode_range(ws["!ref"]);
+        for (let R = 1; R <= range.e.r; R++) {
+            const secondCell = ws[XLSX.utils.encode_cell({ r: R, c: 1 })];
+            if (!secondCell || !secondCell.v) continue;
+
+            // Staff TOTAL rows
+            if (String(secondCell.v).includes("TOTAL") && !String(secondCell.v).includes("GRAND")) {
+                for (let C = 0; C <= range.e.c; C++) {
+                    const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[cellRef]) ws[cellRef] = {};
+                    ws[cellRef].s = {
+                        fill: { fgColor: { rgb: "FFF9C4" } }, // Light yellow
+                        font: { bold: true },
+                    };
+                }
+            }
+
+            // GRAND TOTAL row
+            if (String(secondCell.v).includes("GRAND TOTAL")) {
+                for (let C = 0; C <= range.e.c; C++) {
+                    const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[cellRef]) ws[cellRef] = {};
+                    ws[cellRef].s = {
+                        fill: { fgColor: { rgb: "C8E6C9" } }, // Light green
+                        font: { bold: true },
+                    };
+                }
+            }
+        }
+
+        // 🔸 Adjust column widths
+        const colWidths = header.map(() => ({ wch: 15 }));
+        ws["!cols"] = colWidths;
+
+        // Export Excel
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Division-wise Report");
         XLSX.writeFile(wb, "division_wise_product_report.xlsx");

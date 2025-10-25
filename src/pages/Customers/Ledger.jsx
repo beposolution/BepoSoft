@@ -23,7 +23,9 @@ import "react-toastify/dist/ReactToastify.css";
 const BasicTable = () => {
     const { id } = useParams();
     const [orders, setOrders] = useState([]);
+    // console.log("orders", orders)
     const [filteredOrders, setFilteredOrders] = useState([]);
+    // console.log("filtered order", filteredOrders)
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const name = localStorage.getItem('name');
@@ -33,6 +35,7 @@ const BasicTable = () => {
     const [endDate, setEndDate] = useState("");
     const [companyFilter, setCompanyFilter] = useState("");
     const [companys, setCompany] = useState([]);
+    // console.log("company", companys)
     const [banks, setBanks] = useState([]);
 
     const tableRef = useRef(null);
@@ -172,36 +175,66 @@ const BasicTable = () => {
         const input = tableRef.current;
         const pdf = new jsPDF("p", "mm", "a4");
 
-        // Set font to bold and define font size for the heading
+        // Get company name and customer name
+        const companyName =
+            filteredOrders.length > 0
+                ? filteredOrders[0].company.toUpperCase()
+                : name.toUpperCase();
+
+        const customerName = filteredOrders[0]?.customer_name || "Customer";
+
+        // Find full company details from the 'companys' array
+        const selectedCompany = companys.find(
+            (c) => c.name.toUpperCase() === filteredOrders[0]?.company?.toUpperCase()
+        );
+
+        // Construct company address string
+        const companyAddress = selectedCompany
+            ? `${selectedCompany.address || ""}, ${selectedCompany.city || ""}, ${selectedCompany.country || ""} - ${selectedCompany.zip || ""}`
+            : "Address not available";
+
+        // Set up document width
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+
+        // === COMPANY NAME ===
         pdf.setFont("helvetica", "bold");
         pdf.setFontSize(16);
+        const companyTextWidth = pdf.getTextDimensions(companyName).w;
+        const companyX = (pdfWidth - companyTextWidth) / 2;
+        pdf.text(companyName, companyX, 20);
 
-        // Prepare the heading text in uppercase
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const titleText = `${name.toUpperCase()} COMPLETE PDF LEDGER`;
-        const textWidth = pdf.getTextDimensions(titleText).w;
-        const xPos = (pdfWidth - textWidth) / 2;
+        // === COMPANY ADDRESS ===
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(12);
+        const addressTextWidth = pdf.getTextDimensions(companyAddress).w;
+        const addressX = (pdfWidth - addressTextWidth) / 2;
+        pdf.text(companyAddress, addressX, 27);
 
-        // Add centered, bold, and uppercase heading at the top
-        pdf.text(titleText, xPos, 20);
+        // === CUSTOMER NAME ===
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(13);
+        const customerLabel = `Customer Name: ${customerName}`;
+        const customerTextWidth = pdf.getTextDimensions(customerLabel).w;
+        const customerX = (pdfWidth - customerTextWidth) / 2;
+        pdf.text(customerLabel, customerX, 34);
 
-        // Draw a line below the heading
+        // === ──────────────── Divider Line ===
         pdf.setLineWidth(0.5);
-        pdf.line(10, 25, pdfWidth - 10, 25); // Line from left to right margin
+        pdf.line(10, 38, pdfWidth - 10, 38);
 
-
-        // Capture the table content as an image
+        // === Capture the table content as image ===
         const canvas = await html2canvas(input, { scale: 2 });
         const imgData = canvas.toDataURL("image/png");
 
-        // Define dimensions and position for the table image
+        // === Add image to PDF ===
         const imgWidth = 190;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        pdf.addImage(imgData, "PNG", 10, 42, imgWidth, imgHeight); // placed below header block
 
-        pdf.addImage(imgData, "PNG", 10, 30, imgWidth, imgHeight); // Position table below the heading
-        pdf.save(`${name}_Ledger.pdf`);
+        // === Save PDF with customer name ===
+        pdf.save(`${customerName}_Ledger.pdf`);
     };
+
 
     const totalDebit = filteredOrders.reduce((total, order) => {
         if (order.status !== "Invoice Rejected" && order.status !== "Invoice Created") {
@@ -243,7 +276,9 @@ const BasicTable = () => {
                             <Card>
                                 <CardBody>
                                     <CardTitle className="h4 text-uppercase">
-                                        Customer Ledger
+                                        {filteredOrders[0]?.customer_name
+                                            ? `${filteredOrders[0].customer_name} - Ledger`
+                                            : "Customer Ledger"}
                                     </CardTitle>
                                     <CardSubtitle className="card-title-desc mb-4">
                                         Detailed view of debits and credits for the customer ledger.

@@ -33,6 +33,7 @@ const FormLayouts = () => {
             email: "",
             city: "",
             phone: "",
+            alt_phone: "",
             state: "",
             zipcode: "",
             address: "",
@@ -189,26 +190,27 @@ const FormLayouts = () => {
                                         </div>
                                     )}
                                     <Form onSubmit={formik.handleSubmit}>
-                                        <div className="mb-3">
-                                            <Label htmlFor="formrow-name-Input">NAME</Label>
-                                            <Input
-                                                type="text"
-                                                name="name"
-                                                className="form-control"
-                                                id="formrow-name-Input"
-                                                placeholder="Enter Name"
-                                                value={formik.values.name}
-                                                onChange={formik.handleChange}
-                                                onBlur={formik.handleBlur}
-                                                invalid={formik.touched.name && formik.errors.name}
-                                            />
-                                            {formik.errors.name && formik.touched.name && (
-                                                <FormFeedback>{formik.errors.name}</FormFeedback>
-                                            )}
-                                        </div>
-
                                         <Row>
-                                            <Col md={6}>
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-name-Input">NAME</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="name"
+                                                        className="form-control"
+                                                        id="formrow-name-Input"
+                                                        placeholder="Enter Name"
+                                                        value={formik.values.name}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.name && formik.errors.name}
+                                                    />
+                                                    {formik.errors.name && formik.touched.name && (
+                                                        <FormFeedback>{formik.errors.name}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-email-Input">EMAIL</Label>
                                                     <Input
@@ -227,7 +229,7 @@ const FormLayouts = () => {
                                                     )}
                                                 </div>
                                             </Col>
-                                            <Col md={6}>
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-country-Input">COUNTRY</Label>
                                                     <Input
@@ -249,7 +251,7 @@ const FormLayouts = () => {
                                         </Row>
 
                                         <Row>
-                                            <Col md={6}>
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-phone-Input">PHONE</Label>
                                                     <Input
@@ -269,7 +271,23 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col md={6}>
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-phone-Input">ALTERNATE PHONE</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="alt_phone"
+                                                        className="form-control"
+                                                        id="formrow-phone-Input"
+                                                        placeholder="Enter Your Alternate Phone Number"
+                                                        value={formik.values.alt_phone}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                    />
+                                                </div>
+                                            </Col>
+
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-city-Input">CITY</Label>
                                                     <Input
@@ -456,6 +474,14 @@ const FormLayouts = () => {
                                     id="phone"
                                     value={currentAddress?.phone || ''}
                                     onChange={(e) => setCurrentAddress({ ...currentAddress, phone: e.target.value })}
+                                />
+                                <Label for="alt_phone" className="mt-2">Alternate Phone</Label>
+                                <Input
+                                    type="text"
+                                    name="alt_phone"
+                                    id="alt_phone"
+                                    value={currentAddress?.alt_phone || ''}
+                                    onChange={(e) => setCurrentAddress({ ...currentAddress, alt_phone: e.target.value })}
                                 />
                                 <Label for="address" className="mt-2">Address</Label>
                                 <Input

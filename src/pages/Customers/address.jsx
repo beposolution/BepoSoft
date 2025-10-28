@@ -429,7 +429,7 @@ const FormLayouts = () => {
                                             </thead>
                                             <tbody>
                                                 {customerAddress.map((address, index) => (
-                                                    <tr>
+                                                    <tr key={address.id || index}>
                                                         <th scope="row">{index + 1}</th>
                                                         <td>{address.name}</td>
                                                         <td>{address.phone}</td>

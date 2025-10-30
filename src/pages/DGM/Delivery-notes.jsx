@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
     Table,
@@ -9,7 +9,6 @@ import {
     CardTitle,
 } from "reactstrap";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
-import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import Paginations from "../../components/Common/Pagination";
 
@@ -21,8 +20,12 @@ const BasicTable = () => {
     const [role, setRole] = useState(null);
     const navigate = useNavigate();
     const [lockedOrderId, setLockedOrderId] = useState(null);
+
     const [statusFilter, setStatusFilter] = useState("");
-    const [invoiceSearch, setInvoiceSearch] = useState("");
+    const [globalSearch, setGlobalSearch] = useState("");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+
     const [currentPage, setCurrentPage] = useState(1);
     const [perPageData, setPerPageData] = useState(10);
 
@@ -32,14 +35,14 @@ const BasicTable = () => {
     document.title = "Orders | Beposoft";
 
     useEffect(() => {
-        const role = localStorage.getItem("active");
-        setRole(role);
+        const activeRole = localStorage.getItem("active");
+        setRole(activeRole);
     }, []);
 
     useEffect(() => {
-        if (token && role) fetchOrders(`${import.meta.env.VITE_APP_KEY}orders/`);
+        if (token && role)
+            fetchOrders(`${import.meta.env.VITE_APP_KEY}orders/`);
     }, [token, role]);
-
 
     const fetchOrders = async (url) => {
         if (!url) return;
@@ -50,10 +53,16 @@ const BasicTable = () => {
             });
 
             if (role === "Warehouse Admin") {
-                const filterOrders = response.data.results.filter(order => order.status === "To Print")
+                const filterOrders = response.data.results.filter(
+                    (order) => order.status === "To Print"
+                );
                 setOrders(filterOrders);
             } else {
-                const excludedStatuses = ["Invoice Created", "Invoice Approved", "Waiting For Confirmation"];
+                const excludedStatuses = [
+                    "Invoice Created",
+                    "Invoice Approved",
+                    "Waiting For Confirmation",
+                ];
 
                 const filteredOrders = response.data.results.filter(
                     (order) => !excludedStatuses.includes(order.status)
@@ -83,7 +92,7 @@ const BasicTable = () => {
         "Return",
         "Packing under progress",
         "Packed",
-        "Ready to ship"
+        "Ready to ship",
     ];
 
     const viewDeliveryNote = async (invoiceId) => {
@@ -92,12 +101,12 @@ const BasicTable = () => {
                 `${import.meta.env.VITE_APP_KEY}orders/${invoiceId}/lock/`,
                 {},
                 {
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: { Authorization: `Bearer ${token}` },
                 }
             );
 
             if (response.status === 200) {
-                setLockedOrderId(invoiceId); // set here
+                setLockedOrderId(invoiceId);
                 navigate(`/order/packing/${invoiceId}/progress/`);
             }
         } catch (err) {
@@ -105,13 +114,10 @@ const BasicTable = () => {
         }
     };
 
+    // Unlock order when leaving page
     useEffect(() => {
         const handleUnload = () => {
-
-            if (!lockedOrderId) {
-                return;
-            }
-
+            if (!lockedOrderId) return;
             const token = localStorage.getItem("token");
             const body = JSON.stringify({ token });
 
@@ -122,12 +128,34 @@ const BasicTable = () => {
         };
 
         window.addEventListener("beforeunload", handleUnload);
-
         return () => {
-            handleUnload(); // also fires on component unmount
+            handleUnload();
             window.removeEventListener("beforeunload", handleUnload);
         };
     }, [lockedOrderId]);
+
+    // Combined filter logic
+    const filteredOrders = orders.filter((order) => {
+        const matchesStatus = !statusFilter || order.status === statusFilter;
+
+        // Global search match
+        const search = globalSearch.toLowerCase().trim();
+        const matchesSearch =
+            !search ||
+            order.invoice?.toLowerCase().includes(search) ||
+            order.customer?.name?.toLowerCase().includes(search) ||
+            order.manage_staff?.toLowerCase().includes(search) ||
+            String(order.total_amount).toLowerCase().includes(search) ||
+            order.status?.toLowerCase().includes(search);
+
+        // Date range match
+        const orderDate = new Date(order.order_date);
+        const matchesDate =
+            (!startDate || orderDate >= new Date(startDate)) &&
+            (!endDate || orderDate <= new Date(endDate));
+
+        return matchesStatus && matchesSearch && matchesDate;
+    });
 
     return (
         <React.Fragment>
@@ -139,21 +167,20 @@ const BasicTable = () => {
                             <Card>
                                 <CardBody>
                                     <Row className="mb-3">
-                                        <Col md={4}>
-                                            <label htmlFor="invoiceSearch" className="form-label">Search by Invoice</label>
+                                        <Col md={3}>
+                                            <label className="form-label fw-bold">Search</label>
                                             <input
                                                 type="text"
-                                                id="invoiceSearch"
                                                 className="form-control"
-                                                placeholder="Enter invoice number"
-                                                value={invoiceSearch}
-                                                onChange={(e) => setInvoiceSearch(e.target.value)}
+                                                placeholder="Search by Invoice, Customer, Staff, Amount or Status"
+                                                value={globalSearch}
+                                                onChange={(e) => setGlobalSearch(e.target.value)}
                                             />
                                         </Col>
-                                        <Col md={4}>
-                                            <label htmlFor="statusFilter" className="form-label">Filter by Status</label>
+
+                                        <Col md={3}>
+                                            <label className="form-label fw-bold">Filter by Status</label>
                                             <select
-                                                id="statusFilter"
                                                 className="form-select"
                                                 value={statusFilter}
                                                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -166,10 +193,35 @@ const BasicTable = () => {
                                                 ))}
                                             </select>
                                         </Col>
+
+                                        <Col md={3}>
+                                            <label className="form-label fw-bold">From Date</label>
+                                            <input
+                                                type="date"
+                                                className="form-control"
+                                                value={startDate}
+                                                onChange={(e) => setStartDate(e.target.value)}
+                                            />
+                                        </Col>
+
+                                        <Col md={3}>
+                                            <label className="form-label fw-bold">To Date</label>
+                                            <input
+                                                type="date"
+                                                className="form-control"
+                                                value={endDate}
+                                                onChange={(e) => setEndDate(e.target.value)}
+                                            />
+                                        </Col>
                                     </Row>
+
                                     <CardTitle className="h4"></CardTitle>
                                     <div className="table-responsive">
-                                        {loading ? <div>Loading...</div> : error ? <div className="text-danger">{error}</div> : (
+                                        {loading ? (
+                                            <div>Loading...</div>
+                                        ) : error ? (
+                                            <div className="text-danger">{error}</div>
+                                        ) : (
                                             <>
                                                 <Table className="table mb-0">
                                                     <thead>
@@ -181,20 +233,17 @@ const BasicTable = () => {
                                                             <th>STATUS</th>
                                                             <th>BILL AMOUNT</th>
                                                             <th>CREATED AT</th>
-                                                            <th>view</th>
+                                                            <th>VIEW</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {orders
-                                                            .filter(order => {
-                                                                const matchesStatus = !statusFilter || order.status === statusFilter;
-                                                                const matchesInvoice = !invoiceSearch || order.invoice?.toLowerCase().includes(invoiceSearch.toLowerCase());
-                                                                return matchesStatus && matchesInvoice;
-                                                            })
+                                                        {filteredOrders
                                                             .slice(indexOfFirstItem, indexOfLastItem)
                                                             .map((order, index) => (
                                                                 <tr key={order.id}>
-                                                                    <th scope="row">{indexOfFirstItem + index + 1}</th>
+                                                                    <th scope="row">
+                                                                        {indexOfFirstItem + index + 1}
+                                                                    </th>
                                                                     <td>{order.invoice}</td>
                                                                     <td>{order.customer.name}</td>
                                                                     <td>{order.manage_staff}</td>
@@ -202,9 +251,16 @@ const BasicTable = () => {
                                                                     <td>{order.total_amount}</td>
                                                                     <td>{order.order_date}</td>
                                                                     <td>
-                                                                        <div style={{ display: "flex", flexDirection: "column" }}>
+                                                                        <div
+                                                                            style={{
+                                                                                display: "flex",
+                                                                                flexDirection: "column",
+                                                                            }}
+                                                                        >
                                                                             <button
-                                                                                onClick={() => viewDeliveryNote(order.id)}
+                                                                                onClick={() =>
+                                                                                    viewDeliveryNote(order.id)
+                                                                                }
                                                                                 style={{
                                                                                     padding: "10px 20px",
                                                                                     border: "none",
@@ -212,31 +268,37 @@ const BasicTable = () => {
                                                                                     color: "white",
                                                                                     cursor: "pointer",
                                                                                     marginBottom: "5px",
-                                                                                    opacity: order.locked_by && order.locked_by !== localStorage.getItem("username") ? 0.7 : 1
+                                                                                    opacity:
+                                                                                        order.locked_by &&
+                                                                                        order.locked_by !==
+                                                                                        localStorage.getItem("username")
+                                                                                            ? 0.7
+                                                                                            : 1,
                                                                                 }}
                                                                             >
                                                                                 View
                                                                             </button>
-                                                                            {
-                                                                                order.locked_by && order.locked_by !== localStorage.getItem("username") && (
-                                                                                    <span className="text-danger" style={{ fontSize: "0.85rem" }}>
-                                                                                        In use by: {order.locked_by.toUpperCase()}
+                                                                            {order.locked_by &&
+                                                                                order.locked_by !==
+                                                                                localStorage.getItem("username") && (
+                                                                                    <span
+                                                                                        className="text-danger"
+                                                                                        style={{ fontSize: "0.85rem" }}
+                                                                                    >
+                                                                                        In use by:{" "}
+                                                                                        {order.locked_by.toUpperCase()}
                                                                                     </span>
-                                                                                )
-                                                                            }
+                                                                                )}
                                                                         </div>
                                                                     </td>
                                                                 </tr>
                                                             ))}
                                                     </tbody>
                                                 </Table>
+
                                                 <Paginations
                                                     perPageData={perPageData}
-                                                    data={orders.filter(order => {
-                                                        const matchesStatus = !statusFilter || order.status === statusFilter;
-                                                        const matchesInvoice = !invoiceSearch || order.invoice?.toLowerCase().includes(invoiceSearch.toLowerCase());
-                                                        return matchesStatus && matchesInvoice;
-                                                    })}
+                                                    data={filteredOrders}
                                                     currentPage={currentPage}
                                                     setCurrentPage={setCurrentPage}
                                                     isShowingPageLength={true}

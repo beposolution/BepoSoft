@@ -42,8 +42,8 @@ const BasicTable = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [purposeOfPayment, setPurposeOfPayment] = useState([]);
-  const [purposeFilter, setPurposeFilter] = useState(""); // purpose id (string) or "" for all
-  const [expenseTypeFilter, setExpenseTypeFilter] = useState(""); // normalized type ("", or one of EXPENSE_TYPES values)
+  const [purposeFilter, setPurposeFilter] = useState("");
+  const [expenseTypeFilter, setExpenseTypeFilter] = useState("");
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [perPageData] = useState(10);
@@ -107,16 +107,21 @@ const BasicTable = () => {
       const q = searchTerm.toLowerCase();
       data = data.filter((expense) => {
         const company = expense.company?.name?.toLowerCase() || "";
+        const bank = expense.bank?.name?.toLowerCase() || "";
         const payedBy = expense.payed_by?.name?.toLowerCase() || "";
         const purposeName = (expense.purpose_of_pay || "").toLowerCase();
         const amount = (expense.amount ?? "").toString().toLowerCase();
         const rawType = (expense.expense_type ?? "").toString().toLowerCase();
+        const description = (expense.description ?? "").toLowerCase();
+
         return (
           company.includes(q) ||
+          bank.includes(q) ||
           payedBy.includes(q) ||
           purposeName.includes(q) ||
           amount.includes(q) ||
-          rawType.includes(q)
+          rawType.includes(q) ||
+          description.includes(q)
         );
       });
     }

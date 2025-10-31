@@ -281,6 +281,7 @@ const FormLayouts = () => {
         zip_code: "",
         country: "",
         phone: "",
+        alt_phone: "",
         email: "",
 
     });
@@ -525,6 +526,7 @@ const FormLayouts = () => {
                     city: data.order.billing_address?.city || "",
                     country: data.order.billing_address?.country || "",
                     phone: data.order.billing_address?.phone || "",
+                    alt_phone: data.order.billing_address?.alt_phone || "",
                     state: data.order.billing_address?.state || "",
                 });
 
@@ -1154,6 +1156,7 @@ const FormLayouts = () => {
                                             </p>
                                             <p><strong>Street:</strong> {billingAddress.address}</p>
                                             <p><strong>Phone:</strong> {billingAddress.phone}</p>
+                                            <p><strong>Alternate Phone:</strong> {billingAddress.alt_phone}</p>
                                             <p><strong>City:</strong> {billingAddress.city}</p>
                                             <p><strong>State:</strong> {billingAddress.state}</p>
                                             <p><strong>Zip Code:</strong> {billingAddress.zipcode}</p>
@@ -1176,7 +1179,7 @@ const FormLayouts = () => {
                                             <p><strong>Name:</strong> {shippingAddress.name}</p>
                                             <p><strong>Street:</strong> {shippingAddress.address}</p>
                                             <p><strong>Phone:</strong> {shippingAddress.phone}</p>
-                                            <p><strong>Alternate Phone:</strong> {billingAddress.alt_phone}</p>
+                                            <p><strong>Alternate Phone:</strong> {shippingAddress.alt_phone}</p>
                                             <p><strong>City:</strong> {shippingAddress.city}</p>
                                             <p><strong>State:</strong> {shippingAddress.state}</p>
                                             <p><strong>Zip Code:</strong> {shippingAddress.zipcode}</p>

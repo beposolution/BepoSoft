@@ -14,7 +14,7 @@ const AdvanceReceiptList = () => {
     const token = localStorage.getItem("token")
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedReceipt, setSelectedReceipt] = useState(null);
-    const [formData, setFormData] = useState({ bank: '', amount: '' });
+    const [formData, setFormData] = useState({ bank: '', amount: '', order: '' });
     const [customerId, setCustomerId] = useState('')
     const [modalLoading, setModalLoading] = useState(false);
     const [banks, setBanks] = useState([]);
@@ -25,6 +25,7 @@ const AdvanceReceiptList = () => {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [beforeSnapshot, setBeforeSnapshot] = useState(null);
+    const [orders, setOrders] = useState([]);
 
     useEffect(() => {
         const fetchCustomers = async () => {
@@ -56,6 +57,22 @@ const AdvanceReceiptList = () => {
             }
         };
         fetchBanks();
+    }, []);
+
+    useEffect(() => {
+        const fetchOrders = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}orders/`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (response?.status === 200) {
+                    setOrders(response?.data?.results || []);
+                }
+            } catch (error) {
+                toast.error("Error fetching orders");
+            }
+        };
+        fetchOrders();
     }, []);
 
     const fetchReceiptData = async () => {
@@ -113,52 +130,40 @@ const AdvanceReceiptList = () => {
 
     const handleUpdate = async () => {
         try {
-            const payload = {
-                payment_receipt: formData.payment_receipt,
-                bank: formData.bank,
-                amount: formData.amount,
-                transactionID: formData.transactionID,
-                received_at: formData.received_at,
-                customer: customerId,
-                remark: formData.remark,
-                created_by: selectedReceipt.created_by,
-            };
+            let shouldDeleteOriginal = false;
+            let convertMode = null;
 
-            const resp = await axios.put(
-                `${import.meta.env.VITE_APP_KEY}advancereceipt/view/${selectedReceipt.id}/`,
-                payload,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
+            // If order is selected → convert Advance Receipt → Order Receipt
+            if (formData.order) {
+                const response = await axios.post(
+                    `${import.meta.env.VITE_APP_KEY}payment/${formData.order}/reciept/`,
+                    {
+                        bank: formData.bank,
+                        amount: formData.amount,
+                        received_at: formData.received_at,
+                        transactionID: formData.transactionID,
+                        remark: formData.remark,
                     },
-                }
-            );
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
 
-            if (resp.status === 200 || resp.status === 204) {
-                // Build the "after" snapshot from what we just sent
-                const afterSnapshot = pickFields({
-                    payment_receipt: payload.payment_receipt,
-                    bank: payload.bank,
-                    amount: payload.amount,
-                    transactionID: payload.transactionID,
-                    received_at: payload.received_at,
-                    customer: payload.customer,
-                    remark: payload.remark,
-                });
+                if (response.status === 200 || response.status === 201) {
+                    toast.success("Converted to Order Receipt successfully!");
+                    convertMode = "toOrder";
+                    shouldDeleteOriginal = true;
 
-                // Compute only changed keys
-                const { before_data, after_data } = computeDiff(beforeSnapshot, afterSnapshot);
-
-                // Only log if something actually changed
-                if (Object.keys(before_data).length > 0) {
-                    try {
+                    // Log changes
+                    const afterSnapshot = pickFields({
+                        ...formData,
+                        order: formData.order,
+                    });
+                    const { before_data, after_data } = computeDiff(beforeSnapshot, afterSnapshot);
+                    if (Object.keys(before_data).length > 0) {
                         await axios.post(
                             `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                            {
-                                before_data,
-                                after_data,
-                            },
+                            { before_data, after_data },
                             {
                                 headers: {
                                     Authorization: `Bearer ${token}`,
@@ -166,20 +171,64 @@ const AdvanceReceiptList = () => {
                                 },
                             }
                         );
-                    } catch (logErr) {
-                        // don't block the user if logging fails
-                        console.error("Failed to create datalog:", logErr);
                     }
                 }
+            } else {
+                // Normal update
+                const payload = {
+                    payment_receipt: formData.payment_receipt,
+                    bank: formData.bank,
+                    amount: formData.amount,
+                    transactionID: formData.transactionID,
+                    received_at: formData.received_at,
+                    customer: customerId,
+                    remark: formData.remark,
+                    created_by: selectedReceipt.created_by,
+                };
 
-                toast.success("Receipt updated successfully!");
-                setModalOpen(false);
-                fetchReceiptData();
+                const resp = await axios.put(
+                    `${import.meta.env.VITE_APP_KEY}advancereceipt/view/${selectedReceipt.id}/`,
+                    payload,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
 
-                // refresh baseline snapshot to the new values in case user reopens without closing page
-                setBeforeSnapshot(afterSnapshot);
+                if (resp.status === 200 || resp.status === 204) {
+                    toast.success("Receipt updated successfully!");
+                    const afterSnapshot = pickFields(payload);
+                    const { before_data, after_data } = computeDiff(beforeSnapshot, afterSnapshot);
+                    if (Object.keys(before_data).length > 0) {
+                        await axios.post(
+                            `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                            { before_data, after_data },
+                            {
+                                headers: {
+                                    Authorization: `Bearer ${token}`,
+                                    "Content-Type": "application/json",
+                                },
+                            }
+                        );
+                    }
+                }
             }
+
+            // If conversion succeeded, delete the original Advance Receipt
+            if (shouldDeleteOriginal && selectedReceipt?.id) {
+                await axios.delete(
+                    `${import.meta.env.VITE_APP_KEY}advancereceipt/view/${selectedReceipt.id}/`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                toast.success("Original Advance Receipt deleted.");
+            }
+
+            setModalOpen(false);
+            fetchReceiptData();
         } catch (error) {
+            console.error("Error updating receipt:", error);
             toast.error("Failed to update receipt.");
         }
     };
@@ -388,7 +437,7 @@ const AdvanceReceiptList = () => {
                                     )}
                                     <Modal isOpen={modalOpen} toggle={() => setModalOpen(!modalOpen)} size="lg">
                                         <ModalHeader toggle={() => setModalOpen(!modalOpen)}>
-                                            Receipt Details
+                                            Advance Receipt Details
                                         </ModalHeader>
                                         <ModalBody>
                                             {modalLoading ? (
@@ -458,7 +507,7 @@ const AdvanceReceiptList = () => {
                                                         </Col>
                                                     </Row>
                                                     <Row>
-                                                        <Col md={6}>
+                                                        <Col md={4}>
                                                             <div className="mb-3">
                                                                 <Label>Customer Name</Label>
                                                                 <Select
@@ -473,10 +522,40 @@ const AdvanceReceiptList = () => {
                                                                 />
                                                             </div>
                                                         </Col>
-                                                        <Col md={6}>
+                                                        <Col md={4}>
                                                             <div className="mb-3">
                                                                 <Label>Remark</Label>
                                                                 <Input type='text' name='remark' value={formData.remark} onChange={handleChange} />
+                                                            </div>
+                                                        </Col>
+                                                        <Col md={4}>
+                                                            <div className="mb-3">
+                                                                <Label>Select Order</Label>
+                                                                <Select
+                                                                    options={orders.map(o => ({
+                                                                        value: String(o.id),
+                                                                        label: `${o.invoice} - ${o.customer?.name || ''} - ₹${o.total_amount || 0}`,
+                                                                    }))}
+                                                                    value={
+                                                                        formData.order
+                                                                            ? {
+                                                                                label: `${orders.find(o => o.id === Number(formData.order))?.invoice || ''} - ${orders.find(o => o.id === Number(formData.order))?.customer?.name || ''} - ₹${orders.find(o => o.id === Number(formData.order))?.total_amount || 0}`,
+                                                                                value: String(formData.order),
+                                                                            }
+                                                                            : null
+                                                                    }
+                                                                    onChange={(opt) =>
+                                                                        setFormData((prev) => ({
+                                                                            ...prev,
+                                                                            order: opt?.value || '',
+                                                                        }))
+                                                                    }
+                                                                    placeholder="Choose Order"
+                                                                    isClearable
+                                                                    isSearchable
+                                                                    menuPortalTarget={document.body}
+                                                                    styles={rsStyles}
+                                                                />
                                                             </div>
                                                         </Col>
                                                     </Row>

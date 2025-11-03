@@ -12,7 +12,7 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
+const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseId }) => {
   const [products, setProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -182,8 +182,9 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
   // };
 
   const addToCart = async (product, variant = null) => {
-    if (parseInt(warehouseId) !== 1) {
-      toast.warning("You can only add products from Kochi warehouse!");
+    // Compare the selected warehouse vs user's own warehouse
+    if (parseInt(warehouseId) !== parseInt(userWarehouseId)) {
+      toast.warning("You can only add products from your assigned warehouse!");
       return;
     }
 
@@ -415,14 +416,25 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
                                 </Button>
                               </td> */}
                               <td>
-                                <div title={parseInt(warehouseId) !== 1 ? "Only Kochi warehouse can add products" : ""}>
+                                <div
+                                  title={
+                                    parseInt(warehouseId) !== parseInt(userWarehouseId)
+                                      ? "Only your warehouse products can be added"
+                                      : ""
+                                  }
+                                >
                                   <Button
                                     color="success"
                                     size="sm"
                                     onClick={() => addToCart(product, variant)}
-                                    disabled={variant.stock === 0 || parseInt(warehouseId) !== 1}
+                                    disabled={
+                                      (variant ? variant.stock : product.stock) === 0 ||
+                                      parseInt(warehouseId) !== parseInt(userWarehouseId)
+                                    }
                                   >
-                                    {parseInt(warehouseId) !== 1 ? "Restricted" : "Add"}
+                                    {parseInt(warehouseId) !== parseInt(userWarehouseId)
+                                      ? "Restricted"
+                                      : "Add"}
                                   </Button>
                                 </div>
                               </td>

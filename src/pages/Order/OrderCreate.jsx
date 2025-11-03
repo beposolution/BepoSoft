@@ -852,6 +852,7 @@ const FormLayouts = () => {
                                                                         ? formik.values.warehouses
                                                                         : (loggedUser && loggedUser.warehouse_id ? loggedUser.warehouse_id : '')
                                                                 }
+                                                                userWarehouseId={userData}
                                                             />
                                                         </CardBody>
                                                     </Card>

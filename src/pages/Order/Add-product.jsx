@@ -96,7 +96,7 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
     } catch (error) {
       setError(
         error.response?.data?.message ||
-          "An error occurred while fetching products."
+        "An error occurred while fetching products."
       );
     } finally {
       setLoading(false);
@@ -151,7 +151,42 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
     }
   };
 
+  // const addToCart = async (product, variant = null) => {
+  //   const selectedId = variant ? variant.id : product.id;
+  //   const selectedQuantity = quantity[selectedId] || 1;
+
+  //   const cartItem = {
+  //     product: selectedId,
+  //     quantity: selectedQuantity,
+  //   };
+
+  //   try {
+  //     const response = await axios.post(
+  //       `${import.meta.env.VITE_APP_KEY}cart/product/`,
+  //       cartItem,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "Content-Type": "application/json",
+  //         },
+  //       }
+  //     );
+
+  //     if (response.status === 201) {
+  //       alert("Product added to cart successfully!");
+  //       ProductsFetch();
+  //     }
+  //   } catch (error) {
+  //     toast.error("Failed to add product to cart");
+  //   }
+  // };
+
   const addToCart = async (product, variant = null) => {
+    if (parseInt(warehouseId) !== 1) {
+      toast.warning("You can only add products from Kochi warehouse!");
+      return;
+    }
+
     const selectedId = variant ? variant.id : product.id;
     const selectedQuantity = quantity[selectedId] || 1;
 
@@ -173,7 +208,7 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
       );
 
       if (response.status === 201) {
-        alert("Product added to cart successfully!");
+        toast.success("Product added to cart successfully!");
         ProductsFetch();
       }
     } catch (error) {
@@ -183,18 +218,18 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
 
   const filteredProducts = Array.isArray(products)
     ? products.filter((product) => {
-        const parentMatches =
-          product.approval_status === "Approved" &&
-          product.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const parentMatches =
+        product.approval_status === "Approved" &&
+        product.name.toLowerCase().includes(searchQuery.toLowerCase());
 
-        const parentHasStock = product.stock > 0;
+      const parentHasStock = product.stock > 0;
 
-        const variantsHaveStock = Array.isArray(product.variantIDs)
-          ? product.variantIDs.some((variant) => variant.stock > 0)
-          : false;
+      const variantsHaveStock = Array.isArray(product.variantIDs)
+        ? product.variantIDs.some((variant) => variant.stock > 0)
+        : false;
 
-        return parentMatches && (parentHasStock || variantsHaveStock);
-      })
+      return parentMatches && (parentHasStock || variantsHaveStock);
+    })
     : [];
 
   return (
@@ -253,9 +288,8 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
                           <td>{index + 1}</td>
                           <td>
                             <img
-                              src={`${import.meta.env.VITE_APP_IMAGE}${
-                                product.image
-                              }`}
+                              src={`${import.meta.env.VITE_APP_IMAGE}${product.image
+                                }`}
                               style={{ width: "50px", height: "50px" }}
                               alt={product.name}
                             />
@@ -276,7 +310,7 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
                               className="form-control"
                             />
                           </td>
-                          <td>
+                          {/* <td>
                             <Button
                               color="success"
                               size="sm"
@@ -285,6 +319,18 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
                             >
                               Add
                             </Button>
+                          </td> */}
+                          <td>
+                            <div title={parseInt(warehouseId) !== 1 ? "Only Kochi warehouse can add products" : ""}>
+                              <Button
+                                color="success"
+                                size="sm"
+                                onClick={() => addToCart(product)}
+                                disabled={product.stock === 0 || parseInt(warehouseId) !== 1}
+                              >
+                                {parseInt(warehouseId) !== 1 ? "Restricted" : "Add"}
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -333,9 +379,8 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
                               <td>{index + 1}.{variantIndex + 1}</td>
                               <td>
                                 <img
-                                  src={`${import.meta.env.VITE_APP_IMAGE}${
-                                    variant.image
-                                  }`}
+                                  src={`${import.meta.env.VITE_APP_IMAGE}${variant.image
+                                    }`}
                                   style={{ width: "50px", height: "50px" }}
                                   alt={variant.name}
                                 />
@@ -359,7 +404,7 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
                                   className="form-control"
                                 />
                               </td>
-                              <td>
+                              {/* <td>
                                 <Button
                                   color="success"
                                   size="sm"
@@ -368,6 +413,18 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch }) => {
                                 >
                                   Add
                                 </Button>
+                              </td> */}
+                              <td>
+                                <div title={parseInt(warehouseId) !== 1 ? "Only Kochi warehouse can add products" : ""}>
+                                  <Button
+                                    color="success"
+                                    size="sm"
+                                    onClick={() => addToCart(product, variant)}
+                                    disabled={variant.stock === 0 || parseInt(warehouseId) !== 1}
+                                  >
+                                    {parseInt(warehouseId) !== 1 ? "Restricted" : "Add"}
+                                  </Button>
+                                </div>
                               </td>
                             </tr>
                           );

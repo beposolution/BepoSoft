@@ -123,7 +123,7 @@ const BasicTable = () => {
                                                     tableData.map((item, index) => (
                                                         <tr key={item.id}>
                                                             <th scope="row">{index + 1}</th>
-                                                            <td>{item.product} / {item.order} / {item.price}</td>
+                                                            <td>{item.product} / {item.invoice} / {item.price}</td>
                                                             <td>{item.returnreason}</td>
                                                             <td>{item.quantity}</td>
                                                             <td>{item.cod_amount || '--'}</td>

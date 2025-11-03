@@ -126,23 +126,52 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
     }
   };
 
+  // const handleQuantityChange = (productId, value) => {
+  //   const parsedValue = parseInt(value, 10);
+  //   const product = products.find(
+  //     (p) => p.id === productId || p.variantIDs?.some((v) => v.id === productId)
+  //   );
+
+  //   const stock =
+  //     product?.id === productId
+  //       ? product.stock
+  //       : product?.variantIDs.find((v) => v.id === productId)?.stock || 0;
+
+  //   if (parsedValue > stock) {
+  //     setQuantity((prev) => ({
+  //       ...prev,
+  //       [productId]: stock,
+  //     }));
+  //     alert(`Quantity cannot exceed available stock of ${stock}.`);
+  //   } else {
+  //     setQuantity((prev) => ({
+  //       ...prev,
+  //       [productId]: parsedValue,
+  //     }));
+  //   }
+  // };
+
   const handleQuantityChange = (productId, value) => {
     const parsedValue = parseInt(value, 10);
     const product = products.find(
       (p) => p.id === productId || p.variantIDs?.some((v) => v.id === productId)
     );
 
-    const stock =
-      product?.id === productId
-        ? product.stock
-        : product?.variantIDs.find((v) => v.id === productId)?.stock || 0;
+    let availableStock = 0;
 
-    if (parsedValue > stock) {
+    if (product?.id === productId) {
+      availableStock = (product.stock || 0) - (product.locked_stock || 0);
+    } else {
+      const variant = product?.variantIDs.find((v) => v.id === productId);
+      availableStock = (variant?.stock || 0) - (variant?.locked_stock || 0);
+    }
+
+    if (parsedValue > availableStock) {
       setQuantity((prev) => ({
         ...prev,
-        [productId]: stock,
+        [productId]: availableStock,
       }));
-      alert(`Quantity cannot exceed available stock of ${stock}.`);
+      toast.warning(`Quantity cannot exceed available stock of ${availableStock}.`);
     } else {
       setQuantity((prev) => ({
         ...prev,
@@ -303,7 +332,8 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
                             <Input
                               type="number"
                               min="1"
-                              max={product.stock}
+                              // max={product.stock}
+                              max={(product.stock || 0) - (product.locked_stock || 0)}
                               value={quantity[product.id] || 1}
                               onChange={(e) =>
                                 handleQuantityChange(product.id, e.target.value)

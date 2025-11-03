@@ -40,7 +40,7 @@ const FormLayouts = () => {
     const [cartTotalDiscount, setCartTotalDiscount] = useState(0);
     const [finalAmount, setFinalAmount] = useState(0);
 
-    const isMarketing = role === "Marketing" || "BDO" || "BDM";
+    const isMarketing = role === "Marketing";
 
     const toggleModal = () => setModalOpen(!modalOpen);
 

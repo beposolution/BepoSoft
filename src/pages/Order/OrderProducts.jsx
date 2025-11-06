@@ -294,6 +294,7 @@ const FormLayouts = () => {
         address: "",
         zipcode: "",
         email: "",
+        gst_confirm: "",
     })
 
     const formik = useFormik({
@@ -542,6 +543,7 @@ const FormLayouts = () => {
                     alt_phone: data.order.customer?.alt_phone || "",
                     state: data.order.customer?.state || "",
                     gst: data.order.customer?.gst || "",
+                    gst_confirm: data.order.customer?.gst_confirm || "",
 
                 });
                 setBankDetails({
@@ -1160,6 +1162,7 @@ const FormLayouts = () => {
                                             <p><strong>City:</strong> {billingAddress.city}</p>
                                             <p><strong>State:</strong> {billingAddress.state}</p>
                                             <p><strong>Zip Code:</strong> {billingAddress.zipcode}</p>
+                                            <p><strong>Customer Have GST:</strong> {billingAddress.gst_confirm}</p>
                                             <p><strong>GST:</strong> {billingAddress.gst || "nil"}</p>
                                         </div>
 

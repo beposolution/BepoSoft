@@ -116,11 +116,12 @@ const FormLayouts = () => {
             );
 
             formik.setValues({
-                ...formik.values, // keep existing defaults in case something missing
+                ...formik.values,
                 ...customerData,
                 manager: managerObj ? String(managerObj.id) : "",
                 state: stateObj ? String(stateObj.id) : "",
-                customer_type: typeObj ? String(typeObj.id) : "",   // 👈 set the ID
+                customer_type: typeObj ? String(typeObj.id) : "",
+                gst_confirm: customerData.gst_confirm ? String(customerData.gst_confirm) : "",
             });
         }
         // eslint-disable-next-line
@@ -140,6 +141,7 @@ const FormLayouts = () => {
             state: "",
             comment: "",
             customer_type: "",
+            gst_confirm: "",
         },
         validationSchema: Yup.object({
             name: Yup.string(),
@@ -273,7 +275,7 @@ const FormLayouts = () => {
                                         </Row>
 
                                         <Row>
-                                            <Col md={6}>
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="email">Email</Label>
                                                     <Input
@@ -289,7 +291,27 @@ const FormLayouts = () => {
                                                     <FormFeedback>{formik.errors.email}</FormFeedback>
                                                 </div>
                                             </Col>
-                                            <Col md={6}>
+
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label>Does The Customer Have GST?</Label>
+                                                    <Input
+                                                        type="select"
+                                                        name="gst_confirm"
+                                                        className={`form-control ${formik.touched.gst_confirm && formik.errors.gst_confirm ? "is-invalid" : ""}`}
+                                                        value={formik.values.gst_confirm || ""}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                    >
+                                                        <option value="">Select</option>
+                                                        <option value="NO GST">NO GST</option>
+                                                        <option value="ghjgf">ghjgf</option>
+                                                    </Input>
+                                                    <FormFeedback>{formik.errors.gst_confirm}</FormFeedback>
+                                                </div>
+                                            </Col>
+
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="gst">GST</Label>
                                                     <Input

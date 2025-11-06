@@ -39,6 +39,7 @@ const FormLayouts = () => {
             city: "",
             commend: "",
             customer_type: "",
+            gst_confirm: "",
         },
         validationSchema: Yup.object({
             name: Yup.string().required("This field is required"),
@@ -144,12 +145,12 @@ const FormLayouts = () => {
         <React.Fragment>
             <div className="page-content">
                 <Container fluid={true}>
-                    <Breadcrumbs title="Forms" breadcrumbItem="Customer Form" />
+                    <Breadcrumbs title="Forms" breadcrumbItem="Customer Registration Form" />
                     <Row>
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
-                                    <CardTitle className="mb-4">Customer Registration Form</CardTitle>
+                                    <CardTitle className="mb-4">CUSTOMER REGISTRATION FORM</CardTitle>
                                     {loading && <p>Loading...</p>}
                                     {error && (
                                         <div className="alert alert-danger alert-dismissible fade show" role="alert">
@@ -167,7 +168,7 @@ const FormLayouts = () => {
 
                                     <Form onSubmit={formik.handleSubmit}>
                                         <Row>
-                                            <Col md={6}>
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-name-Input"> Name</Label>
                                                     <Input
@@ -191,9 +192,37 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col md={6}>
+                                            <Col md={4}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-name-Input">GST</Label>
+                                                    <Label className="formrow-name-Input">
+                                                        Does The Customer Have GST?
+                                                    </Label>
+
+                                                    <Input
+                                                        type="select"
+                                                        className={`form-control ${formik.touched.gst_confirm && formik.errors.gst_confirm ? "is-invalid" : ""
+                                                            }`}
+                                                        name="gst_confirm"
+                                                        value={formik.values.gst_confirm}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                    >
+                                                        <option value="">Select</option>
+                                                        <option value="NO GST">NO GST</option>
+                                                        <option value="YES">YES</option>
+                                                    </Input>
+
+                                                    {formik.touched.gst_confirm && formik.errors.gst_confirm ? (
+                                                        <FormFeedback type="invalid">
+                                                            {formik.errors.gst_confirm}
+                                                        </FormFeedback>
+                                                    ) : null}
+                                                </div>
+                                            </Col>
+
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-name-Input">GST Number</Label>
                                                     <Input
                                                         type="text"
                                                         name="gst"
@@ -462,34 +491,6 @@ const FormLayouts = () => {
 
 
                                         </Row>
-
-                                        {/* <div className="mb-3">
-                                            <div className="form-check">
-                                                <Input
-                                                    type="checkbox"
-                                                    className="form-check-Input"
-                                                    id="formrow-customCheck"
-                                                    name="check"
-                                                    value={formik.values.check}
-                                                    onChange={formik.handleChange}
-                                                    onBlur={formik.handleBlur}
-                                                    invalid={
-                                                        formik.touched.check && formik.errors.check ? true : false
-                                                    }
-                                                />
-                                                <Label
-                                                    className="form-check-Label"
-                                                    htmlFor="formrow-customCheck"
-                                                >
-                                                    Check me out
-                                                </Label>
-                                            </div>
-                                            {
-                                                formik.errors.check && formik.touched.check ? (
-                                                    <FormFeedback type="invalid">{formik.errors.check}</FormFeedback>
-                                                ) : null
-                                            }
-                                        </div> */}
 
                                         <div className="mb-3">
                                             <button type="submit" className="btn btn-primary w-md" disabled={loading}>

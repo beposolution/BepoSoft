@@ -14,18 +14,16 @@ import {
 } from "reactstrap";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import axios from "axios";
-import * as XLSX from "xlsx"; // For Excel export
-import jsPDF from "jspdf"; // For PDF export
-import html2canvas from "html2canvas"; // For capturing the table as an image
-import { ToastContainer, toast } from "react-toastify";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import autoTable from "jspdf-autotable";
 
 const BasicTable = () => {
     const { id } = useParams();
     const [orders, setOrders] = useState([]);
-    // console.log("orders", orders)
     const [filteredOrders, setFilteredOrders] = useState([]);
-    // console.log("filtered order", filteredOrders)
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const name = localStorage.getItem('name');
@@ -35,7 +33,6 @@ const BasicTable = () => {
     const [endDate, setEndDate] = useState("");
     const [companyFilter, setCompanyFilter] = useState("");
     const [companys, setCompany] = useState([]);
-    // console.log("company", companys)
     const [banks, setBanks] = useState([]);
 
     const tableRef = useRef(null);
@@ -171,70 +168,204 @@ const BasicTable = () => {
         XLSX.writeFile(workbook, `${name}_Ledger.xlsx`);
     };
 
-    const convertToPDF = async () => {
-        const input = tableRef.current;
+    const convertToPDF = () => {
         const pdf = new jsPDF("p", "mm", "a4");
 
-        // Get company name and customer name
+        // Company + customer header (same as you had, with safe fallbacks)
         const companyName =
-            filteredOrders.length > 0
-                ? filteredOrders[0].company.toUpperCase()
-                : name.toUpperCase();
+            (filteredOrders[0]?.company || name || "Company").toUpperCase();
 
         const customerName = filteredOrders[0]?.customer_name || "Customer";
 
-        // Find full company details from the 'companys' array
         const selectedCompany = companys.find(
-            (c) => c.name.toUpperCase() === filteredOrders[0]?.company?.toUpperCase()
+            (c) => c.name?.toUpperCase() === filteredOrders[0]?.company?.toUpperCase()
         );
 
-        // Construct company address string
         const companyAddress = selectedCompany
-            ? `${selectedCompany.address || ""}, ${selectedCompany.city || ""}, ${selectedCompany.country || ""} - ${selectedCompany.zip || ""}`
+            ? `${selectedCompany.address || ""}${selectedCompany.city ? ", " + selectedCompany.city : ""}${selectedCompany.country ? ", " + selectedCompany.country : ""}${selectedCompany.zip ? " - " + selectedCompany.zip : ""}`
             : "Address not available";
 
-        // Set up document width
         const pdfWidth = pdf.internal.pageSize.getWidth();
 
-        // === COMPANY NAME ===
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(16);
-        const companyTextWidth = pdf.getTextDimensions(companyName).w;
-        const companyX = (pdfWidth - companyTextWidth) / 2;
-        pdf.text(companyName, companyX, 20);
+        const drawHeader = () => {
 
-        // === COMPANY ADDRESS ===
-        pdf.setFont("helvetica", "normal");
-        pdf.setFontSize(12);
-        const addressTextWidth = pdf.getTextDimensions(companyAddress).w;
-        const addressX = (pdfWidth - addressTextWidth) / 2;
-        pdf.text(companyAddress, addressX, 27);
+            // === COMPANY NAME ===
+            pdf.setFont("helvetica", "bold");
+            pdf.setFontSize(16);
+            const companyTextWidth = pdf.getTextDimensions(companyName).w;
+            pdf.text(companyName, (pdfWidth - companyTextWidth) / 2, 20);
 
-        // === CUSTOMER NAME ===
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(13);
-        const customerLabel = `Customer Name: ${customerName}`;
-        const customerTextWidth = pdf.getTextDimensions(customerLabel).w;
-        const customerX = (pdfWidth - customerTextWidth) / 2;
-        pdf.text(customerLabel, customerX, 34);
+            // === COMPANY ADDRESS ===
+            pdf.setFont("helvetica", "normal");
+            pdf.setFontSize(12);
+            const addressTextWidth = pdf.getTextDimensions(companyAddress).w;
+            pdf.text(companyAddress, (pdfWidth - addressTextWidth) / 2, 27);
+            
+            // === CUSTOMER NAME ===
+            pdf.setFont("helvetica", "bold");
+            pdf.setFontSize(13);
+            const customerLabel = `Customer Name: ${customerName}`;
+            const customerTextWidth = pdf.getTextDimensions(customerLabel).w;
+            pdf.text(customerLabel, (pdfWidth - customerTextWidth) / 2, 34);
 
-        // === ──────────────── Divider Line ===
-        pdf.setLineWidth(0.5);
-        pdf.line(10, 38, pdfWidth - 10, 38);
+            // divider
+            pdf.setLineWidth(0.5);
+            pdf.line(10, 38, pdfWidth - 10, 38);
+        };
 
-        // === Capture the table content as image ===
-        const canvas = await html2canvas(input, { scale: 2 });
-        const imgData = canvas.toDataURL("image/png");
+        drawHeader();
 
-        // === Add image to PDF ===
-        const imgWidth = 190;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        pdf.addImage(imgData, "PNG", 10, 42, imgWidth, imgHeight); // placed below header block
+        // Build flat rows (keep “PARTICULAR” colors same as UI)
+        // Bootstrap-ish RGBs: red(220,53,69), green(40,167,69), blue(0,123,255)
+        const colorRed = [220, 53, 69];
+        const colorGreen = [40, 167, 69];
+        const colorBlue = [0, 123, 255];
 
-        // === Save PDF with customer name ===
+        const rows = [];
+
+        filteredOrders.forEach((order, orderIndex) => {
+            const showInvoice =
+                order.status !== "Invoice Rejected" && order.status !== "Invoice Created";
+
+            if (showInvoice) {
+                rows.push({
+                    index: `${orderIndex + 1}`,
+                    date: order.order_date,
+                    invoice: `${order.invoice}/${order.company}`,
+                    particular: "Goods Sale",
+                    debit: Number(order.total_amount || 0).toFixed(2),
+                    credit: "-",
+                    _particularColor: colorRed,
+                    _bold: false,
+                });
+            }
+
+            (order.recived_payment || []).forEach((receipt, idx) => {
+                rows.push({
+                    index: `${orderIndex + 1}.${idx + 1}`,
+                    date: receipt.received_at,
+                    invoice: receipt.bank, // (already mapping bank name in table view; optional to map here too)
+                    particular: "Payment received",
+                    debit: "-",
+                    credit: Number(receipt.amount || 0).toFixed(2),
+                    _particularColor: colorGreen,
+                    _bold: false,
+                });
+            });
+        });
+
+        (advanceReceipts || []).forEach((advance, idx) => {
+            rows.push({
+                index: `A${idx + 1}`,
+                date: advance.received_at,
+                invoice: bankIdToName[advance.bank] || advance.bank,
+                particular: "Advance Receipt",
+                debit: "-",
+                credit: Number(advance.amount || 0).toFixed(2),
+                _particularColor: colorBlue,
+                _bold: false,
+            });
+        });
+
+        // Append Grand Total & Closing Balance rows (bold)
+        rows.push(
+            {
+                index: "",
+                date: "",
+                invoice: "",
+                particular: "Grand Total",
+                debit: totalDebit.toFixed(2),
+                credit: totalCredit.toFixed(2),
+                _particularColor: [0, 0, 0],
+                _bold: true,
+            },
+            {
+                index: "",
+                date: "",
+                invoice: "",
+                particular: "Closing Balance",
+                debit: closingBalance > 0 ? closingBalance.toFixed(2) : "",
+                credit: closingBalance < 0 ? Math.abs(closingBalance).toFixed(2) : "",
+                _particularColor: [0, 0, 0],
+                _bold: true,
+            }
+        );
+
+        // Helper: chunk rows into pages of exactly 30
+        const chunkArray = (arr, size) =>
+            Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
+                arr.slice(i * size, i * size + size)
+            );
+
+        const chunks = chunkArray(rows, 30);
+
+        const head = [["#", "DATE", "INVOICE", "PARTICULAR", "DEBIT", "CREDIT"]];
+
+        // Draw each chunk on its own page; add header each time
+        chunks.forEach((chunk, pageIndex) => {
+            if (pageIndex > 0) {
+                pdf.addPage();
+                drawHeader();
+            }
+
+            autoTable(pdf, {
+                head,
+                body: chunk.map((r) => [
+                    r.index,
+                    r.date,
+                    r.invoice,
+                    r.particular,
+                    r.debit,
+                    r.credit,
+                ]),
+                // startY: 42,
+                startY: pageIndex === 0 ? 42 : 40,
+                theme: "grid",
+                styles: {
+                    font: "helvetica",
+                    fontSize: 10,
+                    lineColor: [200, 200, 200],
+                    lineWidth: 0.2,
+                    cellPadding: 3,
+                    valign: "middle",
+                },
+                headStyles: {
+                    fillColor: [240, 240, 240],
+                    textColor: [0, 0, 0],
+                    fontStyle: "bold",
+                },
+                alternateRowStyles: {
+                    fillColor: [249, 249, 249],
+                },
+                columnStyles: {
+                    0: { cellWidth: 14, halign: "center" },
+                    1: { cellWidth: 28 },
+                    2: { cellWidth: 60 },
+                    3: { cellWidth: 38, fontStyle: "bold" },
+                    4: { cellWidth: 25, halign: "right" },
+                    5: { cellWidth: 25, halign: "right" },
+                },
+                // Preserve colors in PARTICULAR column + bold total rows
+                didParseCell: (data) => {
+                    const { section, column, row } = data;
+                    if (section === "body") {
+                        const raw = chunks[pageIndex][row.index];
+                        // Bold rows for totals
+                        if (raw?._bold) {
+                            data.cell.styles.fontStyle = "bold";
+                        }
+                        // Coloring the "PARTICULAR" column only
+                        if (column.index === 3 && Array.isArray(raw?._particularColor)) {
+                            data.cell.styles.textColor = raw._particularColor;
+                        }
+                    }
+                },
+                margin: { top: 6, right: 10, bottom: 14, left: 10 },
+            });
+        });
+
         pdf.save(`${customerName}_Ledger.pdf`);
     };
-
 
     const totalDebit = filteredOrders.reduce((total, order) => {
         if (order.status !== "Invoice Rejected" && order.status !== "Invoice Created") {

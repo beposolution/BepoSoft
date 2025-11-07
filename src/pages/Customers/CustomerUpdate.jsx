@@ -305,7 +305,7 @@ const FormLayouts = () => {
                                                     >
                                                         <option value="">Select</option>
                                                         <option value="NO GST">NO GST</option>
-                                                        <option value="ghjgf">ghjgf</option>
+                                                        <option value="YES">YES</option>
                                                     </Input>
                                                     <FormFeedback>{formik.errors.gst_confirm}</FormFeedback>
                                                 </div>

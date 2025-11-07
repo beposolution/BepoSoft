@@ -1182,6 +1182,7 @@ const FormLayouts = () => {
                                             <p><strong>Name:</strong> {shippingAddress.name}</p>
                                             <p><strong>Street:</strong> {shippingAddress.address}</p>
                                             <p><strong>Phone:</strong> {shippingAddress.phone}</p>
+                                            <p><strong>Alternate Phone:</strong> {billingAddress.alt_phone}</p>
                                             <p><strong>Alternate Phone:</strong> {shippingAddress.alt_phone}</p>
                                             <p><strong>City:</strong> {shippingAddress.city}</p>
                                             <p><strong>State:</strong> {shippingAddress.state}</p>

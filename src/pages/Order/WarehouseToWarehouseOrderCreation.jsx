@@ -7,7 +7,7 @@ import axios from "axios";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
-import AddProduct from "./Add-product";
+import ProductAddWarehouse from "./Product-Add-warehouse";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -401,7 +401,7 @@ const WarehouseToWarehouseOrderCreation = () => {
       </div>
 
       {/* Product modal */}
-      <AddProduct
+      <ProductAddWarehouse
         isOpen={modalOpen}
         toggle={toggleModal}
         ProductsFetch={fetchCartProducts}

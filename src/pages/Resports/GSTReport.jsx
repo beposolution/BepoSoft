@@ -8,27 +8,22 @@ import { saveAs } from "file-saver";
 import Paginations from "../../components/Common/Pagination";
 
 const stateCodes = {
-  "Jammu & Kashmir": "01","Himachal Pradesh": "02","Punjab": "03","Chandigarh": "04","Uttarakhand": "05","Haryana": "06","Delhi": "07",
-  "Rajasthan": "08","Uttar Pradesh": "09","Bihar": "10","Sikkim": "11","Arunachal Pradesh": "12","Nagaland": "13","Manipur": "14",
-  "Mizoram": "15","Tripura": "16","Meghalaya": "17","Assam": "18","West Bengal": "19","Jharkhand": "20","Odisha": "21",
-  "Chhattisgarh": "22","Madhya Pradesh": "23","Gujarat": "24","Daman & Diu": "25","Dadra & Nagar Haveli": "26","Maharashtra": "27",
-  "Karnataka": "29","Goa": "30","Lakshadweep": "31","Kerala": "32","Tamil Nadu": "33","Puducherry": "34","Andaman & Nicobar Islands": "35",
-  "Telangana": "36","Andhra Pradesh": "37","Ladakh": "38",
+  "Jammu & Kashmir": "01", "Himachal Pradesh": "02", "Punjab": "03", "Chandigarh": "04", "Uttarakhand": "05", "Haryana": "06", "Delhi": "07",
+  "Rajasthan": "08", "Uttar Pradesh": "09", "Bihar": "10", "Sikkim": "11", "Arunachal Pradesh": "12", "Nagaland": "13", "Manipur": "14",
+  "Mizoram": "15", "Tripura": "16", "Meghalaya": "17", "Assam": "18", "West Bengal": "19", "Jharkhand": "20", "Odisha": "21",
+  "Chhattisgarh": "22", "Madhya Pradesh": "23", "Gujarat": "24", "Daman & Diu": "25", "Dadra & Nagar Haveli": "26", "Maharashtra": "27",
+  "Karnataka": "29", "Goa": "30", "Lakshadweep": "31", "Kerala": "32", "Tamil Nadu": "33", "Puducherry": "34", "Andaman & Nicobar Islands": "35",
+  "Telangana": "36", "Andhra Pradesh": "37", "Ladakh": "38",
 };
 
 const GSTReport = () => {
   const token = localStorage.getItem("token");
 
-  // server-side paging states
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(100); // backend default/limit; change if you want a selector
+  const [pageSize] = useState(100);
   const [totalCount, setTotalCount] = useState(0);
-
-  // current page data (what table shows)
   const [gstData, setGSTData] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  // date filter states
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
@@ -90,8 +85,8 @@ const GSTReport = () => {
         invoice: row.invoice || "",
         date: row.order_date
           ? new Date(row.order_date)
-              .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })
-              .replace(/ /g, "-")
+            .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })
+            .replace(/ /g, "-")
           : "",
         placeOfSupply: stateCodes[row.address]
           ? `${stateCodes[row.address]}-${row.address}`
@@ -101,7 +96,7 @@ const GSTReport = () => {
     });
   }, [gstData]);
 
-  // Export: fetch all pages (respecting filters) and then create 2 sheets
+  // Export: fetch all pages (respecting filters) and then create 3 sheets: B2B, B2C, HSN
   const exportCombinedExcel = async () => {
     try {
       // first: get page 1 to learn totalCount
@@ -139,41 +134,74 @@ const GSTReport = () => {
         if (Array.isArray(data?.results)) allResults.push(...data.results);
       }
 
-      // -------- GST Report Sheet --------
-      const gstRows = [];
+      // Helper: formatted date
+      const formatDate = (d) =>
+        d
+          ? new Date(d)
+            .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })
+            .replace(/ /g, "-")
+          : "";
+
+      // -------- B2B and B2C Sheets --------
+      const b2bRows = [];
+      const b2cRows = [];
+
       allResults.forEach((row, index) => {
+        // Normalize gst_confirm for comparison (handle null / undefined)
+        const gstConfirm = (row.gst_confirm || "").toString().trim().toUpperCase();
+
+        // group items by tax rate like before
         const groupedByTax = (row.items || []).reduce((acc, item) => {
           (acc[item.tax] = acc[item.tax] || []).push(item);
           return acc;
         }, {});
+
         Object.entries(groupedByTax).forEach(([taxRate]) => {
-          gstRows.push({
+          const baseRow = {
             "#": index + 1,
             "GSTIN/UIN Number": row.gst || "",
             "Receiver Name": row.customerName || "",
             "Invoice Number": row.invoice || "",
-            "Invoice Date": row.order_date
-              ? new Date(row.order_date)
-                  .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })
-                  .replace(/ /g, "-")
-              : "",
+            "Invoice Date": formatDate(row.order_date),
             "Invoice Value": "",
-            "Place of Supply": stateCodes[row.address]
-              ? `${stateCodes[row.address]}-${row.address}`
-              : (row.address || ""),
+            "Place of Supply": stateCodes[row.address] ? `${stateCodes[row.address]}-${row.address}` : (row.address || ""),
             "Reverse Charge": "N",
             "Applicable % of Tax": "",
-            "Invoice Type": "Regular B2B",
             "E-Commerce GSTIN": "",
             "Rate": `${taxRate}%`,
             "Taxable Value": "",
             "Cess Amount": "",
-          });
+          };
+
+          // Put into B2B if gst_confirm === "YES"
+          if (gstConfirm === "YES") {
+            b2bRows.push({
+              ...baseRow,
+              "Invoice Type": "Regular B2B",
+            });
+          }
+          // Put into B2C if gst_confirm === "NO GST"
+          else if (gstConfirm === "NO GST") {
+            b2cRows.push({
+              ...baseRow,
+              "Invoice Type": "Regular B2C",
+            });
+          }
+          // If gst_confirm is something else / blank, you can decide — here we default to B2C-like sheet
+          else {
+            // OPTIONAL: treat unknown as B2C (adjust if you prefer to skip)
+            b2cRows.push({
+              ...baseRow,
+              "Invoice Type": row.gst ? "Regular B2B" : "Regular B2C",
+            });
+          }
         });
       });
-      const gstSheet = XLSX.utils.json_to_sheet(gstRows);
 
-      // -------- HSN Summary Sheet --------
+      const b2bSheet = XLSX.utils.json_to_sheet(b2bRows);
+      const b2cSheet = XLSX.utils.json_to_sheet(b2cRows);
+
+      // -------- HSN Summary Sheet (unchanged logic, aggregates across allResults) --------
       const summaryMap = {};
       allResults.forEach((row) => {
         (row.items || []).forEach((item) => {
@@ -194,14 +222,15 @@ const GSTReport = () => {
             };
           }
           const taxable = parseFloat(item.exclude_price) || 0;
-          const qty = item.quantity || 0;
+          const qty = parseFloat(item.quantity) || 0;
           const rate = parseFloat(item.tax) || 0;
 
           summaryMap[key].TotalQuantity += qty;
           summaryMap[key].TotalTaxableValue += taxable;
           const taxAmount = (taxable * rate) / 100;
 
-          // If buyer GST present treat as interstate (IGST). Adjust if you need actual place-of-supply vs your GST.
+          // If buyer GST present treat as interstate (IGST).
+          // NOTE: using row.gst presence here like your original logic.
           if (row.gst) {
             summaryMap[key].IGST += taxAmount;
           } else {
@@ -218,17 +247,20 @@ const GSTReport = () => {
       const hsnRows = Object.values(summaryMap);
       const hsnSheet = XLSX.utils.json_to_sheet(hsnRows);
 
-      // -------- Write workbook --------
+      // -------- Write workbook with 3 sheets --------
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, gstSheet, "GST Report");
+      XLSX.utils.book_append_sheet(workbook, b2bSheet, "B2B (GST YES)");
+      XLSX.utils.book_append_sheet(workbook, b2cSheet, "B2C (NO GST)");
       XLSX.utils.book_append_sheet(workbook, hsnSheet, "HSN Summary");
 
       const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-      saveAs(new Blob([excelBuffer], { type: "application/octet-stream" }), "GST_Report_With_HSN.xlsx");
+      saveAs(new Blob([excelBuffer], { type: "application/octet-stream" }), "GST_Report_B2B_B2C_With_HSN.xlsx");
     } catch (e) {
+      console.error(e);
       toast.error("Export failed");
     }
   };
+
 
   // helper for Paginations: your component expects a "data" prop to know total pages.
   // We pass a lightweight object exposing only a .length equal to totalCount.

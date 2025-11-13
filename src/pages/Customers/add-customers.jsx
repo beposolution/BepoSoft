@@ -51,6 +51,7 @@ const FormLayouts = () => {
             city: Yup.string().required("City is required"),
             state: Yup.string().required("State is required"),
             customer_type: Yup.string().required("Customer Type is required"),
+            gst_confirm: Yup.string().required("This field is required"),
         }),
 
         onSubmit: async (values) => {

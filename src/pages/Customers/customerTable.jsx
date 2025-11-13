@@ -29,7 +29,8 @@ const BasicTable = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedState, setSelectedState] = useState("");
-  const [selectedFamily, setSelectedFamily] = useState(""); 
+  const [selectedFamily, setSelectedFamily] = useState("");
+  const [selectedManager, setSelectedManager] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPageData] = useState(10);
 
@@ -93,6 +94,16 @@ const BasicTable = () => {
   const handleSearch = (e) => setSearchTerm(e.target.value);
   const handleStateFilter = (e) => setSelectedState(e.target.value);
   const handleFamilyFilter = (e) => setSelectedFamily(e.target.value);
+  const handleManagerFilter = (e) => setSelectedManager(e.target.value);
+
+  // quick lookup map for manager id -> manager name (used in exports / display)
+  const managerMap = useMemo(() => {
+    const map = {};
+    (managers || []).forEach((m) => {
+      map[m.id] = m.name || m.username || `#${m.id}`;
+    });
+    return map;
+  }, [managers]);
 
   // Build a fast text search target per customer
   const filteredData = useMemo(() => {
@@ -101,7 +112,6 @@ const BasicTable = () => {
     return (data || [])
       .filter((customer) => {
         if (selectedFamily) {
-          // customer.family may be string; normalize to lower for compare
           const fam = (customer.family || "").toString().toLowerCase();
           if (fam !== selectedFamily.toLowerCase()) return false;
         }
@@ -110,6 +120,12 @@ const BasicTable = () => {
         if (selectedState) {
           const st = (customer.state_name || "").toLowerCase();
           if (st !== selectedState.toLowerCase()) return false;
+        }
+
+        // manager filter (customer.manager is an id)
+        if (selectedManager) {
+          // compare as strings to avoid type issues
+          if ((customer.manager || "").toString() !== selectedManager) return false;
         }
 
         if (!term) return true;
@@ -129,7 +145,7 @@ const BasicTable = () => {
         );
       })
       .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  }, [data, searchTerm, selectedState, selectedFamily]);
+  }, [data, searchTerm, selectedState, selectedFamily, selectedManager]);
 
   const handleUpdate = (customerId) => navigate(`/customer/${customerId}/edit/`);
   const handleAddress = (customerId) =>
@@ -141,7 +157,7 @@ const BasicTable = () => {
     const formattedData = filteredData.map((customer, index) => ({
       "#": index + 1,
       Name: customer.name,
-      Manager: customer.manager,
+      Manager: managerMap[customer.manager] || customer.manager || "N/A",
       GST: customer.gst || "N/A",
       Email: customer.email || "N/A",
       Phone: customer.phone || "N/A",
@@ -164,7 +180,7 @@ const BasicTable = () => {
   const indexOfFirstItem = indexOfLastItem - perPageData;
   const currentPageData = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
-  document.title = "Customer List | Dashboard Template";
+  document.title = "Customer List | BEPOSOFT";
 
   return (
     <React.Fragment>
@@ -180,7 +196,7 @@ const BasicTable = () => {
                   </CardSubtitle>
 
                   <Row className="align-items-end mb-3 g-3">
-                    <Col md={4}>
+                    <Col md={3}>
                       <FormGroup className="mb-0">
                         <Label className="mb-1">Search</Label>
                         <Input
@@ -193,7 +209,7 @@ const BasicTable = () => {
                       </FormGroup>
                     </Col>
 
-                    <Col md={3}>
+                    <Col md={2}>
                       <FormGroup className="mb-0">
                         <Label className="mb-1">Family</Label>
                         <Input
@@ -212,7 +228,7 @@ const BasicTable = () => {
                       </FormGroup>
                     </Col>
 
-                    <Col md={3}>
+                    <Col md={2}>
                       <FormGroup className="mb-0">
                         <Label className="mb-1">State</Label>
                         <Input
@@ -225,6 +241,26 @@ const BasicTable = () => {
                           {states.map((state) => (
                             <option key={state.id} value={state.name}>
                               {state.name}
+                            </option>
+                          ))}
+                        </Input>
+                      </FormGroup>
+                    </Col>
+
+                    <Col md={2}>
+                      <FormGroup className="mb-0">
+                        <Label className="mb-1">Manager</Label>
+                        <Input
+                          type="select"
+                          value={selectedManager}
+                          onChange={handleManagerFilter}
+                          className="w-100"
+                        >
+                          <option value="">All Managers</option>
+                          {managers.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name} 
+                              {/* {m.allocated_states_names ? ` — ${m.allocated_states_names.join(', ')}` : ''} */}
                             </option>
                           ))}
                         </Input>

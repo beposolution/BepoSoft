@@ -67,18 +67,42 @@ const BasicTable = () => {
         };
 
         fetchProducts();
-    }, [token, warehouseID]); // only runs when warehouseID is available
+    }, [token, warehouseID]);
 
     const handleSearchChange = (e) => {
-        setSearchTerm(e.target.value);
+        const value = e.target.value;
+        setSearchTerm(value);
+
+        // if user clears input, reset filtered list to all products immediately
+        if (value.trim() === "") {
+            setFilteredProducts(products);
+            setCurrentPage(1);
+        }
     };
 
     const handleSearchSubmit = (e) => {
         e.preventDefault();
-        const filtered = products.filter(product =>
-            product.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        const q = searchTerm.trim().toLowerCase();
+
+        if (!q) {
+            setFilteredProducts(products);
+            setCurrentPage(1);
+            return;
+        }
+
+        const filtered = products.filter(product => {
+            const nameMatch = (product.name || "").toLowerCase().includes(q);
+            // product.hsn_code might be number or string; convert to string before search
+            const hsnMatch = (product.hsn_code !== undefined && product.hsn_code !== null)
+                ? String(product.hsn_code).toLowerCase().includes(q)
+                : false;
+
+            // also check category or other fields if you want (optional)
+            return nameMatch || hsnMatch;
+        });
+
         setFilteredProducts(filtered);
+        setCurrentPage(1);
     };
 
     const handleEditVie = (productId) => {
@@ -134,7 +158,6 @@ const BasicTable = () => {
         const exportData = [];
 
         filteredProducts.forEach((product, index) => {
-            // Add main product
             exportData.push({
                 "#": index + 1,
                 ID: product.id,
@@ -156,18 +179,18 @@ const BasicTable = () => {
                 Locked_Stock: product.locked_stock
             });
 
-            // Add variants if any
             if (Array.isArray(product.variantIDs) && product.variantIDs.length > 0) {
                 product.variantIDs.forEach((variant) => {
                     exportData.push({
-                        "#": "", // Empty to group under same index
+                        "#": "",
                         ID: variant.id,
                         Name: variant.name,
                         Type: "variant",
-                        HSN_Code: product.hsn_code, // Inherit from parent if needed
+                        HSN_Code: product.hsn_code,
+                        Category: product.product_category_name,
                         Unit: product.unit,
-                        Purchase_Rate: "", // Assume variants don't have this unless defined
-                        Tax_Percent: "",   // Same here
+                        Purchase_Rate: "",
+                        Tax_Percent: "",
                         Landing_Cost: "",
                         Excluded_Price: "",
                         Wholesale_Price: variant.selling_price,
@@ -205,24 +228,19 @@ const BasicTable = () => {
                                                 <Input
                                                     className="form-control me-auto"
                                                     type="text"
-                                                    placeholder="Search products..."
-                                                    aria-label="Search products"
+                                                    placeholder="Search products or HSN code..."
+                                                    aria-label="Search products or HSN code"
                                                     value={searchTerm}
                                                     onChange={handleSearchChange}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter') handleSearchSubmit(e); }}
                                                 />
                                                 <Button color="secondary" onClick={handleSearchSubmit}>
                                                     <FaSearch />
                                                 </Button>
                                                 <div className="vr"></div>
-                                                {/* <Button color="outline-danger" onClick={handleResetSearch}>
-                                                    Reset
-                                                </Button> */}
                                             </div>
                                         </Col>
                                         <Col md={4} className="text-end">
-                                            {/* <Button color="primary" onClick={handleAddProduct}>
-                                                Add Product
-                                            </Button> */}
                                         </Col>
                                     </Row>
                                     <CardTitle className="h4 text-center">Product Table</CardTitle>
@@ -244,7 +262,7 @@ const BasicTable = () => {
                                                         <th>Image</th>
                                                         <th>Name</th>
                                                         <th>HSN CODE</th>
-                                                        <th>category</th>
+                                                        <th>Category</th>
                                                         <th>TYPE</th>
                                                         <th>UNIT</th>
                                                         <th>STOCK</th>
@@ -275,7 +293,7 @@ const BasicTable = () => {
                                                                     {truncateText(product.name, 30)}
                                                                 </td>
                                                                 <td>{product?.hsn_code}</td>
-                                                                <td>{product?.product_category}</td>
+                                                                <td>{product?.product_category_name}</td>
                                                                 <td>{product?.type}</td>
                                                                 <td>{product?.unit}</td>
                                                                 <td>{product.stock}</td>
@@ -299,13 +317,6 @@ const BasicTable = () => {
                                                                                     Edit
                                                                                 </UncontrolledTooltip>
                                                                             </DropdownItem>
-                                                                            {/* <DropdownItem onClick={() => handleViewProduct(product.id, product.type)}>
-                                                                                <i className="mdi mdi-eye font-size-16 text-info me-1" id={`viewtooltip-${product.id}`}></i>
-                                                                                View
-                                                                                <UncontrolledTooltip placement="top" target={`viewtooltip-${product.id}`}>
-                                                                                    View Product
-                                                                                </UncontrolledTooltip>
-                                                                            </DropdownItem> */}
                                                                         </DropdownMenu>
                                                                     </UncontrolledDropdown>
                                                                 </td>
@@ -313,7 +324,7 @@ const BasicTable = () => {
                                                         ))
                                                     ) : (
                                                         <tr>
-                                                            <td colSpan="11">No products available</td>
+                                                            <td colSpan="16">No products available</td>
                                                         </tr>
                                                     )}
                                                 </tbody>

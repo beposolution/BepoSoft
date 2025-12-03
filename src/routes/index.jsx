@@ -389,6 +389,7 @@ import WarehouseToWarehouseOrderCreation from "../pages/Order/WarehouseToWarehou
 import WarehouseToWarehouseOrderList from "../pages/Order/WarehouseToWarehouseOrderList";
 import WarehouseOrderDetails from "../pages/Order/WarehouseToWarehouseOrderDetails";
 import DateProductReport from "../pages/Resports/DateProductReport";
+import DateWiseSalesReport from "../pages/Resports/DateWiseSalesReport";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -606,6 +607,7 @@ const authProtectedRoutes = [
 
 
   { path: "/sales/reports/", component: <Salesreport /> },
+  { path: "/datewise/sales/reports/", component: <DateWiseSalesReport /> },
   { path: "/calllog/reports/", component: <CallLogReport /> },
   { path: "/sales/view/:date/data/", component: <InvoiceDatas /> },
   { path: "/sales/resport/:id/staff/:date/:name/", component: <StaffOrders /> },

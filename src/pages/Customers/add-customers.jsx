@@ -52,6 +52,11 @@ const FormLayouts = () => {
             state: Yup.string().required("State is required"),
             customer_type: Yup.string().required("Customer Type is required"),
             gst_confirm: Yup.string().required("This field is required"),
+            gst: Yup.string().when("gst_confirm", {
+                is: "YES",
+                then: Yup.string().required("GST Number is required"),
+                otherwise: Yup.string().notRequired(),
+            }),
         }),
 
         onSubmit: async (values) => {
@@ -193,7 +198,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col md={4}>
+                                            {/* <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label className="formrow-name-Input">
                                                         Does The Customer Have GST?
@@ -243,7 +248,58 @@ const FormLayouts = () => {
                                                         ) : null
                                                     }
                                                 </div>
+                                            </Col> */}
+
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label>Does The Customer Have GST?</Label>
+
+                                                    <Input
+                                                        type="select"
+                                                        name="gst_confirm"
+                                                        className={`form-control ${formik.touched.gst_confirm && formik.errors.gst_confirm ? "is-invalid" : ""}`}
+                                                        value={formik.values.gst_confirm}
+                                                        onChange={(e) => {
+                                                            formik.handleChange(e);
+
+                                                            // Clear GST number automatically when NO is selected
+                                                            if (e.target.value === "NO GST") {
+                                                                formik.setFieldValue("gst", "");
+                                                            }
+                                                        }}
+                                                        onBlur={formik.handleBlur}
+                                                    >
+                                                        <option value="">Select</option>
+                                                        <option value="NO GST">NO GST</option>
+                                                        <option value="YES">YES</option>
+                                                    </Input>
+
+                                                    {formik.errors.gst_confirm && formik.touched.gst_confirm && (
+                                                        <FormFeedback type="invalid">{formik.errors.gst_confirm}</FormFeedback>
+                                                    )}
+                                                </div>
                                             </Col>
+
+                                            {formik.values.gst_confirm === "YES" && (
+                                                <Col md={4}>
+                                                    <div className="mb-3">
+                                                        <Label>GST Number</Label>
+                                                        <Input
+                                                            type="text"
+                                                            name="gst"
+                                                            className="form-control"
+                                                            placeholder="Enter GST Number"
+                                                            value={formik.values.gst}
+                                                            onChange={formik.handleChange}
+                                                            onBlur={formik.handleBlur}
+                                                            invalid={formik.touched.gst && formik.errors.gst ? true : false}
+                                                        />
+                                                        {formik.errors.gst && formik.touched.gst && (
+                                                            <FormFeedback type="invalid">{formik.errors.gst}</FormFeedback>
+                                                        )}
+                                                    </div>
+                                                </Col>
+                                            )}
 
                                             <Col md={4}>
                                                 <div className="mb-3">

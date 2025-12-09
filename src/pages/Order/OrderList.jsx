@@ -21,7 +21,6 @@ import Pagination from "../../components/Common/Pagination"
 
 const BasicTable = () => {
     const [orders, setOrders] = useState([]);
-    // console.log("orders", orders)
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");

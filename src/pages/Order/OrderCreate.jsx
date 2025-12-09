@@ -80,6 +80,9 @@ const FormLayouts = () => {
             order_date: new Date().toISOString().substring(0, 10),
             status: "Invoice Created",
             warehouses: "",
+            cod_status: "",
+            cod_amount: "",
+            adv_cod_amount: "",
         },
         validationSchema: Yup.object({
             state: Yup.string().required("This field is required"),
@@ -92,6 +95,23 @@ const FormLayouts = () => {
             payment_method: Yup.string().required("Payment method is required"),
             bank: Yup.string().required("Bank selection is required"),
             status: Yup.string().required("this field is required"),
+            cod_status: Yup.string().when("payment_status", {
+                is: (val) => val === "COD",
+                then: (schema) => schema.required("COD Status is required"),
+                otherwise: (schema) => schema.nullable()
+            }),
+
+            cod_amount: Yup.number().when("cod_status", {
+                is: (val) => val === "FULL_COD",
+                then: (schema) => schema.required("COD Amount is required"),
+                otherwise: (schema) => schema.nullable()
+            }),
+
+            adv_cod_amount: Yup.number().when("cod_status", {
+                is: (val) => val === "PARTIAL_COD",
+                then: (schema) => schema.required("Advance COD Amount is required"),
+                otherwise: (schema) => schema.nullable()
+            }),
         }),
         onSubmit: async (values, { resetForm }) => {
             const payload = {
@@ -881,6 +901,66 @@ const FormLayouts = () => {
                                                             {formik.errors.payment_status && formik.touched.payment_status ? (
                                                                 <FormFeedback>{formik.errors.payment_status}</FormFeedback>
                                                             ) : null}
+
+                                                            {formik.values.payment_status === "COD" && (
+                                                                <>
+                                                                    <Label for="cod_status" className="mt-3">COD Status</Label>
+                                                                    <Input
+                                                                        type="select"
+                                                                        name="cod_status"
+                                                                        id="cod_status"
+                                                                        value={formik.values.cod_status}
+                                                                        onChange={formik.handleChange}
+                                                                        onBlur={formik.handleBlur}
+                                                                        invalid={formik.touched.cod_status && formik.errors.cod_status ? true : false}
+                                                                    >
+                                                                        <option value="">Select COD Status</option>
+                                                                        <option value="FULL_COD">Full COD</option>
+                                                                        <option value="PARTIAL_COD">Partial COD</option>
+                                                                    </Input>
+                                                                    {formik.errors.cod_status && formik.touched.cod_status ? (
+                                                                        <FormFeedback>{formik.errors.cod_status}</FormFeedback>
+                                                                    ) : null}
+
+                                                                    {/* FULL COD → SHOW cod_amount */}
+                                                                    {formik.values.cod_status === "FULL_COD" && (
+                                                                        <>
+                                                                            <Label for="cod_amount" className="mt-3">COD Amount</Label>
+                                                                            <Input
+                                                                                type="number"
+                                                                                name="cod_amount"
+                                                                                id="cod_amount"
+                                                                                value={formik.values.cod_amount}
+                                                                                onChange={formik.handleChange}
+                                                                                onBlur={formik.handleBlur}
+                                                                                invalid={formik.touched.cod_amount && formik.errors.cod_amount ? true : false}
+                                                                            />
+                                                                            {formik.errors.cod_amount && formik.touched.cod_amount ? (
+                                                                                <FormFeedback>{formik.errors.cod_amount}</FormFeedback>
+                                                                            ) : null}
+                                                                        </>
+                                                                    )}
+
+                                                                    {/* PARTIAL COD → SHOW ADVANCE COD FIELD */}
+                                                                    {formik.values.cod_status === "PARTIAL_COD" && (
+                                                                        <>
+                                                                            <Label for="adv_cod_amount" className="mt-3">Advance COD Amount</Label>
+                                                                            <Input
+                                                                                type="number"
+                                                                                name="adv_cod_amount"
+                                                                                id="adv_cod_amount"
+                                                                                value={formik.values.adv_cod_amount}
+                                                                                onChange={formik.handleChange}
+                                                                                onBlur={formik.handleBlur}
+                                                                                invalid={formik.touched.adv_cod_amount && formik.errors.adv_cod_amount ? true : false}
+                                                                            />
+                                                                            {formik.errors.adv_cod_amount && formik.touched.adv_cod_amount ? (
+                                                                                <FormFeedback>{formik.errors.adv_cod_amount}</FormFeedback>
+                                                                            ) : null}
+                                                                        </>
+                                                                    )}
+                                                                </>
+                                                            )}
 
                                                             <Label for="bank" className="mt-3">Bank Name</Label>
                                                             <Input

@@ -112,12 +112,27 @@ const InvoiceRejected = () => {
             case "Waiting For Confirmation":
                 return { color: "orange", fontWeight: "bold" };
             case "Packing under progress":
-                return { color: "gray", fontWeight: "bold" };
+                return { color: "purple", fontWeight: "bold" };
             case "Invoice Created":
                 return { color: "blue", fontWeight: "bold" };
             default:
                 return {};
         }
+    };
+
+    const getRowStyleByPayment = (paymentStatus) => {
+        if (!paymentStatus) return {};
+
+        const status = paymentStatus.toLowerCase();
+
+        if (status === "cod") {
+            return { backgroundColor: "#d6ecff" };   // light blue
+        }
+        if (status === "credit") {
+            return { backgroundColor: "#ffd6d6" };   // light red
+        }
+
+        return {};
     };
 
     const exportToExcel = () => {
@@ -188,52 +203,91 @@ const InvoiceRejected = () => {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {currentPageOrders?.map((order, index) => (
-                                                        <tr key={order?.id}>
-                                                            <th scope="row">{indexOfFirstItem + index + 1}</th>
-                                                            <td>
-                                                                <Link
-                                                                    to={`/order/${order?.id}/items/`}
-                                                                    state={{ orderIds: filteredOrders.map(o => o.id) }}
-                                                                >
-                                                                    {order?.invoice}
-                                                                </Link>
-                                                            </td>
-                                                            <td>{order?.manage_staff} ({order?.family})</td>
-                                                            <td>
-                                                                <Link to={`/customer/${order?.customer?.id}/ledger/`}>
-                                                                    {order?.customer?.name}
-                                                                </Link>
-                                                            </td>
-                                                            <td style={{ verticalAlign: "top", ...getStatusStyle(order?.status) }}>
-                                                                <strong>{order?.status}</strong>
+                                                    {currentPageOrders?.map((order, index) => {
+                                                        const rowStyle = getRowStyleByPayment(order?.payment_status);
 
-                                                                {(["Ready to ship", "Shipped"].includes(order?.status)) &&
-                                                                    (order?.warehouse_data?.length > 0 || order?.warehouse?.length > 0) && (
-                                                                        <Table bordered size="sm" className="mt-2" style={{ width: "100%", fontSize: "12px" }}>
-                                                                            <thead>
-                                                                                <tr>
-                                                                                    <th style={{ border: "1px solid green" }}>#</th>
-                                                                                    <th style={{ border: "1px solid green" }}>Box</th>
-                                                                                    <th style={{ border: "1px solid green" }}>Tracking ID</th>
-                                                                                </tr>
-                                                                            </thead>
-                                                                            <tbody>
-                                                                                {(order.warehouse_data ?? order.warehouse ?? []).map((entry, idx) => (
-                                                                                    <tr key={idx}>
-                                                                                        <td style={{ border: "1px solid green" }}>{idx + 1}</td>
-                                                                                        <td style={{ border: "1px solid green" }}>{entry.box}</td>
-                                                                                        <td style={{ border: "1px solid green" }}>{entry.tracking_id}</td>
+                                                        return (
+                                                            <tr key={order?.id}>
+                                                                <th scope="row" style={rowStyle}>
+                                                                    {indexOfFirstItem + index + 1}
+                                                                </th>
+
+                                                                <td style={rowStyle}>
+                                                                    <Link
+                                                                        to={`/order/${order?.id}/items/`}
+                                                                        state={{ orderIds: filteredOrders.map(o => o.id) }}
+                                                                    >
+                                                                        {order?.invoice}
+                                                                    </Link>
+                                                                </td>
+
+                                                                <td style={rowStyle}>
+                                                                    {order?.manage_staff} ({order?.family})
+                                                                </td>
+
+                                                                <td style={rowStyle}>
+                                                                    <Link to={`/customer/${order?.customer?.id}/ledger/`}>
+                                                                        {order?.customer?.name}
+                                                                    </Link>
+                                                                </td>
+
+                                                                <td
+                                                                    style={{
+                                                                        ...rowStyle,
+                                                                        verticalAlign: "top",
+                                                                        ...getStatusStyle(order?.status)
+                                                                    }}
+                                                                >
+                                                                    <strong>{order?.status}</strong>
+
+                                                                    {(["Ready to ship", "Shipped"].includes(order?.status)) &&
+                                                                        (order?.warehouse_data?.length > 0 ||
+                                                                            order?.warehouse?.length > 0) && (
+                                                                            <Table
+                                                                                bordered
+                                                                                size="sm"
+                                                                                className="mt-2"
+                                                                                style={{ width: "100%", fontSize: "12px" }}
+                                                                            >
+                                                                                <thead>
+                                                                                    <tr>
+                                                                                        <th style={{ border: "1px solid green" }}>#</th>
+                                                                                        <th style={{ border: "1px solid green" }}>Box</th>
+                                                                                        <th style={{ border: "1px solid green" }}>Tracking ID</th>
                                                                                     </tr>
-                                                                                ))}
-                                                                            </tbody>
-                                                                        </Table>
-                                                                    )}
-                                                            </td>
-                                                            <td>{order?.total_amount?.toFixed(2)}</td>
-                                                            <td>{order?.order_date?.substring(0, 10)}</td>
-                                                        </tr>
-                                                    ))}
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                    {(order.warehouse_data ??
+                                                                                        order.warehouse ??
+                                                                                        []
+                                                                                    ).map((entry, idx) => (
+                                                                                        <tr key={idx}>
+                                                                                            <td style={{ border: "1px solid green" }}>
+                                                                                                {idx + 1}
+                                                                                            </td>
+                                                                                            <td style={{ border: "1px solid green" }}>
+                                                                                                {entry.box}
+                                                                                            </td>
+                                                                                            <td style={{ border: "1px solid green" }}>
+                                                                                                {entry.tracking_id}
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                    ))}
+                                                                                </tbody>
+                                                                            </Table>
+                                                                        )}
+                                                                </td>
+
+                                                                <td style={rowStyle}>
+                                                                    {order?.total_amount?.toFixed(2)}
+                                                                </td>
+
+                                                                <td style={rowStyle}>
+                                                                    {order?.order_date?.substring(0, 10)}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
                                                 </tbody>
                                             </Table>
                                         )}

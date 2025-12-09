@@ -308,7 +308,9 @@ const FormLayouts = () => {
             shipping_mode: "",
             family: "",
             payment_status: "",
-            check: ""
+            check: "",
+            adv_cod_amount: "",
+            cod_status: "",
         },
         validationSchema: Yup.object({
         }),
@@ -327,6 +329,8 @@ const FormLayouts = () => {
                     manage_staff: values.manage_staff,
                     check: values.check,
                     bank: selectedBank,
+                    adv_cod_amount: values.adv_cod_amount,
+                    cod_status: values.cod_status,
                 };
 
                 const response = await fetch(`${import.meta.env.VITE_APP_KEY}orders/update/${id}/`, {
@@ -342,6 +346,8 @@ const FormLayouts = () => {
                         payment_status: values.payment_status,
                         family: values.family !== "" ? parseInt(values.family) : null,
                         company: values.company,
+                        cod_status: values.cod_status,
+                        adv_cod_amount: values.adv_cod_amount,
                     }),
                 });
 
@@ -516,6 +522,8 @@ const FormLayouts = () => {
                     family: selectedFamily ? String(selectedFamily.id) : "",
                     shipping_charge: data.order.shipping_charge || "",
                     payment_status: data.order.payment_status || "",
+                    cod_status: data.order.cod_status || "",
+                    adv_cod_amount: data.order.adv_cod_amount || "",
                 });
                 setCustomerId(data?.order?.customer?.id || null);
                 setOrderItems(data?.items || []);
@@ -890,7 +898,7 @@ const FormLayouts = () => {
 
                                     <Form onSubmit={formik.handleSubmit}>
                                         <Row>
-                                            <Col md={4}>
+                                            <Col md={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-invoice-Input">INVOICE NO</Label>
                                                     <Input
@@ -913,7 +921,7 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
-                                            <Col md={4}>
+                                            <Col md={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-email-Input">STATUS</Label>
                                                     <Input
@@ -936,7 +944,7 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
-                                            <Col md={4}>
+                                            <Col md={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-manage_staff-Input">CREATED BY</Label>
                                                     <Input
@@ -960,9 +968,8 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
-                                        </Row>
-                                        <Row>
-                                            <Col lg={4}>
+
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Inputorder_date">CREATED AT</Label>
                                                     <Input
@@ -985,7 +992,9 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
-                                            <Col lg={4}>
+                                        </Row>
+                                        <Row>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label>Payment Method</Label>
                                                     <select
@@ -1003,7 +1012,7 @@ const FormLayouts = () => {
                                                     </select>
                                                 </div>
                                             </Col>
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-InputZip">Division</Label>
                                                     <select
@@ -1028,6 +1037,49 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label>COD Status</Label>
+
+                                                    <select
+                                                        name="cod_status"
+                                                        className="form-control"
+                                                        value={formik.values.cod_status}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                    >
+                                                        <option value="">Select COD Status</option>
+                                                        <option value="FULL_COD">Full COD</option>
+                                                        <option value="PARTIAL_COD">Partial COD</option>
+                                                    </select>
+
+                                                    {formik.touched.cod_status && formik.errors.cod_status && (
+                                                        <FormFeedback type="invalid">
+                                                            {formik.errors.cod_status}
+                                                        </FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={3}>
+                                                <Label>COD Advance Amount</Label>
+                                                <Input
+                                                    type="number"
+                                                    name="adv_cod_amount"
+                                                    className="form-control"
+                                                    value={formik.values.adv_cod_amount}
+                                                    onChange={formik.handleChange}
+                                                    onBlur={formik.handleBlur}
+                                                />
+
+                                                {formik.touched.adv_cod_amount && formik.errors.adv_cod_amount && (
+                                                    <FormFeedback type="invalid">
+                                                        {formik.errors.adv_cod_amount}
+                                                    </FormFeedback>
+                                                )}
+                                            </Col>
+
                                         </Row>
                                         <Row>
                                             <Col lg={4}>

@@ -14,7 +14,7 @@ const FooterLink = () => {
           </div>
 
           <p className="mb-2">
-            {new Date().getFullYear()} © MEXPO. Design & Develop by MEXPO GROUP
+            {new Date().getFullYear()} © BEPOSOFT. Design & Develop by MEXPO GROUP
           </p>
           <p>
             It will be as simple as occidental in fact, it will be to an english

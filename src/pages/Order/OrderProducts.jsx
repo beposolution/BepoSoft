@@ -507,6 +507,8 @@ const FormLayouts = () => {
                 throw new Error("Error fetching order data");
             }
             const data = await response.json();
+            localStorage.setItem("order_payment_method", data.order.payment_status);
+            localStorage.setItem("order_cod_status", data.order.cod_status);
 
             if (data.order) {
                 const selectedFamily = familyData.find(f => f.name.trim().toLowerCase() === data.order.family.trim().toLowerCase());

@@ -25,6 +25,27 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
     const [statusOptions, setStatusOptions] = useState([]);
     const [role, setRole] = useState(null);
     const originalValuesRef = useRef({});
+    const [paymentImagesCount, setPaymentImagesCount] = useState(0);
+
+    useEffect(() => {
+        const fetchImages = async () => {
+            const token = localStorage.getItem("token");
+            try {
+                const res = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}order/payment/images/${id}/`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                const imgs = res.data.data || res.data.images || [];
+
+                setPaymentImagesCount(imgs.length);
+            } catch (err) {
+                console.log("Error fetching images");
+                setPaymentImagesCount(0);
+            }
+        };
+        fetchImages();
+    }, [id]);
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -85,6 +106,26 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                 beforeDelta[k] = original?.[k] ?? null;
                 afterDelta[k] = values?.[k] ?? null;
             });
+
+            // READ CURRENT ORDER VALUES
+            const paymentMethod = localStorage.getItem("order_payment_method");
+            const codStatus = localStorage.getItem("order_cod_status");
+
+            // RULE 1: CREDIT → IMAGE REQUIRED
+            if (paymentMethod === "credit" && values.status === "Invoice Approved") {
+                if (paymentImagesCount === 0) {
+                    toast.error("Upload at least one PAYMENT IMAGE before approving invoice (Credit mode).");
+                    return;
+                }
+            }
+
+            // RULE 2: COD + PARTIAL COD → IMAGE REQUIRED
+            if (paymentMethod === "COD" && codStatus === "PARTIAL_COD" && values.status === "Invoice Approved") {
+                if (paymentImagesCount === 0) {
+                    toast.error("Upload PAYMENT IMAGE for PARTIAL COD before invoice approval.");
+                    return;
+                }
+            }
 
             try {
                 // 1) update the order

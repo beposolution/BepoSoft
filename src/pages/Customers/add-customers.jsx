@@ -52,10 +52,10 @@ const FormLayouts = () => {
             state: Yup.string().required("State is required"),
             customer_type: Yup.string().required("Customer Type is required"),
             gst_confirm: Yup.string().required("This field is required"),
-            gst: Yup.string().when("gst_confirm", {
-                is: "YES",
-                then: Yup.string().required("GST Number is required"),
-                otherwise: Yup.string().notRequired(),
+            gst: Yup.string().when("gst_confirm", (gst_confirm, schema) => {
+                return gst_confirm === "YES"
+                    ? schema.required("GST Number is required")
+                    : schema.notRequired();
             }),
         }),
 

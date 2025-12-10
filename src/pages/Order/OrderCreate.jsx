@@ -92,8 +92,16 @@ const FormLayouts = () => {
             manage_staff: Yup.string().required("This field is required"),
             billing_address: Yup.string().required("Shipping address selection is required"),
             payment_status: Yup.string().required("Payment status is required"),
-            payment_method: Yup.string().required("Payment method is required"),
-            bank: Yup.string().required("Bank selection is required"),
+            payment_method: Yup.string().when("payment_status", {
+                is: (val) => val === "paid" || val === "credit",
+                then: (schema) => schema.required("Payment method is required"),
+                otherwise: (schema) => schema.notRequired(),
+            }),
+            bank: Yup.string().when("payment_status", {
+                is: (val) => val === "paid" || val === "credit",
+                then: (schema) => schema.required("Bank selection is required"),
+                otherwise: (schema) => schema.notRequired(),
+            }),
             status: Yup.string().required("this field is required"),
             cod_status: Yup.string().when("payment_status", {
                 is: (val) => val === "COD",
@@ -114,10 +122,21 @@ const FormLayouts = () => {
             }),
         }),
         onSubmit: async (values, { resetForm }) => {
-            const payload = {
-                ...values,
-                total_amount: finalAmount, // Ensure total amount is correctly passed
-            };
+            const payload = { ...values };
+
+            if (values.payment_status !== "COD") {
+                delete payload.cod_status;
+                delete payload.cod_amount;
+                delete payload.adv_cod_amount;
+            }
+
+            if (values.payment_status === "COD") {
+                delete payload.bank;
+                delete payload.payment_method;
+            }
+
+            payload.total_amount = finalAmount;
+
             setIsLoading(true);
 
             try {
@@ -889,7 +908,30 @@ const FormLayouts = () => {
                                                                 name="payment_status"
                                                                 id="payment_status"
                                                                 value={formik.values.payment_status}
-                                                                onChange={formik.handleChange}
+                                                                onChange={(e) => {
+                                                                    formik.handleChange(e);
+
+                                                                    const val = e.target.value;
+
+                                                                    if (val === "paid" || val === "credit") {
+                                                                        // force reset COD fields
+                                                                        formik.setFieldValue("cod_status", "");
+                                                                        formik.setFieldValue("cod_amount", "");
+                                                                        formik.setFieldValue("adv_cod_amount", "");
+
+                                                                        // auto-set bank + payment_method
+                                                                        formik.setFieldValue("payment_method", "Bank Transfer");
+                                                                        if (banks.length > 0) {
+                                                                            formik.setFieldValue("bank", banks[0].id);
+                                                                        }
+                                                                    }
+
+                                                                    if (val === "COD") {
+                                                                        // Clear bank + payment method for COD
+                                                                        formik.setFieldValue("payment_method", "");
+                                                                        formik.setFieldValue("bank", "");
+                                                                    }
+                                                                }}
                                                                 onBlur={formik.handleBlur}
                                                                 invalid={formik.touched.payment_status && formik.errors.payment_status ? true : false}
                                                             >

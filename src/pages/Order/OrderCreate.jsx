@@ -122,17 +122,26 @@ const FormLayouts = () => {
             }),
         }),
         onSubmit: async (values, { resetForm }) => {
+
             const payload = { ...values };
 
+            // ENSURE NUMBERS ARE SENT FOR COD
+            if (values.payment_status === "COD") {
+
+                if (values.cod_status === "FULL_COD") {
+                    payload.cod_amount = Number(values.cod_amount);
+                    payload.adv_cod_amount = null;      // backend needs null
+                }
+
+                if (values.cod_status === "PARTIAL_COD") {
+                    payload.adv_cod_amount = Number(values.adv_cod_amount);
+                    payload.cod_amount = null;
+                }
+            }
             if (values.payment_status !== "COD") {
                 delete payload.cod_status;
                 delete payload.cod_amount;
                 delete payload.adv_cod_amount;
-            }
-
-            if (values.payment_status === "COD") {
-                delete payload.bank;
-                delete payload.payment_method;
             }
 
             payload.total_amount = finalAmount;

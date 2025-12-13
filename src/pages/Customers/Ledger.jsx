@@ -34,6 +34,7 @@ const BasicTable = () => {
     const [companyFilter, setCompanyFilter] = useState("");
     const [companys, setCompany] = useState([]);
     const [banks, setBanks] = useState([]);
+    const [paymentReceipts, setPaymentReceipts] = useState([]);
 
     const tableRef = useRef(null);
 
@@ -83,6 +84,7 @@ const BasicTable = () => {
                 setOrders(ledgerResponse.data.data);
                 setFilteredOrders(ledgerResponse.data.data.ledger || []);
                 setAdvanceReceipts(ledgerResponse.data.data.advance_receipts);
+                setPaymentReceipts(ledgerResponse.data.data.payment_receipts || []);
                 setLoading(false);
 
             } catch (error) {
@@ -116,7 +118,7 @@ const BasicTable = () => {
                 'DEBIT (₹)': order.total_amount.toFixed(2),
                 'CREDIT (₹)': "-"
             },
-            ...order.recived_payment.map((receipt, index) => ({
+            ...(order.recived_payment || []).map((receipt, index) => ({
                 '#': `${orderIndex + 1}.${index + 1}`,
                 'DATE': receipt.received_at,
                 'INVOICE': receipt.bank, // You can map bank ID here if needed similarly
@@ -136,8 +138,17 @@ const BasicTable = () => {
             'CREDIT (₹)': parseFloat(advance.amount || 0).toFixed(2)
         }));
 
+        const paymentReceiptData = paymentReceipts.map((receipt, index) => ({
+            '#': `P${index + 1}`,
+            'DATE': receipt.received_at,
+            'INVOICE': receipt.bank,
+            'PARTICULAR': 'Payment Receipt',
+            'DEBIT (₹)': "-",
+            'CREDIT (₹)': parseFloat(receipt.amount || 0).toFixed(2)
+        }));
+
         // Combine all data rows
-        const allData = [...data, ...advanceData];
+        const allData = [...data, ...advanceData, ...paymentReceiptData];
 
         // Append Grand Total and Closing Balance
         allData.push(
@@ -200,7 +211,7 @@ const BasicTable = () => {
             pdf.setFontSize(12);
             const addressTextWidth = pdf.getTextDimensions(companyAddress).w;
             pdf.text(companyAddress, (pdfWidth - addressTextWidth) / 2, 27);
-            
+
             // === CUSTOMER NAME ===
             pdf.setFont("helvetica", "bold");
             pdf.setFontSize(13);
@@ -263,6 +274,19 @@ const BasicTable = () => {
                 debit: "-",
                 credit: Number(advance.amount || 0).toFixed(2),
                 _particularColor: colorBlue,
+                _bold: false,
+            });
+        });
+
+        (paymentReceipts || []).forEach((receipt, idx) => {
+            rows.push({
+                index: `P${idx + 1}`,
+                date: receipt.received_at,
+                invoice: receipt.bank,
+                particular: "Payment Receipt",
+                debit: "-",
+                credit: Number(receipt.amount || 0).toFixed(2),
+                _particularColor: [111, 66, 193], // purple
                 _bold: false,
             });
         });
@@ -374,16 +398,28 @@ const BasicTable = () => {
         return total;
     }, 0);
 
-    const totalCredit = filteredOrders.reduce((total, order) => {
-        const recivedSum = order.recived_payment.reduce(
+    const totalCredit =
+        filteredOrders.reduce((total, order) => {
+            const receivedPayments = Array.isArray(order.recived_payment)
+                ? order.recived_payment
+                : [];
+
+            return total + receivedPayments.reduce(
+                (sum, receipt) => sum + parseFloat(receipt.amount || 0),
+                0
+            );
+        }, 0)
+        +
+        advanceReceipts.reduce(
+            (sum, receipt) => sum + parseFloat(receipt.amount || 0),
+            0
+        )
+        +
+        paymentReceipts.reduce(
             (sum, receipt) => sum + parseFloat(receipt.amount || 0),
             0
         );
-        return total + recivedSum;
-    }, 0) + advanceReceipts.reduce(
-        (sum, receipt) => sum + parseFloat(receipt.amount || 0),
-        0
-    );
+
     const closingBalance = totalDebit - totalCredit;
 
     const closingBalanceDebit = closingBalance > 0 ? closingBalance : 0;
@@ -493,7 +529,7 @@ const BasicTable = () => {
                                                         )}
 
                                                         {/* recived_payment rows */}
-                                                        {order.recived_payment.map((receipt, index) => (
+                                                        {(order.recived_payment || []).map((receipt, index) => (
                                                             <tr key={receipt.id}>
                                                                 <th scope="row">{`${orderIndex + 1}.${index + 1}`}</th>
                                                                 <td>{receipt.received_at}</td>
@@ -513,6 +549,16 @@ const BasicTable = () => {
                                                         <td style={{ color: "blue" }}>Advance Receipt</td>
                                                         <td>-</td>
                                                         <td>{parseFloat(advance.amount || 0).toFixed(2)}</td>
+                                                    </tr>
+                                                ))}
+                                                {paymentReceipts.map((receipt, index) => (
+                                                    <tr key={`payment-${receipt.id}`}>
+                                                        <th scope="row">{`P${index + 1}`}</th>
+                                                        <td>{receipt.received_at}</td>
+                                                        <td>{receipt.bank}</td>
+                                                        <td style={{ color: "#6f42c1" }}>Payment Receipt</td>
+                                                        <td>-</td>
+                                                        <td>{parseFloat(receipt.amount || 0).toFixed(2)}</td>
                                                     </tr>
                                                 ))}
                                                 <tr>

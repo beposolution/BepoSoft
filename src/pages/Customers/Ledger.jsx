@@ -35,6 +35,7 @@ const BasicTable = () => {
     const [companys, setCompany] = useState([]);
     const [banks, setBanks] = useState([]);
     const [paymentReceipts, setPaymentReceipts] = useState([]);
+    const [grvList, setGrvList] = useState([]);
 
     const tableRef = useRef(null);
 
@@ -85,6 +86,7 @@ const BasicTable = () => {
                 setFilteredOrders(ledgerResponse.data.data.ledger || []);
                 setAdvanceReceipts(ledgerResponse.data.data.advance_receipts);
                 setPaymentReceipts(ledgerResponse.data.data.payment_receipts || []);
+                setGrvList(ledgerResponse.data.data.grv || []);
                 setLoading(false);
 
             } catch (error) {
@@ -106,6 +108,103 @@ const BasicTable = () => {
         });
         setFilteredOrders(filtered);
     };
+
+    const ledgerRows = React.useMemo(() => {
+        let rows = [];
+
+        // Orders (Goods Sale)
+        filteredOrders.forEach((order, orderIndex) => {
+            if (order.status !== "Invoice Rejected" && order.status !== "Invoice Created") {
+                rows.push({
+                    key: `O-${order.id}`,
+                    index: orderIndex + 1,
+                    date: order.order_date,
+                    invoice: `${order.invoice}/${order.company}`,
+                    particular: "Goods Sale",
+                    particularColor: "red",
+                    debit: order.total_amount,
+                    credit: null,
+                });
+            }
+
+            // Order-wise payments
+            (order.recived_payment || []).forEach((receipt, idx) => {
+                rows.push({
+                    key: `OP-${receipt.id}`,
+                    index: `${orderIndex + 1}.${idx + 1}`,
+                    date: receipt.received_at,
+                    invoice: receipt.bank,
+                    particular: "Payment received",
+                    particularColor: "green",
+                    debit: null,
+                    credit: Number(receipt.amount || 0),
+                });
+            });
+        });
+
+        // Advance receipts
+        advanceReceipts.forEach((advance, idx) => {
+            rows.push({
+                key: `A-${advance.id}`,
+                index: `A${idx + 1}`,
+                date: advance.received_at,
+                invoice: bankIdToName[advance.bank] || advance.bank,
+                particular: "Advance Receipt",
+                particularColor: "blue",
+                debit: null,
+                credit: Number(advance.amount || 0),
+            });
+        });
+
+        // Payment receipts
+        paymentReceipts.forEach((receipt, idx) => {
+            rows.push({
+                key: `P-${receipt.id}`,
+                index: `P${idx + 1}`,
+                date: receipt.received_at,
+                invoice: receipt.bank,
+                particular: "Payment Receipt",
+                particularColor: "#6f42c1",
+                debit: null,
+                credit: Number(receipt.amount || 0),
+            });
+        });
+
+        // ---- GRV entries ----
+        grvList.forEach((g, idx) => {
+            let amount = 0;
+            let label = "GRV";
+            let color = "#fd7e14"; // orange
+
+            if (g.remark === "return") {
+                amount = parseFloat(g.price || 0);
+                label = "Sales Return";
+            } else if (g.remark === "refund") {
+                amount = parseFloat(g.price || 0);
+                label = "Refund Issued";
+            } else if (g.remark === "cod_return") {
+                amount = parseFloat(g.cod_amount || g.price || 0);
+                label = "COD Return";
+                color = "#dc3545"; // red
+            }
+
+            rows.push({
+                key: `G-${g.id}`,
+                index: `G${idx + 1}`,
+                date: g.date,
+                invoice: g.invoice,
+                particular: `${label} (${g.product})`,
+                particularColor: color,
+                debit: null,
+                credit: amount,
+            });
+        });
+
+        // 🔹 SORT BY DATE (ascending)
+        return rows.sort(
+            (a, b) => new Date(a.date) - new Date(b.date)
+        );
+    }, [filteredOrders, advanceReceipts, paymentReceipts, grvList, bankIdToName]);
 
     const exportToExcel = () => {
         // Prepare ledger and payment rows
@@ -147,8 +246,30 @@ const BasicTable = () => {
             'CREDIT (₹)': parseFloat(receipt.amount || 0).toFixed(2)
         }));
 
+        const grvData = grvList.map((g, index) => ({
+            '#': `G${index + 1}`,
+            'DATE': g.date,
+            'INVOICE': g.invoice,
+            'PARTICULAR':
+                g.remark === "cod_return"
+                    ? "COD Return"
+                    : g.remark === "refund"
+                        ? "Refund Issued"
+                        : "Sales Return",
+            'DEBIT (₹)': "-",
+            'CREDIT (₹)':
+                g.remark === "cod_return"
+                    ? parseFloat(g.cod_amount || 0).toFixed(2)
+                    : parseFloat(g.price || 0).toFixed(2),
+        }));
+
         // Combine all data rows
-        const allData = [...data, ...advanceData, ...paymentReceiptData];
+        const allData = [
+            ...data,
+            ...advanceData,
+            ...paymentReceiptData,
+            ...grvData,
+        ];
 
         // Append Grand Total and Closing Balance
         allData.push(
@@ -291,6 +412,30 @@ const BasicTable = () => {
             });
         });
 
+        (grvList || []).forEach((g, idx) => {
+            const amount =
+                g.remark === "cod_return"
+                    ? g.cod_amount
+                    : g.price;
+
+            rows.push({
+                index: `G${idx + 1}`,
+                date: g.date,
+                invoice: g.invoice,
+                particular:
+                    g.remark === "cod_return"
+                        ? "COD Return"
+                        : g.remark === "refund"
+                            ? "Refund Issued"
+                            : "Sales Return",
+                debit: "-",
+                credit: Number(amount || 0).toFixed(2),
+                _particularColor:
+                    g.remark === "cod_return" ? [220, 53, 69] : [253, 126, 20],
+                _bold: false,
+            });
+        });
+
         // Append Grand Total & Closing Balance rows (bold)
         rows.push(
             {
@@ -418,7 +563,14 @@ const BasicTable = () => {
         paymentReceipts.reduce(
             (sum, receipt) => sum + parseFloat(receipt.amount || 0),
             0
-        );
+        )
+        +
+        grvList.reduce((sum, g) => {
+            if (g.remark === "cod_return") {
+                return sum + parseFloat(g.cod_amount || 0);
+            }
+            return sum + parseFloat(g.price || 0);
+        }, 0);
 
     const closingBalance = totalDebit - totalCredit;
 
@@ -510,74 +662,38 @@ const BasicTable = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {filteredOrders.map((order, orderIndex) => (
-                                                    <React.Fragment key={order.id}>
-                                                        {/* Order row */}
-                                                        {order.status !== "Invoice Rejected" && order.status !== "Invoice Created" && (
-                                                            <tr>
-                                                                <th scope="row">{orderIndex + 1}</th>
-                                                                <td>{order.order_date}</td>
-                                                                <td>
-                                                                    <a href={`/order/${order.id}/items/`} target="_blank" rel="noopener noreferrer">
-                                                                        {order.invoice}/{order.company}
-                                                                    </a>
-                                                                </td>
-                                                                <td style={{ color: "red" }}>Goods Sale</td>
-                                                                <td>{order.total_amount.toFixed(2)}</td>
-                                                                <td>-</td>
-                                                            </tr>
-                                                        )}
+                                                {ledgerRows.map((row, idx) => (
+                                                    <tr key={row.key}>
+                                                        <th scope="row">{idx + 1}</th>
+                                                        <td>{row.date}</td>
+                                                        <td>{row.invoice}</td>
+                                                        <td style={{ color: row.particularColor, fontWeight: 500 }}>
+                                                            {row.particular}
+                                                        </td>
+                                                        <td>{row.debit !== null ? row.debit.toFixed(2) : "-"}</td>
+                                                        <td>{row.credit !== null ? row.credit.toFixed(2) : "-"}</td>
+                                                    </tr>
+                                                ))}
 
-                                                        {/* recived_payment rows */}
-                                                        {(order.recived_payment || []).map((receipt, index) => (
-                                                            <tr key={receipt.id}>
-                                                                <th scope="row">{`${orderIndex + 1}.${index + 1}`}</th>
-                                                                <td>{receipt.received_at}</td>
-                                                                <td>{receipt.bank}</td>
-                                                                <td style={{ color: "green" }}>Payment received</td>
-                                                                <td>-</td>
-                                                                <td>{parseFloat(receipt.amount || 0).toFixed(2)}</td>
-                                                            </tr>
-                                                        ))}
-                                                    </React.Fragment>
-                                                ))}
-                                                {advanceReceipts.map((advance, index) => (
-                                                    <tr key={`advance-${advance.id}`}>
-                                                        <th scope="row">{`A${index + 1}`}</th>
-                                                        <td>{advance.received_at}</td>
-                                                        <td>{bankIdToName[advance.bank] || advance.bank}</td>
-                                                        <td style={{ color: "blue" }}>Advance Receipt</td>
-                                                        <td>-</td>
-                                                        <td>{parseFloat(advance.amount || 0).toFixed(2)}</td>
-                                                    </tr>
-                                                ))}
-                                                {paymentReceipts.map((receipt, index) => (
-                                                    <tr key={`payment-${receipt.id}`}>
-                                                        <th scope="row">{`P${index + 1}`}</th>
-                                                        <td>{receipt.received_at}</td>
-                                                        <td>{receipt.bank}</td>
-                                                        <td style={{ color: "#6f42c1" }}>Payment Receipt</td>
-                                                        <td>-</td>
-                                                        <td>{parseFloat(receipt.amount || 0).toFixed(2)}</td>
-                                                    </tr>
-                                                ))}
+                                                {/* Grand Total */}
                                                 <tr>
-                                                    <td colSpan="3" className="text-right" style={{ fontWeight: 'bold' }}>
+                                                    <td colSpan="4" style={{ fontWeight: "bold", textAlign: "right" }}>
                                                         Grand Total
                                                     </td>
-                                                    <td></td>
-                                                    <td style={{ fontWeight: 'bold' }}>{totalDebit.toFixed(2)}</td>
-                                                    <td style={{ fontWeight: 'bold' }}>{totalCredit.toFixed(2)}</td>
+                                                    <td style={{ fontWeight: "bold" }}>{totalDebit.toFixed(2)}</td>
+                                                    <td style={{ fontWeight: "bold" }}>{totalCredit.toFixed(2)}</td>
                                                 </tr>
+
+                                                {/* Closing Balance */}
                                                 <tr>
-                                                    <td colSpan="4" className="text-right" style={{ fontWeight: 'bold' }}>
+                                                    <td colSpan="4" style={{ fontWeight: "bold", textAlign: "right" }}>
                                                         Closing Balance
                                                     </td>
-                                                    <td style={{ fontWeight: 'bold' }}>
-                                                        {closingBalanceDebit ? closingBalanceDebit.toFixed(2) : ''}
+                                                    <td style={{ fontWeight: "bold" }}>
+                                                        {closingBalanceDebit ? closingBalanceDebit.toFixed(2) : ""}
                                                     </td>
-                                                    <td style={{ fontWeight: 'bold' }}>
-                                                        {closingBalanceCredit ? closingBalanceCredit.toFixed(2) : ''}
+                                                    <td style={{ fontWeight: "bold" }}>
+                                                        {closingBalanceCredit ? closingBalanceCredit.toFixed(2) : ""}
                                                     </td>
                                                 </tr>
                                             </tbody>

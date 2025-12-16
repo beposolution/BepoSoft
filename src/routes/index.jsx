@@ -390,6 +390,7 @@ import WarehouseToWarehouseOrderList from "../pages/Order/WarehouseToWarehouseOr
 import WarehouseOrderDetails from "../pages/Order/WarehouseToWarehouseOrderDetails";
 import DateProductReport from "../pages/Resports/DateProductReport";
 import DateWiseSalesReport from "../pages/Resports/DateWiseSalesReport";
+import RefundReceipt from "../pages/Receipts/RefundReceipt";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -466,6 +467,7 @@ const authProtectedRoutes = [
   { path: "/order/receipt/view/", component: <OrderReceiptList /> },
   { path: "/internal/bank/transfer/", component: <InternalTransfer /> },
   { path: "/internal/bank/transfer/view/", component: <InternalTransferList /> },
+  { path: "/refund/receipts/", component: <RefundReceipt /> },
 
   // company
 

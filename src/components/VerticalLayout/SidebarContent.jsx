@@ -461,6 +461,9 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/advance/receipt/view/">{props.t("Advance Receipt View")}</Link>
                   </li>
+                  <li>
+                    <Link to="/refund/receipts/list/view/">{props.t("Refund Receipt View")}</Link>
+                  </li>
                 </ul>
               </li>
             ) : null}

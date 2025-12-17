@@ -92,7 +92,7 @@ const RefundReceipt = () => {
                     { headers: authHeaders }
                 );
                 if (res.status === 200)
-                    setInvoices(res.data?.results  || []);
+                    setInvoices(res.data?.results || []);
             } catch {
                 toast.error("Failed to fetch invoices");
             }
@@ -126,6 +126,38 @@ const RefundReceipt = () => {
         }));
     };
 
+    // post to datalog after refund receipt success
+    const postDataLog = async (refundNo) => {
+        const payload = {
+            customer: formData.customer ? Number(formData.customer) : undefined,
+            invoice: formData.invoice ? Number(formData.invoice) : undefined,
+
+            before_data: { Action: "Refund Receipt Added" },
+
+            after_data: {
+                refund_no: refundNo,
+                amount: Number(formData.amount || 0),
+                bank_name: selectedBank?.label || "",
+                customer_name: selectedCustomer?.label || "",
+                invoice_no: selectedInvoice?.label || "",
+                transactionID: formData.transactionID || "",
+                date: formData.date || "",
+                note: formData.note || "",
+            },
+        };
+
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                payload,
+                { headers: authHeaders }
+            );
+        } catch (err) {
+            toast.warn("Refund receipt saved, but DataLog creation failed.");
+            console.error("DataLog error:", err?.response?.data || err.message);
+        }
+    };
+
     // ---------------- SUBMIT ----------------
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -143,9 +175,15 @@ const RefundReceipt = () => {
                 formData,
                 { headers: authHeaders }
             );
-
+            
             if (res.status === 200 || res.status === 201) {
+
+                const refundData = res.data?.data;
+
                 toast.success("Refund receipt created successfully");
+
+                // fire datalog creation (non-blocking logic already handled)
+                await postDataLog(refundData?.refund_no);
 
                 // RESET
                 setFormData({

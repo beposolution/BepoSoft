@@ -36,6 +36,7 @@ const BasicTable = () => {
     const [banks, setBanks] = useState([]);
     const [paymentReceipts, setPaymentReceipts] = useState([]);
     const [grvList, setGrvList] = useState([]);
+    const [refundReceipts, setRefundReceipts] = useState([]);
 
     const tableRef = useRef(null);
 
@@ -87,6 +88,7 @@ const BasicTable = () => {
                 setAdvanceReceipts(ledgerResponse.data.data.advance_receipts);
                 setPaymentReceipts(ledgerResponse.data.data.payment_receipts || []);
                 setGrvList(ledgerResponse.data.data.grv || []);
+                setRefundReceipts(ledgerResponse.data.data.refund_receipts || []);
                 setLoading(false);
 
             } catch (error) {
@@ -170,6 +172,20 @@ const BasicTable = () => {
             });
         });
 
+        // Refund Receipts (DEBIT)
+        refundReceipts.forEach((refund, idx) => {
+            rows.push({
+                key: `R-${refund.id}`,
+                index: `R${idx + 1}`,
+                date: refund.date,
+                invoice: refund.invoice_no,
+                particular: `Refund Issued (${refund.refund_no})`,
+                particularColor: "#dc3545", // red
+                debit: Number(refund.amount || 0),
+                credit: null,
+            });
+        });
+
         // ---- GRV entries ----
         grvList.forEach((g, idx) => {
             let amount = 0;
@@ -204,7 +220,7 @@ const BasicTable = () => {
         return rows.sort(
             (a, b) => new Date(a.date) - new Date(b.date)
         );
-    }, [filteredOrders, advanceReceipts, paymentReceipts, grvList, bankIdToName]);
+    }, [filteredOrders, advanceReceipts, paymentReceipts, refundReceipts, grvList, bankIdToName]);
 
     const exportToExcel = () => {
         // Prepare ledger and payment rows
@@ -246,6 +262,15 @@ const BasicTable = () => {
             'CREDIT (₹)': parseFloat(receipt.amount || 0).toFixed(2)
         }));
 
+        const refundData = refundReceipts.map((refund, index) => ({
+            '#': `R${index + 1}`,
+            'DATE': refund.date,
+            'INVOICE': refund.invoice_no,
+            'PARTICULAR': `Refund Issued (${refund.refund_no})`,
+            'DEBIT (₹)': parseFloat(refund.amount || 0).toFixed(2),
+            'CREDIT (₹)': "-"
+        }));
+
         const grvData = grvList.map((g, index) => ({
             '#': `G${index + 1}`,
             'DATE': g.date,
@@ -268,6 +293,7 @@ const BasicTable = () => {
             ...data,
             ...advanceData,
             ...paymentReceiptData,
+            ...refundData,
             ...grvData,
         ];
 
@@ -436,6 +462,19 @@ const BasicTable = () => {
             });
         });
 
+        (refundReceipts || []).forEach((refund, idx) => {
+            rows.push({
+                index: `R${idx + 1}`,
+                date: refund.date,
+                invoice: refund.invoice_no,
+                particular: `Refund Issued (${refund.refund_no})`,
+                debit: Number(refund.amount || 0).toFixed(2),
+                credit: "-",
+                _particularColor: [220, 53, 69], // red
+                _bold: false,
+            });
+        });
+
         // Append Grand Total & Closing Balance rows (bold)
         rows.push(
             {
@@ -536,12 +575,18 @@ const BasicTable = () => {
         pdf.save(`${customerName}_Ledger.pdf`);
     };
 
-    const totalDebit = filteredOrders.reduce((total, order) => {
-        if (order.status !== "Invoice Rejected" && order.status !== "Invoice Created") {
-            return total + order.total_amount;
-        }
-        return total;
-    }, 0);
+    const totalDebit =
+        filteredOrders.reduce((total, order) => {
+            if (order.status !== "Invoice Rejected" && order.status !== "Invoice Created") {
+                return total + order.total_amount;
+            }
+            return total;
+        }, 0)
+        +
+        refundReceipts.reduce(
+            (sum, refund) => sum + parseFloat(refund.amount || 0),
+            0
+        );
 
     const totalCredit =
         filteredOrders.reduce((total, order) => {

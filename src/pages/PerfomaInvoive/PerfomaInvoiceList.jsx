@@ -7,7 +7,7 @@ import {
     CardBody,
     CardTitle,
     Input,
-    Label, 
+    Label,
 } from "reactstrap";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Link } from "react-router-dom";
@@ -136,6 +136,14 @@ const BasicTable = () => {
         );
     });
 
+    const calculateBillAmount = (items = []) => {
+        return items.reduce((sum, item) => {
+            const rate = Number(item.rate || 0);
+            const qty = Number(item.quantity || 0);
+            return sum + rate * qty;
+        }, 0);
+    };
+
     // Pagination
     const indexOfLastItem = currentPage * perPageData;
     const indexOfFirstItem = indexOfLastItem - perPageData;
@@ -242,7 +250,9 @@ const BasicTable = () => {
                                                                 <td style={getStatusColor(item.status)}>
                                                                     {item.status}
                                                                 </td>
-                                                                <td>{item.total_amount}</td>
+                                                                <td>
+                                                                    ₹ {calculateBillAmount(item.perfoma_items).toLocaleString("en-IN")}
+                                                                </td>
                                                                 <td>{item.order_date}</td>
                                                             </tr>
                                                         ))}

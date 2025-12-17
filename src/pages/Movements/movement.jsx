@@ -8,6 +8,7 @@ import { useMemo } from "react";
 const Movement = () => {
     const { id } = useParams();
     const [data, setData] = useState([]);
+    // console.log("data", data)
     const [parcelServices, setParcelServices] = useState([]);
     const [parcelCounts, setParcelCounts] = useState({});
     const token = localStorage.getItem("token");
@@ -19,6 +20,11 @@ const Movement = () => {
     const [parcelActualWeights, setParcelActualWeights] = useState({});
     const [codParcelAmount, setCodParcelAmount] = useState(0);
     const [codActualWeightG, setCodActualWeightG] = useState(0);
+
+
+    const roundRupee = (value) => {
+        return Math.round(Number(value || 0));
+    };
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -50,9 +56,17 @@ const Movement = () => {
                     let foundCheckedBy = "";
                     response.data.results.forEach(category => {
                         category.orders.forEach(order => {
+
                             order.warehouses.forEach(warehouse => {
-                                if (warehouse.checked_by) {
-                                    foundCheckedBy = warehouse.checked_by;
+                                if (warehouse.box) boxTotal += 1;
+
+                                weightTotal += parseFloat(warehouse.weight || 0);
+                                actualWeightTotal += parseFloat(warehouse.actual_weight || 0);
+                                parcelAmountTotal += parseFloat(warehouse.parcel_amount || 0);
+
+                                if (warehouse.length && warehouse.breadth && warehouse.height) {
+                                    volumeTotal +=
+                                        (warehouse.length * warehouse.breadth * warehouse.height) / 6000;
                                 }
                             });
                         });
@@ -189,7 +203,7 @@ const Movement = () => {
             const norm = (name || '').trim().toUpperCase();
             if (norm.includes('COD')) {
                 boxes += parcelCounts[name] || 0;
-                amount += parcelAmounts[name] || 0;
+                amount = +(amount + (parcelAmounts[name] || 0)).toFixed(2);
                 weightG += parcelActualWeights[name] || 0;
             }
         });
@@ -245,6 +259,21 @@ const Movement = () => {
         SPEED: (parcelAmounts['SPEED POST'] || 0) + (parcelAmounts['SPEED COD'] || 0),
     };
 
+    const getRoundedCODSplit = (order) => {
+        const total = parseFloat(order.cod_amount || 0);
+        const boxes = order.warehouses?.length || 0;
+
+        if (total <= 0 || boxes === 0) return [];
+
+        const base = Math.floor((total / boxes) * 100) / 100; // round DOWN
+        const arr = Array(boxes).fill(base);
+
+        const diff = +(total - base * boxes).toFixed(2);
+        arr[boxes - 1] = +(arr[boxes - 1] + diff).toFixed(2);
+
+        return arr;
+    };
+
     const exportToExcel = () => {
         const wb = XLSX.utils.book_new();
         const wsData = [];
@@ -268,11 +297,19 @@ const Movement = () => {
             let actualWeightTotal = 0;
             let parcelAmountTotal = 0;
 
-            category.orders.forEach((order) => {
-                order.warehouses.forEach((warehouse) => {
-                    const volumeWeight = warehouse.length && warehouse.breadth && warehouse.height
-                        ? (warehouse.length * warehouse.breadth * warehouse.height) / 6000
-                        : 0;
+            category.orders.forEach(order => {
+                const codSplit = getRoundedCODSplit(order);
+
+                // add divided COD ONCE per order
+                codSplit.forEach(v => {
+                    codTotal = +(codTotal + v).toFixed(2);
+                });
+
+                order.warehouses.forEach((warehouse, idx) => {
+                    const volumeWeight =
+                        warehouse.length && warehouse.breadth && warehouse.height
+                            ? (warehouse.length * warehouse.breadth * warehouse.height) / 6000
+                            : 0;
 
                     wsData.push([
                         globalSerial++,
@@ -282,7 +319,7 @@ const Movement = () => {
                         warehouse.zip_code,
                         warehouse.order_state,
                         warehouse.box,
-                        order.cod_amount,
+                        (codSplit[idx] || 0).toFixed(2),
                         warehouse.weight,
                         volumeWeight.toFixed(2),
                         warehouse.actual_weight,
@@ -293,9 +330,7 @@ const Movement = () => {
                         warehouse.verified_by || "N/A"
                     ]);
 
-                    // Accumulate totals
-                    boxTotal += warehouse.box ? 1 : 0;
-                    codTotal += parseFloat(order.cod_amount || 0);
+                    boxTotal += 1;
                     weightTotal += parseFloat(warehouse.weight || 0);
                     volumeTotal += volumeWeight;
                     actualWeightTotal += parseFloat(warehouse.actual_weight || 0);
@@ -305,7 +340,7 @@ const Movement = () => {
 
             // Family Total Row
             wsData.push([
-                "TOTAL", "", "", "", "", boxTotal, codTotal.toFixed(2), weightTotal.toFixed(2),
+                "TOTAL", "", "", "", "", "", boxTotal, codTotal.toFixed(2), weightTotal.toFixed(2),
                 volumeTotal.toFixed(2), actualWeightTotal.toFixed(2), parcelAmountTotal.toFixed(2),
                 "", "", "", ""
             ]);
@@ -483,7 +518,6 @@ const Movement = () => {
                     DAILY GOODS MOVEMENT (DGM) ON {id}
                 </h3>
                 {data.map((category, index) => {
-                    let serialNo = 1;
                     let boxTotal = 0;
                     let codTotal = 0;
                     let weightTotal = 0;
@@ -492,17 +526,23 @@ const Movement = () => {
                     let parcelAmountTotal = 0;
 
                     category.orders.forEach(order => {
+                        const codSplit = getRoundedCODSplit(order);
+
+                        // TOTAL COD = sum of split values
+                        codSplit.forEach(v => {
+                            codTotal = +(codTotal + v).toFixed(2);
+                        });
+
                         order.warehouses.forEach(warehouse => {
-                            if (warehouse.box) {
-                                boxTotal += 1;
-                            }
-                            codTotal += parseFloat(order.cod_amount || 0);
+                            if (warehouse.box) boxTotal += 1;
+
                             weightTotal += parseFloat(warehouse.weight || 0);
                             actualWeightTotal += parseFloat(warehouse.actual_weight || 0);
                             parcelAmountTotal += parseFloat(warehouse.parcel_amount || 0);
 
                             if (warehouse.length && warehouse.breadth && warehouse.height) {
-                                volumeTotal += warehouse.length * warehouse.breadth * warehouse.height / 6000;
+                                volumeTotal +=
+                                    (warehouse.length * warehouse.breadth * warehouse.height) / 6000;
                             }
                         });
                     });
@@ -557,8 +597,10 @@ const Movement = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {category.orders.map((order) =>
-                                        order.warehouses.map((warehouse) => (
+                                    {category.orders.map(order => {
+                                        const codSplit = getRoundedCODSplit(order);
+                                        let serialNo = 1;
+                                        return order.warehouses.map((warehouse, idx) => (
                                             <tr key={serialNo}>
                                                 <td style={{ border: "1px solid black" }}>{serialNo++}</td>
                                                 <td style={{ border: "1px solid black" }}><strong>{order.invoice}</strong></td>
@@ -567,7 +609,7 @@ const Movement = () => {
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.order_state}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.zip_code}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.box}</strong></td>
-                                                <td className="cod-column" style={{ border: "1px solid black", backgroundColor: "#ffeb3b" }}><strong>{order.cod_amount}</strong></td>
+                                                <td className="cod-column" style={{ border: "1px solid black", backgroundColor: "#ffeb3b" }}><strong>{roundRupee(codSplit[idx])}</strong></td>
                                                 <td className="small-col" style={{ border: "1px solid black" }}><strong>{warehouse.weight}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.length}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.breadth}</strong></td>
@@ -591,11 +633,13 @@ const Movement = () => {
                                                 {/* <td style={{ border: "1px solid black" }}><strong>{warehouse.checked_by}</strong></td> */}
                                             </tr>
                                         ))
-                                    )}
+                                    })}
                                     <tr className="total-row" style={{ backgroundColor: "#f0f0f0", color: "red", fontWeight: "bold", textAlign: "left" }}>
                                         <td colSpan={6} style={{ border: "1px solid black" }}><strong>Total</strong></td>
                                         <td style={{ border: "1px solid black" }}>{boxTotal}</td>
-                                        <td style={{ border: "1px solid black" }}>{codTotal}</td>
+                                        <td style={{ border: "1px solid black" }}>
+                                            {roundRupee(codTotal)}
+                                        </td>
                                         <td style={{ border: "1px solid black" }}>{weightTotal}</td>
                                         <td></td>
                                         <td></td>
@@ -657,7 +701,7 @@ const Movement = () => {
                                 <tr className="total-row1" style={{ backgroundColor: '#f0f0f0' }}>
                                     <td style={{ border: "1px solid black" }}><strong>TOTAL COD ORDERS</strong></td>
                                     <td style={{ border: "1px solid black" }}><strong>{codRollup.boxes}</strong></td>
-                                    <td style={{ border: "1px solid black" }}><strong>₹{codRollup.amount.toFixed(2)}</strong></td>
+                                    <td style={{ border: "1px solid black" }}><strong>₹{roundRupee(codRollup.amount)}</strong></td>
                                     <td style={{ border: "1px solid black" }}><strong>{codRollup.weightKg.toFixed(2)}</strong></td>
                                     <td style={{ border: "1px solid black" }}><strong>₹{codRollup.avg.toFixed(2)}</strong></td>
                                 </tr>

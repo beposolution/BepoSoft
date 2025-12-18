@@ -154,7 +154,7 @@ const Movement = () => {
                 if (isCOD) codOrderCount += 1;
 
                 order.warehouses.forEach((warehouse) => {
-                    const serviceName = warehouse.parcel_service;
+                    const serviceName = warehouse.parcel_service_name;
                     if (!serviceName) return;
 
                     countParcels[serviceName] = (countParcels[serviceName] || 0) + 1;

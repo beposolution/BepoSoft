@@ -176,7 +176,7 @@ const FormLayouts = () => {
         return { before, after };
     };
 
-    const writeCustomerUpdateLog = async (customerId, beforeData, afterData) => {
+    const writeCustomerUpdateLog = async (customerId, beforeData, afterData, customerName) => {
         if (Object.keys(beforeData).length === 0) return; // nothing changed
 
         try {
@@ -184,6 +184,7 @@ const FormLayouts = () => {
                 `${import.meta.env.VITE_APP_KEY}datalog/create/`,
                 {
                     customer: Number(customerId),
+                    customer_name: customerName || "",   // always send customer name
                     before_data: beforeData,
                     after_data: afterData,
                 },
@@ -254,7 +255,7 @@ const FormLayouts = () => {
                 );
 
                 // WRITE DATALOG ONLY IF CHANGED
-                await writeCustomerUpdateLog(id, before, after);
+                await writeCustomerUpdateLog(id, before, after, payload.name || customerData?.name);
 
                 toast.success("Customer data updated successfully!");
             } catch (error) {

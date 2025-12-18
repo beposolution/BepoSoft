@@ -71,9 +71,16 @@ const FormLayouts = () => {
                 });
 
                 if (response.status === 201) {
+                    const customerId = response?.data?.data?.id;
+
+                    if (customerId) {
+                        await writeCustomerCreateLog(customerId, values);
+                    }
+
                     setSuccess("Customer added successfully!");
                     formik.resetForm();
                 }
+
             } catch (err) {
                 if (err.response && err.response.data && err.response.data.errors) {
                     const backendErrors = err.response.data.errors;
@@ -95,6 +102,34 @@ const FormLayouts = () => {
         },
 
     });
+
+    const writeCustomerCreateLog = async (customerId, values) => {
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                {
+                    customer: Number(customerId),
+                    before_data: { status: "New Customer Created" },
+                    after_data: {
+                        action: "Customer Created",
+                        name: values.name,
+                        phone: values.phone,
+                        email: values.email || "",
+                        state: values.state,
+                        city: values.city
+                    }
+                },
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+        } catch (err) {
+            console.warn(
+                "Customer DataLog failed:",
+                err?.response?.data || err.message
+            );
+        }
+    };
 
     useEffect(() => {
         const fetchCustomerDetails = async () => {

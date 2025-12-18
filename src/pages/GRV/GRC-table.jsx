@@ -7,6 +7,7 @@ import {
     CardBody,
     CardTitle,
     CardSubtitle,
+    Label,
 } from "reactstrap";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
@@ -20,6 +21,8 @@ const BasicTable = () => {
     // State to hold table data
     const [tableData, setTableData] = useState([]);
     const token = localStorage.getItem("token");
+    const [searchTerm, setSearchTerm] = useState("");
+    const [invoiceDate, setInvoiceDate] = useState("");
 
     // Fetch data from API
     useEffect(() => {
@@ -66,6 +69,26 @@ const BasicTable = () => {
         }
     };
 
+    const filteredData = tableData.filter((item) => {
+        const term = searchTerm.toLowerCase();
+
+        // Date filter for Invoice Delivered
+        const matchesDate =
+            !invoiceDate || item.order_date === invoiceDate;
+
+        // Text / amount search
+        const matchesSearch =
+            !searchTerm ||
+            item.product?.toLowerCase().includes(term) ||
+            item.invoice?.toLowerCase().includes(term) ||
+            item.note?.toLowerCase().includes(term) ||
+            item.returnreason?.toLowerCase().includes(term) ||
+            String(item.price)?.includes(term) ||
+            String(item.cod_amount)?.includes(term);
+
+        return matchesSearch && matchesDate;
+    });
+
     // Function to determine the status text color
     const getStatusTextClass = (status) => {
         switch (status) {
@@ -102,6 +125,27 @@ const BasicTable = () => {
                             <Card>
                                 <CardBody>
                                     <div className="table-responsive">
+                                        <Row className="mb-3">
+                                            <Col md={4}>
+                                                <Label>Search</Label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    placeholder="Search by Product, Invoice, Description, Condition, Amount..."
+                                                    value={searchTerm}
+                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                />
+                                            </Col>
+                                            <Col md={3}>
+                                                <Label>Date Sort</Label>
+                                                <input
+                                                    type="date"
+                                                    className="form-control"
+                                                    value={invoiceDate}
+                                                    onChange={(e) => setInvoiceDate(e.target.value)}
+                                                />
+                                            </Col>
+                                        </Row>
                                         <Table className="table table-bordered mb-0 custom-table">
                                             <thead className="table-light">
                                                 <tr>
@@ -121,7 +165,7 @@ const BasicTable = () => {
                                             </thead>
                                             <tbody>
                                                 {tableData.length > 0 ? (
-                                                    tableData.map((item, index) => (
+                                                    filteredData.map((item, index) => (
                                                         <tr key={item.id}>
                                                             <th scope="row">{index + 1}</th>
                                                             <td>{item.product} / {item.invoice} / {item.price}</td>

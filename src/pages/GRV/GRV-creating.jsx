@@ -78,18 +78,21 @@ const FormLayouts = () => {
             }))
             .sort((a, b) => b.usable - a.usable);
 
-        // const allocations = {};
-        // if (Array.isArray(row.rack_details)) {
-        //     row.rack_details.forEach((sel) => {
-        //         const key = `${sel.rack_id}|${sel.column_name}`;
-        //         allocations[key] = Number(sel.quantity || 0);
-        //     });
-        // }
         const allocations = {};
-        rackDetailsModal.racks?.forEach((r) => {
+
+        // 1️⃣ Initialize all racks with 0
+        racks.forEach((r) => {
             const key = `${r.rack_id}|${r.column_name}`;
-            allocations[key] = 0; // default to 0
+            allocations[key] = 0;
         });
+
+        // 2️⃣ Restore saved allocations (VERY IMPORTANT)
+        if (Array.isArray(row.rack_details)) {
+            row.rack_details.forEach((rd) => {
+                const key = `${rd.rack_id}|${rd.column_name}`;
+                allocations[key] = Number(rd.quantity || 0);
+            });
+        }
 
         setRackDetailsModal({
             open: true,
@@ -103,6 +106,21 @@ const FormLayouts = () => {
 
     const saveRackDetailsAllocations = () => {
         const { allocations, racks, productUniqueId, maxQty } = rackDetailsModal;
+
+        // CASE: No rack info → allow empty allocation and close modal
+        if (!racks || racks.length === 0) {
+            setSelectedProducts((prev) =>
+                prev.map((row) =>
+                    row.uniqueId === productUniqueId
+                        ? { ...row, rack_details: [] }
+                        : row
+                )
+            );
+
+            toast.info("This product has no rack mapping. Allocation skipped.");
+            setRackDetailsModal((m) => ({ ...m, open: false }));
+            return;
+        }
 
         const picked = Object.entries(allocations)
             .map(([key, qty]) => {
@@ -126,13 +144,9 @@ const FormLayouts = () => {
 
         const total = picked.reduce((s, r) => s + Number(r.quantity || 0), 0);
 
-        if (total === 0) {
-            toast.error("Please allocate at least 1 unit.");
-            return;
-        }
-        if (total > maxQty) {
+        if (total !== maxQty) {
             toast.error(
-                `Allocated ${total}, but row quantity is ${maxQty}. Reduce allocation.`
+                `Total allocated (${total}) must exactly match Row Qty (${maxQty})`
             );
             return;
         }
@@ -235,21 +249,35 @@ const FormLayouts = () => {
     };
 
     const handleSaveInvoice = async () => {
-        const dataToSave = selectedProducts.map((product) => ({
-            order: selectedOrder.id,
-            product: product.name,
-            returnreason: product.returnReason || "usable",
-            price: product.rate,
-            quantity: product.rowQuantity,
-            remark: product.remark || "",
-            cod_amount: product.cod_amount || null,
-            status: "Waiting For Approval",
-            note: product.note || "",
-            date: currentDate,
-            time: currentTime,
-            product_id: product.product,
-            rack_details: product.rack_details || [],
-        }));
+        const dataToSave = selectedProducts.map((product) => {
+            const price = Number(product.rate || 0);
+            const qty = Number(product.rowQuantity || 1);
+
+            const amount = price * qty;
+
+            return {
+                order: selectedOrder.id,
+                product: product.name,
+                product_id: product.product,
+
+                price: price,
+                quantity: qty,
+                amount: amount,
+
+                returnreason: product.returnReason || "usable",
+                remark: product.remark || "",
+                cod_amount:
+                    product.remark === "cod_return"
+                        ? Number(product.cod_amount || 0)
+                        : null,
+
+                status: "Waiting For Approval",
+                note: product.note || "",
+                date: currentDate,
+                time: currentTime,
+                rack_details: product.rack_details || [],
+            };
+        });
 
         setLoading(true);
         try {
@@ -289,6 +317,9 @@ const FormLayouts = () => {
             amount.includes(term)
         );
     });
+
+    const getTotalAllocated = (allocations) =>
+        Object.values(allocations).reduce((s, v) => s + (Number(v) || 0), 0);
 
     return (
         <React.Fragment>
@@ -594,27 +625,35 @@ const FormLayouts = () => {
                                                                 />
                                                             )}
                                                         </td>
-                                                        <td className="d-flex gap-2">
-                                                            <Button
-                                                                color="info"
-                                                                onClick={() =>
-                                                                    openRackDetailsSelector(product)
-                                                                }
-                                                            >
-                                                                To Racks
-                                                            </Button>
-                                                            <Button
-                                                                color="danger"
-                                                                onClick={() =>
-                                                                    setSelectedProducts((prev) =>
-                                                                        prev.filter(
-                                                                            (p) => p.uniqueId !== product.uniqueId
+                                                        <td>
+                                                            <div className="d-flex gap-2">
+                                                                <Button
+                                                                    color="info"
+                                                                    onClick={() => openRackDetailsSelector(product)}
+                                                                >
+                                                                    To Racks
+                                                                </Button>
+                                                                <Button
+                                                                    color="danger"
+                                                                    onClick={() =>
+                                                                        setSelectedProducts((prev) =>
+                                                                            prev.filter((p) => p.uniqueId !== product.uniqueId)
                                                                         )
-                                                                    )
-                                                                }
-                                                            >
-                                                                Remove
-                                                            </Button>
+                                                                    }
+                                                                >
+                                                                    Remove
+                                                                </Button>
+                                                            </div>
+
+                                                            {product.rack_details?.length > 0 && (
+                                                                <div className="text-success small mt-1">
+                                                                    Allocated:&nbsp;
+                                                                    {product.rack_details.reduce(
+                                                                        (s, r) => s + Number(r.quantity || 0),
+                                                                        0
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -698,14 +737,29 @@ const FormLayouts = () => {
                                                                                 min="0"
                                                                                 value={value}
                                                                                 onChange={(e) => {
-                                                                                    const val = Math.max(0, Number(e.target.value) || 0);
-                                                                                    setRackDetailsModal((m) => ({
-                                                                                        ...m,
-                                                                                        allocations: {
+                                                                                    const entered = Math.max(0, Number(e.target.value) || 0);
+
+                                                                                    setRackDetailsModal((m) => {
+                                                                                        const nextAllocations = {
                                                                                             ...m.allocations,
-                                                                                            [key]: val,
-                                                                                        },
-                                                                                    }));
+                                                                                            [key]: entered,
+                                                                                        };
+
+                                                                                        const total = getTotalAllocated(nextAllocations);
+
+                                                                                        // Block immediately if exceeding row qty
+                                                                                        if (total > m.maxQty) {
+                                                                                            toast.error(
+                                                                                                `Total allocation (${total}) cannot exceed Row Qty (${m.maxQty})`
+                                                                                            );
+                                                                                            return m; // DO NOT UPDATE STATE
+                                                                                        }
+
+                                                                                        return {
+                                                                                            ...m,
+                                                                                            allocations: nextAllocations,
+                                                                                        };
+                                                                                    });
                                                                                 }}
                                                                             />
                                                                         </td>
@@ -715,8 +769,10 @@ const FormLayouts = () => {
                                                         </tbody>
                                                     </Table>
                                                 ) : (
-                                                    <p className="mb-0">
-                                                        No rack info found for this product.
+                                                    <p className="mb-0 text-warning">
+                                                        This product is not mapped to any rack.
+                                                        <br />
+                                                        Rack allocation is not required.
                                                     </p>
                                                 )}
                                                 <div className="text-muted mt-2">
@@ -733,7 +789,11 @@ const FormLayouts = () => {
                                                 </div>
                                             </ModalBody>
                                             <ModalFooter>
-                                                <Button color="primary" onClick={saveRackDetailsAllocations}>
+                                                <Button
+                                                    color="primary"
+                                                    onClick={saveRackDetailsAllocations}
+                                                    disabled={rackDetailsModal.racks.length === 0}
+                                                >
                                                     Save
                                                 </Button>
                                                 <Button

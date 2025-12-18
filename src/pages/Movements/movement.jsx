@@ -8,7 +8,6 @@ import { useMemo } from "react";
 const Movement = () => {
     const { id } = useParams();
     const [data, setData] = useState([]);
-    // console.log("data", data)
     const [parcelServices, setParcelServices] = useState([]);
     const [parcelCounts, setParcelCounts] = useState({});
     const token = localStorage.getItem("token");
@@ -597,43 +596,78 @@ const Movement = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {category.orders.map(order => {
-                                        const codSplit = getRoundedCODSplit(order);
-                                        let serialNo = 1;
-                                        return order.warehouses.map((warehouse, idx) => (
-                                            <tr key={serialNo}>
-                                                <td style={{ border: "1px solid black" }}>{serialNo++}</td>
-                                                <td style={{ border: "1px solid black" }}><strong>{order.invoice}</strong></td>
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.customer}</strong></td>
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.phone}</strong></td>
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.order_state}</strong></td>
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.zip_code}</strong></td>
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.box}</strong></td>
-                                                <td className="cod-column" style={{ border: "1px solid black", backgroundColor: "#ffeb3b" }}><strong>{roundRupee(codSplit[idx])}</strong></td>
-                                                <td className="small-col" style={{ border: "1px solid black" }}><strong>{warehouse.weight}</strong></td>
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.length}</strong></td>
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.breadth}</strong></td>
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.height}</strong></td>
-                                                <td className="volume-col small-col" style={{ border: "1px solid black" }}>
-                                                    <strong>
-                                                        {warehouse.length && warehouse.breadth && warehouse.height
-                                                            ? (warehouse.length * warehouse.breadth * warehouse.height / 6000).toFixed(2)
-                                                            : "N/A"}
-                                                    </strong>
-                                                </td>
-                                                {/* <td>{warehouse.shipped_date}</td> */}
+                                    {(() => {
+                                        let serialNo = 1; // RESET ONCE PER FAMILY
 
-                                                <td className="small-col" style={{ border: "1px solid black" }}><strong>{warehouse.actual_weight}</strong></td>
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.parcel_amount}</strong></td>
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.tracking_id}</strong></td>
-                                                {/* <td><strong>{warehouse.postoffice_date || "-"}</strong></td> */}
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.parcel_service || "Unknown"}</strong></td>
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.packed_by}</strong></td>
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.verified_by || "N/A"}</strong></td>
-                                                {/* <td style={{ border: "1px solid black" }}><strong>{warehouse.checked_by}</strong></td> */}
-                                            </tr>
-                                        ))
-                                    })}
+                                        return category.orders.map(order => {
+                                            const codSplit = getRoundedCODSplit(order);
+
+                                            return order.warehouses.map((warehouse, idx) => (
+                                                <tr key={`${order.invoice}-${idx}`}>
+                                                    <td style={{ border: "1px solid black" }}>{serialNo++}</td>
+
+                                                    <td style={{ border: "1px solid black" }}>
+                                                        <strong>{order.invoice}</strong>
+                                                    </td>
+                                                    <td style={{ border: "1px solid black" }}>
+                                                        <strong>{warehouse.customer}</strong>
+                                                    </td>
+                                                    <td style={{ border: "1px solid black" }}>
+                                                        <strong>{warehouse.phone}</strong>
+                                                    </td>
+                                                    <td style={{ border: "1px solid black" }}>
+                                                        <strong>{warehouse.order_state}</strong>
+                                                    </td>
+                                                    <td style={{ border: "1px solid black" }}>
+                                                        <strong>{warehouse.zip_code}</strong>
+                                                    </td>
+                                                    <td style={{ border: "1px solid black" }}>
+                                                        <strong>{warehouse.box}</strong>
+                                                    </td>
+                                                    <td className="cod-column" style={{ border: "1px solid black" }}>
+                                                        <strong>{roundRupee(codSplit[idx])}</strong>
+                                                    </td>
+                                                    <td className="small-col" style={{ border: "1px solid black" }}>
+                                                        <strong>{warehouse.weight}</strong>
+                                                    </td>
+                                                    <td style={{ border: "1px solid black" }}>
+                                                        <strong>{warehouse.length}</strong>
+                                                    </td>
+                                                    <td style={{ border: "1px solid black" }}>
+                                                        <strong>{warehouse.breadth}</strong>
+                                                    </td>
+                                                    <td style={{ border: "1px solid black" }}>
+                                                        <strong>{warehouse.height}</strong>
+                                                    </td>
+                                                    <td className="volume-col small-col" style={{ border: "1px solid black" }}>
+                                                        <strong>
+                                                            {warehouse.length && warehouse.breadth && warehouse.height
+                                                                ? (warehouse.length * warehouse.breadth * warehouse.height / 6000).toFixed(2)
+                                                                : "N/A"}
+                                                        </strong>
+                                                    </td>
+                                                    <td className="small-col" style={{ border: "1px solid black" }}>
+                                                        <strong>{warehouse.actual_weight}</strong>
+                                                    </td>
+                                                    <td style={{ border: "1px solid black" }}>
+                                                        <strong>{warehouse.parcel_amount}</strong>
+                                                    </td>
+                                                    <td style={{ border: "1px solid black" }}>
+                                                        <strong>{warehouse.tracking_id}</strong>
+                                                    </td>
+                                                    <td style={{ border: "1px solid black" }}>
+                                                        <strong>{warehouse.parcel_service_name || "Unknown"}</strong>
+                                                    </td>
+                                                    <td style={{ border: "1px solid black" }}>
+                                                        <strong>{warehouse.packed_by}</strong>
+                                                    </td>
+                                                    <td style={{ border: "1px solid black" }}>
+                                                        <strong>{warehouse.verified_by || "N/A"}</strong>
+                                                    </td>
+                                                </tr>
+                                            ));
+                                        });
+                                    })()}
                                     <tr className="total-row" style={{ backgroundColor: "#f0f0f0", color: "red", fontWeight: "bold", textAlign: "left" }}>
                                         <td colSpan={6} style={{ border: "1px solid black" }}><strong>Total</strong></td>
                                         <td style={{ border: "1px solid black" }}>{boxTotal}</td>

@@ -109,7 +109,8 @@ const BasicTable = () => {
                                                     <th>Product / Invoice / Amount</th>
                                                     <th>Condition</th>
                                                     <th>QTY</th>
-                                                    <th>Amount</th>
+                                                    <th>Price</th>
+                                                    <th>COD Amount</th>
                                                     <th>Invoice Created By</th>
                                                     <th>Customer</th>
                                                     <th>Description</th>
@@ -126,6 +127,7 @@ const BasicTable = () => {
                                                             <td>{item.product} / {item.invoice} / {item.price}</td>
                                                             <td>{item.returnreason}</td>
                                                             <td>{item.quantity}</td>
+                                                            <td>{item.price}</td>
                                                             <td>{item.cod_amount || '--'}</td>
                                                             <td>{item.staff}</td>
                                                             <td>{item.customer}</td>

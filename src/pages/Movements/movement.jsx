@@ -8,7 +8,6 @@ import { useMemo } from "react";
 const Movement = () => {
     const { id } = useParams();
     const [data, setData] = useState([]);
-    // console.log("data", data)
     const [parcelServices, setParcelServices] = useState([]);
     const [parcelCounts, setParcelCounts] = useState({});
     const token = localStorage.getItem("token");
@@ -627,7 +626,7 @@ const Movement = () => {
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.parcel_amount}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.tracking_id}</strong></td>
                                                 {/* <td><strong>{warehouse.postoffice_date || "-"}</strong></td> */}
-                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.parcel_service || "Unknown"}</strong></td>
+                                                <td style={{ border: "1px solid black" }}><strong>{warehouse.parcel_service_name || "Unknown"}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.packed_by}</strong></td>
                                                 <td style={{ border: "1px solid black" }}><strong>{warehouse.verified_by || "N/A"}</strong></td>
                                                 {/* <td style={{ border: "1px solid black" }}><strong>{warehouse.checked_by}</strong></td> */}

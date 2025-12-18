@@ -23,6 +23,43 @@ const BasicTable = () => {
     const token = localStorage.getItem("token");
     const [searchTerm, setSearchTerm] = useState("");
     const [invoiceDate, setInvoiceDate] = useState("");
+    const [staffs, setStaffs] = useState([]);
+    const [customers, setCustomers] = useState([]);
+    const [staffSearch, setStaffSearch] = useState("");
+    const [filteredStaffs, setFilteredStaffs] = useState([]);
+    const [customerSearch, setCustomerSearch] = useState("");
+    const [filteredCustomers, setFilteredCustomers] = useState([]);
+
+    const fetchStaffData = async () => {
+        try {
+            const response = await axios.get(`${import.meta.env.VITE_APP_KEY}staffs/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setStaffs(response.data.data);
+        } catch (error) {
+            toast.error("Error fetching staffs:");
+        }
+    };
+
+    useEffect(() => {
+        fetchStaffData();
+    }, [token]);
+
+    useEffect(() => {
+        const fetchCustomers = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}customers/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.status === 200)
+                    setCustomers(response?.data?.data);
+                console.log("sdhfg", response)
+            } catch {
+                toast.error("Error fetching customer data");
+            }
+        };
+        fetchCustomers();
+    }, []);
 
     // Fetch data from API
     useEffect(() => {
@@ -41,6 +78,31 @@ const BasicTable = () => {
 
         fetchData();
     }, []);
+
+    useEffect(() => {
+        if (!staffSearch) {
+            setFilteredStaffs(staffs);
+        } else {
+            setFilteredStaffs(
+                staffs.filter((staff) =>
+                    staff.name.toLowerCase().includes(staffSearch.toLowerCase())
+                )
+            );
+        }
+    }, [staffSearch, staffs]);
+
+    useEffect(() => {
+        if (!customerSearch) {
+            setFilteredCustomers(customers);
+        } else {
+            setFilteredCustomers(
+                customers.filter((customer) =>
+                    customer.name?.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                    customer.phone?.includes(customerSearch)
+                )
+            );
+        }
+    }, [customerSearch, customers]);
 
     // Handle the change for remark and status
     const handleChange = async (id, field, value) => {
@@ -72,11 +134,17 @@ const BasicTable = () => {
     const filteredData = tableData.filter((item) => {
         const term = searchTerm.toLowerCase();
 
-        // Date filter for Invoice Delivered
         const matchesDate =
             !invoiceDate || item.order_date === invoiceDate;
 
-        // Text / amount search
+        const matchesStaff =
+            !staffSearch ||
+            item.staff?.toLowerCase().includes(staffSearch.toLowerCase());
+
+        const matchesCustomer =
+            !customerSearch ||
+            item.customer?.toLowerCase().includes(customerSearch.toLowerCase());
+
         const matchesSearch =
             !searchTerm ||
             item.product?.toLowerCase().includes(term) ||
@@ -86,7 +154,7 @@ const BasicTable = () => {
             String(item.price)?.includes(term) ||
             String(item.cod_amount)?.includes(term);
 
-        return matchesSearch && matchesDate;
+        return matchesSearch && matchesDate && matchesStaff && matchesCustomer;
     });
 
     // Function to determine the status text color
@@ -126,7 +194,7 @@ const BasicTable = () => {
                                 <CardBody>
                                     <div className="table-responsive">
                                         <Row className="mb-3">
-                                            <Col md={4}>
+                                            <Col md={3}>
                                                 <Label>Search</Label>
                                                 <input
                                                     type="text"
@@ -144,6 +212,92 @@ const BasicTable = () => {
                                                     value={invoiceDate}
                                                     onChange={(e) => setInvoiceDate(e.target.value)}
                                                 />
+                                            </Col>
+                                            <Col md={3} style={{ position: "relative" }}>
+                                                <Label>Invoice Created By</Label>
+
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    placeholder="Type staff name..."
+                                                    value={staffSearch}
+                                                    onChange={(e) => {
+                                                        setStaffSearch(e.target.value);
+                                                    }}
+                                                />
+
+                                                {staffSearch && filteredStaffs.length > 0 && (
+                                                    <div
+                                                        className="border rounded mt-1 bg-white shadow"
+                                                        style={{
+                                                            position: "absolute",
+                                                            top: "100%",
+                                                            left: 0,
+                                                            width: "100%",
+                                                            maxHeight: "220px",
+                                                            overflowY: "auto",
+                                                            zIndex: 9999,
+                                                            backgroundColor: "#fff",
+                                                        }}
+                                                        onMouseDown={(e) => e.preventDefault()}
+                                                    >
+                                                        {filteredStaffs.map((staff) => (
+                                                            <div
+                                                                key={staff.id}
+                                                                className="px-2 py-2 staff-option"
+                                                                style={{ cursor: "pointer" }}
+                                                                onMouseDown={() => {
+                                                                    setStaffSearch(staff.name);
+                                                                }}
+                                                            >
+                                                                {staff.name} ({staff.designation})
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </Col>
+                                            <Col md={3} style={{ position: "relative" }}>
+                                                <Label>Customer</Label>
+
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    placeholder="Type customer name or phone..."
+                                                    value={customerSearch}
+                                                    onChange={(e) => setCustomerSearch(e.target.value)}
+                                                />
+
+                                                {customerSearch && filteredCustomers.length > 0 && (
+                                                    <div
+                                                        className="border rounded mt-1 bg-white shadow"
+                                                        style={{
+                                                            position: "absolute",
+                                                            top: "100%",
+                                                            left: 0,
+                                                            width: "100%",
+                                                            maxHeight: "220px",
+                                                            overflowY: "auto",
+                                                            zIndex: 9999,
+                                                        }}
+                                                        onMouseDown={(e) => e.preventDefault()}
+                                                    >
+                                                        {filteredCustomers.map((customer) => (
+                                                            <div
+                                                                key={customer.id}
+                                                                className="px-2 py-2 customer-option"
+                                                                style={{ cursor: "pointer" }}
+                                                                onMouseDown={() => {
+                                                                    setCustomerSearch(customer.name);
+                                                                }}
+                                                            >
+                                                                <strong>{customer.name}</strong><br />
+                                                                <small className="text-muted">
+                                                                    {customer.phone} · {customer.state_name}
+                                                                </small>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </Col>
                                         </Row>
                                         <Table className="table table-bordered mb-0 custom-table">

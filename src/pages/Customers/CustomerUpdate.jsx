@@ -88,6 +88,7 @@ const FormLayouts = () => {
     }, [id, token]);
 
     const [customerData, setCustomerData] = useState(null);
+    const [originalCustomerData, setOriginalCustomerData] = useState(null);
 
     useEffect(() => {
         const fetchCustomerData = async () => {
@@ -99,6 +100,7 @@ const FormLayouts = () => {
                         }
                     });
                     setCustomerData(response.data.data);
+                    setOriginalCustomerData(response.data.data);
                 } catch (error) {
                     toast.error("Error fetching customer data:");
                 }
@@ -126,6 +128,76 @@ const FormLayouts = () => {
         }
         // eslint-disable-next-line
     }, [customerData, managers, states, customerdetails]);
+
+    const resolveReadableValue = (key, value) => {
+        if (value === null || value === undefined || value === "") return "";
+
+        switch (key) {
+            case "state":
+                return states.find(s => String(s.id) === String(value))?.name || value;
+
+            case "manager":
+                return managers.find(m => String(m.id) === String(value))?.name || value;
+
+            case "customer_type":
+                return customerdetails.find(t =>
+                    String(t.id) === String(value)
+                )?.type_name ||
+                    customerdetails.find(t => String(t.id) === String(value))?.name ||
+                    value;
+
+            case "gst_confirm":
+                return value; // already readable
+
+            default:
+                return value;
+        }
+    };
+
+    const getChangedFields = (oldData, newData) => {
+        const before = {};
+        const after = {};
+
+        if (!oldData) return { before, after };
+
+        Object.keys(newData).forEach((key) => {
+            const oldRaw = oldData[key] ?? "";
+            const newRaw = newData[key] ?? "";
+
+            const oldReadable = resolveReadableValue(key, oldRaw);
+            const newReadable = resolveReadableValue(key, newRaw);
+
+            if (String(oldReadable) !== String(newReadable)) {
+                before[key] = oldReadable;
+                after[key] = newReadable;
+            }
+        });
+
+        return { before, after };
+    };
+
+    const writeCustomerUpdateLog = async (customerId, beforeData, afterData) => {
+        if (Object.keys(beforeData).length === 0) return; // nothing changed
+
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                {
+                    customer: Number(customerId),
+                    before_data: beforeData,
+                    after_data: afterData,
+                },
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+        } catch (err) {
+            console.warn(
+                "Customer update DataLog failed:",
+                err?.response?.data || err.message
+            );
+        }
+    };
 
     const formik = useFormik({
         initialValues: {
@@ -161,8 +233,15 @@ const FormLayouts = () => {
             try {
                 const payload = {
                     ...values,
-                    manager: values.manager, // Send the manager's ID
+                    manager: values.manager,
                 };
+
+                // CALCULATE CHANGES
+                const { before, after } = getChangedFields(
+                    originalCustomerData,
+                    payload
+                );
+
                 const response = await axios.put(
                     `${import.meta.env.VITE_APP_KEY}customer/update/${id}/`,
                     payload,
@@ -173,9 +252,13 @@ const FormLayouts = () => {
                         }
                     }
                 );
-                alert("Customer data saved successfully!");
+
+                // WRITE DATALOG ONLY IF CHANGED
+                await writeCustomerUpdateLog(id, before, after);
+
+                toast.success("Customer data updated successfully!");
             } catch (error) {
-                alert("Failed to save customer data.");
+                toast.error("Failed to save customer data.");
             }
         },
     });
@@ -465,6 +548,7 @@ const FormLayouts = () => {
                         </Col>
                     </Row>
                 </Container>
+                <ToastContainer position="top-right" autoClose={3000} />
             </div>
         </React.Fragment>
     );

@@ -635,8 +635,42 @@ const FormLayouts = () => {
         fetchOrderData();
     }, [id]);
 
+    const writeRemoveItemLog = async (item) => {
+        const token = localStorage.getItem("token");
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                {
+                    order: Number(id),
+                    before_data: {
+                        item_id: item.id,
+                        product_name: item.name,
+                        quantity: item.quantity,
+                        rate: item.rate,
+                        discount: item.discount,
+                    },
+                    after_data: {
+                        action: "Order item removed",
+                    },
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+        } catch (err) {
+            console.warn(
+                "Remove Item DataLog failed:",
+                err?.response?.data || err.message
+            );
+        }
+    };
+
     const handleRemoveItem = async (itemId) => {
         try {
+
+            const removedItem = orderItems.find(item => item.id === itemId);
 
             const response = await fetch(`${import.meta.env.VITE_APP_KEY}remove/order/${itemId}/item/`, {
                 method: 'DELETE',
@@ -648,6 +682,11 @@ const FormLayouts = () => {
 
             if (!response.ok) {
                 throw new Error('Failed to remove item');
+            }
+
+            // Write DataLog AFTER successful delete
+            if (removedItem) {
+                await writeRemoveItemLog(removedItem);
             }
 
             setOrderItems((prevItems) => prevItems.filter((item) => item.id !== itemId));

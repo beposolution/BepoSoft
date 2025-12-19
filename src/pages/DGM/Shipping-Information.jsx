@@ -68,6 +68,44 @@ const BasicTable = () => {
             .catch(() => toast.error("Error fetching staff data"));
     }, [token]);
 
+    const writeDeleteBoxLog = async (boxItem) => {
+        const token = localStorage.getItem("token");
+
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                {
+                    order: Number(id), // order id from useParams
+                    before_data: {
+                        box_id: boxItem.id,
+                        box: boxItem.box,
+                        tracking_id: boxItem.tracking_id ?? null,
+                        parcel_service: boxItem.parcel_service ?? null,
+                        dimensions: {
+                            length: boxItem.length,
+                            breadth: boxItem.breadth,
+                            height: boxItem.height,
+                        },
+                    },
+                    after_data: {
+                        action: "Box deleted",
+                        deleted: true,
+                    },
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+        } catch (err) {
+            console.warn(
+                "Delete Box DataLog failed:",
+                err?.response?.data || err.message
+            );
+        }
+    };
+
     const deleteBox = async (index) => {
         const updatedItem = editableData[index];
         try {
@@ -78,7 +116,10 @@ const BasicTable = () => {
                 }
             );
             if (response.status === 200) {
+                
                 toast.success("Box deleted successfully!");
+                await writeDeleteBoxLog(updatedItem);
+
                 const updatedList = editableData.filter(
                     (item) => item.id !== updatedItem.id
                 );

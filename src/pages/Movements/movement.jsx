@@ -260,13 +260,20 @@ const Movement = () => {
 
     const getRoundedCODSplit = (order) => {
         const total = parseFloat(order.cod_amount || 0);
-        const boxes = order.warehouses?.length || 0;
+
+        // Use box_count only if it is > 0
+        const boxes =
+            order.box_count && Number(order.box_count) > 0
+                ? Number(order.box_count)
+                : (order.warehouses?.length || 0);
 
         if (total <= 0 || boxes === 0) return [];
 
-        const base = Math.floor((total / boxes) * 100) / 100; // round DOWN
+        // Equal split rounded DOWN to 2 decimals
+        const base = Math.floor((total / boxes) * 100) / 100;
         const arr = Array(boxes).fill(base);
 
+        // Adjust rounding difference in last box
         const diff = +(total - base * boxes).toFixed(2);
         arr[boxes - 1] = +(arr[boxes - 1] + diff).toFixed(2);
 

@@ -24,6 +24,12 @@ const BasicTable = () => {
     const [selectedItem, setSelectedItem] = useState(null);
     const [imageBeforeFile, setImageBeforeFile] = useState(null);
     const [imageAfterFile, setImageAfterFile] = useState(null);
+    const [role, setRole] = useState(null)
+
+    useEffect(() => {
+        const role = localStorage.getItem("active");
+        setRole(role);
+    }, []);
 
     const [status, setStatus] = useState([
         "Packing under progress",
@@ -125,7 +131,6 @@ const BasicTable = () => {
                 toast.error("SMS sending failed");
             }
         } catch (error) {
-            console.error("SMS Error:", error.response?.data || error.message);
             toast.error("Error sending SMS. Try again.");
         }
     };
@@ -156,7 +161,7 @@ const BasicTable = () => {
                                         <th>Verified by</th>
                                         <th>Shipped Date</th>
                                         <th>Action</th>
-                                        <th>Delete</th>
+                                        {role !== "warehouse" && <th>Delete</th>}
                                         {/* <th>SMS</th> */}
                                     </tr>
                                 </thead>
@@ -232,14 +237,16 @@ const BasicTable = () => {
                                                     View
                                                 </Button>
                                             </td>
-                                            <td>
-                                                <Button
-                                                    color="danger"
-                                                    onClick={() => deleteBox(index)}
-                                                >
-                                                    Delete
-                                                </Button>
-                                            </td>
+                                            {role !== "warehouse" && (
+                                                <td>
+                                                    <Button
+                                                        color="danger"
+                                                        onClick={() => deleteBox(index)}
+                                                    >
+                                                        Delete
+                                                    </Button>
+                                                </td>
+                                            )}
                                             {/* <td>
                                                 {item.status === "Shipped" && (
                                                     <Button color="success" onClick={() => sendTracking(index)}>

@@ -25,6 +25,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import AddImages from "../Order/AddImages";
+import BoxCount from "./BoxCount";
 
 const FormLayouts = () => {
     document.title = "Form Layouts | Skote - Vite React Admin & Dashboard Template";
@@ -36,7 +37,6 @@ const FormLayouts = () => {
     const navigate = useNavigate();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState("");
-
 
 
     const downloadShippingAddress = () => {
@@ -67,7 +67,6 @@ const FormLayouts = () => {
                     }
                 });
                 setOrderData(response.data.order);
-                console.log("sdfhghsf", response.data.order)
                 setSelectedStatus(response.data.order?.status || "");
             } catch (error) {
                 toast.error("Error fetching order data:");
@@ -119,7 +118,6 @@ const FormLayouts = () => {
             navigate("/delivery/notes/"); // or wherever you want to redirect
         } catch (error) {
             toast.error("Failed to unlock order");
-            console.error("Unlock error:", error);
         }
     };
 
@@ -304,16 +302,20 @@ const FormLayouts = () => {
                                         </Table>
                                     </div>
                                 </CardBody>
+                                <BoxCount
+                                    orderId={orderData?.id}
+                                    initialBoxCount={orderData?.box_count}
+                                />
                                 <AddImages orderId={orderData?.id} />
                                 <PackingInformation />
                                 <ShippingInformation warehouseData={warehouseData} />
 
                                 <CardBody className="text-center">
                                     <Button color="primary" className="me-3" onClick={downloadShippingAddress}>
-                                         Download Shipping Address
+                                        Download Shipping Address
                                     </Button>
                                     <Button color="success" onClick={downloadDeliveryNote}>
-                                         Download Delivery Note
+                                        Download Delivery Note
                                     </Button>
                                 </CardBody>
 

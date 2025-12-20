@@ -279,9 +279,16 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                     >
                                                         <option value="">Select Status</option>
                                                         {(() => {
-                                                            let filteredOptions = [];
+                                                            // CEO & COO → see ALL statuses always
+                                                            if (role === "CEO" || role === "COO") {
+                                                                return statusOptions.map((option, index) => (
+                                                                    <option key={index} value={option}>
+                                                                        {option}
+                                                                    </option>
+                                                                ));
+                                                            }
 
-                                                            // ALWAYS use persisted (saved) status
+                                                            let filteredOptions = [];
                                                             const baseStatus = persistedStatus;
 
                                                             if (baseStatus === "Invoice Rejected") {
@@ -296,6 +303,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                                     filteredOptions = statusOptions.slice(0, 2);
                                                                 }
 
+                                                                // Always allow rejection
                                                                 if (!filteredOptions.includes("Invoice Rejected")) {
                                                                     filteredOptions.push("Invoice Rejected");
                                                                 }

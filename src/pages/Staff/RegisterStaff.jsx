@@ -130,6 +130,12 @@ const FormLayouts = () => {
                 );
 
                 if (response.status === 201) {
+                    const staffData = response?.data?.data;
+
+                    if (staffData?.id) {
+                        await writeStaffCreateLog(staffData);
+                    }
+
                     setSuccess("Form submitted successfully");
                     toast.success("User added successfully!", {
                         position: "top-right",
@@ -138,7 +144,6 @@ const FormLayouts = () => {
                         closeOnClick: true,
                         pauseOnHover: true,
                         draggable: true,
-                        progress: undefined,
                         theme: "colored",
                     });
 
@@ -163,6 +168,57 @@ const FormLayouts = () => {
             }
         }
     });
+
+    const writeStaffCreateLog = async (staffData) => {
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                {
+                    staff: Number(staffData.id),
+
+                    before_data: {
+                        status: "New Staff Created"
+                    },
+
+                    after_data: {
+                        action: "Staff Created",
+
+                        name: staffData.name,
+                        username: staffData.username,
+                        email: staffData.email,
+                        phone: staffData.phone,
+                        designation: staffData.designation,
+
+                        department: staffData.department?.name || "",
+                        supervisor: staffData.supervisor?.name || "",
+                        family: staffData.family?.name || "",
+                        warehouse: staffData.warehouse?.name || "",
+
+                        country: staffData.country,
+                        state: staffData.state?.name || "",
+                        gender: staffData.gender,
+                        marital_status: staffData.marital_status,
+                        employment_status: staffData.employment_status,
+                        approval_status: staffData.approval_status,
+
+                        allocated_states: Array.isArray(staffData.allocated_states)
+                            ? staffData.allocated_states.map(s => s.name)
+                            : [],
+                    }
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    }
+                }
+            );
+        } catch (err) {
+            console.warn(
+                "Staff DataLog failed:",
+                err?.response?.data || err.message
+            );
+        }
+    };
 
     const fetchCountryCodes = async () => {
         try {

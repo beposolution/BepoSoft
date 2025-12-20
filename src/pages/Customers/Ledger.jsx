@@ -187,34 +187,36 @@ const BasicTable = () => {
         });
 
         // ---- GRV entries ----
-        grvList.forEach((g, idx) => {
-            let amount = 0;
-            let label = "GRV";
-            let color = "#fd7e14"; // orange
+        grvList
+            .filter(g => g.status?.toLowerCase() === "approved")
+            .forEach((g, idx) => {
+                let amount = 0;
+                let label = "GRV";
+                let color = "#fd7e14";
 
-            if (g.remark === "return") {
-                amount = parseFloat(g.price || 0);
-                label = "Sales Return";
-            } else if (g.remark === "refund") {
-                amount = parseFloat(g.price || 0);
-                label = "Refund Issued";
-            } else if (g.remark === "cod_return") {
-                amount = parseFloat(g.cod_amount || g.price || 0);
-                label = "COD Return";
-                color = "#dc3545"; // red
-            }
+                if (g.remark === "return") {
+                    amount = parseFloat(g.price || 0);
+                    label = "Sales Return";
+                } else if (g.remark === "refund") {
+                    amount = parseFloat(g.price || 0);
+                    label = "Refund Issued";
+                } else if (g.remark === "cod_return") {
+                    amount = parseFloat(g.cod_amount || g.price || 0);
+                    label = "COD Return";
+                    color = "#dc3545";
+                }
 
-            rows.push({
-                key: `G-${g.id}`,
-                index: `G${idx + 1}`,
-                date: g.date,
-                invoice: g.invoice,
-                particular: `${label} (${g.product})`,
-                particularColor: color,
-                debit: null,
-                credit: amount,
+                rows.push({
+                    key: `G-${g.id}`,
+                    index: `G${idx + 1}`,
+                    date: g.date,
+                    invoice: g.invoice,
+                    particular: `${label} (${g.product})`,
+                    particularColor: color,
+                    debit: null,
+                    credit: amount,
+                });
             });
-        });
 
         // 🔹 SORT BY DATE (ascending)
         return rows.sort(
@@ -575,6 +577,10 @@ const BasicTable = () => {
         pdf.save(`${customerName}_Ledger.pdf`);
     };
 
+    const approvedGrvList = grvList.filter(
+        g => g.status?.toLowerCase() === "approved"
+    );
+
     const totalDebit =
         filteredOrders.reduce((total, order) => {
             if (order.status !== "Invoice Rejected" && order.status !== "Invoice Created") {
@@ -610,7 +616,7 @@ const BasicTable = () => {
             0
         )
         +
-        grvList.reduce((sum, g) => {
+        approvedGrvList.reduce((sum, g) => {
             if (g.remark === "cod_return") {
                 return sum + parseFloat(g.cod_amount || 0);
             }

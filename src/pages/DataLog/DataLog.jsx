@@ -155,14 +155,43 @@ const DataLog = () => {
     return ts >= startTs && ts <= endTs;
   };
 
+  const deepSearch = (value, query) => {
+    if (!query) return true;
+    if (value == null) return false;
+
+    const q = query.toLowerCase();
+
+    if (typeof value === "string" || typeof value === "number") {
+      return String(value).toLowerCase().includes(q);
+    }
+
+    if (Array.isArray(value)) {
+      return value.some(v => deepSearch(v, q));
+    }
+
+    if (typeof value === "object") {
+      return Object.values(value).some(v => deepSearch(v, q));
+    }
+
+    return false;
+  };
+
   const filteredLogs = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
+
     return logs.filter((log) => {
-      const userMatch = (log.user_name || "").toLowerCase().includes(q);
-      const orderMatch = (log.order_name || "").toLowerCase().includes(q);
-      const queryOk = q ? userMatch || orderMatch : true;
       const dateOk = inDateRange(log.created_at);
-      return queryOk && dateOk;
+
+      if (!q) return dateOk;
+
+      const match =
+        deepSearch(log.user_name, q) ||
+        deepSearch(log.order_name, q) ||
+        deepSearch(log.before_data, q) ||
+        deepSearch(log.after_data, q) ||
+        deepSearch(log.created_at, q);
+
+      return match && dateOk;
     });
   }, [logs, searchQuery, startDate, endDate]);
 

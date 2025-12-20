@@ -51,41 +51,67 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
         fetchLedger();
     }, [customerId, id]);
 
+    const getGrvTotal = (grvList = []) => {
+        if (!Array.isArray(grvList)) return 0;
+
+        return grvList
+            .filter(
+                g =>
+                    g.status === "approved" &&
+                    (g.remark === "refund" || g.remark === "exchange")
+            )
+            .reduce(
+                (sum, g) => sum + Number(g.price || 0),
+                0
+            );
+    };
+
+    const getRefundTotal = (refundList = []) => {
+        if (!Array.isArray(refundList)) return 0;
+
+        return refundList.reduce(
+            (sum, r) => sum + Number(r.amount || 0),
+            0
+        );
+    };
+
     let closingBalance = 0;
+
     if (ledgerData) {
-        if ('closing_balance' in ledgerData) {
-            closingBalance = Number(ledgerData.closing_balance);
-        } else {
-            const totalDebit = Array.isArray(ledgerData.ledger)
-                ? ledgerData.ledger.reduce(
-                    (acc, item) =>
-                        (item.status !== "Invoice Rejected" && item.status !== "Invoice Created")
-                            ? acc + Number(item.total_amount || 0)
-                            : acc,
-                    0
-                )
-                : 0;
-            const totalCredit =
-                (Array.isArray(ledgerData.ledger)
-                    ? ledgerData.ledger.reduce((acc, item) =>
-                        acc +
-                        (Array.isArray(item.recived_payment)
-                            ? item.recived_payment.reduce(
-                                (sum, rec) => sum + Number(rec.amount || 0),
-                                0
-                            )
-                            : 0)
-                        , 0)
-                    : 0) +
-                (Array.isArray(ledgerData.advance_receipts)
-                    ? ledgerData.advance_receipts.reduce(
-                        (sum, rec) => sum + Number(rec.amount || 0),
-                        0
-                    )
-                    : 0);
-            closingBalance = totalDebit - totalCredit;
-        }
+        const totalDebit = Array.isArray(ledgerData.ledger)
+            ? ledgerData.ledger.reduce(
+                (acc, item) =>
+                    item.status !== "Invoice Rejected" &&
+                        item.status !== "Invoice Created"
+                        ? acc + Number(item.total_amount || 0)
+                        : acc,
+                0
+            )
+            : 0;
+
+        const totalPayments = Array.isArray(ledgerData.payment_receipts)
+            ? ledgerData.payment_receipts.reduce(
+                (sum, r) => sum + Number(r.amount || 0),
+                0
+            )
+            : 0;
+
+        const totalAdvance = Array.isArray(ledgerData.advance_receipts)
+            ? ledgerData.advance_receipts.reduce(
+                (sum, r) => sum + Number(r.amount || 0),
+                0
+            )
+            : 0;
+
+        const totalGrv = getGrvTotal(ledgerData.grv);
+
+        const totalRefund = getRefundTotal(ledgerData.refund_receipts);
+
+        closingBalance =
+            totalDebit -
+            (totalPayments + totalAdvance + totalGrv + totalRefund);
     }
+
     const closingBalanceDebit = closingBalance > 0 ? closingBalance : 0;
     const closingBalanceCredit = closingBalance < 0 ? Math.abs(closingBalance) : 0;
 
@@ -167,7 +193,7 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                 headers,
             });
             const { order } = orderItemsResponse.data;
-            setPaymentRecipts(order.recived_payment || []);
+            setPaymentRecipts(response.data.data.payment_receipts || []);
             setTotalAmount(order.total_amount || 0);
             setPacking(order.warehouse || {});
         } catch (error) {
@@ -315,6 +341,25 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                                     Ledger Debited: <span>₹0.00</span>
                                 </>
                             )}
+                            {Array.isArray(ledgerData?.grv) && ledgerData.grv.length > 0 && (
+                                <>
+                                    <br />
+                                    Return / Exchange Amount:{" "}
+                                    <span style={{ color: "orange" }}>
+                                        ₹{getGrvTotal(ledgerData.grv).toFixed(2)}
+                                    </span>
+                                </>
+                            )}
+                            {Array.isArray(ledgerData?.refund_receipts) &&
+                                ledgerData.refund_receipts.length > 0 && (
+                                    <>
+                                        <br />
+                                        Refund Issued:{" "}
+                                        <span style={{ color: "green" }}>
+                                            ₹{getRefundTotal(ledgerData.refund_receipts).toFixed(2)}
+                                        </span>
+                                    </>
+                                )}
                         </div>
                     </Col>
                     <Col md={4} className="d-flex flex-column p-3">

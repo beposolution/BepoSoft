@@ -115,23 +115,21 @@ const EcommerenceAddProduct = () => {
                 setMessage('Product updated successfully!');
                 setMessageType('success');
 
-                const prevSnap = buildBeforeSnapshot(beforeData);                 // original from server
-                const nextSnap = buildAfterSnapshot(values, rackDetails);         // current form state
+                const prevSnap = buildBeforeSnapshot(beforeData);
+                const nextSnap = buildAfterSnapshot(values, rackDetails);
 
-                // 3) Compute only-changed fields
-                const { before, after } = diffObjects(prevSnap, nextSnap);
-
-                // 4) If anything changed, log it
-                if (Object.keys(after).length > 0) {
-                    await axios.post(
-                        `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                        {
-                            before_data: before,
-                            after_data: after,
+                await axios.post(
+                    `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                    {
+                        before_data: prevSnap,
+                        after_data: nextSnap,
+                    },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
                         },
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                }
+                    }
+                );
 
                 formik.resetForm();
                 setImagePreview("");

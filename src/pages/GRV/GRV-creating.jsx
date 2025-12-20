@@ -236,31 +236,35 @@ const FormLayouts = () => {
     const toggleModal = () => setModal(!modal);
 
     const handleProductSelect = (product, quantity) => {
-        if (quantity > 0) {
-            const newProducts = Array.from({ length: quantity }, () => ({
-                ...product,
-                uniqueId: `${product.id}-${Math.random()}`,
-                rowQuantity: 1,
-                remark: "",
-            }));
-            setSelectedProducts((prev) => [...prev, ...newProducts]);
-        }
+        if (quantity <= 0) return;
+
+        const newProduct = {
+            ...product,
+            uniqueId: `${product.id}-${Date.now()}`,
+            rowQuantity: quantity,
+            remark: "",
+            rack_details: [],
+        };
+
+        setSelectedProducts((prev) => [...prev, newProduct]);
         toggleModal();
     };
 
     const handleSaveInvoice = async () => {
         const dataToSave = selectedProducts.map((product) => {
-            const price = Number(product.rate || 0);
+            const rate = Number(product.rate || 0);
+            const discount = Number(product.discount || 0);
             const qty = Number(product.rowQuantity || 1);
 
-            const amount = price * qty;
+            const discountedRate = Math.max(rate - discount, 0);
+            const amount = discountedRate * qty;
 
             return {
                 order: selectedOrder.id,
                 product: product.name,
                 product_id: product.product,
 
-                price: price,
+                price: discountedRate,
                 quantity: qty,
                 amount: amount,
 

@@ -198,7 +198,7 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
             const { order } = orderItemsResponse.data;
 
             // FIXED
-            setPaymentRecipts(order.payment_receipts || []);
+            setPaymentRecipts(order.recived_payment || []);
             setTotalAmount(order.total_amount || 0);
 
             // CRITICAL FIX

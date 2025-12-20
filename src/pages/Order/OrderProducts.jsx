@@ -64,7 +64,39 @@ const FormLayouts = () => {
     const [editingRackFor, setEditingRackFor] = useState(null);
     const [rackModalOpen, setRackModalOpen] = useState(false);
     const [rackItemCtx, setRackItemCtx] = useState(null);
-    const openRackModal = (item, index) => { setRackItemCtx({ item, index }); setRackModalOpen(true); };
+
+    const openRackModal = (item, index) => {
+        let racks = [];
+        try {
+            if (typeof item.products === "string") {
+                racks = JSON.parse(item.products.replace(/'/g, '"'));
+            } else if (Array.isArray(item.products)) {
+                racks = item.products;
+            }
+        } catch { }
+
+        const usableRacks = racks.filter(r => r.usability === "usable");
+        const saved = Array.isArray(item.rack_details) ? item.rack_details : [];
+
+        const prefilled = {};
+        usableRacks.forEach((r, idx) => {
+            const found = saved.find(
+                s =>
+                    Number(s.rack_id) === Number(r.rack_id) &&
+                    s.column_name === r.column_name
+            );
+            prefilled[idx] = found ? Number(found.quantity) : 0;
+        });
+
+        setRackSelections(prev => ({
+            ...prev,
+            [item.id]: prev[item.id] ?? prefilled,
+        }));
+
+        setRackItemCtx({ item, index });
+        setRackModalOpen(true);
+    };
+
     const closeRackModal = () => { setRackModalOpen(false); setRackItemCtx(null); };
 
     useEffect(() => {
@@ -699,30 +731,41 @@ const FormLayouts = () => {
     };
 
     const updateCartProduct = async (productId, updateData) => {
-        const token = localStorage.getItem("token"); // Retrieve token directly here
+        const token = localStorage.getItem("token");
 
-        if (!token) {
-            setErrorMessage("Authorization token is missing");
-            return;
-        }
+        if (!token) return;
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_APP_KEY}remove/order/${productId}/item/`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(updateData)
-            });
+            const response = await fetch(
+                `${import.meta.env.VITE_APP_KEY}remove/order/${productId}/item/`,
+                {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(updateData),
+                }
+            );
+
+            const data = await response.json();
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Failed to update the product. Status: ${response.status} - ${errorData.message || 'Unknown error'}`);
+                throw new Error(data?.message || "Update failed");
             }
 
-            setFeedback("Product updated successfully");
-        } catch (error) {
+            // IMPORTANT: update local state immediately
+            if (data?.data) {
+                setOrderItems(prev =>
+                    prev.map(item =>
+                        item.id === productId ? data.data : item
+                    )
+                );
+            }
+
+            return data;
+        } catch (err) {
+            toast.error(err.message || "Failed to update product");
         }
     };
 
@@ -736,55 +779,25 @@ const FormLayouts = () => {
         }));
     };
 
-    // Handle Quantity/Discount Change
     const handleItemChange = (index, field, value) => {
         const updatedItems = [...orderItems];
-        const productId = updatedItems[index].id; // Assuming each item has a unique ID
+        const productId = updatedItems[index].id;
 
-        // Update local state
-        if (field === 'quantity') {
+        if (field === "quantity") {
             updatedItems[index].quantity = Number(value);
-        } else if (field === 'discount') {
+        } else if (field === "discount") {
             updatedItems[index].discount = Number(value);
-        } else if (field === 'rate') {
+        } else if (field === "rate") {
             updatedItems[index].rate = Number(value);
         }
+
         setOrderItems(updatedItems);
 
-        // Parse rack_details from products property if available
-        let rackDetails = [];
-        try {
-            if (updatedItems[index].products) {
-                let racks = [];
-                if (typeof updatedItems[index].products === "string" && updatedItems[index].products.trim().startsWith("[")) {
-                    const fixedJson = updatedItems[index].products.replace(/'/g, '"');
-                    racks = JSON.parse(fixedJson);
-                } else if (Array.isArray(updatedItems[index].products)) {
-                    racks = updatedItems[index].products;
-                }
-                rackDetails = racks
-                    .map((rack, rackIdx) => ({
-                        rack_id: rack.rack_id,
-                        rack_name: rack.rack_name ?? "",
-                        quantity: rackSelections[productId]?.[rackIdx] ?? 0,
-                        column_name: rack.column_name
-                    }))
-                    .filter(rack => rack.quantity > 0); // Only include rows with quantity > 0
-            }
-        } catch (e) {
-            rackDetails = [];
-        }
-
-        // Prepare the data to be sent to the backend
-        const updateData = {
+        updateCartProduct(productId, {
             quantity: updatedItems[index].quantity,
             discount: updatedItems[index].discount,
             rate: updatedItems[index].rate,
-            rack_details: rackDetails
-        };
-
-        // Call the backend update function with productId in the URL
-        updateCartProduct(productId, updateData);
+        });
     };
 
     const totalPayableAmount = orderItems.reduce(
@@ -1703,12 +1716,23 @@ const FormLayouts = () => {
                                                                     } catch { racks = []; }
                                                                     const usableRacks = (racks || []).filter(r => r.usability === "usable");
 
+                                                                    const saved = Array.isArray(item.rack_details) ? item.rack_details : [];
+
+                                                                    const getQty = (rackIdx, rack) =>
+                                                                        rackSelections[item.id]?.[rackIdx] ??
+                                                                        saved.find(
+                                                                            s =>
+                                                                                Number(s.rack_id) === Number(rack.rack_id) &&
+                                                                                s.column_name === rack.column_name
+                                                                        )?.quantity ??
+                                                                        0;
+
                                                                     const rack_details = usableRacks
                                                                         .map((r, rackIdx) => ({
                                                                             rack_id: r.rack_id,
                                                                             rack_name: r.rack_name ?? "",
                                                                             column_name: r.column_name,
-                                                                            quantity: Number(rackSelections[item.id]?.[rackIdx] ?? 0),  // <-- change this line
+                                                                            quantity: Number(getQty(rackIdx, r)),
                                                                         }))
                                                                         .filter(r => r.quantity > 0);
 
@@ -1718,6 +1742,7 @@ const FormLayouts = () => {
                                                                         rate: item.rate,
                                                                         rack_details,
                                                                     });
+                                                                    await fetchOrderData();
                                                                     toast.success("Rack details saved!");
                                                                     closeRackModal();
                                                                 }}

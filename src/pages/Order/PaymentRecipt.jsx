@@ -189,15 +189,29 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
         try {
             const token = localStorage.getItem("token");
             const headers = { Authorization: `Bearer ${token}` };
-            const orderItemsResponse = await axios.get(`${import.meta.env.VITE_APP_KEY}order/${id}/items/`, {
-                headers,
-            });
+
+            const orderItemsResponse = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}order/${id}/items/`,
+                { headers }
+            );
+
             const { order } = orderItemsResponse.data;
-            setPaymentRecipts(response.data.data.payment_receipts || []);
+
+            // FIXED
+            setPaymentRecipts(order.payment_receipts || []);
             setTotalAmount(order.total_amount || 0);
-            setPacking(order.warehouse || {});
+
+            // CRITICAL FIX
+            setPacking(
+                Array.isArray(order.warehouse)
+                    ? order.warehouse
+                    : order.warehouse
+                        ? [order.warehouse]
+                        : []
+            );
+
         } catch (error) {
-            toast.error("Error fetching data:");
+            toast.error("Error fetching data");
         }
     };
 

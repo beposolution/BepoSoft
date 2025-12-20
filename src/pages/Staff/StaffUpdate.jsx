@@ -28,6 +28,7 @@ const FormLayouts = () => {
     const token = localStorage.getItem("token");
     const [countryCodes, setCountryCodes] = useState([]);
     const { id } = useParams();
+    const [oldStaffData, setOldStaffData] = useState(null);
 
     // Formik setup
     const formik = useFormik({
@@ -154,6 +155,12 @@ const FormLayouts = () => {
                 });
 
                 if (response.status === 201 || response.status === 200) {
+                    const updatedStaff = response?.data?.data;
+
+                    if (oldStaffData && updatedStaff) {
+                        await writeStaffUpdateLog(oldStaffData, updatedStaff);
+                    }
+
                     setSuccess("Form submitted successfully");
                     toast.success("Staff updated successfully");
                 } else {
@@ -184,6 +191,64 @@ const FormLayouts = () => {
         }
 
     });
+
+    const writeStaffUpdateLog = async (beforeData, afterData) => {
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                {
+                    staff: Number(afterData.id),
+
+                    before_data: {
+                        name: beforeData.name,
+                        username: beforeData.username,
+                        email: beforeData.email,
+                        phone: beforeData.phone,
+                        designation: beforeData.designation,
+                        department: beforeData.department?.name || "",
+                        supervisor: beforeData.supervisor?.name || "",
+                        family: beforeData.family?.name || "",
+                        approval_status: beforeData.approval_status,
+                    },
+
+                    after_data: {
+                        action: "Staff Updated",
+
+                        name: afterData.name,
+                        username: afterData.username,
+                        email: afterData.email,
+                        phone: afterData.phone,
+                        designation: afterData.designation,
+
+                        department: afterData.department?.name || "",
+                        supervisor: afterData.supervisor?.name || "",
+                        family: afterData.family?.name || "",
+
+                        country: afterData.country,
+                        state: afterData.state?.name || "",
+                        gender: afterData.gender,
+                        marital_status: afterData.marital_status,
+                        employment_status: afterData.employment_status,
+                        approval_status: afterData.approval_status,
+
+                        allocated_states: Array.isArray(afterData.allocated_states)
+                            ? afterData.allocated_states.map(s => s.name)
+                            : [],
+                    }
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    }
+                }
+            );
+        } catch (err) {
+            console.warn(
+                "Staff Update DataLog failed:",
+                err?.response?.data || err.message
+            );
+        }
+    };
 
     useEffect(() => {
         setSelectedStates(
@@ -228,6 +293,8 @@ const FormLayouts = () => {
                     // Check and handle staff data (renamed from customerData)
                     if (staffResponse.status === 200) {
                         const staffData = staffResponse.data.data;
+
+                        setOldStaffData(staffData);
 
                         // Populate the form with the fetched staff data
                         formik.setValues({
@@ -976,7 +1043,7 @@ const FormLayouts = () => {
                                                 {formik.isSubmitting ? "Submitting..." : "Submit"}
                                             </Button>
                                         </div>
-                                        
+
                                     </Form>
                                 </CardBody>
                             </Card>

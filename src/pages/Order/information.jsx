@@ -26,6 +26,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
     const [role, setRole] = useState(null);
     const originalValuesRef = useRef({});
     const [paymentImagesCount, setPaymentImagesCount] = useState(0);
+    const [persistedStatus, setPersistedStatus] = useState("");
 
     useEffect(() => {
         const fetchImages = async () => {
@@ -211,6 +212,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                 const orderData = orderResponse.data.order;
                 const { status, note, billing_address, accounts_note } = orderData;
                 const customerId = orderData.customerID;
+                setPersistedStatus(status || "");
 
                 // Set initial form values with status and note
                 formik.setValues({
@@ -279,12 +281,17 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                         {(() => {
                                                             let filteredOptions = [];
 
-                                                            if (formik.values.status === "Invoice Rejected") {
+                                                            // ALWAYS use persisted (saved) status
+                                                            const baseStatus = persistedStatus;
+
+                                                            if (baseStatus === "Invoice Rejected") {
                                                                 filteredOptions = [...statusOptions];
                                                             } else {
-                                                                const selectedIndex = statusOptions.indexOf(formik.values.status);
-                                                                if (selectedIndex !== -1) {
-                                                                    filteredOptions = statusOptions.slice(selectedIndex, selectedIndex + 2);
+                                                                const baseIndex = statusOptions.indexOf(baseStatus);
+
+                                                                if (baseIndex !== -1) {
+                                                                    // current + next only
+                                                                    filteredOptions = statusOptions.slice(baseIndex, baseIndex + 2);
                                                                 } else {
                                                                     filteredOptions = statusOptions.slice(0, 2);
                                                                 }
@@ -293,6 +300,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                                     filteredOptions.push("Invoice Rejected");
                                                                 }
                                                             }
+
                                                             return filteredOptions.map((option, index) => (
                                                                 <option key={index} value={option}>
                                                                     {option}

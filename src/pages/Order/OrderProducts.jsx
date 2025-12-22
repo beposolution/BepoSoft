@@ -761,7 +761,9 @@ const FormLayouts = () => {
             if (data?.data) {
                 setOrderItems(prev =>
                     prev.map(item =>
-                        item.id === productId ? data.data : item
+                        item.id === productId
+                            ? { ...item, ...data.data }
+                            : item
                     )
                 );
             }
@@ -1893,10 +1895,10 @@ const FormLayouts = () => {
                                                                         <td>
                                                                             <span
                                                                                 className={`badge ${g.status === "Approved"
-                                                                                        ? "bg-success"
-                                                                                        : g.status === "Waiting For Approval"
-                                                                                            ? "bg-warning text-dark"
-                                                                                            : "bg-secondary"
+                                                                                    ? "bg-success"
+                                                                                    : g.status === "Waiting For Approval"
+                                                                                        ? "bg-warning text-dark"
+                                                                                        : "bg-secondary"
                                                                                     }`}
                                                                             >
                                                                                 {g.status}

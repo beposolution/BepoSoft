@@ -219,8 +219,7 @@ const FormLayouts = () => {
         validationSchema: Yup.object({
             name: Yup.string(),
             manager: Yup.string(),
-            email: Yup.string().email(),
-            gst: Yup.string(),
+            email: Yup.string().email("Invalid email"),
             phone: Yup.string(),
             alt_phone: Yup.string(),
             address: Yup.string(),
@@ -229,6 +228,21 @@ const FormLayouts = () => {
             state: Yup.string(),
             comment: Yup.string(),
             customer_type: Yup.string(),
+
+            gst_confirm: Yup.string()
+                .required("Please select GST status"),
+
+            gst: Yup.string().when("gst_confirm", {
+                is: (val) => val === "YES",
+                then: (schema) =>
+                    schema
+                        .required("GST number is required")
+                        .matches(
+                            /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
+                            "Invalid GST number format"
+                        ),
+                otherwise: (schema) => schema.notRequired(),
+            }),
         }),
         onSubmit: async (values) => {
             try {
@@ -406,7 +420,8 @@ const FormLayouts = () => {
                                                         value={formik.values.gst}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
-                                                        invalid={formik.touched.gst && formik.errors.gst ? true : false}
+                                                        disabled={formik.values.gst_confirm !== "YES"}
+                                                        invalid={formik.touched.gst && !!formik.errors.gst}
                                                     />
                                                     <FormFeedback>{formik.errors.gst}</FormFeedback>
                                                 </div>

@@ -64,6 +64,7 @@ const FormLayouts = () => {
     const [editingRackFor, setEditingRackFor] = useState(null);
     const [rackModalOpen, setRackModalOpen] = useState(false);
     const [rackItemCtx, setRackItemCtx] = useState(null);
+    const [grvData, setGrvData] = useState([]);
 
     const openRackModal = (item, index) => {
         let racks = [];
@@ -539,6 +540,7 @@ const FormLayouts = () => {
                 throw new Error("Error fetching order data");
             }
             const data = await response.json();
+            console.log("res", data)
             localStorage.setItem("order_payment_method", data.order.payment_status);
             localStorage.setItem("order_cod_status", data.order.cod_status);
 
@@ -561,6 +563,7 @@ const FormLayouts = () => {
                 });
                 setCustomerId(data?.order?.customer?.id || null);
                 setOrderItems(data?.items || []);
+                setGrvData(Array.isArray(data.grv) ? data.grv : []);
                 setShippingAddress({
                     name: data.order.billing_address?.name || "",
                     address: data.order.billing_address?.address || "",
@@ -1856,6 +1859,59 @@ const FormLayouts = () => {
                                                     </div>
                                                 </div>
                                             </div>
+                                            {grvData.length > 0 && (
+                                                <Card className="mt-4 border-danger">
+                                                    <CardBody>
+                                                        <CardTitle className="text-danger">
+                                                            Goods Return Voucher (GRV)
+                                                        </CardTitle>
+
+                                                        <Table bordered responsive>
+                                                            <thead className="table-light">
+                                                                <tr>
+                                                                    <th>#</th>
+                                                                    <th>Invoice</th>
+                                                                    <th>Product</th>
+                                                                    <th>Quantity</th>
+                                                                    <th>Price</th>
+                                                                    <th>COD Amount</th>
+                                                                    <th>Status</th>
+                                                                    <th>Date</th>
+                                                                    <th>Remark</th>
+                                                                    <th>Note</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {grvData.map((g, index) => (
+                                                                    <tr key={g.id}>
+                                                                        <td>{index + 1}</td>
+                                                                        <td>{g.invoice}</td>
+                                                                        <td>{g.product}</td>
+                                                                        <td>{g.quantity}</td>
+                                                                        <td>₹{Number(g.price).toFixed(2)}</td>
+                                                                        <td>₹{Number(g.cod_amount).toFixed(2)}</td>
+                                                                        <td>
+                                                                            <span
+                                                                                className={`badge ${g.status === "Approved"
+                                                                                        ? "bg-success"
+                                                                                        : g.status === "Waiting For Approval"
+                                                                                            ? "bg-warning text-dark"
+                                                                                            : "bg-secondary"
+                                                                                    }`}
+                                                                            >
+                                                                                {g.status}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td>{g.date}</td>
+                                                                        <td>{g.remark}</td>
+                                                                        <td>{g.note}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </Table>
+                                                    </CardBody>
+                                                </Card>
+                                            )}
                                             <style jsx>{`
                                                 .bordered-card {
                                                     border-radius: 8px;

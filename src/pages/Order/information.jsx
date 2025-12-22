@@ -246,10 +246,15 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
         fetchOrderAndCustomerData();
     }, [id, token]);
 
+    const allowedWhenUnallocated = [
+        "Invoice Created",
+        "Invoice Approved",
+        "Waiting For Confirmation",
+    ];
+
     const isBlockedTransition =
         hasUnallocated &&
-        originalValuesRef.current?.status === "Invoice Approved" &&
-        formik.values.status === "Waiting For Confirmation";
+        !allowedWhenUnallocated.includes(formik.values.status);
 
     return (
         <Row>
@@ -316,9 +321,10 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                             ));
                                                         })()}
                                                     </Input>
-                                                    {isBlockedTransition && (
+                                                    {hasUnallocated && !allowedWhenUnallocated.includes(formik.values.status) && (
                                                         <small className="text-danger">
-                                                            ⚠ You must allocate all rack quantities before moving to "Waiting For Confirmation".
+                                                            ⚠ Complete rack allocation before moving to this status.
+                                                            Allowed statuses: Invoice Created, Invoice Approved, Waiting For Confirmation.
                                                         </small>
                                                     )}
                                                     {formik.errors.status && formik.touched.status ? (

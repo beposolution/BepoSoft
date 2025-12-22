@@ -238,10 +238,18 @@ const FormLayouts = () => {
     const handleProductSelect = (product, quantity) => {
         if (quantity <= 0) return;
 
+        if (quantity > product.quantity) {
+            toast.error(
+                `Return quantity cannot exceed ordered quantity (${product.quantity})`
+            );
+            return;
+        }
+
         const newProduct = {
             ...product,
             uniqueId: `${product.id}-${Date.now()}`,
             rowQuantity: quantity,
+            maxQuantity: product.quantity,
             remark: "",
             rack_details: [],
         };
@@ -527,16 +535,26 @@ const FormLayouts = () => {
                                                             <Input
                                                                 type="number"
                                                                 min="1"
-                                                                value={product.rowQuantity ?? 1}
+                                                                max={product.maxQuantity}
+                                                                value={product.rowQuantity}
                                                                 onChange={(e) => {
-                                                                    const q = Math.max(
-                                                                        1,
-                                                                        Number(e.target.value || 1)
-                                                                    );
+                                                                    let entered = parseInt(e.target.value, 10) || 1;
+
+                                                                    if (entered > product.maxQuantity) {
+                                                                        toast.error(
+                                                                            `Quantity cannot exceed ordered quantity (${product.maxQuantity})`
+                                                                        );
+                                                                        entered = product.maxQuantity;
+                                                                    }
+
                                                                     setSelectedProducts((prev) =>
                                                                         prev.map((p) =>
                                                                             p.uniqueId === product.uniqueId
-                                                                                ? { ...p, rowQuantity: q }
+                                                                                ? {
+                                                                                    ...p,
+                                                                                    rowQuantity: entered,
+                                                                                    rack_details: [], // reset racks
+                                                                                }
                                                                                 : p
                                                                         )
                                                                     );
@@ -867,18 +885,33 @@ const FormLayouts = () => {
                                                     <Input
                                                         type="number"
                                                         min="1"
-                                                        defaultValue="1"
-                                                        onChange={(e) =>
-                                                            (quantity = parseInt(e.target.value, 10) || 1)
-                                                        }
+                                                        max={product.quantity}
+                                                        defaultValue={1}
+                                                        onChange={(e) => {
+                                                            let entered = parseInt(e.target.value, 10) || 1;
+
+                                                            if (entered > product.quantity) {
+                                                                entered = product.quantity;
+                                                                e.target.value = product.quantity;
+                                                            }
+
+                                                            quantity = entered;
+                                                        }}
                                                     />
                                                 </td>
                                                 <td>
                                                     <Button
                                                         color="primary"
-                                                        onClick={() =>
-                                                            handleProductSelect(product, quantity)
-                                                        }
+                                                        onClick={() => {
+                                                            if (quantity > product.quantity) {
+                                                                toast.error(
+                                                                    `Return quantity cannot exceed ordered quantity (${product.quantity})`
+                                                                );
+                                                                return;
+                                                            }
+
+                                                            handleProductSelect(product, quantity);
+                                                        }}
                                                     >
                                                         Add
                                                     </Button>

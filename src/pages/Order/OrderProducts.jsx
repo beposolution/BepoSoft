@@ -1482,18 +1482,20 @@ const FormLayouts = () => {
                                                                 <td>
                                                                     <Input
                                                                         type="number"
+                                                                        step="0.01"
                                                                         value={item.rate}
                                                                         disabled={isAddDisabled}
-                                                                        onChange={(e) => handleItemChange(index, 'rate', Number(e.target.value))}
+                                                                        onChange={(e) => handleItemChange(index, 'rate', e.target.value)}
                                                                         style={{ width: '80px' }}
                                                                     />
                                                                 </td>
                                                                 <td>
                                                                     <Input
                                                                         type="number"
+                                                                        step="0.01"
                                                                         value={item.discount}
                                                                         disabled={isAddDisabled}
-                                                                        onChange={(e) => handleItemChange(index, 'discount', Number(e.target.value))}
+                                                                        onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
                                                                         style={{ width: '80px' }}
                                                                     />
                                                                 </td>

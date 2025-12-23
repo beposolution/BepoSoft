@@ -249,7 +249,6 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
     const allowedWhenUnallocated = [
         "Invoice Created",
         "Invoice Approved",
-        "Waiting For Confirmation",
     ];
 
     const isBlockedTransition =

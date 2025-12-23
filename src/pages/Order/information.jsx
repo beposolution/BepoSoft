@@ -128,6 +128,13 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                 }
             }
 
+            if (paymentMethod === "paid" && values.status === "Invoice Approved") {
+                if (paymentImagesCount === 0) {
+                    toast.error("Upload at least one PAYMENT IMAGE before approving invoice (Paid mode).");
+                    return;
+                }
+            }
+
             try {
                 // 1) update the order
                 await axios.put(

@@ -1305,11 +1305,13 @@ const FormLayouts = () => {
                                 <Col xl={12}>
                                     <Card className="bordered-card">
                                         <CardBody>
-                                            <div className="text-end mb-3">
-                                                <Button color="primary" onClick={toggleReciptModal}>
-                                                    Add Product
-                                                </Button>
-                                            </div>
+                                            {formik.values.status === "Invoice Created" && (
+                                                <div className="text-end mb-3">
+                                                    <Button color="primary" onClick={toggleReciptModal}>
+                                                        Add Product
+                                                    </Button>
+                                                </div>
+                                            )}
                                             <Modal isOpen={isOpen} toggle={toggleReciptModal} size="lg" style={{ maxWidth: "90%", width: "90%" }}>
                                                 <ModalHeader toggle={toggleReciptModal}>Search Products</ModalHeader>
                                                 <ModalBody>

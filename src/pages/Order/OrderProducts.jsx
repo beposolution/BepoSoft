@@ -735,7 +735,6 @@ const FormLayouts = () => {
 
     const updateCartProduct = async (productId, updateData) => {
         const token = localStorage.getItem("token");
-
         if (!token) return;
 
         try {
@@ -751,28 +750,22 @@ const FormLayouts = () => {
                 }
             );
 
-            const data = await response.json();
-
             if (!response.ok) {
-                throw new Error(data?.message || "Update failed");
+                const err = await response.json();
+                throw new Error(err?.message || "Update failed");
             }
 
-            // IMPORTANT: update local state immediately
-            if (data?.data) {
-                setOrderItems(prev =>
-                    prev.map(item =>
-                        item.id === productId
-                            ? { ...item, ...data.data }
-                            : item
-                    )
-                );
-            }
+            // REFRESH ORDER ITEMS
+            await fetchOrderData();
 
-            return data;
+            // FORCE UPDATE ORDER TOTAL
+            await handleSubmit();
+
         } catch (err) {
             toast.error(err.message || "Failed to update product");
         }
     };
+
 
     const handleRackStockChange = (itemId, rackIndex, value) => {
         setRackSelections(prev => ({

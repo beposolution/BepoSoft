@@ -811,6 +811,38 @@ const FormLayouts = () => {
         }
     };
 
+    const writeRackChangeLog = async (item, beforeRacks, afterRacks) => {
+        const token = localStorage.getItem("token");
+
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                {
+                    order: Number(id),
+                    before_data: {
+                        item_id: item.id,
+                        product_name: item.name,
+                        rack_details: beforeRacks,
+                    },
+                    after_data: {
+                        rack_details: afterRacks,
+                        action: "Rack allocation updated",
+                    },
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+        } catch (err) {
+            console.warn(
+                "Rack DataLog failed:",
+                err?.response?.data || err.message
+            );
+        }
+    };
+
     const handleRemoveItem = async (itemId) => {
         try {
 
@@ -1888,46 +1920,6 @@ const FormLayouts = () => {
                                                                 color="primary"
                                                                 disabled={isAddDisabled}
                                                                 onClick={async () => {
-                                                                    // Build rack_details exactly like your save path expects
-                                                                    const item = rackItemCtx.item;
-                                                                    let racks = [];
-                                                                    try {
-                                                                        if (item.products && typeof item.products === "string" && item.products.trim().startsWith("[")) {
-                                                                            const fixedJson = item.products.replace(/'/g, '"');
-                                                                            racks = JSON.parse(fixedJson);
-                                                                        } else if (Array.isArray(item.products)) {
-                                                                            racks = item.products;
-                                                                        }
-                                                                    } catch { racks = []; }
-                                                                    const usableRacks = (racks || []).filter(r => r.usability === "usable");
-
-                                                                    const rack_details = usableRacks
-                                                                        .map((r, rackIdx) => ({
-                                                                            rack_id: r.rack_id,
-                                                                            rack_name: r.rack_name ?? "",
-                                                                            column_name: r.column_name,
-                                                                            quantity: Number(rackSelections[item.id]?.[rackIdx] ?? 0),
-                                                                        }))
-                                                                        .filter(r => r.quantity > 0);
-
-                                                                    // Use your existing updater (no change to it)
-                                                                    await updateCartProduct(item.id, {
-                                                                        quantity: item.quantity,
-                                                                        discount: item.discount,
-                                                                        rate: item.rate,
-                                                                        rack_details,
-                                                                    });
-                                                                    toast.success("Rack details saved!");
-                                                                    closeRackModal();
-                                                                    // optional: await fetchOrderData();
-                                                                }}
-                                                            >
-                                                                Save Rack Details
-                                                            </Button> */}
-                                                            <Button
-                                                                color="primary"
-                                                                disabled={isAddDisabled}
-                                                                onClick={async () => {
                                                                     const item = rackItemCtx.item;
                                                                     let racks = [];
                                                                     try {
@@ -1966,6 +1958,61 @@ const FormLayouts = () => {
                                                                         rate: item.rate,
                                                                         rack_details,
                                                                     });
+                                                                    await fetchOrderData();
+                                                                    toast.success("Rack details saved!");
+                                                                    closeRackModal();
+                                                                }}
+                                                            >
+                                                                Save Rack Details
+                                                            </Button> */}
+                                                            <Button
+                                                                color="primary"
+                                                                disabled={isAddDisabled}
+                                                                onClick={async () => {
+                                                                    const item = rackItemCtx.item;
+
+                                                                    // ---------- BEFORE snapshot ----------
+                                                                    const beforeRacks = Array.isArray(item.rack_details)
+                                                                        ? item.rack_details.map(r => ({
+                                                                            rack_id: r.rack_id,
+                                                                            rack_name: r.rack_name,
+                                                                            column_name: r.column_name,
+                                                                            quantity: Number(r.quantity),
+                                                                        }))
+                                                                        : [];
+
+                                                                    // ---------- BUILD AFTER rack_details ----------
+                                                                    let racks = [];
+                                                                    try {
+                                                                        if (typeof item.products === "string") {
+                                                                            racks = JSON.parse(item.products.replace(/'/g, '"'));
+                                                                        } else if (Array.isArray(item.products)) {
+                                                                            racks = item.products;
+                                                                        }
+                                                                    } catch { racks = []; }
+
+                                                                    const usableRacks = racks.filter(r => r.usability === "usable");
+
+                                                                    const afterRacks = usableRacks
+                                                                        .map((r, rackIdx) => ({
+                                                                            rack_id: r.rack_id,
+                                                                            rack_name: r.rack_name ?? "",
+                                                                            column_name: r.column_name,
+                                                                            quantity: Number(rackSelections[item.id]?.[rackIdx] ?? 0),
+                                                                        }))
+                                                                        .filter(r => r.quantity > 0);
+
+                                                                    // ---------- SAVE rack details ----------
+                                                                    await updateCartProduct(item.id, {
+                                                                        quantity: item.quantity,
+                                                                        discount: item.discount,
+                                                                        rate: item.rate,
+                                                                        rack_details: afterRacks,
+                                                                    });
+
+                                                                    // ---------- WRITE DATALOG ----------
+                                                                    await writeRackChangeLog(item, beforeRacks, afterRacks);
+
                                                                     await fetchOrderData();
                                                                     toast.success("Rack details saved!");
                                                                     closeRackModal();

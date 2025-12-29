@@ -858,7 +858,7 @@ const FormLayouts = () => {
 
     const showRackDetails =
         (role === "ADMIN" || role === "Accounts / Accounting") &&
-        ["Invoice Approved", "Waiting For Confirmation", "To Print", "Packed", "Packing under progress"].includes(formik.values.status);
+        ["Invoice Approved", "Waiting For Confirmation", "To Print", "Packed", "Packing under progress", "Ready to ship",].includes(formik.values.status);
 
     // ADD ONLY: cap per-rack input so total never exceeds the order line quantity
     const setRackQtyCapped = (item, rackIdx, val, rackStock) => {
@@ -917,6 +917,38 @@ const FormLayouts = () => {
 
         return totalSelected < Number(item.quantity);
     });
+
+    const getAllocatedRackCountForTable = (item) => {
+        let racks = [];
+        try {
+            if (typeof item.products === "string") {
+                racks = JSON.parse(item.products.replace(/'/g, '"'));
+            } else if (Array.isArray(item.products)) {
+                racks = item.products;
+            }
+        } catch {
+            racks = [];
+        }
+
+        const usableRacks = (racks || []).filter(r => r.usability === "usable");
+        const saved = Array.isArray(item.rack_details) ? item.rack_details : [];
+
+        const sameColumn = (a, b) =>
+            String(a ?? "").trim().toLowerCase() ===
+            String(b ?? "").trim().toLowerCase();
+
+        const matchesRack = (s, r) =>
+            Number(s?.rack_id) === Number(r?.rack_id) &&
+            sameColumn(s?.column_name, r?.column_name);
+
+        let allocated = 0;
+        usableRacks.forEach(r => {
+            const hit = saved.find(s => matchesRack(s, r));
+            allocated += Number(hit?.quantity || 0);
+        });
+
+        return allocated;
+    };
 
     return (
         <React.Fragment>
@@ -1497,7 +1529,7 @@ const FormLayouts = () => {
                                                                 </td>
 
                                                                 <td>{((item.rate - item.discount) * item.quantity).toFixed(2)}</td>
-                                                                {showRackDetails && (
+                                                                {/* {showRackDetails && (
                                                                     <td>
                                                                         <Button
                                                                             color="secondary"
@@ -1508,7 +1540,26 @@ const FormLayouts = () => {
                                                                             Add Rack Details
                                                                         </Button>
                                                                     </td>
+                                                                )} */}
+                                                                {showRackDetails && (
+                                                                    <td className="text-center" style={{ minWidth: 130 }}>
+                                                                        <div className="d-flex flex-column align-items-center gap-1">
+                                                                            <strong>
+                                                                                {getAllocatedRackCountForTable(item)} / {Number(item.quantity)}
+                                                                            </strong>
+
+                                                                            <Button
+                                                                                color="secondary"
+                                                                                size="sm"
+                                                                                disabled={isAddDisabled}
+                                                                                onClick={() => openRackModal(item, index)}
+                                                                            >
+                                                                                Add / Edit Rack
+                                                                            </Button>
+                                                                        </div>
+                                                                    </td>
                                                                 )}
+
                                                                 <td>
                                                                     <Button
                                                                         color="danger"

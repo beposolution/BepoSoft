@@ -14,7 +14,7 @@ import {
 } from "reactstrap";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import axios from "axios";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import jsPDF from "jspdf";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -224,108 +224,149 @@ const BasicTable = () => {
         );
     }, [filteredOrders, advanceReceipts, paymentReceipts, refundReceipts, grvList, bankIdToName]);
 
+    const blackBorder = {
+        top: { style: "thin", color: { rgb: "FF000000" } },
+        bottom: { style: "thin", color: { rgb: "FF000000" } },
+        left: { style: "thin", color: { rgb: "FF000000" } },
+        right: { style: "thin", color: { rgb: "FF000000" } },
+    };
+
+    const excelColorMap = (color) => {
+        switch (color) {
+            case "red": // Goods Sale
+                return { rgb: "FFF8D7DA" };
+
+            case "green": // Payment received
+                return { rgb: "FFD4EDDA" };
+
+            case "blue": // Advance Receipt (Turquoise)
+                return { rgb: "FFD1ECF1" };
+
+            case "#6f42c1": // Payment Receipt (Blue)
+                return { rgb: "FFD6E4FF" };
+
+            case "#fd7e14": // Sales / COD Return
+                return { rgb: "FFFFE5D0" };
+
+            case "#dc3545": // Refund Issued
+                return { rgb: "FFFFF3CD" };
+
+            default:
+                return { rgb: "FFFFFFFF" };
+        }
+    };
+
     const exportToExcel = () => {
-        // Prepare ledger and payment rows
-        const data = filteredOrders.flatMap((order, orderIndex) => [
-            {
-                '#': orderIndex + 1,
-                'DATE': order.order_date,
-                'INVOICE': `${order.invoice}/${order.company}`,
-                'PARTICULAR': 'Goods Sale',
-                'DEBIT (₹)': order.total_amount.toFixed(2),
-                'CREDIT (₹)': "-"
-            },
-            ...(order.recived_payment || []).map((receipt, index) => ({
-                '#': `${orderIndex + 1}.${index + 1}`,
-                'DATE': receipt.received_at,
-                'INVOICE': receipt.bank, // You can map bank ID here if needed similarly
-                'PARTICULAR': 'Payment received',
-                'DEBIT (₹)': "-",
-                'CREDIT (₹)': parseFloat(receipt.amount || 0).toFixed(2)
-            }))
+        const workbook = XLSX.utils.book_new();
+
+        const worksheet = XLSX.utils.aoa_to_sheet([
+            ["#", "DATE", "INVOICE", "PARTICULAR", "DEBIT (₹)", "CREDIT (₹)"],
         ]);
 
-        // Prepare advance receipts rows with bank name mapping
-        const advanceData = advanceReceipts.map((advance, index) => ({
-            '#': `A${index + 1}`,
-            'DATE': advance.received_at,
-            'INVOICE': bankIdToName[advance.bank] || advance.bank, // Map bank ID to name
-            'PARTICULAR': 'Advance Receipt',
-            'DEBIT (₹)': "-",
-            'CREDIT (₹)': parseFloat(advance.amount || 0).toFixed(2)
-        }));
+        const blackBorder = {
+            top: { style: "thin", color: { rgb: "FF000000" } },
+            bottom: { style: "thin", color: { rgb: "FF000000" } },
+            left: { style: "thin", color: { rgb: "FF000000" } },
+            right: { style: "thin", color: { rgb: "FF000000" } },
+        };
 
-        const paymentReceiptData = paymentReceipts.map((receipt, index) => ({
-            '#': `P${index + 1}`,
-            'DATE': receipt.received_at,
-            'INVOICE': receipt.bank,
-            'PARTICULAR': 'Payment Receipt',
-            'DEBIT (₹)': "-",
-            'CREDIT (₹)': parseFloat(receipt.amount || 0).toFixed(2)
-        }));
+        // HEADER STYLE
+        ["A1", "B1", "C1", "D1", "E1", "F1"].forEach((cell) => {
+            worksheet[cell].s = {
+                font: { bold: true, color: { rgb: "FFFFFFFF" } },
+                fill: { fgColor: { rgb: "FF343A40" } },
+                alignment: { horizontal: "center", vertical: "center" },
+                border: blackBorder,
+            };
+        });
 
-        const refundData = refundReceipts.map((refund, index) => ({
-            '#': `R${index + 1}`,
-            'DATE': refund.date,
-            'INVOICE': refund.invoice_no,
-            'PARTICULAR': `Refund Issued (${refund.refund_no})`,
-            'DEBIT (₹)': parseFloat(refund.amount || 0).toFixed(2),
-            'CREDIT (₹)': "-"
-        }));
+        let rowIndex = 2;
 
-        const grvData = grvList.map((g, index) => ({
-            '#': `G${index + 1}`,
-            'DATE': g.date,
-            'INVOICE': g.invoice,
-            'PARTICULAR':
-                g.remark === "cod_return"
-                    ? "COD Return"
-                    : g.remark === "refund"
-                        ? "Refund Issued"
-                        : "Sales Return",
-            'DEBIT (₹)': "-",
-            'CREDIT (₹)':
-                g.remark === "cod_return"
-                    ? parseFloat(g.cod_amount || 0).toFixed(2)
-                    : parseFloat(g.price || 0).toFixed(2),
-        }));
+        ledgerRows.forEach((row, i) => {
+            const excelRow = [
+                i + 1,
+                row.date,
+                row.invoice,
+                row.particular,
+                row.debit !== null ? row.debit.toFixed(2) : "-",
+                row.credit !== null ? row.credit.toFixed(2) : "-",
+            ];
 
-        // Combine all data rows
-        const allData = [
-            ...data,
-            ...advanceData,
-            ...paymentReceiptData,
-            ...refundData,
-            ...grvData,
-        ];
+            XLSX.utils.sheet_add_aoa(worksheet, [excelRow], {
+                origin: `A${rowIndex}`,
+            });
 
-        // Append Grand Total and Closing Balance
-        allData.push(
-            {
-                '#': '',
-                'DATE': '',
-                'INVOICE': '',
-                'PARTICULAR': 'Grand Total',
-                'DEBIT (₹)': totalDebit.toFixed(2),
-                'CREDIT (₹)': totalCredit.toFixed(2),
-            },
-            {
-                '#': '',
-                'DATE': '',
-                'INVOICE': '',
-                'PARTICULAR': 'Closing Balance',
-                'DEBIT (₹)': closingBalance > 0 ? closingBalance.toFixed(2) : '',
-                'CREDIT (₹)': closingBalance < 0 ? Math.abs(closingBalance).toFixed(2) : '',
-            }
+            // FULL ROW COLOR + BORDER
+            ["A", "B", "C", "D", "E", "F"].forEach((col) => {
+                const cell = `${col}${rowIndex}`;
+                if (worksheet[cell]) {
+                    worksheet[cell].s = {
+                        fill: { fgColor: excelColorMap(row.particularColor) },
+                        font: { bold: col === "D" },
+                        border: blackBorder,
+                    };
+                }
+            });
+
+            rowIndex++;
+        });
+
+        const customerName =
+            filteredOrders[0]?.customer_name || "Customer";
+
+        // GRAND TOTAL
+        XLSX.utils.sheet_add_aoa(
+            worksheet,
+            [["", "", "", "Grand Total", totalDebit.toFixed(2), totalCredit.toFixed(2)]],
+            { origin: `A${rowIndex}` }
         );
 
-        // Generate worksheet and workbook
-        const worksheet = XLSX.utils.json_to_sheet(allData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Ledger");
+        ["A", "B", "C", "D", "E", "F"].forEach((col) => {
+            const cell = `${col}${rowIndex}`;
+            worksheet[cell].s = {
+                font: { bold: true },
+                fill: { fgColor: { rgb: "FFE9ECEF" } },
+                border: blackBorder,
+            };
+        });
 
-        // Save file
-        XLSX.writeFile(workbook, `${name}_Ledger.xlsx`);
+        rowIndex++;
+
+        // CLOSING BALANCE
+        XLSX.utils.sheet_add_aoa(
+            worksheet,
+            [[
+                "",
+                "",
+                "",
+                "Closing Balance",
+                closingBalance > 0 ? closingBalance.toFixed(2) : "",
+                closingBalance < 0 ? Math.abs(closingBalance).toFixed(2) : "",
+            ]],
+            { origin: `A${rowIndex}` }
+        );
+
+        ["A", "B", "C", "D", "E", "F"].forEach((col) => {
+            const cell = `${col}${rowIndex}`;
+            worksheet[cell].s = {
+                font: { bold: true },
+                fill: { fgColor: { rgb: "FFD6D8DB" } },
+                border: blackBorder,
+            };
+        });
+
+        // COLUMN WIDTHS
+        worksheet["!cols"] = [
+            { wch: 5 },
+            { wch: 14 },
+            { wch: 28 },
+            { wch: 30 },
+            { wch: 14 },
+            { wch: 14 },
+        ];
+
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Ledger");
+        XLSX.writeFile(workbook, `${customerName}_Ledger.xlsx`);
     };
 
     const convertToPDF = () => {
@@ -447,7 +488,7 @@ const BasicTable = () => {
                     : g.price;
 
             rows.push({
-                index: `G${idx + 1}`,
+                // index: `G${idx + 1}`,
                 date: g.date,
                 invoice: g.invoice,
                 particular:
@@ -477,6 +518,9 @@ const BasicTable = () => {
             });
         });
 
+        //date-wise sort
+        rows.sort((a, b) => new Date(a.date) - new Date(b.date));
+
         // Append Grand Total & Closing Balance rows (bold)
         rows.push(
             {
@@ -501,77 +545,62 @@ const BasicTable = () => {
             }
         );
 
-        // Helper: chunk rows into pages of exactly 30
-        const chunkArray = (arr, size) =>
-            Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
-                arr.slice(i * size, i * size + size)
-            );
+        autoTable(pdf, {
+            head: [["#", "DATE", "INVOICE", "PARTICULAR", "DEBIT", "CREDIT"]],
+            body: rows.map((r, i) => [
+                i + 1,
+                r.date,
+                r.invoice,
+                r.particular,
+                r.debit,
+                r.credit,
+            ]),
+            startY: 42,
+            theme: "grid",
+            styles: {
+                font: "helvetica",
+                fontSize: 10,
+                cellPadding: 3,
+                lineColor: [200, 200, 200],
+                lineWidth: 0.2,
+                valign: "middle",
+            },
+            headStyles: {
+                fillColor: [240, 240, 240],
+                textColor: [0, 0, 0],
+                fontStyle: "bold",
+            },
+            alternateRowStyles: {
+                fillColor: [249, 249, 249],
+            },
+            columnStyles: {
+                0: { cellWidth: 14, halign: "center" },
+                1: { cellWidth: 28 },
+                2: { cellWidth: 60 },
+                3: { cellWidth: 38, fontStyle: "bold" },
+                4: { cellWidth: 25, halign: "right" },
+                5: { cellWidth: 25, halign: "right" },
+            },
+            margin: { top: 10, right: 10, bottom: 14, left: 10 },
 
-        const chunks = chunkArray(rows, 30);
+            // Header only on first page
+            didDrawPage: (data) => {
+                if (data.pageNumber === 1) {
+                    drawHeader();
+                }
+            },
 
-        const head = [["#", "DATE", "INVOICE", "PARTICULAR", "DEBIT", "CREDIT"]];
-
-        // Draw each chunk on its own page; add header each time
-        chunks.forEach((chunk, pageIndex) => {
-            if (pageIndex > 0) {
-                pdf.addPage();
-                drawHeader();
-            }
-
-            autoTable(pdf, {
-                head,
-                body: chunk.map((r) => [
-                    r.index,
-                    r.date,
-                    r.invoice,
-                    r.particular,
-                    r.debit,
-                    r.credit,
-                ]),
-                // startY: 42,
-                startY: pageIndex === 0 ? 42 : 40,
-                theme: "grid",
-                styles: {
-                    font: "helvetica",
-                    fontSize: 10,
-                    lineColor: [200, 200, 200],
-                    lineWidth: 0.2,
-                    cellPadding: 3,
-                    valign: "middle",
-                },
-                headStyles: {
-                    fillColor: [240, 240, 240],
-                    textColor: [0, 0, 0],
-                    fontStyle: "bold",
-                },
-                alternateRowStyles: {
-                    fillColor: [249, 249, 249],
-                },
-                columnStyles: {
-                    0: { cellWidth: 14, halign: "center" },
-                    1: { cellWidth: 28 },
-                    2: { cellWidth: 60 },
-                    3: { cellWidth: 38, fontStyle: "bold" },
-                    4: { cellWidth: 25, halign: "right" },
-                    5: { cellWidth: 25, halign: "right" },
-                },
-                // Preserve colors in PARTICULAR column + bold total rows
-                didParseCell: (data) => {
-                    const { section, column, row } = data;
-                    if (section === "body") {
-                        const raw = chunks[pageIndex][row.index];
-                        // Bold rows for totals
-                        if (raw?._bold) {
-                            data.cell.styles.fontStyle = "bold";
-                        }
-                        // Coloring the "PARTICULAR" column only
-                        if (column.index === 3 && Array.isArray(raw?._particularColor)) {
-                            data.cell.styles.textColor = raw._particularColor;
-                        }
+            didParseCell: (data) => {
+                if (data.section === "body") {
+                    const raw = rows[data.row.index];
+                    if (raw?._bold) {
+                        data.cell.styles.fontStyle = "bold";
                     }
-                },
-                margin: { top: 6, right: 10, bottom: 14, left: 10 },
-            });
+                    if (data.column.index === 3 && raw?._particularColor) {
+                        data.cell.styles.textColor = raw._particularColor;
+                    }
+                }
+            },
         });
 
         pdf.save(`${customerName}_Ledger.pdf`);

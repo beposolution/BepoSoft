@@ -311,8 +311,8 @@ const AmountTransferList = () => {
                                                 <thead>
                                                     <tr>
                                                         <th>#</th>
-                                                        <th>Send From</th>
-                                                        <th>Send To</th>
+                                                        <th>Amount Transfered To</th>
+                                                        <th>Amount Transfered From</th>
                                                         <th>Amount</th>
                                                         <th>Date</th>
                                                         <th>Note</th>

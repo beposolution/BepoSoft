@@ -150,17 +150,17 @@ const AmountTransfer = () => {
                                     <CardTitle className="mb-4">ADVANCE AMOUNT TRANSFER</CardTitle>
 
                                     <Row>
+
                                         <Col md={6}>
-                                            <Label>Send From *</Label>
+                                            <Label>Product Send From *</Label>
                                             <Select
                                                 options={customers}
                                                 value={formData.send_from}
                                                 onChange={(val) => setFormData({ ...formData, send_from: val })}
                                             />
                                         </Col>
-
                                         <Col md={6}>
-                                            <Label>Send To *</Label>
+                                            <Label>Product Send To *</Label>
                                             <Select
                                                 options={customers}
                                                 value={formData.send_to}

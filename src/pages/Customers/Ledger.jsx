@@ -37,6 +37,8 @@ const BasicTable = () => {
     const [paymentReceipts, setPaymentReceipts] = useState([]);
     const [grvList, setGrvList] = useState([]);
     const [refundReceipts, setRefundReceipts] = useState([]);
+    const [advanceTransfers, setAdvanceTransfers] = useState([]);
+    const [ledgerSentTransfers, setLedgerSentTransfers] = useState([]);
 
     const tableRef = useRef(null);
 
@@ -89,6 +91,8 @@ const BasicTable = () => {
                 setPaymentReceipts(ledgerResponse.data.data.payment_receipts || []);
                 setGrvList(ledgerResponse.data.data.grv || []);
                 setRefundReceipts(ledgerResponse.data.data.refund_receipts || []);
+                setAdvanceTransfers(ledgerResponse.data.data.advance_transfers || []);
+                setLedgerSentTransfers(ledgerResponse.data.data.ledger_sent_transfers || []);
                 setLoading(false);
 
             } catch (error) {
@@ -144,6 +148,19 @@ const BasicTable = () => {
             });
         });
 
+        ledgerSentTransfers.forEach((t, idx) => {
+            rows.push({
+                key: `AST-${t.id}`,
+                index: `AST${idx + 1}`,
+                date: t.date,
+                invoice: "-",
+                particular: `Advance Transfer Sent to ${t.send_to_name}`,
+                particularColor: "#0d6efd", // blue
+                debit: Number(t.amount || 0),
+                credit: null,
+            });
+        });
+
         // Advance receipts
         advanceReceipts.forEach((advance, idx) => {
             rows.push({
@@ -186,6 +203,19 @@ const BasicTable = () => {
             });
         });
 
+        advanceTransfers.forEach((t, idx) => {
+            rows.push({
+                key: `AT-${t.id}`,
+                index: `AT${idx + 1}`,
+                date: t.date,
+                invoice: "-",
+                particular: `Advance Transfer Received from ${t.send_from_name}`,
+                particularColor: "#198754", // green
+                debit: null,
+                credit: Number(t.amount || 0),
+            });
+        });
+
         // ---- GRV entries ----
         grvList
             .filter(g => g.status?.toLowerCase() === "approved")
@@ -222,7 +252,16 @@ const BasicTable = () => {
         return rows.sort(
             (a, b) => new Date(a.date) - new Date(b.date)
         );
-    }, [filteredOrders, advanceReceipts, paymentReceipts, refundReceipts, grvList, bankIdToName]);
+    }, [
+        filteredOrders,
+        advanceReceipts,
+        paymentReceipts,
+        refundReceipts,
+        grvList,
+        advanceTransfers,
+        ledgerSentTransfers,
+        bankIdToName
+    ]);
 
     const blackBorder = {
         top: { style: "thin", color: { rgb: "FF000000" } },
@@ -250,6 +289,12 @@ const BasicTable = () => {
 
             case "#dc3545": // Refund Issued
                 return { rgb: "FFFFF3CD" };
+
+            case "#0d6efd": // Transfer sent
+                return { rgb: "FFE7F1FF" };
+
+            case "#198754": // Transfer received
+                return { rgb: "FFE6F4EA" };
 
             default:
                 return { rgb: "FFFFFFFF" };
@@ -481,6 +526,18 @@ const BasicTable = () => {
             });
         });
 
+        (advanceTransfers || []).forEach((t) => {
+            rows.push({
+                date: t.date,
+                invoice: "-",
+                particular: `Advance Transfer Received from ${t.send_from_name}`,
+                debit: "-",
+                credit: Number(t.amount || 0).toFixed(2),
+                _particularColor: [25, 135, 84], // green
+                _bold: false,
+            });
+        });
+
         (grvList || []).forEach((g, idx) => {
             const amount =
                 g.remark === "cod_return"
@@ -621,6 +678,11 @@ const BasicTable = () => {
         refundReceipts.reduce(
             (sum, refund) => sum + parseFloat(refund.amount || 0),
             0
+        )
+        +
+        ledgerSentTransfers.reduce(
+            (sum, t) => sum + parseFloat(t.amount || 0),
+            0
         );
 
     const totalCredit =
@@ -650,7 +712,12 @@ const BasicTable = () => {
                 return sum + parseFloat(g.cod_amount || 0);
             }
             return sum + parseFloat(g.price || 0);
-        }, 0);
+        }, 0)
+        +
+        advanceTransfers.reduce(
+            (sum, t) => sum + parseFloat(t.amount || 0),
+            0
+        );
 
     const closingBalance = totalDebit - totalCredit;
 

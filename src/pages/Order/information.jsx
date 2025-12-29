@@ -103,9 +103,31 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
             // build delta snapshots for the log
             const beforeDelta = {};
             const afterDelta = {};
+
             Object.keys(payload).forEach((k) => {
-                beforeDelta[k] = original?.[k] ?? null;
-                afterDelta[k] = values?.[k] ?? null;
+                let beforeVal = original?.[k] ?? null;
+                let afterVal = values?.[k] ?? null;
+
+                // billing_address: convert ID → readable address
+                if (k === "billing_address") {
+                    const beforeObj = customerAddresses.find(
+                        a => a.id === Number(beforeVal)
+                    );
+                    const afterObj = customerAddresses.find(
+                        a => a.id === Number(afterVal)
+                    );
+
+                    beforeVal = beforeObj
+                        ? `${beforeObj.name}-${beforeObj.city}-${beforeObj.state}-${beforeObj.zipcode}-${beforeObj.address}-${beforeObj.phone}-${beforeObj.email}`
+                        : beforeVal;
+
+                    afterVal = afterObj
+                        ? `${afterObj.name}-${afterObj.city}-${afterObj.state}-${afterObj.zipcode}-${afterObj.address}-${afterObj.phone}-${afterObj.email}`
+                        : afterVal;
+                }
+
+                beforeDelta[k] = beforeVal;
+                afterDelta[k] = afterVal;
             });
 
             // READ CURRENT ORDER VALUES

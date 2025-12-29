@@ -91,8 +91,50 @@ const FormLayouts = () => {
         fetchCustomers();
     }, []);
 
+    const writeCustomerChangeLog = async (beforeCustomer, afterCustomer) => {
+        const token = localStorage.getItem("token");
+
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                {
+                    order: Number(id),
+                    before_data: {
+                        customer_id: beforeCustomer.id,
+                        customer_name: beforeCustomer.name,
+                        phone: beforeCustomer.phone,
+                        gst: beforeCustomer.gst || "nil",
+                        address: beforeCustomer.address || "",
+                    },
+                    after_data: {
+                        customer_id: afterCustomer.id,
+                        customer_name: afterCustomer.name,
+                        phone: afterCustomer.phone,
+                        gst: afterCustomer.gst || "nil",
+                        address: afterCustomer.address || "",
+                    },
+                },
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+        } catch (err) {
+            console.warn("Customer change DataLog failed:", err?.response?.data || err.message);
+        }
+    };
+
     const handleCustomerUpdate = async () => {
         try {
+            // BEFORE snapshot
+            const beforeCustomer = {
+                id: billingAddress.id,
+                name: billingAddress.name,
+                phone: billingAddress.phone,
+                gst: billingAddress.gst,
+                address: billingAddress.address,
+            };
+
+            // Update order customer
             await axios.put(
                 `${import.meta.env.VITE_APP_KEY}shipping/${id}/order/`,
                 { customer: Number(selectedCustomer) },
@@ -104,12 +146,31 @@ const FormLayouts = () => {
                 }
             );
 
+            // Fetch updated order to get NEW customer
+            const refreshed = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}order/${id}/items/`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            const newCustomer = refreshed.data?.order?.customer;
+
+            const afterCustomer = {
+                id: newCustomer?.id,
+                name: newCustomer?.name,
+                phone: newCustomer?.phone,
+                gst: newCustomer?.gst,
+                address: newCustomer?.address,
+            };
+
+            // Write DataLog
+            await writeCustomerChangeLog(beforeCustomer, afterCustomer);
+
             toast.success("Customer updated successfully");
 
             setIsEditingCustomer(false);
             setSelectedCustomer("");
 
-            fetchOrderData(); // refresh billing + shipping cards
+            fetchOrderData(); // refresh UI
         } catch (error) {
             toast.error("Failed to update customer");
         }
@@ -1347,9 +1408,15 @@ const FormLayouts = () => {
                                                             {billingAddress.name}
                                                         </span>
 
-                                                        <Button size="sm" color="light" onClick={() => setIsEditingCustomer(true)}>
-                                                            ✏️
-                                                        </Button>
+                                                        {!["BDM", "BDO"].includes(role) && (
+                                                            <Button
+                                                                size="sm"
+                                                                color="light"
+                                                                onClick={() => setIsEditingCustomer(true)}
+                                                            >
+                                                                ✏️
+                                                            </Button>
+                                                        )}
                                                     </>
                                                 ) : (
                                                     <>

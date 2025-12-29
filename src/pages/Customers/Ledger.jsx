@@ -86,7 +86,6 @@ const BasicTable = () => {
 
                 // Set the fetched data into the state
                 setOrders(ledgerResponse.data.data);
-                console.log("res", ledgerResponse.data.data)
                 setFilteredOrders(ledgerResponse.data.data.ledger || []);
                 setAdvanceReceipts(ledgerResponse.data.data.advance_receipts);
                 setPaymentReceipts(ledgerResponse.data.data.payment_receipts || []);

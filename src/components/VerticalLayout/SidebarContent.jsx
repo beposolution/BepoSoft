@@ -447,6 +447,9 @@ const SidebarContent = (props) => {
                     <Link to="/refund/receipts/">{props.t("Refund Receipt")}</Link>
                   </li>
                   <li>
+                    <Link to="/advance/transfer/">{props.t("Advance Amount Transfer")}</Link>
+                  </li>
+                  <li>
                     <Link to="/internal/bank/transfer/view/">{props.t("Bank Transfer Details")}</Link>
                   </li>
                   <li>
@@ -463,6 +466,9 @@ const SidebarContent = (props) => {
                   </li>
                   <li>
                     <Link to="/refund/receipts/list/view/">{props.t("Refund Receipt View")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/advance/transfer/list/">{props.t("Advance Amount Transfer View")}</Link>
                   </li>
                 </ul>
               </li>

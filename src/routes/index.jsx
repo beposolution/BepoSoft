@@ -392,6 +392,8 @@ import DateProductReport from "../pages/Resports/DateProductReport";
 import DateWiseSalesReport from "../pages/Resports/DateWiseSalesReport";
 import RefundReceipt from "../pages/Receipts/RefundReceipt";
 import RefundReceiptList from "../pages/Receipts/RefundReceiptList";
+import AmountTransfer from "../pages/Receipts/AmountTransfer";
+import AmountTransferList from "../pages/Receipts/AmountTransferList";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -470,6 +472,8 @@ const authProtectedRoutes = [
   { path: "/internal/bank/transfer/view/", component: <InternalTransferList /> },
   { path: "/refund/receipts/", component: <RefundReceipt /> },
   { path: "/refund/receipts/list/view/", component: <RefundReceiptList /> },
+  { path: "/advance/transfer/", component: <AmountTransfer /> },
+  { path: "/advance/transfer/list/", component: <AmountTransferList /> },
 
   // company
 

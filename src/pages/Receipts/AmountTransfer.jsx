@@ -151,7 +151,7 @@ const AmountTransfer = () => {
 
                                     <Row>
 
-                                        <Col md={6}>
+                                        <Col md={4}>
                                             <Label>Product Send From *</Label>
                                             <Select
                                                 options={customers}
@@ -159,12 +159,20 @@ const AmountTransfer = () => {
                                                 onChange={(val) => setFormData({ ...formData, send_from: val })}
                                             />
                                         </Col>
-                                        <Col md={6}>
+                                        <Col md={4}>
                                             <Label>Product Send To *</Label>
                                             <Select
                                                 options={customers}
                                                 value={formData.send_to}
                                                 onChange={(val) => setFormData({ ...formData, send_to: val })}
+                                            />
+                                        </Col>
+                                        <Col md={4}>
+                                            <Label>Date *</Label>
+                                            <Input
+                                                type="date"
+                                                value={formData.date}
+                                                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                                             />
                                         </Col>
                                     </Row>
@@ -180,31 +188,20 @@ const AmountTransfer = () => {
                                         </Col>
 
                                         <Col md={4}>
-                                            <Label>Date *</Label>
-                                            <Input
-                                                type="date"
-                                                value={formData.date}
-                                                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                            />
-                                        </Col>
-                                    </Row>
-
-                                    <Row className="mt-3">
-                                        <Col md={12}>
                                             <Label>Note</Label>
                                             <Input
                                                 value={formData.note}
                                                 onChange={(e) => setFormData({ ...formData, note: e.target.value })}
                                             />
                                         </Col>
-                                    </Row>
 
-                                    <Row className="mt-3">
-                                        <Col md={12}>
+                                        <Col md={4}>
                                             <Label>Upload Images</Label>
                                             <Input type="file" multiple onChange={handleFileChange} />
                                         </Col>
+
                                     </Row>
+
 
                                     <Row className="mt-4">
                                         <Col>

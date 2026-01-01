@@ -151,18 +151,7 @@ const FormLayouts = () => {
             return;
         }
 
-        for (const p of picked) {
-            const meta = rackDetailsModal.racks.find(
-                (r) => r.rack_id === p.rack_id && r.column_name === p.column_name
-            );
-            if (!meta) continue;
-            if (Number(p.quantity) > Number(meta.usable)) {
-                toast.error(
-                    `Rack ${meta.rack_name}-${meta.column_name} only has ${meta.usable} usable units.`
-                );
-                return;
-            }
-        }
+
 
         setSelectedProducts((prev) =>
             prev.map((row) =>
@@ -727,33 +716,8 @@ const FormLayouts = () => {
                                                                         <td>{r.column_name}</td>
                                                                         <td>{r.usability}</td>
                                                                         <td>{r.usable}</td>
+
                                                                         {/* <td style={{ maxWidth: 140 }}>
-                                                                            <Input
-                                                                                type="number"
-                                                                                min="0"
-                                                                                max={r.usable}
-                                                                                value={value}
-                                                                                onChange={(e) => {
-                                                                                    const val = e.target.value
-                                                                                        ? Math.max(
-                                                                                            0,
-                                                                                            Math.min(
-                                                                                                Number(e.target.value),
-                                                                                                r.usable
-                                                                                            )
-                                                                                        )
-                                                                                        : "";
-                                                                                    setRackDetailsModal((m) => ({
-                                                                                        ...m,
-                                                                                        allocations: {
-                                                                                            ...m.allocations,
-                                                                                            [key]: val,
-                                                                                        },
-                                                                                    }));
-                                                                                }}
-                                                                            />
-                                                                        </td> */}
-                                                                        <td style={{ maxWidth: 140 }}>
                                                                             <Input
                                                                                 type="number"
                                                                                 min="0"
@@ -784,7 +748,39 @@ const FormLayouts = () => {
                                                                                     });
                                                                                 }}
                                                                             />
-                                                                        </td>
+                                                                        </td> */}
+
+                                                                        <Input
+                                                                            type="number"
+                                                                            min="0"
+                                                                            value={value}
+                                                                            onChange={(e) => {
+                                                                                const entered = Math.max(0, Number(e.target.value) || 0);
+
+                                                                                setRackDetailsModal((m) => {
+                                                                                    const nextAllocations = {
+                                                                                        ...m.allocations,
+                                                                                        [key]: entered,
+                                                                                    };
+
+                                                                                    const total = getTotalAllocated(nextAllocations);
+
+                                                                                    // ❗ ONLY validation you want
+                                                                                    if (total > m.maxQty) {
+                                                                                        toast.error(
+                                                                                            `Total allocation (${total}) cannot exceed Row Qty (${m.maxQty})`
+                                                                                        );
+                                                                                        return m;
+                                                                                    }
+
+                                                                                    return {
+                                                                                        ...m,
+                                                                                        allocations: nextAllocations,
+                                                                                    };
+                                                                                });
+                                                                            }}
+                                                                        />
+
                                                                     </tr>
                                                                 );
                                                             })}

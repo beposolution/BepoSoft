@@ -216,22 +216,24 @@ const BasicTable = () => {
             });
         });
 
-        // ---- GRV entries ----
+        // GRV entries
         grvList
             .filter(g => g.status?.toLowerCase() === "approved")
             .forEach((g, idx) => {
-                let amount = 0;
+
+                const qty = Number(g.quantity || 0);
+                const price = Number(g.price || 0);
+
+                let amount = qty * price;
                 let label = "GRV";
                 let color = "#fd7e14";
 
                 if (g.remark === "return") {
-                    amount = parseFloat(g.price || 0);
                     label = "Sales Return";
                 } else if (g.remark === "refund") {
-                    amount = parseFloat(g.price || 0);
                     label = "Refund Issued";
                 } else if (g.remark === "cod_return") {
-                    amount = parseFloat(g.cod_amount || g.price || 0);
+                    amount = Number(g.cod_amount || amount);
                     label = "COD Return";
                     color = "#dc3545";
                 }
@@ -248,7 +250,7 @@ const BasicTable = () => {
                 });
             });
 
-        // 🔹 SORT BY DATE (ascending)
+        // SORT BY DATE (ascending)
         return rows.sort(
             (a, b) => new Date(a.date) - new Date(b.date)
         );
@@ -539,10 +541,14 @@ const BasicTable = () => {
         });
 
         (grvList || []).forEach((g, idx) => {
+            const qty = Number(g.quantity || 0);
+            const price = Number(g.price || 0);
+
             const amount =
                 g.remark === "cod_return"
-                    ? g.cod_amount
-                    : g.price;
+                    ? Number(g.cod_amount || 0)
+                    : (qty * price);
+
 
             rows.push({
                 // index: `G${idx + 1}`,
@@ -711,7 +717,11 @@ const BasicTable = () => {
             if (g.remark === "cod_return") {
                 return sum + parseFloat(g.cod_amount || 0);
             }
-            return sum + parseFloat(g.price || 0);
+
+            const qty = Number(g.quantity || 0);
+            const price = Number(g.price || 0);
+
+            return sum + (qty * price);
         }, 0)
         +
         advanceTransfers.reduce(

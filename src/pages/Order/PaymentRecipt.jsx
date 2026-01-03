@@ -60,10 +60,11 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                     g.status === "approved" &&
                     (g.remark === "refund" || g.remark === "exchange")
             )
-            .reduce(
-                (sum, g) => sum + Number(g.price || 0),
-                0
-            );
+            .reduce((sum, g) => {
+                const price = Number(g.price || 0);
+                const qty = Number(g.quantity || 0);
+                return sum + (price * qty);
+            }, 0);
     };
 
     const getRefundTotal = (refundList = []) => {

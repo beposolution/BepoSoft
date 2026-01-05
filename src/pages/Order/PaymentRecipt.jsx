@@ -372,7 +372,7 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                                     Ledger Debited: <span>₹0.00</span>
                                 </>
                             )}
-                            {Array.isArray(ledgerData?.grv) && (
+                            {/* {Array.isArray(ledgerData?.grv) && (
                                 <>
                                     <br />
                                     COD Return Deduction:{" "}
@@ -380,7 +380,7 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                                         ₹{getCodReturnTotal(ledgerData.grv).toFixed(2)}
                                     </span>
                                 </>
-                            )}
+                            )} */}
                             {Array.isArray(ledgerData?.grv) && ledgerData.grv.length > 0 && (
                                 <>
                                     <br />

@@ -11,7 +11,6 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
     const { id } = useParams();
     const [packing, setPacking] = useState([]);
     const [paymentRecipts, setPaymentRecipts] = useState([]);
-    const [orderItems, setOrderItems] = useState([]);
     const [totalAmount, setTotalAmount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,6 +66,14 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
             }, 0);
     };
 
+    const getCodReturnTotal = (grvList = []) => {
+        if (!Array.isArray(grvList)) return 0;
+
+        return grvList
+            .filter(g => g.status === "approved" && g.remark === "cod_return")
+            .reduce((sum, g) => sum + Number(g.cod_amount || 0), 0);
+    };
+
     const getRefundTotal = (refundList = []) => {
         if (!Array.isArray(refundList)) return 0;
 
@@ -104,13 +111,22 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
             )
             : 0;
 
-        const totalGrv = getGrvTotal(ledgerData.grv);
+        // const totalGrv = getGrvTotal(ledgerData.grv);
 
+        // const totalRefund = getRefundTotal(ledgerData.refund_receipts);
+
+        // closingBalance =
+        //     totalDebit -
+        //     (totalPayments + totalAdvance + totalGrv + totalRefund);
+
+        const totalGrv = getGrvTotal(ledgerData.grv);           // refund + exchange
         const totalRefund = getRefundTotal(ledgerData.refund_receipts);
+        const totalCodReturn = getCodReturnTotal(ledgerData.grv);
 
         closingBalance =
             totalDebit -
-            (totalPayments + totalAdvance + totalGrv + totalRefund);
+            (totalPayments + totalAdvance + totalGrv + totalRefund + totalCodReturn);
+
     }
 
     const closingBalanceDebit = closingBalance > 0 ? closingBalance : 0;
@@ -354,6 +370,15 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                                     Customer Ledger Credit: <span>₹0.00</span>
                                     <br />
                                     Ledger Debited: <span>₹0.00</span>
+                                </>
+                            )}
+                            {Array.isArray(ledgerData?.grv) && (
+                                <>
+                                    <br />
+                                    COD Return Deduction:{" "}
+                                    <span style={{ color: "#ff6f00" }}>
+                                        ₹{getCodReturnTotal(ledgerData.grv).toFixed(2)}
+                                    </span>
                                 </>
                             )}
                             {Array.isArray(ledgerData?.grv) && ledgerData.grv.length > 0 && (

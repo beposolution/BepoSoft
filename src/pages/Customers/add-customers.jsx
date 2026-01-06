@@ -24,6 +24,8 @@ const FormLayouts = () => {
     const token = localStorage.getItem("token");
     const [customerdetails, setCustomerDetails] = useState([]);
 
+    const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+
     // Formik setup
     const formik = useFormik({
         initialValues: {
@@ -53,8 +55,13 @@ const FormLayouts = () => {
             customer_type: Yup.string().required("Customer Type is required"),
             gst_confirm: Yup.string().required("This field is required"),
             gst: Yup.string().when("gst_confirm", (gst_confirm, schema) => {
-                return gst_confirm === "YES"
-                    ? schema.required("GST Number is required")
+                const confirm = Array.isArray(gst_confirm) ? gst_confirm[0] : gst_confirm;
+
+                return confirm === "YES"
+                    ? schema
+                        .required("GST Number is required")
+                        .transform((v) => (v ? v.trim().toUpperCase() : v))
+                        .matches(GSTIN_REGEX, "Invalid GST number format")
                     : schema.notRequired();
             }),
         }),
@@ -232,58 +239,6 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
-
-                                            {/* <Col md={4}>
-                                                <div className="mb-3">
-                                                    <Label className="formrow-name-Input">
-                                                        Does The Customer Have GST?
-                                                    </Label>
-
-                                                    <Input
-                                                        type="select"
-                                                        className={`form-control ${formik.touched.gst_confirm && formik.errors.gst_confirm ? "is-invalid" : ""
-                                                            }`}
-                                                        name="gst_confirm"
-                                                        value={formik.values.gst_confirm}
-                                                        onChange={formik.handleChange}
-                                                        onBlur={formik.handleBlur}
-                                                    >
-                                                        <option value="">Select</option>
-                                                        <option value="NO GST">NO GST</option>
-                                                        <option value="YES">YES</option>
-                                                    </Input>
-
-                                                    {formik.touched.gst_confirm && formik.errors.gst_confirm ? (
-                                                        <FormFeedback type="invalid">
-                                                            {formik.errors.gst_confirm}
-                                                        </FormFeedback>
-                                                    ) : null}
-                                                </div>
-                                            </Col>
-
-                                            <Col md={4}>
-                                                <div className="mb-3">
-                                                    <Label htmlFor="formrow-name-Input">GST Number</Label>
-                                                    <Input
-                                                        type="text"
-                                                        name="gst"
-                                                        className="form-control"
-                                                        id="formrow-name-Input"
-                                                        placeholder="Enter GST Number"
-                                                        value={formik.values.gst}
-                                                        onChange={formik.handleChange}
-                                                        onBlur={formik.handleBlur}
-                                                        invalid={
-                                                            formik.touched.gst && formik.errors.gst ? true : false
-                                                        }
-                                                    />
-                                                    {
-                                                        formik.errors.gst && formik.touched.gst ? (
-                                                            <FormFeedback type="invalid">{formik.errors.gst}</FormFeedback>
-                                                        ) : null
-                                                    }
-                                                </div>
-                                            </Col> */}
 
                                             <Col md={4}>
                                                 <div className="mb-3">

@@ -83,54 +83,114 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
         );
     };
 
-    let closingBalance = 0;
+    // let closingBalance = 0;
+
+    // if (ledgerData) {
+    //     const totalDebit = Array.isArray(ledgerData.ledger)
+    //         ? ledgerData.ledger.reduce(
+    //             (acc, item) =>
+    //                 item.status !== "Invoice Rejected" &&
+    //                     item.status !== "Invoice Created"
+    //                     ? acc + Number(item.total_amount || 0)
+    //                     : acc,
+    //             0
+    //         )
+    //         : 0;
+
+    //     const totalPayments = Array.isArray(ledgerData.payment_receipts)
+    //         ? ledgerData.payment_receipts.reduce(
+    //             (sum, r) => sum + Number(r.amount || 0),
+    //             0
+    //         )
+    //         : 0;
+
+    //     const totalAdvance = Array.isArray(ledgerData.advance_receipts)
+    //         ? ledgerData.advance_receipts.reduce(
+    //             (sum, r) => sum + Number(r.amount || 0),
+    //             0
+    //         )
+    //         : 0;
+
+    //     // const totalGrv = getGrvTotal(ledgerData.grv);
+
+    //     // const totalRefund = getRefundTotal(ledgerData.refund_receipts);
+
+    //     // closingBalance =
+    //     //     totalDebit -
+    //     //     (totalPayments + totalAdvance + totalGrv + totalRefund);
+
+    //     const totalGrv = getGrvTotal(ledgerData.grv);           // refund + exchange
+    //     const totalRefund = getRefundTotal(ledgerData.refund_receipts);
+    //     const totalCodReturn = getCodReturnTotal(ledgerData.grv);
+
+    //     closingBalance =
+    //         totalDebit -
+    //         (totalPayments + totalAdvance + totalGrv + totalRefund + totalCodReturn);
+
+    // }
+
+    // const closingBalanceDebit = closingBalance > 0 ? closingBalance : 0;
+    // const closingBalanceCredit = closingBalance < 0 ? Math.abs(closingBalance) : 0;
+
+    let totalDebit = 0;
+    let totalCredit = 0;
 
     if (ledgerData) {
-        const totalDebit = Array.isArray(ledgerData.ledger)
-            ? ledgerData.ledger.reduce(
-                (acc, item) =>
-                    item.status !== "Invoice Rejected" &&
-                        item.status !== "Invoice Created"
-                        ? acc + Number(item.total_amount || 0)
-                        : acc,
-                0
-            )
-            : 0;
+        /**  DEBIT  */
 
-        const totalPayments = Array.isArray(ledgerData.payment_receipts)
-            ? ledgerData.payment_receipts.reduce(
-                (sum, r) => sum + Number(r.amount || 0),
-                0
-            )
-            : 0;
+        // Goods Sale
+        totalDebit += (ledgerData.ledger || []).reduce((sum, l) => {
+            if (l.status !== "Invoice Rejected" && l.status !== "Invoice Created") {
+                return sum + Number(l.total_amount || 0);
+            }
+            return sum;
+        }, 0);
 
-        const totalAdvance = Array.isArray(ledgerData.advance_receipts)
-            ? ledgerData.advance_receipts.reduce(
-                (sum, r) => sum + Number(r.amount || 0),
-                0
-            )
-            : 0;
+        // Refund Receipts (DEBIT)
+        totalDebit += (ledgerData.refund_receipts || []).reduce(
+            (sum, r) => sum + Number(r.amount || 0),
+            0
+        );
 
-        // const totalGrv = getGrvTotal(ledgerData.grv);
+        // Ledger Sent Transfers (DEBIT)
+        totalDebit += (ledgerData.ledger_sent_transfers || []).reduce(
+            (sum, t) => sum + Number(t.amount || 0),
+            0
+        );
 
-        // const totalRefund = getRefundTotal(ledgerData.refund_receipts);
+        /**  CREDIT  */
 
-        // closingBalance =
-        //     totalDebit -
-        //     (totalPayments + totalAdvance + totalGrv + totalRefund);
+        // Payment Receipts
+        totalCredit += (ledgerData.payment_receipts || []).reduce(
+            (sum, r) => sum + Number(r.amount || 0),
+            0
+        );
 
-        const totalGrv = getGrvTotal(ledgerData.grv);           // refund + exchange
-        const totalRefund = getRefundTotal(ledgerData.refund_receipts);
-        const totalCodReturn = getCodReturnTotal(ledgerData.grv);
+        // Advance Receipts
+        totalCredit += (ledgerData.advance_receipts || []).reduce(
+            (sum, r) => sum + Number(r.amount || 0),
+            0
+        );
 
-        closingBalance =
-            totalDebit -
-            (totalPayments + totalAdvance + totalGrv + totalRefund + totalCodReturn);
+        // Advance Transfers (Received)
+        totalCredit += (ledgerData.advance_transfers || []).reduce(
+            (sum, t) => sum + Number(t.amount || 0),
+            0
+        );
 
+        // GRV (COD Return / Refund / Exchange)
+        totalCredit += (ledgerData.grv || [])
+            .filter(g => g.status === "approved")
+            .reduce((sum, g) => {
+                if (g.remark === "cod_return") {
+                    return sum + Number(g.cod_amount || 0);
+                }
+                return sum + (Number(g.price || 0) * Number(g.quantity || 0));
+            }, 0);
     }
 
-    const closingBalanceDebit = closingBalance > 0 ? closingBalance : 0;
-    const closingBalanceCredit = closingBalance < 0 ? Math.abs(closingBalance) : 0;
+    const closingBalance = totalDebit - totalCredit;
+
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -345,7 +405,7 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                     </Col>
                     <Col md={4} className="d-flex flex-column p-3" style={{ borderRight: "1px solid black" }}>
                         <h5>CUSTOMER LEDGER</h5>
-                        <div
+                        {/* <div
                             style={{
                                 backgroundColor: "#f8f9fa",
                                 padding: "10px",
@@ -372,7 +432,7 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                                     Ledger Debited: <span>₹0.00</span>
                                 </>
                             )}
-                            {/* {Array.isArray(ledgerData?.grv) && (
+                            {Array.isArray(ledgerData?.grv) && (
                                 <>
                                     <br />
                                     COD Return Deduction:{" "}
@@ -380,7 +440,7 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                                         ₹{getCodReturnTotal(ledgerData.grv).toFixed(2)}
                                     </span>
                                 </>
-                            )} */}
+                            )}
                             {Array.isArray(ledgerData?.grv) && ledgerData.grv.length > 0 && (
                                 <>
                                     <br />
@@ -400,6 +460,32 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                                         </span>
                                     </>
                                 )}
+                        </div> */}
+                        <div
+                            style={{
+                                backgroundColor: "#f8f9fa",
+                                padding: "10px",
+                                borderRadius: "5px",
+                                fontWeight: "bold",
+                            }}
+                        >
+                            {closingBalance > 0 ? (
+                                <>
+                                    Customer Ledger Debit:{" "}
+                                    <span style={{ color: "#dc3545" }}>
+                                        ₹{closingBalance.toFixed(2)}
+                                    </span>
+                                </>
+                            ) : closingBalance < 0 ? (
+                                <>
+                                    Customer Ledger Credit:{" "}
+                                    <span style={{ color: "green" }}>
+                                        ₹{Math.abs(closingBalance).toFixed(2)}
+                                    </span>
+                                </>
+                            ) : (
+                                <>Ledger Settled: ₹0.00</>
+                            )}
                         </div>
                     </Col>
                     <Col md={4} className="d-flex flex-column p-3">

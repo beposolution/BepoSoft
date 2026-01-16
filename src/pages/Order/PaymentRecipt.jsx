@@ -379,6 +379,17 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
         }
     };
 
+    // --- Ledger breakdown values ---
+    const codReturnAmount = getCodReturnTotal(ledgerData?.grv || []);
+    const returnExchangeAmount = getGrvTotal(ledgerData?.grv || []);
+    const refundIssuedAmount = getRefundTotal(ledgerData?.refund_receipts || []);
+
+    // --- Invoice-level balance (display only) ---
+    const invoiceBalance =
+        typeof totalPayableAmountDisplay === "number"
+            ? Math.max(totalPayableAmountDisplay - totalReceiptsAmount, 0)
+            : 0;
+
     return (
         <Card>
             <CardBody>
@@ -475,6 +486,11 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                                     <span style={{ color: "#dc3545" }}>
                                         ₹{closingBalance.toFixed(2)}
                                     </span>
+                                    <br />
+                                    Balance Payable Amount:{" "}
+                                    <span style={{ color: "blue" }}>
+                                        ₹{invoiceBalance.toFixed(2)}
+                                    </span>
                                 </>
                             ) : closingBalance < 0 ? (
                                 <>
@@ -484,7 +500,41 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                                     </span>
                                 </>
                             ) : (
-                                <>Ledger Settled: ₹0.00</>
+                                <>
+                                    Customer Ledger Credit: <span>₹0.00</span>
+                                    <br />
+                                    Ledger Debited: <span>₹0.00</span>
+                                </>
+                            )}
+
+                            {codReturnAmount > 0 && (
+                                <>
+                                    <br />
+                                    COD Return Deduction:{" "}
+                                    <span style={{ color: "#ff6f00" }}>
+                                        ₹{codReturnAmount.toFixed(2)}
+                                    </span>
+                                </>
+                            )}
+
+                            {returnExchangeAmount > 0 && (
+                                <>
+                                    <br />
+                                    Return / Exchange Amount:{" "}
+                                    <span style={{ color: "orange" }}>
+                                        ₹{returnExchangeAmount.toFixed(2)}
+                                    </span>
+                                </>
+                            )}
+
+                            {refundIssuedAmount > 0 && (
+                                <>
+                                    <br />
+                                    Refund Issued:{" "}
+                                    <span style={{ color: "green" }}>
+                                        ₹{refundIssuedAmount.toFixed(2)}
+                                    </span>
+                                </>
                             )}
                         </div>
                     </Col>

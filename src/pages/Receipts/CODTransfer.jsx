@@ -18,6 +18,7 @@ const CODTransfer = () => {
         receiver_bank: '',
         amount: '',
         created_at: '',
+        created_end:'',
         // transactionID: '',
         description: ''
     });
@@ -51,6 +52,7 @@ const CODTransfer = () => {
                 receiver_bank_name: toBank?.label || "",
                 // transactionID: formData.transactionID || "",
                 created_at: formData.created_at || "",
+                created_end: formData.created_end || "",
                 description: formData.description || ""
             }
         };
@@ -91,6 +93,7 @@ const CODTransfer = () => {
                     receiver_bank: "",
                     amount: "",
                     created_at: "",
+                    created_end:"",
                     description: ""
                 });
 
@@ -134,18 +137,6 @@ const CODTransfer = () => {
                                         <Row>
                                             <Col md={4}>
                                                 <div className="mb-3">
-                                                    <Label>Sender Bank</Label>
-                                                    <Select
-                                                        value={fromBank}
-                                                        onChange={handleFromBankChange}
-                                                        options={banks.map(bank => ({ label: bank.name, value: bank.id }))}
-                                                        isClearable
-                                                        placeholder="Select Bank"
-                                                    />
-                                                </div>
-                                            </Col>
-                                            <Col md={4}>
-                                                <div className="mb-3">
                                                     <Label>Receiver Bank</Label>
                                                     <Select
                                                         value={toBank}
@@ -158,6 +149,13 @@ const CODTransfer = () => {
                                             </Col>
                                             <Col md={4}>
                                                 <div className="mb-3">
+                                                    <Label>Receive Date</Label>
+                                                    <Input type="date" name="created_end" value={formData.created_end} onChange={handleChange} />
+                                                </div>
+                                            </Col>
+
+                                            <Col md={4}>
+                                                <div className="mb-3">
                                                     <Label>Amount</Label>
                                                     <Input type="number" name="amount" value={formData.amount} onChange={handleChange} />
                                                 </div>
@@ -166,7 +164,19 @@ const CODTransfer = () => {
                                         <Row>
                                             <Col md={4}>
                                                 <div className="mb-3">
-                                                    <Label>Transfer Date</Label>
+                                                    <Label>Sender Bank</Label>
+                                                    <Select
+                                                        value={fromBank}
+                                                        onChange={handleFromBankChange}
+                                                        options={banks.map(bank => ({ label: bank.name, value: bank.id }))}
+                                                        isClearable
+                                                        placeholder="Select Bank"
+                                                    />
+                                                </div>
+                                            </Col>
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label>Send Date</Label>
                                                     <Input type="date" name="created_at" value={formData.created_at} onChange={handleChange} />
                                                 </div>
                                             </Col>
@@ -193,7 +203,8 @@ const CODTransfer = () => {
                                                         !formData.sender_bank ||
                                                         !formData.receiver_bank ||
                                                         !formData.amount ||
-                                                        !formData.created_at
+                                                        !formData.created_at ||
+                                                        !formData.created_end
                                                     }
                                                 >
                                                     {isSubmitting ? "Transferring..." : "Transfer Amount"}

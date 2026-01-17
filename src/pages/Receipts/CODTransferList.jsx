@@ -210,12 +210,13 @@ const CODTransferList = () => {
                                                 <thead className="thead-light">
                                                     <tr>
                                                         <th>#</th>
-                                                        <th>Sender Bank</th>
                                                         <th>Receiver Bank</th>
+                                                        <th>Receive Date</th>
                                                         <th>Amount</th>
+                                                        <th>Sender Bank</th>
+                                                        <th>Send Date</th>
                                                         <th>Description</th>
                                                         <th>Created By</th>
-                                                        <th>Date</th>
                                                         {/* <th>Transaction ID</th> */}
                                                         <th>Actions</th>
                                                     </tr>
@@ -225,12 +226,13 @@ const CODTransferList = () => {
                                                         currentData.map((item, index) => (
                                                             <tr key={index}>
                                                                 <td>{indexOfFirstItem + index + 1}</td>
-                                                                <td>{item.sender_bank_name}</td>
                                                                 <td>{item.receiver_bank_name}</td>
+                                                                <td>{new Date(item.created_end).toLocaleDateString()}</td>
                                                                 <td>₹ {parseFloat(item.amount).toFixed(2)}</td>
+                                                                <td>{item.sender_bank_name}</td>
+                                                                <td>{new Date(item.created_at).toLocaleDateString()}</td>
                                                                 <td>{item.description}</td>
                                                                 <td>{item.created_by_name}</td>
-                                                                <td>{new Date(item.created_at).toLocaleDateString()}</td>
                                                                 {/* <td>{item.transactionID}</td> */}
                                                                 <td>
                                                                     <Button onClick={() => handleViewClick(item.id)}>View</Button>
@@ -268,39 +270,9 @@ const CODTransferList = () => {
                         <ModalHeader toggle={toggleModal}>Update COD Transfer</ModalHeader>
                         <ModalBody>
                             <Form>
-                                <FormGroup>
-                                    <Label for="amount">Amount</Label>
-                                    <Input
-                                        type="number"
-                                        name="amount"
-                                        value={formData.amount || ""}
-                                        onChange={handleInputChange}
-                                    />
-                                </FormGroup>
-                                <FormGroup>
-                                    <Label for="description">Description</Label>
-                                    <Input
-                                        type="text"
-                                        name="description"
-                                        value={formData.description || ""}
-                                        onChange={handleInputChange}
-                                    />
-                                </FormGroup>
-                                <FormGroup>
-                                    <Label>Sender Bank</Label>
-                                    <Select
-                                        value={senderBankOption}
-                                        onChange={handleSenderBankChange}
-                                        options={banks.map(bank => ({ label: bank.name, value: bank.id }))}
-                                        isClearable
-                                        placeholder="Select Sender Bank"
-                                        menuPortalTarget={document.body}
-                                        styles={{
-                                            menuPortal: base => ({ ...base, zIndex: 9999 }),
-                                            menu: base => ({ ...base, zIndex: 9999 }) // optional: double coverage
-                                        }}
-                                    />
-                                </FormGroup>
+
+
+
 
                                 <FormGroup>
                                     <Label>Receiver Bank</Label>
@@ -310,6 +282,42 @@ const CODTransferList = () => {
                                         options={banks.map(bank => ({ label: bank.name, value: bank.id }))}
                                         isClearable
                                         placeholder="Select Receiver Bank"
+                                        menuPortalTarget={document.body}
+                                        styles={{
+                                            menuPortal: base => ({ ...base, zIndex: 9999 }),
+                                            menu: base => ({ ...base, zIndex: 9999 }) // optional: double coverage
+                                        }}
+                                    />
+                                </FormGroup>
+
+                                <FormGroup>
+                                    <Label for="created_end">Receive Date</Label>
+                                    <Input
+                                        type="date"
+                                        name="created_end"
+                                        value={formData.created_end ? formData.created_end.substring(0, 10) : ""}
+                                        onChange={handleInputChange}
+                                    />
+                                </FormGroup>
+
+                                <FormGroup>
+                                    <Label for="amount">Amount</Label>
+                                    <Input
+                                        type="number"
+                                        name="amount"
+                                        value={formData.amount || ""}
+                                        onChange={handleInputChange}
+                                    />
+                                </FormGroup>
+
+                                <FormGroup>
+                                    <Label>Sender Bank</Label>
+                                    <Select
+                                        value={senderBankOption}
+                                        onChange={handleSenderBankChange}
+                                        options={banks.map(bank => ({ label: bank.name, value: bank.id }))}
+                                        isClearable
+                                        placeholder="Select Sender Bank"
                                         menuPortalTarget={document.body}
                                         styles={{
                                             menuPortal: base => ({ ...base, zIndex: 9999 }),
@@ -327,11 +335,21 @@ const CODTransferList = () => {
                                     />
                                 </FormGroup> */}
                                 <FormGroup>
-                                    <Label for="created_at">Date</Label>
+                                    <Label for="created_at">Send Date</Label>
                                     <Input
                                         type="date"
                                         name="created_at"
                                         value={formData.created_at ? formData.created_at.substring(0, 10) : ""}
+                                        onChange={handleInputChange}
+                                    />
+                                </FormGroup>
+
+                                <FormGroup>
+                                    <Label for="description">Description</Label>
+                                    <Input
+                                        type="text"
+                                        name="description"
+                                        value={formData.description || ""}
                                         onChange={handleInputChange}
                                     />
                                 </FormGroup>

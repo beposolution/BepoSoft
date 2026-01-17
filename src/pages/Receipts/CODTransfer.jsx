@@ -6,195 +6,210 @@ import { Card, CardBody, Col, Row, Label, CardTitle, Form, Input, Button } from 
 import Select from 'react-select';
 
 const CODTransfer = () => {
-  const [banks, setBanks] = useState([]);
-  const token = localStorage.getItem("token");
-  const authHeaders = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }; // <-- NEW
+    const [banks, setBanks] = useState([]);
+    const token = localStorage.getItem("token");
+    const authHeaders = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }; // <-- NEW
 
-  const [fromBank, setFromBank] = useState(null);
-  const [toBank, setToBank] = useState(null);
+    const [fromBank, setFromBank] = useState(null);
+    const [toBank, setToBank] = useState(null);
 
-  const [formData, setFormData] = useState({
-    sender_bank: '',
-    receiver_bank: '',
-    amount: '',
-    created_at: '',
-    // transactionID: '',
-    description: ''
-  });
+    const [formData, setFormData] = useState({
+        sender_bank: '',
+        receiver_bank: '',
+        amount: '',
+        created_at: '',
+        // transactionID: '',
+        description: ''
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-  document.title = "COD Bank Transfer | Beposoft";
+    document.title = "COD Bank Transfer | Beposoft";
 
-  useEffect(() => {
-    const fetchbanks = async () => {
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_APP_KEY}banks/`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (response.status === 200) {
-          setBanks(response?.data?.data);
+    useEffect(() => {
+        const fetchbanks = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}banks/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (response.status === 200) {
+                    setBanks(response?.data?.data);
+                }
+            } catch (error) {
+                toast.error('Error fetching bank data:');
+            }
+        };
+        fetchbanks();
+    }, []);
+
+    // ---- NEW: DataLog POST after success
+    const postDataLog = async () => {
+        const payload = {
+            before_data: { Action: "Bank Transfer" },
+            after_data: {
+                amount: Number(formData.amount || 0),
+                sender_bank_name: fromBank?.label || "",
+                receiver_bank_name: toBank?.label || "",
+                // transactionID: formData.transactionID || "",
+                created_at: formData.created_at || "",
+                description: formData.description || ""
+            }
+        };
+
+        try {
+            await axios.post(`${import.meta.env.VITE_APP_KEY}datalog/create/`, payload, {
+                headers: authHeaders
+            });
+            // optional: toast.info("Transfer logged");
+        } catch (err) {
+            toast.warn("Transfer saved, but logging to DataLog failed.");
         }
-      } catch (error) {
-        toast.error('Error fetching bank data:');
-      }
-    };
-    fetchbanks();
-  }, []);
-
-  // ---- NEW: DataLog POST after success
-  const postDataLog = async () => {
-    const payload = {
-      before_data: { Action: "Bank Transfer" },
-      after_data: { 
-        amount: Number(formData.amount || 0),
-        sender_bank_name: fromBank?.label || "",
-        receiver_bank_name: toBank?.label || "",
-        // transactionID: formData.transactionID || "",
-        created_at: formData.created_at || "",
-        description: formData.description || ""
-      }
     };
 
-    try {
-      await axios.post(`${import.meta.env.VITE_APP_KEY}datalog/create/`, payload, {
-        headers: authHeaders
-      });
-      // optional: toast.info("Transfer logged");
-    } catch (err) {
-      toast.warn("Transfer saved, but logging to DataLog failed.");
-    }
-  };
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-  const handleSubmit = async () => {
-    try {
-      const response = await axios.post(`${import.meta.env.VITE_APP_KEY}cod/transfers/`, formData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.status === 201) {
-        toast.success("COD Amount transferred successfully");
+        // HARD STOP if already submitting
+        if (isSubmitting) return;
 
-        // ---- NEW: Log the action (non-blocking to user success)
-        await postDataLog();
+        setIsSubmitting(true);
 
-        setFormData({
-          sender_bank: '',
-          receiver_bank: '',
-          amount: '',
-          created_at: '',
-        //   transactionID: '',
-          description: ''
-        });
-        setFromBank(null);
-        setToBank(null);
-      }
-    } catch (error) {
-      toast.error("Failed to COD transfer amount");
-    }
-  };
+        try {
+            const response = await axios.post(
+                `${import.meta.env.VITE_APP_KEY}cod/transfers/`,
+                formData,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+            if (response.status === 201) {
+                toast.success("COD Amount transferred successfully");
 
-  const handleFromBankChange = (selected) => {
-    setFromBank(selected);
-    setFormData(prev => ({ ...prev, sender_bank: selected ? selected.value : '' }));
-  };
+                await postDataLog();
 
-  const handleToBankChange = (selected) => {
-    setToBank(selected);
-    setFormData(prev => ({ ...prev, receiver_bank: selected ? selected.value : '' }));
-  };
+                // CLEAR FORM
+                setFormData({
+                    sender_bank: "",
+                    receiver_bank: "",
+                    amount: "",
+                    created_at: "",
+                    description: ""
+                });
 
-  return (
-    <React.Fragment>
-      <div className="page-content">
-        <div className="container-fluid">
-          <Breadcrumbs title="TRANSFER" breadcrumbItem="COD BANK TRANSFER" />
-          <Row>
-            <Col xl={12}>
-              <Card>
-                <CardBody>
-                  <CardTitle className="mb-4">COD BANK TRANSFER</CardTitle>
-                  <Form>
+                setFromBank(null);
+                setToBank(null);
+            }
+        } catch (error) {
+            toast.error("Failed to COD transfer amount");
+        } finally {
+            // RELEASE LOCK
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleFromBankChange = (selected) => {
+        setFromBank(selected);
+        setFormData(prev => ({ ...prev, sender_bank: selected ? selected.value : '' }));
+    };
+
+    const handleToBankChange = (selected) => {
+        setToBank(selected);
+        setFormData(prev => ({ ...prev, receiver_bank: selected ? selected.value : '' }));
+    };
+
+    return (
+        <React.Fragment>
+            <div className="page-content">
+                <div className="container-fluid">
+                    <Breadcrumbs title="TRANSFER" breadcrumbItem="COD BANK TRANSFER" />
                     <Row>
-                      <Col md={4}>
-                        <div className="mb-3">
-                          <Label>Sender Bank</Label>
-                          <Select
-                            value={fromBank}
-                            onChange={handleFromBankChange}
-                            options={banks.map(bank => ({ label: bank.name, value: bank.id }))}
-                            isClearable
-                            placeholder="Select Bank"
-                          />
-                        </div>
-                      </Col>
-                      <Col md={4}>
-                        <div className="mb-3">
-                          <Label>Receiver Bank</Label>
-                          <Select
-                            value={toBank}
-                            onChange={handleToBankChange}
-                            options={banks.map(bank => ({ label: bank.name, value: bank.id }))}
-                            isClearable
-                            placeholder="Select Bank"
-                          />
-                        </div>
-                      </Col>
-                      <Col md={4}>
-                        <div className="mb-3">
-                          <Label>Amount</Label>
-                          <Input type="number" name="amount" value={formData.amount} onChange={handleChange} />
-                        </div>
-                      </Col>
-                    </Row>
-                    <Row>
-                      <Col md={4}>
-                        <div className="mb-3">
-                          <Label>Transfer Date</Label>
-                          <Input type="date" name="created_at" value={formData.created_at} onChange={handleChange} />
-                        </div>
-                      </Col>
-                      {/* <Col md={4}>
+                        <Col xl={12}>
+                            <Card>
+                                <CardBody>
+                                    <CardTitle className="mb-4">COD BANK TRANSFER</CardTitle>
+                                    <Form onSubmit={handleSubmit}>
+                                        <Row>
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label>Sender Bank</Label>
+                                                    <Select
+                                                        value={fromBank}
+                                                        onChange={handleFromBankChange}
+                                                        options={banks.map(bank => ({ label: bank.name, value: bank.id }))}
+                                                        isClearable
+                                                        placeholder="Select Bank"
+                                                    />
+                                                </div>
+                                            </Col>
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label>Receiver Bank</Label>
+                                                    <Select
+                                                        value={toBank}
+                                                        onChange={handleToBankChange}
+                                                        options={banks.map(bank => ({ label: bank.name, value: bank.id }))}
+                                                        isClearable
+                                                        placeholder="Select Bank"
+                                                    />
+                                                </div>
+                                            </Col>
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label>Amount</Label>
+                                                    <Input type="number" name="amount" value={formData.amount} onChange={handleChange} />
+                                                </div>
+                                            </Col>
+                                        </Row>
+                                        <Row>
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label>Transfer Date</Label>
+                                                    <Input type="date" name="created_at" value={formData.created_at} onChange={handleChange} />
+                                                </div>
+                                            </Col>
+                                            {/* <Col md={4}>
                         <div className="mb-3">
                           <Label>Transaction ID</Label>
                           <Input type="text" name="transactionID" value={formData.transactionID} onChange={handleChange} />
                         </div>
                       </Col> */}
-                      <Col md={4}>
-                        <div className="mb-3">
-                          <Label>Description</Label>
-                          <Input type="text" name="description" value={formData.description} onChange={handleChange} />
-                        </div>
-                      </Col>
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label>Description</Label>
+                                                    <Input type="text" name="description" value={formData.description} onChange={handleChange} />
+                                                </div>
+                                            </Col>
+                                        </Row>
+                                        <Row>
+                                            <Col>
+                                                <Button
+                                                    color="primary"
+                                                    type="submit"
+                                                    disabled={
+                                                        isSubmitting ||
+                                                        !formData.sender_bank ||
+                                                        !formData.receiver_bank ||
+                                                        !formData.amount ||
+                                                        !formData.created_at
+                                                    }
+                                                >
+                                                    {isSubmitting ? "Transferring..." : "Transfer Amount"}
+                                                </Button>
+                                            </Col>
+                                        </Row>
+                                    </Form>
+                                </CardBody>
+                            </Card>
+                        </Col>
                     </Row>
-                    <Row>
-                      <Col>
-                        <Button
-                          color="primary"
-                          onClick={handleSubmit}
-                          disabled={
-                            !formData.sender_bank ||
-                            !formData.receiver_bank ||
-                            !formData.amount ||
-                            !formData.created_at
-                          }
-                        >
-                          Transfer Amount
-                        </Button>
-                      </Col>
-                    </Row>
-                  </Form>
-                </CardBody>
-              </Card>
-            </Col>
-          </Row>
-        </div>
-        <ToastContainer />
-      </div>
-    </React.Fragment>
-  )
+                </div>
+                <ToastContainer />
+            </div>
+        </React.Fragment>
+    )
 }
 
 export default CODTransfer;

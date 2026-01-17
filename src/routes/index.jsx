@@ -394,6 +394,8 @@ import RefundReceipt from "../pages/Receipts/RefundReceipt";
 import RefundReceiptList from "../pages/Receipts/RefundReceiptList";
 import AmountTransfer from "../pages/Receipts/AmountTransfer";
 import AmountTransferList from "../pages/Receipts/AmountTransferList";
+import CODTransfer from "../pages/Receipts/CODTransfer";
+import CODTransferList from "../pages/Receipts/CODTransferList";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -474,6 +476,8 @@ const authProtectedRoutes = [
   { path: "/refund/receipts/list/view/", component: <RefundReceiptList /> },
   { path: "/advance/transfer/", component: <AmountTransfer /> },
   { path: "/advance/transfer/list/", component: <AmountTransferList /> },
+  { path: "/cod/bank/transfer/", component: <CODTransfer /> },
+  { path: "/cod/bank/transfer/view/", component: <CODTransferList /> },
 
   // company
 

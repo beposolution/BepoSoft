@@ -22,6 +22,9 @@ const StatisticsApplications = () => {
     const [selectedExpenseType, setSelectedExpenseType] = useState(null);
     const [selectedExpenseRows, setSelectedExpenseRows] = useState([]);
     const [serviceTotals, setServiceTotals] = useState([]);
+    const [warehouseSummary, setWarehouseSummary] = useState(null);
+    const [todayParcelRows, setTodayParcelRows] = useState([]);
+    const [monthlyParcelRows, setMonthlyParcelRows] = useState([]);
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -102,16 +105,14 @@ const StatisticsApplications = () => {
         setServiceTotals(rows);
     }, [warehouseData]);
 
-    const grandTotalAmount = serviceTotals.reduce(
-        (sum, item) => sum + (item.totalAmount || 0),
-        0
-    );
-    const grandTotalWeight = serviceTotals.reduce(
-        (sum, item) => sum + (item.totalWeight || 0),
-        0
-    );
+    const grandTotalAmount =
+        warehouseSummary?.current_month_summary?.total_parcel_amount || 0;
 
-    const grandTotalAverage = grandTotalAmount / grandTotalWeight;
+    const grandTotalWeight =
+        warehouseSummary?.current_month_summary?.total_actual_weight_kg || 0;
+
+    const grandTotalAverage =
+        warehouseSummary?.current_month_summary?.average || 0;
 
     useEffect(() => {
         const fetchOrdersData = async () => {
@@ -172,24 +173,43 @@ const StatisticsApplications = () => {
     }, []);
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchWarehouseSummary = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}warehouse/get/`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                let warehouses = [];
-                response?.data?.results.forEach(order => {
-                    if (Array.isArray(order.warehouses) && order.warehouses.length > 0) {
-                        warehouses = warehouses.concat(order.warehouses);
-                    }
-                });
-                setWarehouseData(warehouses);
-            } catch (error) {
-                toast.error("Error fetching warehouse data:");
+                const res = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}warehouse/get/summary/`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                const summary = res.data;
+                setWarehouseSummary(summary);
+
+                // ---------- TODAY TABLE ----------
+                const todayRows = Object.entries(summary.data || {}).map(
+                    ([service, values]) => ({
+                        parcel_service: service,
+                        averageAmount: Number(values.today?.average || 0).toFixed(2),
+                    })
+                );
+
+                // ---------- MONTHLY TABLE ----------
+                const monthRows = Object.entries(summary.data || {}).map(
+                    ([service, values]) => ({
+                        parcel_service: service,
+                        totalAmount: values.current_month?.total_parcel_amount || 0,
+                        totalWeight: values.current_month?.total_actual_weight_kg || 0,
+                        average: Number(values.current_month?.average || 0).toFixed(2),
+                    })
+                );
+
+                setTodayParcelRows(todayRows);
+                setMonthlyParcelRows(monthRows);
+
+            } catch (err) {
+                toast.error("Failed to fetch warehouse summary");
             }
         };
 
-        fetchData();
+        fetchWarehouseSummary();
     }, [token]);
 
     useEffect(() => {
@@ -746,22 +766,34 @@ const StatisticsApplications = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {filteredData.length > 0 ? (
-                                                    filteredData.map((item, index) => (
+                                                {todayParcelRows.length > 0 ? (
+                                                    todayParcelRows.map((item, index) => (
                                                         <tr key={index}>
-                                                            <th scope="row">{index + 1}</th>
+                                                            <td>{index + 1}</td>
                                                             <td>{item.parcel_service}</td>
                                                             <td>₹ {item.averageAmount}</td>
                                                         </tr>
                                                     ))
                                                 ) : (
                                                     <tr>
-                                                        <td colSpan="4" className="text-center text-muted">
-                                                            No data available for the selected date range
+                                                        <td colSpan="3" className="text-center text-muted">
+                                                            No data available
                                                         </td>
                                                     </tr>
                                                 )}
                                             </tbody>
+                                            {warehouseSummary?.today_summary && (
+                                                <tfoot>
+                                                    <tr className="table-primary fw-bold">
+                                                        <td colSpan="2">TOTAL</td>
+                                                        <td>
+                                                            ₹ {Number(
+                                                                warehouseSummary.today_summary.average || 0
+                                                            ).toFixed(2)}
+                                                        </td>
+                                                    </tr>
+                                                </tfoot>
+                                            )}
                                         </Table>
                                     </div>
                                     <div className="p-3 mt-2 border rounded-4 shadow-sm bg-white">
@@ -782,8 +814,8 @@ const StatisticsApplications = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {serviceTotals.length > 0 ? (
-                                                    serviceTotals.map((item, idx) => (
+                                                {monthlyParcelRows.length > 0 ? (
+                                                    monthlyParcelRows.map((item, idx) => (
                                                         <tr key={idx}>
                                                             <td>{idx + 1}</td>
                                                             <td>{item.parcel_service}</td>
@@ -800,13 +832,25 @@ const StatisticsApplications = () => {
                                                     </tr>
                                                 )}
                                             </tbody>
-                                            {serviceTotals.length > 0 && (
+                                            {warehouseSummary?.current_month_summary && (
                                                 <tfoot>
                                                     <tr className="table-primary fw-bold">
-                                                        <td colSpan="2">Grand Total</td>
-                                                        <td>{grandTotalAmount.toFixed(2)}</td>
-                                                        <td>{grandTotalWeight.toFixed(2)}</td>
-                                                        <td>{grandTotalAverage.toFixed(2)}</td>
+                                                        <td colSpan="2">GRAND TOTAL</td>
+                                                        <td>
+                                                            ₹ {Number(
+                                                                warehouseSummary.current_month_summary.total_parcel_amount || 0
+                                                            ).toFixed(2)}
+                                                        </td>
+                                                        <td>
+                                                            {Number(
+                                                                warehouseSummary.current_month_summary.total_actual_weight_kg || 0
+                                                            ).toFixed(2)}
+                                                        </td>
+                                                        <td>
+                                                            {Number(
+                                                                warehouseSummary.current_month_summary.average || 0
+                                                            ).toFixed(2)}
+                                                        </td>
                                                     </tr>
                                                 </tfoot>
                                             )}

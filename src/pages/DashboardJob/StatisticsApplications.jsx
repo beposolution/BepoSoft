@@ -25,6 +25,10 @@ const StatisticsApplications = () => {
     const [warehouseSummary, setWarehouseSummary] = useState(null);
     const [todayParcelRows, setTodayParcelRows] = useState([]);
     const [monthlyParcelRows, setMonthlyParcelRows] = useState([]);
+    const [expenseSummaryApi, setExpenseSummaryApi] = useState([]);
+    const [expenseRange, setExpenseRange] = useState({ from: null, to: null });
+    const [expenseMonthTotal, setExpenseMonthTotal] = useState(0);
+    const [expenseModalLoading, setExpenseModalLoading] = useState(false);
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -213,6 +217,21 @@ const StatisticsApplications = () => {
     }, [token]);
 
     useEffect(() => {
+        axios
+            .get(`${import.meta.env.VITE_APP_KEY}dashboard/expense/summary/`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            .then((res) => {
+                setExpenseSummaryApi(res.data?.summary || []);
+                setExpenseRange(res.data?.range || {});
+                setExpenseMonthTotal(res.data?.month_total || 0);
+            })
+            .catch(() => {
+                toast.error("Failed to load expense summary");
+            });
+    }, [token]);
+
+    useEffect(() => {
         axios.get(`${import.meta.env.VITE_APP_KEY}expense/add/`, {
             headers: {
                 Authorization: `Bearer ${token}`
@@ -239,35 +258,45 @@ const StatisticsApplications = () => {
         });
     }, [expense]);
 
-    const expenseSummary = React.useMemo(() => {
-        if (expensesThisMonth.length === 0) return [];
-        const grouped = expensesThisMonth.reduce((acc, item) => {
-            const type = item?.expense_type || "Unknown";
-            const amt = parseFloat(item?.amount) || 0;
-            acc[type] = (acc[type] || 0) + amt;
-            return acc;
-        }, {});
-        return Object.entries(grouped).map(([type, total]) => ({
-            expense_type: type,
-            total: total.toFixed(2),
-        }));
-    }, [expensesThisMonth]);
+    const summaryFrom = expenseRange?.from;
+    const summaryTo = expenseRange?.to;
 
     // Open modal with filtered rows for this type (month-to-date)
     const openExpenseModal = (type) => {
-        const normalized = type || "Unknown";
-        const rows = (expensesThisMonth || []).filter(
-            (e) => (e?.expense_type || "Unknown") === normalized
-        );
-        setSelectedExpenseType(normalized);
-        setSelectedExpenseRows(rows);
+        setExpenseModalLoading(true);
+        setSelectedExpenseType(type);
+        setSelectedExpenseRows([]);
         setIsExpenseModalOpen(true);
+
+        const normalizedType = type.toString().trim().toLowerCase();
+
+        setTimeout(() => {
+            const rows = (expense || []).filter((e) => {
+                const rowType = (e?.expense_type || "")
+                    .toString()
+                    .trim()
+                    .toLowerCase();
+
+                const rowDate = (e?.expense_date || "").slice(0, 10);
+
+                const isTypeMatch = rowType === normalizedType;
+                const isInRange =
+                    (!expenseRange?.from || rowDate >= expenseRange.from) &&
+                    (!expenseRange?.to || rowDate <= expenseRange.to);
+
+                return isTypeMatch && isInRange;
+            });
+
+            setSelectedExpenseRows(rows);
+            setExpenseModalLoading(false);
+        }, 400);
     };
 
     const closeExpenseModal = () => {
         setIsExpenseModalOpen(false);
         setSelectedExpenseType(null);
         setSelectedExpenseRows([]);
+        setExpenseModalLoading(false);
     };
 
     // Small helpers
@@ -286,7 +315,10 @@ const StatisticsApplications = () => {
         });
     };
 
-    const expenseDateRange = `${fmtRangeDate(monthStartStr)} - ${fmtRangeDate(todayStr)}`;
+    const expenseDateRange =
+        expenseRange?.from && expenseRange?.to
+            ? `${fmtRangeDate(expenseRange.from)} - ${fmtRangeDate(expenseRange.to)}`
+            : "";
 
     const totalExpenseMTD = React.useMemo(() => {
         if (!expensesThisMonth?.length) return 0;
@@ -656,17 +688,21 @@ const StatisticsApplications = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {expenseSummary.length > 0 ? (
-                                                    expenseSummary.map((item, index) => (
+                                                {expenseSummaryApi.length > 0 ? (
+                                                    expenseSummaryApi.map((item, index) => (
                                                         <tr
                                                             key={index}
-                                                            onClick={() => openExpenseModal(item.expense_type)}  // 👈 opens modal
+                                                            onClick={() => openExpenseModal(item.expense_type)}
                                                             style={{ cursor: "pointer" }}
                                                             title="Click to view all expenses in this category"
                                                         >
                                                             <td>{index + 1}</td>
-                                                            <td><strong>{(item?.expense_type || "UNKNOWN").toUpperCase()}</strong></td>
-                                                            <td><strong>₹ {item.total}</strong></td>
+                                                            <td>
+                                                                <strong>{item.expense_type.toUpperCase()}</strong>
+                                                            </td>
+                                                            <td>
+                                                                <strong>₹ {fmtINR(item.total)}</strong>
+                                                            </td>
                                                         </tr>
                                                     ))
                                                 ) : (
@@ -677,11 +713,13 @@ const StatisticsApplications = () => {
                                                     </tr>
                                                 )}
                                             </tbody>
-                                            {expenseSummary.length > 0 && (
+                                            {expenseSummaryApi.length > 0 && (
                                                 <tfoot>
                                                     <tr>
                                                         <td colSpan="2" className="text-center text-primary fw-semibold"><strong>TOTAL</strong></td>
-                                                        <td className="fw-bold text-primary"><strong>₹ {fmtINR(totalExpenseMTD)}</strong></td>
+                                                        <td className="fw-bold text-primary">
+                                                            ₹ {fmtINR(expenseMonthTotal)}
+                                                        </td>
                                                     </tr>
                                                 </tfoot>
                                             )}
@@ -694,61 +732,69 @@ const StatisticsApplications = () => {
                                                 </div>
                                             </ModalHeader>
                                             <ModalBody>
-                                                {/* Header stats */}
-                                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                                    <div>
-                                                        <small className="text-muted">Records:</small>{" "}
-                                                        <strong>{selectedExpenseRows.length}</strong>
+                                                {expenseModalLoading ? (
+                                                    <div className="d-flex justify-content-center align-items-center py-5">
+                                                        <div className="text-center">
+                                                            <div className="spinner-border text-primary mb-3" role="status" />
+                                                            <div className="text-muted">Loading expenses…</div>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <small className="text-muted">Total (₹):</small>{" "}
-                                                        <strong>
-                                                            ₹
-                                                            {fmtINR(
-                                                                selectedExpenseRows.reduce(
-                                                                    (s, r) => s + Number(r?.amount || 0),
-                                                                    0
-                                                                )
-                                                            )}
-                                                        </strong>
-                                                    </div>
-                                                </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="d-flex justify-content-between align-items-center mb-3">
+                                                            <div>
+                                                                <small className="text-muted">Records:</small>{" "}
+                                                                <strong>{selectedExpenseRows.length}</strong>
+                                                            </div>
+                                                            <div>
+                                                                <small className="text-muted">Total (₹):</small>{" "}
+                                                                <strong>
+                                                                    ₹{fmtINR(
+                                                                        selectedExpenseRows.reduce(
+                                                                            (s, r) => s + Number(r?.amount || 0),
+                                                                            0
+                                                                        )
+                                                                    )}
+                                                                </strong>
+                                                            </div>
+                                                        </div>
 
-                                                {/* Data table */}
-                                                <Table bordered responsive className="mb-0 table-sm text-center">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>#</th>
-                                                            <th>Date</th>
-                                                            <th>Type</th>
-                                                            <th>Purpose / Notes</th>
-                                                            <th>Mode / Bank</th>
-                                                            <th>Amount (₹)</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {selectedExpenseRows.length ? (
-                                                            selectedExpenseRows.map((row, idx) => (
-                                                                <tr key={idx}>
-                                                                    <td>{idx + 1}</td>
-                                                                    <td>{fmtDate(row?.expense_date)}</td>
-                                                                    <td>{(row?.expense_type || "Unknown").toUpperCase()}</td>
-                                                                    <td>{row?.purpose || row?.description || "-"}</td>
-                                                                    <td>
-                                                                        {row?.payment_mode || row?.paymentType || row?.bank_name || "-"}
-                                                                    </td>
-                                                                    <td className="text-end">₹ {fmtINR(row?.amount)}</td>
+                                                        <Table bordered responsive className="mb-0 table-sm text-center">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>#</th>
+                                                                    <th>Date</th>
+                                                                    <th>Type</th>
+                                                                    <th>Purpose</th>
+                                                                    <th>Notes </th>
+                                                                    <th className="text-end">Amount (₹)</th>
                                                                 </tr>
-                                                            ))
-                                                        ) : (
-                                                            <tr>
-                                                                <td colSpan={6} className="text-center text-muted">
-                                                                    No expenses found.
-                                                                </td>
-                                                            </tr>
-                                                        )}
-                                                    </tbody>
-                                                </Table>
+                                                            </thead>
+                                                            <tbody>
+                                                                {selectedExpenseRows.length ? (
+                                                                    selectedExpenseRows.map((row, idx) => (
+                                                                        <tr key={idx}>
+                                                                            <td>{idx + 1}</td>
+                                                                            <td>{fmtDate(row?.expense_date)}</td>
+                                                                            <td>{row?.expense_type}</td>
+                                                                            <td>{row?.purpose_of_pay || "-"}</td>
+                                                                            <td>{row?.description || "-"}</td>
+                                                                            <td className="text-end">
+                                                                                ₹ {fmtINR(row?.amount)}
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))
+                                                                ) : (
+                                                                    <tr>
+                                                                        <td colSpan="6" className="text-muted text-center">
+                                                                            No expenses found for this period.
+                                                                        </td>
+                                                                    </tr>
+                                                                )}
+                                                            </tbody>
+                                                        </Table>
+                                                    </>
+                                                )}
                                             </ModalBody>
                                         </Modal>
                                     </div>

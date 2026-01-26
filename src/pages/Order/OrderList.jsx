@@ -54,7 +54,7 @@ const BasicTable = () => {
             if (!apiUrl) {
                 const baseUrl = import.meta.env.VITE_APP_KEY;
                 if (role === "BDM" || role === "BDO") {
-                    apiUrl = `${baseUrl}family/orders/`;
+                    apiUrl = `${baseUrl}family/department/orders/`;
                 } else {
                     apiUrl = `${baseUrl}orders/`;
                 }

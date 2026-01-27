@@ -71,7 +71,34 @@ const PerfomaOrder = () => {
         }),
         onSubmit: async (values, { resetForm }) => {
             try {
-                const payload = { ...values };
+                const payload = {
+                    ...values,
+                    state: orders.state,
+                    company: orders.company,
+                    family: orders.family,
+                    customer: orders.customerID,
+                    manage_staff: orders.manage_staff,
+                    billing_address: orders.billing_address?.id,
+                    warehouses: orders.warehouse_id,
+                    total_amount: orders.total_amount,
+                };
+
+                // SAME LOGIC AS OrderCreate
+                if (values.payment_status === "COD") {
+                    payload.cod_amount = Number(values.cod_amount || 0);
+
+                    if (values.cod_status === "PARTIAL_COD") {
+                        payload.adv_cod_amount = Number(values.adv_cod_amount || 0);
+                    } else {
+                        payload.adv_cod_amount = null;
+                    }
+                } else {
+                    // IMPORTANT: remove COD fields
+                    delete payload.cod_status;
+                    delete payload.cod_amount;
+                    delete payload.adv_cod_amount;
+                }
+
                 const response = await axios.post(
                     `${import.meta.env.VITE_APP_KEY}order/create/`,
                     payload,
@@ -83,9 +110,11 @@ const PerfomaOrder = () => {
                     resetForm();
                 }
             } catch (error) {
-                toast.error("Failed to create order");
+                toast.error(
+                    error?.response?.data?.message || "Failed to create order"
+                );
             }
-        },
+        }
     });
 
 
@@ -441,7 +470,7 @@ const PerfomaOrder = () => {
 
                     </div>
                 </Container>
-
+                <ToastContainer />
             </div>
         </React.Fragment>
     );

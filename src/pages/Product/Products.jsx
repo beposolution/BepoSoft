@@ -24,6 +24,8 @@ const BasicTable = () => {
     const navigate = useNavigate();
     const [currentPage, setCurrentPage] = useState(1);
     const perPageData = 10;
+    const [selectedCategory, setSelectedCategory] = useState("Categories");
+    const [categories, setCategories] = useState([]);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -59,6 +61,18 @@ const BasicTable = () => {
                 const data = await response.json();
                 setProducts(data.data);
                 setFilteredProducts(data.data);
+
+                // extract unique categories
+                const uniqueCategories = [
+                    "ALL",
+                    ...new Set(
+                        data.data
+                            .map(p => p.product_category_name)
+                            .filter(Boolean)
+                    )
+                ];
+
+                setCategories(uniqueCategories);
             } catch (err) {
                 setError(err.message || "Unknown error occurred");
             } finally {
@@ -69,40 +83,43 @@ const BasicTable = () => {
         fetchProducts();
     }, [token, warehouseID]);
 
+
+    const applyFilters = (category, search) => {
+        let filtered = [...products];
+
+        if (category !== "ALL") {
+            filtered = filtered.filter(
+                p => p.product_category_name === category
+            );
+        }
+
+        if (search.trim()) {
+            const q = search.toLowerCase();
+            filtered = filtered.filter(p =>
+                (p.name || "").toLowerCase().includes(q) ||
+                String(p.hsn_code || "").includes(q)
+            );
+        }
+
+        setFilteredProducts(filtered);
+        setCurrentPage(1);
+    };
+
+    const handleCategoryChange = (e) => {
+        const value = e.target.value;
+        setSelectedCategory(value);
+        applyFilters(value, searchTerm);
+    };
+
     const handleSearchChange = (e) => {
         const value = e.target.value;
         setSearchTerm(value);
-
-        // if user clears input, reset filtered list to all products immediately
-        if (value.trim() === "") {
-            setFilteredProducts(products);
-            setCurrentPage(1);
-        }
+        applyFilters(selectedCategory, value);
     };
 
     const handleSearchSubmit = (e) => {
         e.preventDefault();
-        const q = searchTerm.trim().toLowerCase();
-
-        if (!q) {
-            setFilteredProducts(products);
-            setCurrentPage(1);
-            return;
-        }
-
-        const filtered = products.filter(product => {
-            const nameMatch = (product.name || "").toLowerCase().includes(q);
-            // product.hsn_code might be number or string; convert to string before search
-            const hsnMatch = (product.hsn_code !== undefined && product.hsn_code !== null)
-                ? String(product.hsn_code).toLowerCase().includes(q)
-                : false;
-
-            // also check category or other fields if you want (optional)
-            return nameMatch || hsnMatch;
-        });
-
-        setFilteredProducts(filtered);
-        setCurrentPage(1);
+        applyFilters(selectedCategory, searchTerm);
     };
 
     const handleEditVie = (productId) => {
@@ -240,7 +257,18 @@ const BasicTable = () => {
                                                 <div className="vr"></div>
                                             </div>
                                         </Col>
-                                        <Col md={4} className="text-end">
+                                        <Col md={3}>
+                                            <Input
+                                                type="select"
+                                                value={selectedCategory}
+                                                onChange={handleCategoryChange}
+                                            >
+                                                {categories.map((cat, idx) => (
+                                                    <option key={idx} value={cat}>
+                                                        {cat}
+                                                    </option>
+                                                ))}
+                                            </Input>
                                         </Col>
                                     </Row>
                                     <CardTitle className="h4 text-center">Product Table</CardTitle>

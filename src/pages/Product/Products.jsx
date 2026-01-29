@@ -24,7 +24,7 @@ const BasicTable = () => {
     const navigate = useNavigate();
     const [currentPage, setCurrentPage] = useState(1);
     const perPageData = 10;
-    const [selectedCategory, setSelectedCategory] = useState("Categories");
+    const [selectedCategory, setSelectedCategory] = useState("ALL");
     const [categories, setCategories] = useState([]);
 
     useEffect(() => {

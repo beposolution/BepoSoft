@@ -643,6 +643,9 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/bank/datas/">{props.t("Bank List")}</Link>
                   </li>
+                  <li>
+                    <Link to="/bank/account/type/">{props.t("Bank Account Type")}</Link>
+                  </li>
                 </ul>
               </li>
             ) : null}

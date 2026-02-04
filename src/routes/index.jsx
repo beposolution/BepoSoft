@@ -396,6 +396,7 @@ import AmountTransfer from "../pages/Receipts/AmountTransfer";
 import AmountTransferList from "../pages/Receipts/AmountTransferList";
 import CODTransfer from "../pages/Receipts/CODTransfer";
 import CODTransferList from "../pages/Receipts/CODTransferList";
+import BankAccountTypePage from "../pages/Bank/BankAccountTypePage";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -616,6 +617,7 @@ const authProtectedRoutes = [
   { path: "/expense/list/", component: <ExpenseList /> },
   { path: '/expense/add-category/', component: <CategoryTable /> },
   { path: "/expense/update/:id/", component: <UpdateExpense /> },
+  { path: "/bank/account/type/", component: <BankAccountTypePage /> },
 
 
   { path: "/sales/reports/", component: <Salesreport /> },

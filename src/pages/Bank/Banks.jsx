@@ -26,6 +26,7 @@ const BasicTable = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [accounts, setAccounts] = useState([]);
+    const [accountTypes, setAccountTypes] = useState([]);
     const navigate = useNavigate();
     const [modalOpen, setModalOpen] = useState(false);
     const [editData, setEditData] = useState({
@@ -34,7 +35,8 @@ const BasicTable = () => {
         account_number: "",
         ifsc_code: "",
         branch: "",
-        open_balance: ""
+        open_balance: "",
+        account_type: ""
     });
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
@@ -42,6 +44,28 @@ const BasicTable = () => {
 
     // Document title
     document.title = "beposoft | bank details";
+
+    useEffect(() => {
+        const fetchAccountTypes = async () => {
+            try {
+                const token = localStorage.getItem("token");
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}add/bank/account/type/`,
+                    {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }
+                );
+
+                if (response.status === 200) {
+                    setAccountTypes(response.data.data || []);
+                }
+            } catch (error) {
+                toast.error("Failed to load account types");
+            }
+        };
+
+        fetchAccountTypes();
+    }, []);
 
     useEffect(() => {
         const token = localStorage.getItem("token"); // Retrieve token from storage
@@ -97,7 +121,10 @@ const BasicTable = () => {
     };
 
     const handleEdit = (account) => {
-        setEditData({ ...account }); // sets all fields
+        setEditData({
+            ...account,
+            account_type: account.account_type || ""
+        }); // sets all fields
         setModalOpen(true);
     };
 
@@ -140,6 +167,24 @@ const BasicTable = () => {
                                 value={editData.ifsc_code || ""}
                                 onChange={(e) => setEditData({ ...editData, ifsc_code: e.target.value })}
                             />
+                        </FormGroup>
+
+                        <FormGroup>
+                            <Label>Account Type</Label>
+                            <Input
+                                type="select"
+                                value={editData.account_type || ""}
+                                onChange={(e) =>
+                                    setEditData({ ...editData, account_type: e.target.value })
+                                }
+                            >
+                                <option value="">Select Account Type</option>
+                                {accountTypes.map((type) => (
+                                    <option key={type.id} value={type.id}>
+                                        {type.account_type}
+                                    </option>
+                                ))}
+                            </Input>
                         </FormGroup>
 
                         <FormGroup>

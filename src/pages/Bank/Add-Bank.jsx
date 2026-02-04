@@ -11,9 +11,34 @@ const FormLayouts = () => {
 
     const [message, setMessage] = useState(null); // For success or error message
     const [messageType, setMessageType] = useState(null); // For determining success or error message type
+    const [accountTypes, setAccountTypes] = useState([]);
 
     const user = localStorage.getItem('name');
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchAccountTypes = async () => {
+            try {
+                const token = localStorage.getItem("token");
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}add/bank/account/type/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (response.status === 200) {
+                    setAccountTypes(response.data.data || []);
+                }
+            } catch (error) {
+                console.error("Error fetching account types", error);
+            }
+        };
+
+        fetchAccountTypes();
+    }, []);
 
     const formik = useFormik({
 
@@ -24,10 +49,12 @@ const FormLayouts = () => {
             branch: "",
             open_balance: "",
             check: "",
+            account_type: "",
         },
         validationSchema: Yup.object({
             name: Yup.string().required("This field is required"),
             account_number: Yup.string().required("This field is required"),
+            account_type: Yup.string().required("This field is required"),
             ifsc_code: Yup.string().required("This field is required"),
             branch: Yup.string().required("This field is required"),
             open_balance: Yup.string().required("This field is required"),
@@ -94,24 +121,55 @@ const FormLayouts = () => {
                                     )}
 
                                     <Form onSubmit={formik.handleSubmit}>
-                                        <div className="mb-3">
-                                            <Label htmlFor="formrow-firstname-Input">Bank Name</Label>
-                                            <Input
-                                                type="text"
-                                                name="name"
-                                                className="form-control"
-                                                id="formrow-firstname-Input"
-                                                placeholder="Enter Bank Name"
-                                                value={formik.values.name}
-                                                onChange={formik.handleChange}
-                                                onBlur={formik.handleBlur}
-                                                invalid={formik.touched.name && formik.errors.name}
-                                            />
-                                            {formik.errors.name && formik.touched.name && (
-                                                <FormFeedback type="invalid">{formik.errors.name}</FormFeedback>
-                                            )}
-                                        </div>
 
+                                        <Row>
+                                            
+                                            <Col md={6}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-firstname-Input">Bank Name</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="name"
+                                                        className="form-control"
+                                                        id="formrow-firstname-Input"
+                                                        placeholder="Enter Bank Name"
+                                                        value={formik.values.name}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.name && formik.errors.name}
+                                                    />
+                                                    {formik.errors.name && formik.touched.name && (
+                                                        <FormFeedback type="invalid">{formik.errors.name}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+
+                                            <Col md={6}>
+                                                <div className="mb-3">
+                                                    <Label>Account Type</Label>
+                                                    <Input
+                                                        type="select"
+                                                        name="account_type"
+                                                        value={formik.values.account_type}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.account_type && !!formik.errors.account_type}
+                                                    >
+                                                        <option value="">Select Account Type</option>
+                                                        {accountTypes.map((type) => (
+                                                            <option key={type.id} value={type.id}>
+                                                                {type.account_type}
+                                                            </option>
+                                                        ))}
+                                                    </Input>
+
+                                                    {formik.errors.account_type && formik.touched.account_type && (
+                                                        <FormFeedback>{formik.errors.account_type}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+
+                                        </Row>
                                         <Row>
                                             <Col md={6}>
                                                 <div className="mb-3">

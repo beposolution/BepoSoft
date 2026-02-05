@@ -50,6 +50,7 @@ const FormLayouts = () => {
             open_balance: "",
             check: "",
             account_type: "",
+            interest_rate: "",
         },
         validationSchema: Yup.object({
             name: Yup.string().required("This field is required"),
@@ -59,7 +60,17 @@ const FormLayouts = () => {
             branch: Yup.string().required("This field is required"),
             open_balance: Yup.string().required("This field is required"),
             check: Yup.string().required("This field is required"),
+
+            interest_rate: Yup.string().when("account_type", {
+                is: (val) => {
+                    const type = accountTypes.find((t) => t.id == val);
+                    return type?.account_type === "OD";
+                },
+                then: () => Yup.string().required("Interest Rate is required for OD"),
+                otherwise: () => Yup.string().notRequired(),
+            }),
         }),
+
         onSubmit: async (values) => {
             try {
                 // Retrieve token from localStorage
@@ -102,6 +113,18 @@ const FormLayouts = () => {
         }
     });
 
+    const selectedAccountType = accountTypes.find(
+        (type) => type.id == formik.values.account_type
+    );
+
+    const isOD = selectedAccountType?.account_type === "OD ACCOUNT";
+
+    useEffect(() => {
+        if (!isOD) {
+            formik.setFieldValue("interest_rate", "");
+        }
+    }, [formik.values.account_type]);
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -123,7 +146,7 @@ const FormLayouts = () => {
                                     <Form onSubmit={formik.handleSubmit}>
 
                                         <Row>
-                                            
+
                                             <Col md={6}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-firstname-Input">Bank Name</Label>
@@ -168,6 +191,29 @@ const FormLayouts = () => {
                                                     )}
                                                 </div>
                                             </Col>
+
+                                            {isOD && (
+                                                <Row>
+                                                    <Col md={6}>
+                                                        <div className="mb-3">
+                                                            <Label>Interest Rate (%)</Label>
+                                                            <Input
+                                                                type="text"
+                                                                name="interest_rate"
+                                                                placeholder="Enter Interest Rate"
+                                                                value={formik.values.interest_rate}
+                                                                onChange={formik.handleChange}
+                                                                onBlur={formik.handleBlur}
+                                                                invalid={formik.touched.interest_rate && !!formik.errors.interest_rate}
+                                                            />
+                                                            {formik.errors.interest_rate && formik.touched.interest_rate && (
+                                                                <FormFeedback>{formik.errors.interest_rate}</FormFeedback>
+                                                            )}
+                                                        </div>
+                                                    </Col>
+                                                </Row>
+                                            )}
+
 
                                         </Row>
                                         <Row>

@@ -4,6 +4,7 @@ import { Table, Row, Col, Card, CardBody, Input, Button, Modal, ModalHeader, Mod
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
+import { FaCalendarAlt } from "react-icons/fa";
 
 const StatisticsApplications = () => {
     const token = localStorage.getItem("token")
@@ -23,12 +24,20 @@ const StatisticsApplications = () => {
     const [selectedExpenseRows, setSelectedExpenseRows] = useState([]);
     const [serviceTotals, setServiceTotals] = useState([]);
     const [warehouseSummary, setWarehouseSummary] = useState(null);
+
+
     const [todayParcelRows, setTodayParcelRows] = useState([]);
     const [monthlyParcelRows, setMonthlyParcelRows] = useState([]);
     const [expenseSummaryApi, setExpenseSummaryApi] = useState([]);
     const [expenseRange, setExpenseRange] = useState({ from: null, to: null });
     const [expenseMonthTotal, setExpenseMonthTotal] = useState(0);
     const [expenseModalLoading, setExpenseModalLoading] = useState(false);
+    const [OD, setOD] = useState([]);
+    const [todayReport, setTodayReport] = useState([]);
+    const [monthReport, setMonthReport] = useState([]);
+    const [showMonth, setShowMonth] = useState(false);
+    const [categoryCount, setCategoryCount] = useState([]);
+    const [selectedDate, setSelectedDate] = useState("");
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -177,6 +186,29 @@ const StatisticsApplications = () => {
     }, []);
 
     useEffect(() => {
+        if (!selectedDate) return;
+
+        const fetchCategoryCountData = async () => {
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}category/wise/product/count/${selectedDate}/`,
+                    {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }
+                );
+
+                setCategoryCount(response?.data);
+                console.log("Category Count Data:", response?.data);
+
+            } catch (error) {
+                toast.error("Error fetching category count data");
+            }
+        };
+
+        fetchCategoryCountData();
+    }, [selectedDate]);
+
+    useEffect(() => {
         const fetchWarehouseSummary = async () => {
             try {
                 const res = await axios.get(
@@ -244,6 +276,93 @@ const StatisticsApplications = () => {
                 toast.error("There was an error fetching the data!");
             });
     }, []);
+
+
+    useEffect(() => {
+        const fetchODData = async () => {
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}finance/report/bank/account/type/`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                const bankData = response?.data?.bank_data || [];
+
+                const today = new Date().toISOString().split("T")[0];
+                const currentMonth = today.substring(0, 7); // yyyy-mm
+
+                let todayArr = [];
+                let monthArr = [];
+
+                bankData.forEach((bank) => {
+                    let runningBalance = Number(bank.open_balance || 0);
+
+                    // Sort daily_data by date
+                    const sortedDaily = (bank.daily_data || []).slice().sort((a, b) => {
+                        return new Date(a.date) - new Date(b.date);
+                    });
+
+                    let monthEntries = [];
+
+                    sortedDaily.forEach((entry) => {
+                        const credit = Number(entry.total_credit || 0);
+                        const debit = Number(entry.total_debit || 0);
+
+                        const opening = runningBalance;
+                        const closing = opening + credit - debit;
+
+                        // update running for next day
+                        runningBalance = closing;
+
+                        // current month entries only
+                        if (entry.date.startsWith(currentMonth)) {
+                            monthEntries.push({
+                                date: entry.date,
+                                opening,
+                                credit,
+                                debit,
+                                closing,
+                            });
+                        }
+
+                        // today entry
+                        if (entry.date === today) {
+                            todayArr.push({
+                                bank_id: bank.bank_id,
+                                bank_name: bank.bank_name,
+                                date: entry.date,
+                                opening,
+                                credit,
+                                debit,
+                                closing,
+                            });
+                        }
+                    });
+
+                    if (monthEntries.length > 0) {
+                        monthArr.push({
+                            bank_id: bank.bank_id,
+                            bank_name: bank.bank_name,
+                            monthEntries,
+                        });
+                    }
+                });
+
+                setTodayReport(todayArr);
+                setMonthReport(monthArr);
+
+            } catch (error) {
+                toast.error("Error fetching internal transfers data");
+            }
+        };
+
+        fetchODData();
+    }, []);
+
+
+
+    const selectedBank = OD.find((b) => b.daily_data && b.daily_data.length > 0);
+
 
     // Helpers
     const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
@@ -474,53 +593,111 @@ const StatisticsApplications = () => {
                             <div className="row">
                                 {/* Left Column - Division-wise Order Statistics */}
                                 <div className="col-md-3">
-                                    <h4 className="text-center mb-4 fw-bold text-primary">📊 Division-wise Order Statistics</h4>
+                                    <div>
+                                        <h4 className="text-center mb-4 fw-bold text-primary">📊 Division-wise Order Statistics</h4>
 
-                                    {/* Guard for loading/empty */}
-                                    {!familyOrders?.length ? (
-                                        <div className="text-center text-muted">No data</div>
-                                    ) : (
-                                        <div className="d-flex flex-wrap justify-content-center gap-3">
-                                            {familyOrders.map((r) => {
-                                                const family = r.family_name || "Unknown";
-                                                const stats = familyStats[family] || {
-                                                    todayAmount: 0, todayOrders: 0, monthAmount: 0, monthOrders: 0
-                                                };
+                                        {/* Guard for loading/empty */}
+                                        {!familyOrders?.length ? (
+                                            <div className="text-center text-muted">No data</div>
+                                        ) : (
+                                            <div className="d-flex flex-wrap justify-content-center gap-3">
+                                                {familyOrders.map((r) => {
+                                                    const family = r.family_name || "Unknown";
+                                                    const stats = familyStats[family] || {
+                                                        todayAmount: 0, todayOrders: 0, monthAmount: 0, monthOrders: 0
+                                                    };
 
-                                                return (
-                                                    <div
-                                                        className="card border-0 shadow-sm p-2 rounded-4"
-                                                        style={{ width: "180px", transition: "0.3s", cursor: "pointer", background: "#f9fcff" }}
-                                                        key={r.family_id || family}
-                                                        onClick={() => navigate("/dashboard/family/details", { state: { family_id: r.family_id, family_name: family } })}
-                                                    >
-                                                        <div className="card-body text-center">
-                                                            <h5 className="card-title text-uppercase fw-semibold text-secondary">
-                                                                {family}
-                                                            </h5>
+                                                    return (
+                                                        <div
+                                                            className="card border-0 shadow-sm p-2 rounded-4"
+                                                            style={{ width: "180px", transition: "0.3s", cursor: "pointer", background: "#f9fcff" }}
+                                                            key={r.family_id || family}
+                                                            onClick={() => navigate("/dashboard/family/details", { state: { family_id: r.family_id, family_name: family } })}
+                                                        >
+                                                            <div className="card-body text-center">
+                                                                <h5 className="card-title text-uppercase fw-semibold text-secondary">
+                                                                    {family}
+                                                                </h5>
 
-                                                            <p className="card-text mb-2">
-                                                                <span className="text-muted">Today's Total:</span><br />
-                                                                <strong className="text-success fs-6">
-                                                                    ₹{stats.todayAmount.toLocaleString()} ({stats.todayOrders} orders)
-                                                                </strong>
-                                                            </p>
+                                                                <p className="card-text mb-2">
+                                                                    <span className="text-muted">Today's Total:</span><br />
+                                                                    <strong className="text-success fs-6">
+                                                                        ₹{stats.todayAmount.toLocaleString()} ({stats.todayOrders} orders)
+                                                                    </strong>
+                                                                </p>
 
-                                                            <hr />
+                                                                <hr />
 
-                                                            <p className="card-text mb-0">
-                                                                <span className="text-muted">This Month:</span><br />
-                                                                <strong className="text-primary fs-6">
-                                                                    ₹{stats.monthAmount.toLocaleString()} ({stats.monthOrders} orders)
-                                                                </strong>
-                                                            </p>
+                                                                <p className="card-text mb-0">
+                                                                    <span className="text-muted">This Month:</span><br />
+                                                                    <strong className="text-primary fs-6">
+                                                                        ₹{stats.monthAmount.toLocaleString()} ({stats.monthOrders} orders)
+                                                                    </strong>
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                );
-                                            })}
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className='p-2 border rounded-4 shadow-sm bg-light'>
+
+                                        <div className="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 className="mb-0 text-primary">🛒 Shipped Products Category</h5>
+
+                                            <div className="d-flex align-items-center gap-2">
+                                                <input
+                                                    type="date"
+                                                    value={selectedDate}
+                                                    onChange={(e) => setSelectedDate(e.target.value)}
+                                                    style={{
+                                                        width: "35px",
+                                                        height: "35px",
+                                                        opacity: 0,
+                                                        position: "absolute",
+                                                        cursor: "pointer"
+                                                    }}
+                                                />
+
+                                                <button className="btn btn-outline-primary">
+                                                    <FaCalendarAlt />
+                                                </button>
+                                            </div>
+
                                         </div>
-                                    )}
+
+                                        <Table bordered responsive className="mb-0 text-center">
+                                            <thead>
+                                                <tr>
+                                                    <th>Category</th>
+                                                    <th>Count</th>
+                                                </tr>
+                                            </thead>
+
+                                            <tbody>
+                                                {categoryCount?.category_wise_products?.length > 0 ? (
+                                                    categoryCount.category_wise_products.map((item, index) => (
+                                                        <tr key={index}>
+                                                            <td><strong>{item.category}</strong></td>
+                                                            <td><strong>{item.total_quantity}</strong></td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan="2" className="text-danger">
+                                                            {selectedDate ? "No Data Found" : "Please Select Date"}
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </Table>
+                                    </div>
+
                                 </div>
+
+
 
                                 {/* Middle Column (optional content) */}
                                 <div className="col-md-5 d-flex flex-column gap-4">
@@ -594,10 +771,10 @@ const StatisticsApplications = () => {
                                             <thead>
                                                 <tr>
                                                     <th>DBR</th>
-                                                    <th>Opening Balance</th>
-                                                    <th>Credit</th>
-                                                    <th>Debit</th>
-                                                    <th>Closing Balance</th>
+                                                    <th>OP</th>
+                                                    <th>Cr</th>
+                                                    <th>Dr</th>
+                                                    <th>Cl</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -671,6 +848,96 @@ const StatisticsApplications = () => {
                                             </tbody>
                                         </Table>
                                     </div>
+
+
+                                    <div className="p-3 border rounded-4 shadow-sm bg-light">
+                                        <h5 className="text-center mb-3 text-primary">
+                                            💼 OD Details - {new Date().toLocaleDateString("en-GB")}
+                                        </h5>
+
+                                        <Table bordered responsive className="mb-0 text-center">
+                                            <thead>
+                                                <tr>
+                                                    <th>Bank</th>
+                                                    <th>OP</th>
+                                                    <th>Cr</th>
+                                                    <th>Dr</th>
+                                                    <th>CL</th>
+                                                    <th>Interest</th>
+                                                </tr>
+                                            </thead>
+
+                                            <tbody>
+                                                {todayReport.length > 0 ? (
+                                                    todayReport.map((item, index) => (
+                                                        <tr key={index}>
+                                                            <td className="fw-bold">{item.bank_name}</td>
+                                                            <td className="fw-bold">₹ {item.opening.toFixed(2)}</td>
+                                                            <td className="fw-bold text-success">₹ {item.credit.toFixed(2)}</td>
+                                                            <td className="fw-bold text-danger">₹ {item.debit.toFixed(2)}</td>
+                                                            <td className="fw-bold text-primary">₹ {item.closing.toFixed(2)}</td>
+                                                            <td></td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan="5" className="text-muted">
+                                                            No transactions found for today.
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </Table>
+
+                                        <div className="text-center mt-3">
+                                            <button
+                                                className="btn btn-primary btn-sm"
+                                                onClick={() => setShowMonth(!showMonth)}
+                                            >
+                                                {showMonth ? "Hide Current Month" : "Show Current Month"}
+                                            </button>
+                                        </div>
+
+                                        {/* Month View */}
+                                        {showMonth && (
+                                            <div className="mt-4">
+                                                <h6 className="text-center fw-bold text-dark">
+                                                    📅 Current Month OD Details
+                                                </h6>
+
+                                                {monthReport.map((bank, index) => (
+                                                    <div key={index} className="mt-4">
+                                                        <h6 className="fw-bold text-primary">{bank.bank_name}</h6>
+
+                                                        <Table bordered responsive className="text-center">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Date</th>
+                                                                    <th>OB</th>
+                                                                    <th>Cr</th>
+                                                                    <th>Dr</th>
+                                                                    <th>CL</th>
+                                                                </tr>
+                                                            </thead>
+
+                                                            <tbody>
+                                                                {bank.monthEntries.map((entry, i) => (
+                                                                    <tr key={i}>
+                                                                        <td>{entry.date}</td>
+                                                                        <td className="fw-bold">₹ {entry.opening.toFixed(2)}</td>
+                                                                        <td className="text-success fw-bold">₹ {entry.credit.toFixed(2)}</td>
+                                                                        <td className="text-danger fw-bold">₹ {entry.debit.toFixed(2)}</td>
+                                                                        <td className="text-primary fw-bold">₹ {entry.closing.toFixed(2)}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </Table>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
                                 </div>
 
                                 <div className="col-md-4">

@@ -36,7 +36,8 @@ const BasicTable = () => {
         ifsc_code: "",
         branch: "",
         open_balance: "",
-        account_type: ""
+        account_type: "",
+        interest_rate: ""
     });
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
@@ -123,7 +124,8 @@ const BasicTable = () => {
     const handleEdit = (account) => {
         setEditData({
             ...account,
-            account_type: account.account_type || ""
+            account_type: account.account_type || "",
+            interest_rate: account.interest_rate || ""
         }); // sets all fields
         setModalOpen(true);
     };
@@ -188,6 +190,15 @@ const BasicTable = () => {
                         </FormGroup>
 
                         <FormGroup>
+                            <Label>Interest Rate</Label>
+                            <Input
+                                type="number"
+                                value={editData.interest_rate || ""}
+                                onChange={(e) => setEditData({ ...editData, interest_rate: e.target.value })}
+                            />
+                        </FormGroup>
+
+                        <FormGroup>
                             <Label>Branch</Label>
                             <Input
                                 type="text"
@@ -235,6 +246,7 @@ const BasicTable = () => {
                                                     <th>#</th>
                                                     <th>Name</th>
                                                     <th>A/C NO</th>
+                                                    <th>A/C TYPE</th>
                                                     <th>IFSC CODE</th>
                                                     <th>BRANCH</th>
                                                     <th>OPENING BALANCE</th>
@@ -247,6 +259,7 @@ const BasicTable = () => {
                                                         <th scope="row">{indexOfFirstItem + index + 1}</th>
                                                         <td>{account.name}</td>
                                                         <td style={{ color: 'blue' }}>{account.account_number}</td>
+                                                        <td>{account?.account_type}</td>
                                                         <td>{account.ifsc_code}</td>
                                                         <td>{account.branch}</td>
                                                         <td>{account.open_balance}</td>

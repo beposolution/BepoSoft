@@ -198,7 +198,6 @@ const StatisticsApplications = () => {
                 );
 
                 setCategoryCount(response?.data);
-                console.log("Category Count Data:", response?.data);
 
             } catch (error) {
                 toast.error("Error fetching category count data");
@@ -295,7 +294,6 @@ const StatisticsApplications = () => {
                 let monthArr = [];
 
                 bankData.forEach((bank) => {
-                    let runningBalance = Number(bank.open_balance || 0);
 
                     // Sort daily_data by date
                     const sortedDaily = (bank.daily_data || []).slice().sort((a, b) => {
@@ -307,12 +305,10 @@ const StatisticsApplications = () => {
                     sortedDaily.forEach((entry) => {
                         const credit = Number(entry.total_credit || 0);
                         const debit = Number(entry.total_debit || 0);
+                        const interest = Number(entry.daily_interest || 0);
 
-                        const opening = runningBalance;
-                        const closing = opening + credit - debit;
-
-                        // update running for next day
-                        runningBalance = closing;
+                        const opening = Number(entry.opening || 0);
+                        const closing = Number(entry.closing || 0);
 
                         // current month entries only
                         if (entry.date.startsWith(currentMonth)) {
@@ -322,6 +318,8 @@ const StatisticsApplications = () => {
                                 credit,
                                 debit,
                                 closing,
+                                interest,
+                                total_interest: Number(entry.total_interest || 0),
                             });
                         }
 
@@ -335,6 +333,7 @@ const StatisticsApplications = () => {
                                 credit,
                                 debit,
                                 closing,
+                                interest,
                             });
                         }
                     });
@@ -876,7 +875,7 @@ const StatisticsApplications = () => {
                                                             <td className="fw-bold text-success">₹ {item.credit.toFixed(2)}</td>
                                                             <td className="fw-bold text-danger">₹ {item.debit.toFixed(2)}</td>
                                                             <td className="fw-bold text-primary">₹ {item.closing.toFixed(2)}</td>
-                                                            <td></td>
+                                                            <td className="fw-bold text-primary">₹ {item?.interest}</td>
                                                         </tr>
                                                     ))
                                                 ) : (
@@ -917,6 +916,7 @@ const StatisticsApplications = () => {
                                                                     <th>Cr</th>
                                                                     <th>Dr</th>
                                                                     <th>CL</th>
+                                                                    <th>Interest</th>
                                                                 </tr>
                                                             </thead>
 
@@ -928,8 +928,18 @@ const StatisticsApplications = () => {
                                                                         <td className="text-success fw-bold">₹ {entry.credit.toFixed(2)}</td>
                                                                         <td className="text-danger fw-bold">₹ {entry.debit.toFixed(2)}</td>
                                                                         <td className="text-primary fw-bold">₹ {entry.closing.toFixed(2)}</td>
+                                                                        <td className="text-primary fw-bold">₹ {entry?.interest}</td>
                                                                     </tr>
                                                                 ))}
+                                                                <tr>
+                                                                    <td><strong>Total</strong></td>
+                                                                    <td colSpan="4"></td>
+                                                                    <td className="text-primary fw-bold">
+                                                                        ₹ {bank.monthEntries.length > 0
+                                                                            ? bank.monthEntries[bank.monthEntries.length - 1].total_interest.toFixed(4)
+                                                                            : "0.0000"}
+                                                                    </td>
+                                                                </tr>
                                                             </tbody>
                                                         </Table>
                                                     </div>

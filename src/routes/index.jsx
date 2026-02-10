@@ -397,6 +397,8 @@ import AmountTransferList from "../pages/Receipts/AmountTransferList";
 import CODTransfer from "../pages/Receipts/CODTransfer";
 import CODTransferList from "../pages/Receipts/CODTransferList";
 import BankAccountTypePage from "../pages/Bank/BankAccountTypePage";
+import AddSeller from "../pages/SellerBuyer/SellerDetails/AddSeller";
+import ViewSeller from "../pages/SellerBuyer/SellerDetails/ViewSeller";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -638,6 +640,11 @@ const authProtectedRoutes = [
 
   { path: "/COD/sales/resport/", component: <CodOrders /> },
   { path: "/COD/sales/resport/:date/", component: <CodOrdersDetails /> },
+
+
+  // Seller details
+  { path: "/seller/creation/", component: <AddSeller /> },
+  { path: "/seller/view/", component: <ViewSeller /> },
 
 
   { path: "/states/sales/resport/", component: <StatewaiseReport /> },

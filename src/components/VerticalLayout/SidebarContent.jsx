@@ -801,6 +801,17 @@ const SidebarContent = (props) => {
                 <li>
                   <Link to="/#" className="has-arrow">
                     <FaUsers size={20} style={{ marginRight: '8px' }} />
+                    <span>{props.t("District")}</span>
+                  </Link>
+                  <ul className="sub-menu" aria-expanded="false">
+                    <li>
+                      <Link to="/district/view/">{props.t("District")}</Link>
+                    </li>
+                  </ul>
+                </li>
+                <li>
+                  <Link to="/#" className="has-arrow">
+                    <FaUsers size={20} style={{ marginRight: '8px' }} />
                     <span>{props.t("States")}</span>
                   </Link>
                   <ul className="sub-menu" aria-expanded="false">

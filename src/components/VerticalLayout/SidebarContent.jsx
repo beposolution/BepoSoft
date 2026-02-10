@@ -856,6 +856,23 @@ const SidebarContent = (props) => {
 
             {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
               <li>
+                <Link to="/#" className="has-arrow">
+                  <BiSolidBank size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("Product Purchase")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li>
+                    <Link to="/seller/creation/">{props.t("Add Seller")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/seller/view/">{props.t("Seller Details")}</Link>
+                  </li>
+                </ul>
+              </li>
+            ) : null}
+
+            {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
+              <li>
                 <Link to="#" >
                   <GiBassetHoundHead size={20} style={{ marginRight: '8px' }} />
                   <span>{props.t("Compony Asset Information")}</span>

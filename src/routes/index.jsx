@@ -399,6 +399,9 @@ import CODTransferList from "../pages/Receipts/CODTransferList";
 import BankAccountTypePage from "../pages/Bank/BankAccountTypePage";
 import AddSeller from "../pages/SellerBuyer/SellerDetails/AddSeller";
 import ViewSeller from "../pages/SellerBuyer/SellerDetails/ViewSeller";
+import ViewInvoice from "../pages/SellerBuyer/SellerInvoice/ViewInvoice";
+import SellerInvoiceDetails from "../pages/SellerBuyer/SellerInvoice/SellerInvoiceDetails";
+import CreateInvoice from "../pages/SellerBuyer/SellerInvoice/CreateInvoice";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -645,6 +648,9 @@ const authProtectedRoutes = [
   // Seller details
   { path: "/seller/creation/", component: <AddSeller /> },
   { path: "/seller/view/", component: <ViewSeller /> },
+  { path: "/seller/invoice/creation/", component: <CreateInvoice /> },
+  { path: "/seller/invoice/list/", component: <ViewInvoice /> },
+  { path: "/seller/invoice/:invoiceId/", component: <SellerInvoiceDetails /> },
 
 
   { path: "/states/sales/resport/", component: <StatewaiseReport /> },

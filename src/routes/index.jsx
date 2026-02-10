@@ -402,6 +402,7 @@ import ViewSeller from "../pages/SellerBuyer/SellerDetails/ViewSeller";
 import ViewInvoice from "../pages/SellerBuyer/SellerInvoice/ViewInvoice";
 import SellerInvoiceDetails from "../pages/SellerBuyer/SellerInvoice/SellerInvoiceDetails";
 import CreateInvoice from "../pages/SellerBuyer/SellerInvoice/CreateInvoice";
+import District from "../pages/State/District";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -567,6 +568,8 @@ const authProtectedRoutes = [
   { path: "/attribute-values/", component: <AttributeValues /> },
   { path: "/add/view/country/code/", component: <CountryCode /> },
 
+  // districts
+  { path: "/district/view/", component: <District /> },
 
 
   //   //Ecommerce

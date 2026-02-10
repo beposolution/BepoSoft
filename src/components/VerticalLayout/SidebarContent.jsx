@@ -867,6 +867,12 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/seller/view/">{props.t("Seller Details")}</Link>
                   </li>
+                  <li>
+                    <Link to="/seller/invoice/creation/">{props.t("Create Seller Invoice")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/seller/invoice/list/">{props.t("Seller Invoice List")}</Link>
+                  </li>
                 </ul>
               </li>
             ) : null}

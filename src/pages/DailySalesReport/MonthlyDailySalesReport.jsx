@@ -2,6 +2,8 @@ import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import * as XLSX from "xlsx-js-style";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
     Card,
     CardBody,
@@ -240,6 +242,89 @@ const MonthlyDailySalesReport = () => {
         }
     };
 
+    const exportToPDF = () => {
+        try {
+            if (!reportData) {
+                toast.error("No data to export");
+                return;
+            }
+
+            const doc = new jsPDF("landscape"); // landscape for wide table
+
+            // Title
+            doc.setFontSize(18);
+            doc.setTextColor(31, 78, 121);
+            doc.text(`${reportData.state} - ${reportData.month}`, 14, 15);
+
+            // Table Header
+            const head = [["District", ...reportData.dates, "Total"]];
+
+            // Table Body
+            const body = reportData.districts.map((dist) => {
+                const row = [dist.district];
+
+                reportData.dates.forEach((d) => {
+                    row.push(dist.daily_counts[d.toString()] || 0);
+                });
+
+                row.push(dist.total || 0);
+                return row;
+            });
+
+            // Total Row
+            const totalRow = ["TOTAL"];
+            reportData.dates.forEach((d) => {
+                totalRow.push(reportData.column_totals[d.toString()] || 0);
+            });
+            totalRow.push(reportData.grand_total || 0);
+
+            body.push(totalRow);
+
+            // AutoTable
+            autoTable(doc, {
+                startY: 25,
+                head: head,
+                body: body,
+                theme: "grid",
+                styles: {
+                    fontSize: 8,
+                    halign: "center",
+                    valign: "middle",
+                },
+                headStyles: {
+                    fillColor: [40, 131, 122], // teal header
+                    textColor: [255, 255, 255],
+                    fontStyle: "bold",
+                },
+                didParseCell: function (data) {
+                    const lastRowIndex = body.length - 1;
+                    const lastColIndex = head[0].length - 1;
+
+                    // TOTAL ROW (last row)
+                    if (data.row.index === lastRowIndex) {
+                        data.cell.styles.fillColor = [40, 167, 69]; // green
+                        data.cell.styles.textColor = [255, 255, 255];
+                        data.cell.styles.fontStyle = "bold";
+                    }
+
+                    // TOTAL COLUMN (last column except header & total row)
+                    if (data.column.index === lastColIndex && data.row.index < lastRowIndex) {
+                        data.cell.styles.fillColor = [255, 243, 205]; // yellow
+                        data.cell.styles.textColor = [0, 0, 0];
+                        data.cell.styles.fontStyle = "bold";
+                    }
+                },
+            });
+
+            doc.save(`MyDailySalesReport_${reportData.month}.pdf`);
+            toast.success("PDF Exported Successfully");
+
+        } catch (error) {
+            console.log(error);
+            toast.error("PDF export failed");
+        }
+    };
+
     return (
         <div style={{ padding: "20px" }}>
             {/* PAGE HEADER */}
@@ -276,9 +361,9 @@ const MonthlyDailySalesReport = () => {
                             <Button
                                 color="success"
                                 style={{ fontWeight: "bold" }}
-                                onClick={() => window.print()}
+                                onClick={exportToPDF}
                             >
-                                Print PDF
+                                Export PDF
                             </Button>
                         </Col>
                     </Row>

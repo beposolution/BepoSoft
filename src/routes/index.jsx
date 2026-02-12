@@ -407,6 +407,8 @@ import AddDailySalesReport from "../pages/DailySalesReport/AddDailySalesReport";
 import ViewDailySalesReport from "../pages/DailySalesReport/ViewDailySalesReport";
 import MonthlyDailySalesReport from "../pages/DailySalesReport/MonthlyDailySalesReport";
 import AllUsersMonthlyDailySalesReport from "../pages/DailySalesReport/AllUsersMonthlyDailySalesReport";
+import MonthlyCategoryReport from "../pages/DailySalesReport/MonthlyCategoryReport";
+import AllStaffsMonthlyCategoryReport from "../pages/DailySalesReport/AllStaffsMonthlyCategoryReport";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -654,7 +656,8 @@ const authProtectedRoutes = [
   { path: "/view/add/daily/sales/report/", component: <ViewDailySalesReport /> },
   { path: "/monthly/daily/report/", component: <MonthlyDailySalesReport /> },
   { path: "/all/monthly/daily/report/", component: <AllUsersMonthlyDailySalesReport /> },
-
+  { path: "/category/report/", component: <MonthlyCategoryReport /> },
+  { path: "/all/category/report/", component: <AllStaffsMonthlyCategoryReport /> },
 
   // Seller details
   { path: "/seller/creation/", component: <AddSeller /> },

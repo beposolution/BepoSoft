@@ -403,6 +403,10 @@ import ViewInvoice from "../pages/SellerBuyer/SellerInvoice/ViewInvoice";
 import SellerInvoiceDetails from "../pages/SellerBuyer/SellerInvoice/SellerInvoiceDetails";
 import CreateInvoice from "../pages/SellerBuyer/SellerInvoice/CreateInvoice";
 import District from "../pages/State/District";
+import AddDailySalesReport from "../pages/DailySalesReport/AddDailySalesReport";
+import ViewDailySalesReport from "../pages/DailySalesReport/ViewDailySalesReport";
+import MonthlyDailySalesReport from "../pages/DailySalesReport/MonthlyDailySalesReport";
+import AllUsersMonthlyDailySalesReport from "../pages/DailySalesReport/AllUsersMonthlyDailySalesReport";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -646,6 +650,10 @@ const authProtectedRoutes = [
 
   { path: "/COD/sales/resport/", component: <CodOrders /> },
   { path: "/COD/sales/resport/:date/", component: <CodOrdersDetails /> },
+  { path: "/add/daily/sales/report/", component: <AddDailySalesReport /> },
+  { path: "/view/add/daily/sales/report/", component: <ViewDailySalesReport /> },
+  { path: "/monthly/daily/report/", component: <MonthlyDailySalesReport /> },
+  { path: "/all/monthly/daily/report/", component: <AllUsersMonthlyDailySalesReport /> },
 
 
   // Seller details

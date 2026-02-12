@@ -760,6 +760,34 @@ const SidebarContent = (props) => {
               </li>
             )}
 
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'COO' || role === 'CEO' || role === 'BDM' || role === 'BDO' ? (
+
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaUserTie size={17} style={{ marginRight: '6px' }} />
+                  <span>{props.t("Daily Sales Report")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li>
+                    <Link to="/add/daily/sales/report/">{props.t("Daily Sales")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/view/add/daily/sales/report/">{props.t("View Sales Data")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/monthly/daily/report/">{props.t("Report")}</Link>
+                  </li>
+                  {role !== "BDO" && role !== "BDM" && (
+                    <li>
+                      <Link to="/all/monthly/daily/report/">{props.t("Full Report")}</Link>
+                    </li>
+                  )}
+                </ul>
+              </li>
+
+            ) : null}
+
+
             {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'CSO' || role === 'COO' || role === 'HR' ? (
               <li>
                 <Link to="/#" className="has-arrow">

@@ -628,7 +628,6 @@ const AllUsersMonthlyDailySalesReport = () => {
                                       backgroundColor: "#28837a",
                                       color: "black",
                                       fontWeight: "bold",
-                                      textAlign: "left",
                                       padding: "10px",
                                       textAlign: "center",
                                     }}

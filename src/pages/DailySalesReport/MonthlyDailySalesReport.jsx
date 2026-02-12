@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
-import * as XLSX from "xlsx";
-
+import * as XLSX from "xlsx-js-style";
 import {
     Card,
     CardBody,
@@ -109,11 +108,14 @@ const MonthlyDailySalesReport = () => {
             const wb = XLSX.utils.book_new();
             const wsData = [];
 
+            // TITLE
             wsData.push([`${reportData.state} - ${reportData.month}`]);
             wsData.push([]);
 
+            // HEADER
             wsData.push(["District", ...reportData.dates, "Total"]);
 
+            // DISTRICT ROWS
             reportData.districts.forEach((dist) => {
                 const row = [dist.district];
 
@@ -125,21 +127,115 @@ const MonthlyDailySalesReport = () => {
                 wsData.push(row);
             });
 
+            // TOTAL ROW
             const totalRow = ["TOTAL"];
             reportData.dates.forEach((d) => {
                 totalRow.push(reportData.column_totals[d.toString()] || 0);
             });
             totalRow.push(reportData.grand_total || 0);
-
             wsData.push(totalRow);
 
             const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+            // ================== STYLING ==================
+            const range = XLSX.utils.decode_range(ws["!ref"]);
+
+            // Column Widths
+            ws["!cols"] = [
+                { wch: 25 }, // District column
+                ...reportData.dates.map(() => ({ wch: 10 })),
+                { wch: 15 }, // Total column
+            ];
+
+            // Apply Styles to all cells
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+                for (let C = range.s.c; C <= range.e.c; ++C) {
+                    const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[cellAddress]) continue;
+
+                    // Default style
+                    ws[cellAddress].s = {
+                        font: { name: "Calibri", sz: 11 },
+                        alignment: { vertical: "center", horizontal: "center", wrapText: true },
+                        border: {
+                            top: { style: "thin", color: { rgb: "AAAAAA" } },
+                            bottom: { style: "thin", color: { rgb: "AAAAAA" } },
+                            left: { style: "thin", color: { rgb: "AAAAAA" } },
+                            right: { style: "thin", color: { rgb: "AAAAAA" } },
+                        },
+                    };
+
+                    // TITLE ROW
+                    if (R === 0) {
+                        ws[cellAddress].s = {
+                            font: { bold: true, sz: 16, color: { rgb: "FFFFFF" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: "1F4E79" } }, // dark blue
+                        };
+                    }
+
+                    // HEADER ROW (Row 2 because row 1 is blank)
+                    if (R === 2) {
+                        ws[cellAddress].s = {
+                            font: { bold: true, color: { rgb: "FFFFFF" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: "28837A" } }, // teal
+                            border: {
+                                top: { style: "thin", color: { rgb: "000000" } },
+                                bottom: { style: "thin", color: { rgb: "000000" } },
+                                left: { style: "thin", color: { rgb: "000000" } },
+                                right: { style: "thin", color: { rgb: "000000" } },
+                            },
+                        };
+                    }
+
+                    // TOTAL ROW (last row)
+                    if (R === range.e.r) {
+                        ws[cellAddress].s = {
+                            font: { bold: true, color: { rgb: "FFFFFF" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: "28A745" } }, // green
+                            border: {
+                                top: { style: "thin", color: { rgb: "000000" } },
+                                bottom: { style: "thin", color: { rgb: "000000" } },
+                                left: { style: "thin", color: { rgb: "000000" } },
+                                right: { style: "thin", color: { rgb: "000000" } },
+                            },
+                        };
+                    }
+
+                    // TOTAL COLUMN (last column)
+                    if (C === range.e.c && R > 2 && R < range.e.r) {
+                        ws[cellAddress].s = {
+                            font: { bold: true, color: { rgb: "000000" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: "FFF3CD" } }, // yellow
+                            border: {
+                                top: { style: "thin", color: { rgb: "AAAAAA" } },
+                                bottom: { style: "thin", color: { rgb: "AAAAAA" } },
+                                left: { style: "thin", color: { rgb: "AAAAAA" } },
+                                right: { style: "thin", color: { rgb: "AAAAAA" } },
+                            },
+                        };
+                    }
+                }
+            }
+
+            // Merge Title Row
+            ws["!merges"] = [
+                {
+                    s: { r: 0, c: 0 },
+                    e: { r: 0, c: range.e.c },
+                },
+            ];
+
             XLSX.utils.book_append_sheet(wb, ws, "My Sales Report");
 
             XLSX.writeFile(wb, `MyDailySalesReport_${reportData.month}.xlsx`);
 
             toast.success("Excel Exported Successfully");
         } catch (error) {
+            console.log(error);
             toast.error("Excel export failed");
         }
     };

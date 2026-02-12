@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import Select from "react-select";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -114,21 +114,19 @@ const AllUsersMonthlyDailySalesReport = () => {
         const wsData = [];
 
         // Title Row
-        wsData.push([
-          `${reportData.state} - ${reportData.month} - ${user.user_name}`,
-        ]);
+        wsData.push([`${reportData.state} - ${reportData.month} - ${user.user_name}`]);
         wsData.push([]);
 
-        // Table Header
+        // Header Row
         wsData.push(["District", ...reportData.dates, "Total"]);
 
-        // Loop State Blocks
+        // State wise districts
         user.districts.forEach((stateBlock) => {
           // State Heading Row
-          wsData.push([stateBlock.state]);
+          wsData.push([stateBlock.state.toUpperCase()]);
           wsData.push([]);
 
-          // District Rows under that state
+          // District rows
           stateBlock.districts.forEach((dist) => {
             const row = [dist.district];
 
@@ -140,28 +138,130 @@ const AllUsersMonthlyDailySalesReport = () => {
             wsData.push(row);
           });
 
-          wsData.push([]); // gap after each state
+          wsData.push([]);
         });
 
-        // TOTAL ROW (Overall totals still works same)
+        // Total Row
         const totalRow = ["TOTAL"];
         reportData.dates.forEach((d) => {
           totalRow.push(user.column_totals[d.toString()] || 0);
         });
         totalRow.push(user.grand_total || 0);
-
         wsData.push(totalRow);
 
-        // Create Sheet
         const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-        // Auto width
-        const colWidths = wsData[2].map((_, colIndex) => ({
-          wch: colIndex === 0 ? 25 : 8,
-        }));
-        ws["!cols"] = colWidths;
+        // Column widths
+        ws["!cols"] = [
+          { wch: 25 },
+          ...reportData.dates.map(() => ({ wch: 8 })),
+          { wch: 12 },
+        ];
 
-        // Sheet Name
+        // Merge Title row
+        ws["!merges"] = [
+          {
+            s: { r: 0, c: 0 },
+            e: { r: 0, c: reportData.dates.length + 1 },
+          },
+        ];
+
+        // Apply styles
+        const range = XLSX.utils.decode_range(ws["!ref"]);
+
+        for (let R = range.s.r; R <= range.e.r; R++) {
+          for (let C = range.s.c; C <= range.e.c; C++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+            const cell = ws[cellAddress];
+
+            if (!cell) continue;
+
+            // Default style
+            cell.s = {
+              font: { name: "Calibri", sz: 11 },
+              alignment: { horizontal: "center", vertical: "center", wrapText: true },
+              border: {
+                top: { style: "thin", color: { rgb: "AAAAAA" } },
+                bottom: { style: "thin", color: { rgb: "AAAAAA" } },
+                left: { style: "thin", color: { rgb: "AAAAAA" } },
+                right: { style: "thin", color: { rgb: "AAAAAA" } },
+              },
+            };
+
+            // Title row styling
+            if (R === 0) {
+              cell.s = {
+                font: { bold: true, sz: 16, color: { rgb: "FFFFFF" } },
+                alignment: { horizontal: "center", vertical: "center" },
+                fill: { fgColor: { rgb: "1F4E79" } }, // dark blue
+              };
+            }
+
+            // Header row styling (Row index 2)
+            if (R === 2) {
+              cell.s = {
+                font: { bold: true, color: { rgb: "FFFFFF" } },
+                alignment: { horizontal: "center", vertical: "center" },
+                fill: { fgColor: { rgb: "28837A" } }, // teal
+                border: {
+                  top: { style: "thin", color: { rgb: "000000" } },
+                  bottom: { style: "thin", color: { rgb: "000000" } },
+                  left: { style: "thin", color: { rgb: "000000" } },
+                  right: { style: "thin", color: { rgb: "000000" } },
+                },
+              };
+            }
+
+            // State heading rows (when first column has state name and others empty)
+            if (cell.v && typeof cell.v === "string" && C === 0 && R > 2) {
+              const nextCell = ws[XLSX.utils.encode_cell({ r: R, c: 1 })];
+              if (!nextCell) {
+                cell.s = {
+                  font: { bold: true, color: { rgb: "FFFFFF" } },
+                  alignment: { horizontal: "center", vertical: "center" },
+                  fill: { fgColor: { rgb: "0B4F6C" } }, // dark teal
+                };
+
+                // Merge state heading across all columns
+                ws["!merges"].push({
+                  s: { r: R, c: 0 },
+                  e: { r: R, c: reportData.dates.length + 1 },
+                });
+              }
+            }
+
+            // Total column styling
+            if (C === reportData.dates.length + 1 && R > 2 && R < range.e.r) {
+              cell.s = {
+                font: { bold: true, color: { rgb: "000000" } },
+                alignment: { horizontal: "center", vertical: "center" },
+                fill: { fgColor: { rgb: "FFF3CD" } }, // yellow
+                border: {
+                  top: { style: "thin", color: { rgb: "AAAAAA" } },
+                  bottom: { style: "thin", color: { rgb: "AAAAAA" } },
+                  left: { style: "thin", color: { rgb: "AAAAAA" } },
+                  right: { style: "thin", color: { rgb: "AAAAAA" } },
+                },
+              };
+            }
+
+            // TOTAL row styling (last row)
+            if (R === range.e.r) {
+              cell.s = {
+                font: { bold: true, color: { rgb: "FFFFFF" } },
+                alignment: { horizontal: "center", vertical: "center" },
+                fill: { fgColor: { rgb: "28A745" } }, // green
+                border: {
+                  top: { style: "thin", color: { rgb: "000000" } },
+                  bottom: { style: "thin", color: { rgb: "000000" } },
+                  left: { style: "thin", color: { rgb: "000000" } },
+                  right: { style: "thin", color: { rgb: "000000" } },
+                },
+              };
+            }
+          }
+        }
+
         const sheetName = user.user_name.substring(0, 31);
         XLSX.utils.book_append_sheet(wb, ws, sheetName);
       });
@@ -173,6 +273,7 @@ const AllUsersMonthlyDailySalesReport = () => {
 
       toast.success("Excel Exported Successfully");
     } catch (error) {
+      console.log(error);
       toast.error("Excel export failed");
     }
   };

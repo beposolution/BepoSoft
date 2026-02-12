@@ -780,13 +780,16 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/category/report/">{props.t("Category Report")}</Link>
                   </li>
-                  <li>
-                    <Link to="/all/category/report/">{props.t("All Category Report")}</Link>
-                  </li>
+                  
                   {role !== "BDO" && role !== "BDM" && (
-                    <li>
-                      <Link to="/all/monthly/daily/report/">{props.t("Full Report")}</Link>
-                    </li>
+                    <>
+                      <li>
+                        <Link to="/all/monthly/daily/report/">{props.t("All Staff Report")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/all/category/report/">{props.t("All Category Report")}</Link>
+                      </li>
+                    </>
                   )}
                 </ul>
               </li>

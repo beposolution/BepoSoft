@@ -145,7 +145,14 @@ const AddDailySalesReport = () => {
             setSelectedInvoice([]);
 
         } catch (error) {
-            toast.error("Failed to submit Daily Sales Report");
+
+            const backendMessage =
+                error?.response?.data?.errors?.invoice?.[0] ||
+                error?.response?.data?.message ||
+                "Failed to submit Daily Sales Report";
+
+            toast.error(backendMessage);
+
         } finally {
             setLoading(false);
         }

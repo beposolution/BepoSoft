@@ -208,6 +208,40 @@ const ViewDailySalesReport = () => {
         menu: (base) => ({ ...base, zIndex: 99999 }),
     };
 
+    const deleteReport = async () => {
+        try {
+            if (!selectedReport?.id) {
+                toast.error("Invalid report selected");
+                return;
+            }
+
+            const confirmDelete = window.confirm(
+                "Are you sure you want to delete this Daily Sales Report?"
+            );
+
+            if (!confirmDelete) return;
+
+            await axios.delete(
+                `${import.meta.env.VITE_APP_KEY}daily/sales/report/update/${selectedReport.id}/`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            toast.success("Report Deleted Successfully");
+
+            fetchOrders();
+
+            await createDataLog("Daily Sales Report Deleted", selectedReport.id);
+
+            setModalOpen(false);
+        } catch (error) {
+            if (error.response?.status === 403) {
+                toast.error("You can only delete your own report");
+            } else {
+                toast.error("Failed to delete report");
+            }
+        }
+    };
+
     return (
         <React.Fragment>
             <ToastContainer />
@@ -338,6 +372,9 @@ const ViewDailySalesReport = () => {
                     </Button>
                     <Button color="secondary" onClick={() => setModalOpen(false)}>
                         Cancel
+                    </Button>
+                    <Button color="danger" onClick={deleteReport}>
+                        Delete
                     </Button>
                 </ModalFooter>
             </Modal>

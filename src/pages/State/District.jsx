@@ -21,10 +21,10 @@ const District = () => {
   const [stat, setStat] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [selectedDistrict, setSelectedDistrict] = useState(null);
   const [modal, setModal] = useState(false);
   const [isAddMode, setIsAddMode] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -32,10 +32,8 @@ const District = () => {
   });
 
   const token = localStorage.getItem("token");
-
   const toggleModal = () => setModal(!modal);
 
-  // GET DISTRICTS 
   const fetchData = async () => {
     try {
       const response = await axios.get(
@@ -55,7 +53,7 @@ const District = () => {
     }
   };
 
-  // GET STATES 
+
   const getStates = async () => {
     try {
       const response = await axios.get(
@@ -76,7 +74,7 @@ const District = () => {
     getStates();
   }, [token]);
 
-  // TABLE COLUMNS
+  
   const columns = useMemo(
     () => [
       {
@@ -139,7 +137,7 @@ const District = () => {
     [data]
   );
 
-  // ==================== EDIT ====================
+
   const handleEdit = (district) => {
     setSelectedDistrict(district);
     setIsAddMode(false);
@@ -152,7 +150,7 @@ const District = () => {
     toggleModal();
   };
 
-  // ==================== ADD DISTRICT ====================
+
   const handleAddDistrict = () => {
     setIsAddMode(true);
     setSelectedDistrict(null);
@@ -165,25 +163,25 @@ const District = () => {
     toggleModal();
   };
 
-  // ==================== DELETE ====================
-//   const handleDelete = async (id) => {
-//     const originalData = [...data];
-//     setData(data.filter((item) => item.id !== id));
 
-//     try {
-//       await axios.delete(
-//         `${import.meta.env.VITE_APP_KEY}districts/update/${id}/`,
-//         { headers: { Authorization: `Bearer ${token}` } }
-//       );
+  //   const handleDelete = async (id) => {
+  //     const originalData = [...data];
+  //     setData(data.filter((item) => item.id !== id));
 
-//       toast.success("District Deleted Successfully");
-//     } catch (error) {
-//       toast.error("Delete failed");
-//       setData(originalData);
-//     }
-//   };
+  //     try {
+  //       await axios.delete(
+  //         `${import.meta.env.VITE_APP_KEY}districts/update/${id}/`,
+  //         { headers: { Authorization: `Bearer ${token}` } }
+  //       );
 
-  // ==================== INPUT CHANGE ====================
+  //       toast.success("District Deleted Successfully");
+  //     } catch (error) {
+  //       toast.error("Delete failed");
+  //       setData(originalData);
+  //     }
+  //   };
+
+
   const handleInputChange = (event) => {
     const { name, value } = event.target;
 
@@ -193,14 +191,24 @@ const District = () => {
     }));
   };
 
-  // ==================== SUBMIT ====================
   const handleSubmit = async () => {
-    if (!formData.name) {
+    // Prevent double click
+    if (isSubmitting) return;
+
+    // Validation
+    if (!formData.name.trim()) {
       toast.error("District name required");
       return;
     }
 
+    if (!formData.state) {
+      toast.error("State is required");
+      return;
+    }
+
     try {
+      setIsSubmitting(true);
+
       if (isAddMode) {
         // ADD DISTRICT
         const response = await axios.post(
@@ -212,10 +220,14 @@ const District = () => {
         if (response.status === 201 || response.status === 200) {
           toast.success("District Added Successfully");
 
-          // Correct response update
-          setData((prev) => [...prev, response.data.data]);
-
           await fetchData();
+
+          // Clear form fields
+          setFormData({
+            name: "",
+            state: "",
+          });
+
           toggleModal();
         }
       } else {
@@ -229,12 +241,6 @@ const District = () => {
         if (response.status === 200) {
           toast.success("District Updated Successfully");
 
-          setData((prevData) =>
-            prevData.map((item) =>
-              item.id === selectedDistrict.id ? response.data.data : item
-            )
-          );
-
           await fetchData();
           toggleModal();
         }
@@ -242,6 +248,8 @@ const District = () => {
     } catch (error) {
       toast.error("Save failed");
       setError(error.message || "Failed to save district");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -252,7 +260,6 @@ const District = () => {
       <div className="container-fluid">
         <Breadcrumbs title="Tables" breadcrumbItem="DISTRICTS INFORMATION" />
 
-        {/* Add District Button */}
         <Button color="success" onClick={handleAddDistrict} className="mb-4">
           Add District
         </Button>
@@ -274,7 +281,6 @@ const District = () => {
           />
         )}
 
-        {/* Modal */}
         <Modal isOpen={modal} toggle={toggleModal}>
           <ModalHeader toggle={toggleModal}>
             {isAddMode ? "Add New District" : "Edit District"}
@@ -300,7 +306,7 @@ const District = () => {
                 value={formData.state}
                 onChange={handleInputChange}
               >
-                <option value="">-- Select State --</option>
+                <option value="">Select State</option>
                 {stat.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
@@ -314,9 +320,14 @@ const District = () => {
             <Button color="secondary" onClick={toggleModal}>
               Cancel
             </Button>
-            <Button color="primary" onClick={handleSubmit}>
-              {isAddMode ? "Add" : "Save"}
+            <Button
+              color="primary"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Please wait..." : isAddMode ? "Add" : "Save"}
             </Button>
+
           </ModalFooter>
         </Modal>
       </div>

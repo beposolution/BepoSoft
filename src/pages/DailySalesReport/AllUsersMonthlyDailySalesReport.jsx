@@ -117,6 +117,24 @@ const AllUsersMonthlyDailySalesReport = () => {
         wsData.push([`${reportData.state} - ${reportData.month} - ${user.user_name}`]);
         wsData.push([]);
 
+        // ================= STATE SUMMARY =================
+        wsData.push(["STATE SUMMARY"]);
+        wsData.push(["State", "Total Invoices", "Average/Day", "Highest Day", "Highest Day Count"]);
+
+        if (user.state_summary && user.state_summary.length > 0) {
+          user.state_summary.forEach((st) => {
+            wsData.push([
+              st.state,
+              st.total_invoices,
+              st.average_per_day,
+              st.highest_day,
+              st.highest_day_count,
+            ]);
+          });
+        }
+
+        wsData.push([]);
+
         // Header Row
         wsData.push(["District", ...reportData.dates, "Total"]);
 
@@ -187,6 +205,20 @@ const AllUsersMonthlyDailySalesReport = () => {
                 right: { style: "thin", color: { rgb: "AAAAAA" } },
               },
             };
+
+            // STATE SUMMARY heading row styling
+            if (cell.v === "STATE SUMMARY") {
+              cell.s = {
+                font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } },
+                alignment: { horizontal: "center", vertical: "center" },
+                fill: { fgColor: { rgb: "28837A" } },
+              };
+
+              ws["!merges"].push({
+                s: { r: R, c: 0 },
+                e: { r: R, c: 4 },
+              });
+            }
 
             // Title row styling
             if (R === 0) {
@@ -273,7 +305,6 @@ const AllUsersMonthlyDailySalesReport = () => {
 
       toast.success("Excel Exported Successfully");
     } catch (error) {
-      console.log(error);
       toast.error("Excel export failed");
     }
   };
@@ -340,8 +371,36 @@ const AllUsersMonthlyDailySalesReport = () => {
 
         tableBody.push(totalRow);
 
+        // ================= STATE SUMMARY TABLE =================
+        if (user.state_summary && user.state_summary.length > 0) {
+          doc.setFontSize(12);
+          doc.text("State Summary", 14, 22);
+
+          autoTable(doc, {
+            startY: 25,
+            head: [["State", "Total Invoices", "Average/Day", "Highest Day", "Highest Day Count"]],
+            body: user.state_summary.map((st) => [
+              st.state,
+              st.total_invoices,
+              st.average_per_day,
+              st.highest_day,
+              st.highest_day_count,
+            ]),
+            styles: {
+              fontSize: 9,
+              halign: "center",
+              valign: "middle",
+            },
+            headStyles: {
+              fillColor: [40, 131, 122],
+              textColor: [255, 255, 255],
+              fontStyle: "bold",
+            },
+          });
+        }
+
         autoTable(doc, {
-          startY: 25,
+          startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 35,
           head: tableHead,
           body: tableBody,
           styles: {
@@ -376,7 +435,6 @@ const AllUsersMonthlyDailySalesReport = () => {
       doc.save(`AllUsersDailySalesReport_${reportData.month}_${reportData.state}.pdf`);
       toast.success("PDF Exported Successfully");
     } catch (error) {
-      console.log(error);
       toast.error("PDF export failed");
     }
   };
@@ -424,6 +482,7 @@ const AllUsersMonthlyDailySalesReport = () => {
 
             </Col>
           </Row>
+
         </CardBody>
       </Card>
 
@@ -568,97 +627,79 @@ const AllUsersMonthlyDailySalesReport = () => {
               {/* USER WISE TABLES */}
               {reportData.users && reportData.users.length > 0 ? (
                 reportData.users.map((user, userIndex) => (
-                  <Card
-                    key={userIndex}
-                    style={{
-                      marginBottom: "25px",
-                      borderRadius: "12px",
-                      boxShadow: "0px 3px 10px rgba(0,0,0,0.12)",
-                      border: "2px solid #28837a",
-                    }}
-                  >
-                    <CardBody>
-                      <div
+                  <>
+                    {user.state_summary && user.state_summary.length > 0 && (
+                      <Card
                         style={{
-                          background: "linear-gradient(90deg, #28837a, #40E0D0)",
-                          padding: "12px",
-                          borderRadius: "10px",
-                          color: "white",
-                          fontWeight: "bold",
-                          fontSize: "16px",
-                          marginBottom: "15px",
+                          marginBottom: "20px",
+                          borderRadius: "12px",
+                          boxShadow: "0px 3px 10px rgba(0,0,0,0.12)",
+                          border: "2px solid #28837a",
                         }}
                       >
-                        {user.user_name} (Grand Total: {user.grand_total})
-                      </div>
-
-                      <div style={{ overflowX: "auto" }}>
-                        <table
-                          className="table table-bordered table-striped"
-                          style={{
-                            width: "100%",
-                            textAlign: "center",
-                            borderCollapse: "collapse",
-                          }}
-                        >
-                          <thead
+                        <CardBody>
+                          <div
                             style={{
                               background: "linear-gradient(90deg, #28837a, #40E0D0)",
+                              padding: "12px",
+                              borderRadius: "10px",
                               color: "white",
+                              fontWeight: "bold",
+                              fontSize: "16px",
+                              marginBottom: "15px",
                             }}
                           >
-                            <tr>
-                              <th style={{ minWidth: "180px" }}>District</th>
-                              {reportData.dates.map((d) => (
-                                <th key={d}>{d}</th>
-                              ))}
-                              <th>Total</th>
-                            </tr>
-                          </thead>
+                            {user.user_name} - State Summary
+                          </div>
 
-                          <tbody>
-                            {user.districts.map((stateBlock, sIndex) => (
-                              <React.Fragment key={sIndex}>
-
-                                {/* STATE HEADER ROW */}
+                          <div style={{ overflowX: "auto" }}>
+                            <table
+                              className="table table-bordered table-striped"
+                              style={{
+                                width: "100%",
+                                textAlign: "center",
+                                borderCollapse: "collapse",
+                              }}
+                            >
+                              <thead
+                                style={{
+                                  background: "linear-gradient(90deg, #28837a, #40E0D0)",
+                                  color: "white",
+                                }}
+                              >
                                 <tr>
-                                  <td
-                                    colSpan={reportData.dates.length + 2}
-                                    style={{
-                                      backgroundColor: "#28837a",
-                                      color: "black",
-                                      fontWeight: "bold",
-                                      padding: "10px",
-                                      textAlign: "center",
-                                    }}
-                                  >
-                                    {stateBlock?.state?.toUpperCase()}
-                                  </td>
+                                  <th style={{ minWidth: "150px" }}>State</th>
+                                  <th>Total Invoices</th>
+                                  <th>Average / Day</th>
+                                  <th>Highest Day</th>
+                                  <th>Highest Day Count</th>
                                 </tr>
+                              </thead>
 
-                                {/* DISTRICTS UNDER THAT STATE */}
-                                {stateBlock.districts.map((dist, index) => (
-                                  <tr key={index}>
-                                    <td style={{ textAlign: "left", fontWeight: "bold" }}>
-                                      {dist.district}
+                              <tbody>
+                                {user.state_summary.map((st, idx) => (
+                                  <tr key={idx}>
+                                    <td style={{ fontWeight: "bold", textAlign: "left" }}>
+                                      {st.state}
                                     </td>
 
-                                    {reportData.dates.map((d) => {
-                                      const value = dist.daily_counts[d.toString()] || 0;
+                                    <td
+                                      style={{
+                                        fontWeight: st.total_invoices > 0 ? "bold" : "normal",
+                                        backgroundColor: st.total_invoices > 0 ? "#d1f7ff" : "white",
+                                        color: st.total_invoices > 0 ? "#0b4f6c" : "black",
+                                      }}
+                                    >
+                                      {st.total_invoices}
+                                    </td>
 
-                                      return (
-                                        <td
-                                          key={d}
-                                          style={{
-                                            fontWeight: value > 0 ? "bold" : "normal",
-                                            backgroundColor: value > 0 ? "#d1f7ff" : "white",
-                                            color: value > 0 ? "#0b4f6c" : "black",
-                                          }}
-                                        >
-                                          {value}
-                                        </td>
-                                      );
-                                    })}
+                                    <td style={{ fontWeight: "bold", color: "#155724" }}>
+                                      {st.average_per_day}
+                                    </td>
+
+                                    <td style={{ fontWeight: "bold", color: "#856404" }}>
+                                      {st.highest_day}
+                                    </td>
 
                                     <td
                                       style={{
@@ -667,58 +708,169 @@ const AllUsersMonthlyDailySalesReport = () => {
                                         color: "#856404",
                                       }}
                                     >
-                                      {dist.total}
+                                      {st.highest_day_count}
                                     </td>
                                   </tr>
                                 ))}
-                              </React.Fragment>
-                            ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </CardBody>
+                      </Card>
+                    )}
+                    <Card
+                      key={userIndex}
+                      style={{
+                        marginBottom: "25px",
+                        borderRadius: "12px",
+                        boxShadow: "0px 3px 10px rgba(0,0,0,0.12)",
+                        border: "2px solid #28837a",
+                      }}
+                    >
 
-                            {/* TOTAL ROW */}
-                            <tr style={{ fontWeight: "bold" }}>
-                              <td
-                                style={{
-                                  backgroundColor: "#d4edda",
-                                  color: "#155724",
-                                }}
-                              >
-                                TOTAL
-                              </td>
+                      <CardBody>
+                        <div
+                          style={{
+                            background: "linear-gradient(90deg, #28837a, #40E0D0)",
+                            padding: "12px",
+                            borderRadius: "10px",
+                            color: "white",
+                            fontWeight: "bold",
+                            fontSize: "16px",
+                            marginBottom: "15px",
+                          }}
+                        >
+                          {user.user_name} (Grand Total: {user.grand_total})
+                        </div>
 
-                              {reportData.dates.map((d) => {
-                                const totalValue = user.column_totals[d.toString()] || 0;
+                        <div style={{ overflowX: "auto" }}>
+                          <table
+                            className="table table-bordered table-striped"
+                            style={{
+                              width: "100%",
+                              textAlign: "center",
+                              borderCollapse: "collapse",
+                            }}
+                          >
+                            <thead
+                              style={{
+                                background: "linear-gradient(90deg, #28837a, #40E0D0)",
+                                color: "white",
+                              }}
+                            >
+                              <tr>
+                                <th style={{ minWidth: "180px" }}>District</th>
+                                {reportData.dates.map((d) => (
+                                  <th key={d}>{d}</th>
+                                ))}
+                                <th>Total</th>
+                              </tr>
+                            </thead>
 
-                                return (
-                                  <td
-                                    key={d}
-                                    style={{
-                                      backgroundColor:
-                                        totalValue > 0 ? "#c3f7c9" : "#d4edda",
-                                      color: totalValue > 0 ? "#0b6623" : "#155724",
-                                      fontWeight: "bold",
-                                    }}
-                                  >
-                                    {totalValue}
-                                  </td>
-                                );
-                              })}
+                            <tbody>
+                              {user.districts.map((stateBlock, sIndex) => (
+                                <React.Fragment key={sIndex}>
 
-                              <td
-                                style={{
-                                  backgroundColor: "#28a745",
-                                  color: "white",
-                                  fontSize: "16px",
-                                  fontWeight: "bold",
-                                }}
-                              >
-                                {user.grand_total}
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </CardBody>
-                  </Card>
+                                  {/* STATE HEADER ROW */}
+                                  <tr>
+                                    <td
+                                      colSpan={reportData.dates.length + 2}
+                                      style={{
+                                        backgroundColor: "#28837a",
+                                        color: "black",
+                                        fontWeight: "bold",
+                                        padding: "10px",
+                                        textAlign: "center",
+                                      }}
+                                    >
+                                      {stateBlock?.state?.toUpperCase()}
+                                    </td>
+                                  </tr>
+
+                                  {/* DISTRICTS UNDER THAT STATE */}
+                                  {stateBlock.districts.map((dist, index) => (
+                                    <tr key={index}>
+                                      <td style={{ textAlign: "left", fontWeight: "bold" }}>
+                                        {dist.district}
+                                      </td>
+
+                                      {reportData.dates.map((d) => {
+                                        const value = dist.daily_counts[d.toString()] || 0;
+
+                                        return (
+                                          <td
+                                            key={d}
+                                            style={{
+                                              fontWeight: value > 0 ? "bold" : "normal",
+                                              backgroundColor: value > 0 ? "#d1f7ff" : "white",
+                                              color: value > 0 ? "#0b4f6c" : "black",
+                                            }}
+                                          >
+                                            {value}
+                                          </td>
+                                        );
+                                      })}
+
+                                      <td
+                                        style={{
+                                          fontWeight: "bold",
+                                          backgroundColor: "#fff3cd",
+                                          color: "#856404",
+                                        }}
+                                      >
+                                        {dist.total}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </React.Fragment>
+                              ))}
+
+                              {/* TOTAL ROW */}
+                              <tr style={{ fontWeight: "bold" }}>
+                                <td
+                                  style={{
+                                    backgroundColor: "#d4edda",
+                                    color: "#155724",
+                                  }}
+                                >
+                                  TOTAL
+                                </td>
+
+                                {reportData.dates.map((d) => {
+                                  const totalValue = user.column_totals[d.toString()] || 0;
+
+                                  return (
+                                    <td
+                                      key={d}
+                                      style={{
+                                        backgroundColor:
+                                          totalValue > 0 ? "#c3f7c9" : "#d4edda",
+                                        color: totalValue > 0 ? "#0b6623" : "#155724",
+                                        fontWeight: "bold",
+                                      }}
+                                    >
+                                      {totalValue}
+                                    </td>
+                                  );
+                                })}
+
+                                <td
+                                  style={{
+                                    backgroundColor: "#28a745",
+                                    color: "white",
+                                    fontSize: "16px",
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  {user.grand_total}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </CardBody>
+                    </Card>
+                  </>
                 ))
               ) : (
                 <h4 style={{ textAlign: "center", marginTop: "30px" }}>

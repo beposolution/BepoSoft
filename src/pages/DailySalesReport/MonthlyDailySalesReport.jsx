@@ -114,6 +114,16 @@ const MonthlyDailySalesReport = () => {
             wsData.push([`${reportData.state} - ${reportData.month}`]);
             wsData.push([]);
 
+            // ================== STATE SUMMARY ==================
+            if (reportData.state_summary) {
+                wsData.push(["STATE SUMMARY"]);
+                wsData.push(["Total Invoices", reportData.state_summary.total_invoices]);
+                wsData.push(["Average Per Day", reportData.state_summary.average_per_day]);
+                wsData.push(["Highest Day", `${reportData.state_summary.highest_day} (${reportData.state_summary.highest_day_count})`]);
+                wsData.push(["Lowest Day", `${reportData.state_summary.lowest_day} (${reportData.state_summary.lowest_day_count})`]);
+                wsData.push([]);
+            }
+
             // HEADER
             wsData.push(["District", ...reportData.dates, "Total"]);
 
@@ -138,6 +148,16 @@ const MonthlyDailySalesReport = () => {
             wsData.push(totalRow);
 
             const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+            // STYLE "STATE SUMMARY" title row if exists
+            const summaryTitleCell = ws["A2"];
+            if (summaryTitleCell && summaryTitleCell.v === "STATE SUMMARY") {
+                summaryTitleCell.s = {
+                    font: { bold: true, sz: 13, color: { rgb: "FFFFFF" } },
+                    alignment: { horizontal: "left", vertical: "center" },
+                    fill: { fgColor: { rgb: "203A43" } },
+                };
+            }
 
             // ================== STYLING ==================
             const range = XLSX.utils.decode_range(ws["!ref"]);
@@ -237,7 +257,6 @@ const MonthlyDailySalesReport = () => {
 
             toast.success("Excel Exported Successfully");
         } catch (error) {
-            console.log(error);
             toast.error("Excel export failed");
         }
     };
@@ -255,6 +274,25 @@ const MonthlyDailySalesReport = () => {
             doc.setFontSize(18);
             doc.setTextColor(31, 78, 121);
             doc.text(`${reportData.state} - ${reportData.month}`, 14, 15);
+
+            // ================== STATE SUMMARY ==================
+            if (reportData.state_summary) {
+                doc.setFontSize(11);
+                doc.setTextColor(0, 0, 0);
+
+                doc.text(`Total Invoices: ${reportData.state_summary.total_invoices}`, 14, 22);
+                doc.text(`Average Per Day: ${reportData.state_summary.average_per_day}`, 70, 22);
+                doc.text(
+                    `Highest Day: ${reportData.state_summary.highest_day} (${reportData.state_summary.highest_day_count})`,
+                    140,
+                    22
+                );
+                doc.text(
+                    `Lowest Day: ${reportData.state_summary.lowest_day} (${reportData.state_summary.lowest_day_count})`,
+                    240,
+                    22
+                );
+            }
 
             // Table Header
             const head = [["District", ...reportData.dates, "Total"]];
@@ -282,7 +320,7 @@ const MonthlyDailySalesReport = () => {
 
             // AutoTable
             autoTable(doc, {
-                startY: 25,
+                startY: reportData.state_summary ? 30 : 25,
                 head: head,
                 body: body,
                 theme: "grid",
@@ -320,7 +358,6 @@ const MonthlyDailySalesReport = () => {
             toast.success("PDF Exported Successfully");
 
         } catch (error) {
-            console.log(error);
             toast.error("PDF export failed");
         }
     };
@@ -471,6 +508,53 @@ const MonthlyDailySalesReport = () => {
                                     {reportData.state.toUpperCase()} ({reportData.month})
                                 </h5>
                             </div>
+
+                            {/* STATE SUMMARY */}
+                            {reportData.state_summary && (
+                                <div
+                                    style={{
+                                        marginBottom: "20px",
+                                        padding: "15px",
+                                        borderRadius: "12px",
+                                        background: "linear-gradient(90deg, #f8f9fa, #e9f7f7)",
+                                        border: "1px solid #d9d9d9",
+                                    }}
+                                >
+                                    <h5 style={{ fontWeight: "bold", marginBottom: "10px", color: "#1F4E79" }}>
+                                        State Summary
+                                    </h5>
+
+                                    <Row>
+                                        <Col md="3">
+                                            <div style={{ fontWeight: "bold", color: "#28837a" }}>Total Invoices</div>
+                                            <div style={{ fontSize: "18px", fontWeight: "bold" }}>
+                                                {reportData.state_summary.total_invoices}
+                                            </div>
+                                        </Col>
+
+                                        <Col md="3">
+                                            <div style={{ fontWeight: "bold", color: "#28837a" }}>Average / Day</div>
+                                            <div style={{ fontSize: "18px", fontWeight: "bold" }}>
+                                                {reportData.state_summary.average_per_day}
+                                            </div>
+                                        </Col>
+
+                                        <Col md="3">
+                                            <div style={{ fontWeight: "bold", color: "#28837a" }}>Highest Day</div>
+                                            <div style={{ fontSize: "18px", fontWeight: "bold" }}>
+                                                {reportData.state_summary.highest_day} ({reportData.state_summary.highest_day_count})
+                                            </div>
+                                        </Col>
+
+                                        <Col md="3">
+                                            <div style={{ fontWeight: "bold", color: "#28837a" }}>Lowest Day</div>
+                                            <div style={{ fontSize: "18px", fontWeight: "bold" }}>
+                                                {reportData.state_summary.lowest_day} ({reportData.state_summary.lowest_day_count})
+                                            </div>
+                                        </Col>
+                                    </Row>
+                                </div>
+                            )}
 
                             <div style={{ overflowX: "auto" }}>
                                 <table

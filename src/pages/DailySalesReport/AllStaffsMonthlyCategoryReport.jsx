@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import * as XLSX from "xlsx-js-style";
@@ -44,12 +44,43 @@ function getYearOptions(range = 8) {
 const AllStaffsMonthlyCategoryReport = () => {
     const token = localStorage.getItem("token");
     const baseUrl = import.meta.env.VITE_APP_KEY;
-
+    const [staffList, setStaffList] = useState([]);
+    const [stateList, setStateList] = useState([]);
+    const [selectedStaff, setSelectedStaff] = useState("");
+    const [selectedState, setSelectedState] = useState("");
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const [year, setYear] = useState(new Date().getFullYear());
-
     const [loading, setLoading] = useState(false);
     const [apiData, setApiData] = useState(null);
+
+    const fetchStates = async () => {
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}states/`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setStateList(response?.data?.data || []);
+        } catch (error) {
+            toast.error("Failed to load States");
+        }
+    };
+
+    const fetchStaffs = async () => {
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}staffs/`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setStaffList(response?.data?.data || []);
+        } catch (error) {
+            toast.error("Failed to load Staffs");
+        }
+    };
+
+    useEffect(() => {
+        fetchStates();
+        fetchStaffs();
+    }, []);
 
     const fetchReport = async () => {
         try {
@@ -84,8 +115,14 @@ const AllStaffsMonthlyCategoryReport = () => {
 
     const users = useMemo(() => {
         const d = apiData?.data || {};
-        return Object.keys(d);
-    }, [apiData]);
+        let staffNames = Object.keys(d);
+
+        if (selectedStaff) {
+            staffNames = staffNames.filter((u) => u === selectedStaff);
+        }
+
+        return staffNames;
+    }, [apiData, selectedStaff]);
 
     const computeTotalsForDistricts = (districtsObj) => {
         const totals = {};
@@ -182,13 +219,95 @@ const AllStaffsMonthlyCategoryReport = () => {
                 },
             };
 
+            // ===================== SUMMARY SHEET (TOP) =====================
+            const summarySheetData = [];
+
+            summarySheetData.push(["All Staff State Summary Report"]);
+            summarySheetData.push([]);
+            summarySheetData.push([
+                `Month: ${monthOptions.find((m) => m.value === apiData.month)?.label
+                } ${apiData.year}`,
+            ]);
+            summarySheetData.push([]);
+
+            summarySheetData.push(["S.No", "Staff", "State", "Total Quantity"]);
+
+            let rowCount = 1;
+            let grandTotal = 0;
+
+            Object.keys(apiData.state_summary || {}).forEach((staffName) => {
+                const list = apiData.state_summary[staffName] || [];
+
+                list.forEach((item) => {
+                    summarySheetData.push([
+                        rowCount,
+                        staffName,
+                        item.state,
+                        safeNum(item.total_quantity),
+                    ]);
+
+                    grandTotal += safeNum(item.total_quantity);
+                    rowCount++;
+                });
+            });
+
+            summarySheetData.push(["", "", "GRAND TOTAL", grandTotal]);
+
+            const summaryWs = XLSX.utils.aoa_to_sheet(summarySheetData);
+
+            summaryWs["!cols"] = [
+                { wch: 8 },
+                { wch: 25 },
+                { wch: 25 },
+                { wch: 18 },
+            ];
+
+            summaryWs["!merges"] = summaryWs["!merges"] || [];
+            summaryWs["!merges"].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } });
+            summaryWs["!merges"].push({ s: { r: 2, c: 0 }, e: { r: 2, c: 3 } });
+
+            const summaryRange = XLSX.utils.decode_range(summaryWs["!ref"]);
+
+            for (let R = summaryRange.s.r; R <= summaryRange.e.r; ++R) {
+                for (let C = summaryRange.s.c; C <= summaryRange.e.c; ++C) {
+                    const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+                    const cell = summaryWs[cellAddress];
+                    if (!cell) continue;
+
+                    cell.s = { ...normalStyle };
+
+                    if (R === 0) cell.s = titleStyle;
+                    if (R === 2) cell.s = monthStyle;
+
+                    if (R === 4) cell.s = headerStyle;
+
+                    if (C === 1 && R > 4) cell.s = { ...districtStyle };
+                    if (C === 2 && R > 4) cell.s = { ...districtStyle };
+
+                    if (C === 3 && R > 4 && typeof cell.v === "number" && cell.v > 0) {
+                        cell.s = { ...cell.s, ...highlightStyle };
+                    }
+
+                    if (cell.v === "GRAND TOTAL") {
+                        for (let cc = 0; cc <= summaryRange.e.c; cc++) {
+                            const addr = XLSX.utils.encode_cell({ r: R, c: cc });
+                            if (summaryWs[addr]) summaryWs[addr].s = totalRowStyle;
+                        }
+                    }
+                }
+            }
+
+            XLSX.utils.book_append_sheet(wb, summaryWs, "State Summary");
+
+            // ===================== STAFF SHEETS =====================
             users.forEach((uname) => {
                 const wsData = [];
 
                 wsData.push([`All Staff Monthly Category Report - ${uname}`]);
                 wsData.push([]);
                 wsData.push([
-                    `Month: ${monthOptions.find((m) => m.value === apiData.month)?.label} ${apiData.year}`,
+                    `Month: ${monthOptions.find((m) => m.value === apiData.month)?.label
+                    } ${apiData.year}`,
                 ]);
                 wsData.push([]);
 
@@ -227,7 +346,6 @@ const AllStaffsMonthlyCategoryReport = () => {
 
                 const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-                // Column widths
                 ws["!cols"] = [
                     { wch: 8 },
                     { wch: 25 },
@@ -235,7 +353,6 @@ const AllStaffsMonthlyCategoryReport = () => {
                     { wch: 15 },
                 ];
 
-                // Merge title and month row
                 const totalCols = 2 + categories.length + 1;
                 ws["!merges"] = ws["!merges"] || [];
 
@@ -249,7 +366,6 @@ const AllStaffsMonthlyCategoryReport = () => {
                     e: { r: 2, c: totalCols - 1 },
                 });
 
-                // Apply styles
                 const range = XLSX.utils.decode_range(ws["!ref"]);
 
                 for (let R = range.s.r; R <= range.e.r; ++R) {
@@ -258,25 +374,15 @@ const AllStaffsMonthlyCategoryReport = () => {
                         const cell = ws[cellAddress];
                         if (!cell) continue;
 
-                        // Default
                         cell.s = { ...normalStyle };
 
-                        // Title Row
-                        if (R === 0) {
-                            cell.s = titleStyle;
-                        }
+                        if (R === 0) cell.s = titleStyle;
+                        if (R === 2) cell.s = monthStyle;
 
-                        // Month Row
-                        if (R === 2) {
-                            cell.s = monthStyle;
-                        }
-
-                        // STATE Row
                         if (typeof cell.v === "string" && cell.v.startsWith("STATE:")) {
                             cell.s = stateStyle;
                         }
 
-                        // Header Row
                         if (
                             cell.v === "S.No" ||
                             cell.v === "District" ||
@@ -286,22 +392,18 @@ const AllStaffsMonthlyCategoryReport = () => {
                             cell.s = headerStyle;
                         }
 
-                        // Alternate row background (data rows)
                         if (R > 4 && R % 2 === 0) {
                             cell.s = { ...cell.s, ...altRowStyle };
                         }
 
-                        // District Column style
                         if (C === 1 && R > 4) {
                             cell.s = { ...districtStyle };
                         }
 
-                        // Highlight numbers > 0
                         if (typeof cell.v === "number" && cell.v > 0) {
                             cell.s = { ...cell.s, ...highlightStyle };
                         }
 
-                        // TOTAL Row Style
                         if (cell.v === "TOTAL" && C === 1) {
                             for (let cc = 0; cc <= range.e.c; cc++) {
                                 const addr = XLSX.utils.encode_cell({ r: R, c: cc });
@@ -316,134 +418,15 @@ const AllStaffsMonthlyCategoryReport = () => {
 
             XLSX.writeFile(
                 wb,
-                `AllStaffMonthlyCategoryReport_${monthOptions.find((m) => m.value === apiData.month)?.label}_${apiData.year}.xlsx`
+                `AllStaffMonthlyCategoryReport_${monthOptions.find((m) => m.value === apiData.month)?.label
+                }_${apiData.year}.xlsx`
             );
 
             toast.success("Excel Exported Successfully");
         } catch (error) {
-            console.log(error);
             toast.error("Excel export failed");
         }
     };
-
-    // const exportToPDF = () => {
-    //     try {
-    //         if (!apiData || apiData.status !== "success") {
-    //             toast.error("No data to export");
-    //             return;
-    //         }
-
-    //         const doc = new jsPDF("l", "mm", "a4"); // landscape
-    //         const monthName =
-    //             monthOptions.find((m) => m.value === apiData.month)?.label || "";
-
-    //         doc.setFontSize(16);
-    //         doc.text("All Staff Monthly Category Report", 14, 15);
-
-    //         doc.setFontSize(11);
-    //         doc.text(`Month: ${monthName} ${apiData.year}`, 14, 23);
-
-    //         let startY = 30;
-
-    //         users.forEach((uname, uIndex) => {
-    //             doc.setFontSize(13);
-    //             doc.setTextColor(11, 79, 108);
-    //             doc.text(`Staff: ${uname}`, 14, startY);
-
-    //             startY += 6;
-
-    //             const userObj = apiData.data[uname] || {};
-    //             const states = Object.keys(userObj);
-
-    //             states.forEach((state) => {
-    //                 doc.setFontSize(12);
-    //                 doc.setTextColor(40, 131, 122);
-    //                 doc.text(`STATE: ${state}`, 14, startY);
-
-    //                 startY += 5;
-
-    //                 const districtsObj = userObj[state] || {};
-    //                 const districtNames = Object.keys(districtsObj);
-
-    //                 const head = [["S.No", "District", ...categories, "TOTAL"]];
-
-    //                 const body = districtNames.map((district, idx) => {
-    //                     const rowObj = districtsObj[district] || {};
-    //                     const row = [idx + 1, district];
-
-    //                     categories.forEach((c) => row.push(safeNum(rowObj?.[c])));
-    //                     row.push(safeNum(rowObj?.total));
-
-    //                     return row;
-    //                 });
-
-    //                 const stateTotals = computeTotalsForDistricts(districtsObj);
-
-    //                 const totalRow = ["", "TOTAL"];
-    //                 categories.forEach((c) => totalRow.push(safeNum(stateTotals[c])));
-    //                 totalRow.push(safeNum(stateTotals.total));
-
-    //                 body.push(totalRow);
-
-    //                 autoTable(doc, {
-    //                     startY,
-    //                     head,
-    //                     body,
-    //                     theme: "grid",
-    //                     styles: {
-    //                         fontSize: 8,
-    //                         halign: "center",
-    //                         valign: "middle",
-    //                     },
-    //                     headStyles: {
-    //                         fillColor: [40, 131, 122],
-    //                         textColor: [255, 255, 255],
-    //                         fontStyle: "bold",
-    //                     },
-    //                     alternateRowStyles: {
-    //                         fillColor: [245, 245, 245],
-    //                     },
-    //                     didParseCell: function (data) {
-    //                         // District left align
-    //                         if (data.column.index === 1 && data.section === "body") {
-    //                             data.cell.styles.halign = "left";
-    //                             data.cell.styles.fontStyle = "bold";
-    //                         }
-
-    //                         // Total row green
-    //                         if (data.row.index === body.length - 1) {
-    //                             data.cell.styles.fillColor = [40, 167, 69];
-    //                             data.cell.styles.textColor = [255, 255, 255];
-    //                             data.cell.styles.fontStyle = "bold";
-    //                         }
-    //                     },
-    //                 });
-
-    //                 startY = doc.lastAutoTable.finalY + 10;
-
-    //                 // New Page if needed
-    //                 if (startY > 180) {
-    //                     doc.addPage();
-    //                     startY = 20;
-    //                 }
-    //             });
-
-    //             startY += 10;
-
-    //             if (startY > 180 && uIndex !== users.length - 1) {
-    //                 doc.addPage();
-    //                 startY = 20;
-    //             }
-    //         });
-
-    //         doc.save(`AllStaffMonthlyCategoryReport_${monthName}_${apiData.year}.pdf`);
-
-    //         toast.success("PDF Exported Successfully");
-    //     } catch (error) {
-    //         console.log(error);
-    //         toast.error("PDF export failed");
-    //     }
-    // };
 
     return (
         <div style={{ padding: "20px" }}>
@@ -477,15 +460,6 @@ const AllStaffsMonthlyCategoryReport = () => {
                             >
                                 Export Excel
                             </Button>
-
-                            {/* <Button
-                                color="danger"
-                                style={{ fontWeight: "bold" }}
-                                onClick={exportToPDF}
-                            >
-                                Export PDF
-                            </Button> */}
-
                         </Col>
                     </Row>
                 </CardBody>
@@ -506,7 +480,7 @@ const AllStaffsMonthlyCategoryReport = () => {
 
                     <Form>
                         <Row>
-                            <Col md="4">
+                            <Col md="3">
                                 <Label style={{ fontWeight: "bold" }}>Month</Label>
                                 <Input
                                     type="select"
@@ -521,7 +495,7 @@ const AllStaffsMonthlyCategoryReport = () => {
                                 </Input>
                             </Col>
 
-                            <Col md="4">
+                            <Col md="3">
                                 <Label style={{ fontWeight: "bold" }}>Year</Label>
                                 <Input
                                     type="select"
@@ -536,7 +510,39 @@ const AllStaffsMonthlyCategoryReport = () => {
                                 </Input>
                             </Col>
 
-                            <Col md="4" className="d-flex align-items-end">
+                            <Col md="2">
+                                <Label style={{ fontWeight: "bold" }}>Staff</Label>
+                                <Input
+                                    type="select"
+                                    value={selectedStaff}
+                                    onChange={(e) => setSelectedStaff(e.target.value)}
+                                >
+                                    <option value="">All Staffs</option>
+                                    {(apiData?.data ? Object.keys(apiData.data) : []).map((staff) => (
+                                        <option key={staff} value={staff}>
+                                            {staff}
+                                        </option>
+                                    ))}
+                                </Input>
+                            </Col>
+
+                            <Col md="2">
+                                <Label style={{ fontWeight: "bold" }}>State</Label>
+                                <Input
+                                    type="select"
+                                    value={selectedState}
+                                    onChange={(e) => setSelectedState(e.target.value)}
+                                >
+                                    <option value="">All States</option>
+                                    {(stateList || []).map((s) => (
+                                        <option key={s.id} value={s.name}>
+                                            {s.name}
+                                        </option>
+                                    ))}
+                                </Input>
+                            </Col>
+                        
+                            <Col md="2" className="mt-4">
                                 <Button
                                     color="info"
                                     style={{
@@ -550,6 +556,7 @@ const AllStaffsMonthlyCategoryReport = () => {
                                 </Button>
                             </Col>
                         </Row>
+
                     </Form>
                 </CardBody>
             </Card>
@@ -578,12 +585,145 @@ const AllStaffsMonthlyCategoryReport = () => {
                                 </h5>
                             </div>
 
+                            {/* ================== ALL STAFF STATE SUMMARY (TOP) ================== */}
+                            {apiData?.state_summary &&
+                                Object.keys(apiData.state_summary).length > 0 && (
+                                    <Card
+                                        style={{
+                                            marginBottom: "25px",
+                                            borderRadius: "12px",
+                                            boxShadow: "0px 3px 10px rgba(0,0,0,0.12)",
+                                            border: "2px solid #203a43",
+                                        }}
+                                    >
+                                        <CardBody>
+                                            <div
+                                                style={{
+                                                    background:
+                                                        "linear-gradient(90deg, #0f2027, #203a43, #2c5364)",
+                                                    padding: "12px",
+                                                    borderRadius: "10px",
+                                                    color: "white",
+                                                    fontWeight: "bold",
+                                                    fontSize: "16px",
+                                                    marginBottom: "15px",
+                                                }}
+                                            >
+                                                All Staff State Summary
+                                            </div>
+
+                                            <div style={{ overflowX: "auto" }}>
+                                                <table
+                                                    className="table table-bordered table-striped"
+                                                    style={{
+                                                        width: "100%",
+                                                        textAlign: "center",
+                                                        borderCollapse: "collapse",
+                                                    }}
+                                                >
+                                                    <thead
+                                                        style={{
+                                                            background:
+                                                                "linear-gradient(90deg, #28837a, #40E0D0)",
+                                                            color: "white",
+                                                        }}
+                                                    >
+                                                        <tr>
+                                                            <th style={{ minWidth: "80px" }}>S.No</th>
+                                                            <th style={{ minWidth: "220px" }}>Staff</th>
+                                                            <th style={{ minWidth: "220px" }}>State</th>
+                                                            <th style={{ minWidth: "150px" }}>Total Quantity</th>
+                                                        </tr>
+                                                    </thead>
+
+                                                    <tbody>
+                                                        {Object.keys(apiData.state_summary).map(
+                                                            (staffName, staffIndex) => {
+                                                                const staffStates =
+                                                                    apiData.state_summary[staffName] || [];
+
+                                                                return staffStates.map((row, idx) => (
+                                                                    <tr key={`${staffName}-${idx}`}>
+                                                                        <td style={{ fontWeight: "bold" }}>
+                                                                            {staffIndex + 1}.{idx + 1}
+                                                                        </td>
+
+                                                                        <td
+                                                                            style={{
+                                                                                textAlign: "left",
+                                                                                fontWeight: "bold",
+                                                                                backgroundColor: "#fff3cd",
+                                                                                color: "#856404",
+                                                                            }}
+                                                                        >
+                                                                            {staffName}
+                                                                        </td>
+
+                                                                        <td style={{ textAlign: "left", fontWeight: "bold" }}>
+                                                                            {row.state}
+                                                                        </td>
+
+                                                                        <td
+                                                                            style={{
+                                                                                fontWeight: "bold",
+                                                                                backgroundColor: "#d1f7ff",
+                                                                                color: "#0b4f6c",
+                                                                            }}
+                                                                        >
+                                                                            {safeNum(row.total_quantity)}
+                                                                        </td>
+                                                                    </tr>
+                                                                ));
+                                                            }
+                                                        )}
+
+                                                        {/* GRAND TOTAL */}
+                                                        <tr style={{ fontWeight: "bold" }}>
+                                                            <td
+                                                                colSpan={3}
+                                                                style={{
+                                                                    backgroundColor: "#d4edda",
+                                                                    color: "#155724",
+                                                                    fontSize: "15px",
+                                                                }}
+                                                            >
+                                                                GRAND TOTAL
+                                                            </td>
+
+                                                            <td
+                                                                style={{
+                                                                    backgroundColor: "#28a745",
+                                                                    color: "white",
+                                                                    fontSize: "16px",
+                                                                    fontWeight: "bold",
+                                                                }}
+                                                            >
+                                                                {Object.values(apiData.state_summary)
+                                                                    .flat()
+                                                                    .reduce(
+                                                                        (sum, row) =>
+                                                                            sum + safeNum(row.total_quantity),
+                                                                        0
+                                                                    )}
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </CardBody>
+                                    </Card>
+                                )}
+
                             {users.length === 0 ? (
                                 <h4 style={{ textAlign: "center" }}>No Data Found</h4>
                             ) : (
                                 users.map((uname, uIndex) => {
                                     const userObj = apiData.data[uname] || {};
-                                    const states = Object.keys(userObj);
+                                    let states = Object.keys(userObj);
+
+                                    if (selectedState) {
+                                        states = states.filter((s) => s === selectedState);
+                                    }
 
                                     return (
                                         <Card
@@ -598,7 +738,8 @@ const AllStaffsMonthlyCategoryReport = () => {
                                             <CardBody>
                                                 <div
                                                     style={{
-                                                        background: "linear-gradient(90deg, #28837a, #40E0D0)",
+                                                        background:
+                                                            "linear-gradient(90deg, #28837a, #40E0D0)",
                                                         padding: "12px",
                                                         borderRadius: "10px",
                                                         color: "white",
@@ -611,17 +752,19 @@ const AllStaffsMonthlyCategoryReport = () => {
                                                 </div>
 
                                                 {states.length === 0 ? (
-                                                    <h6 style={{ textAlign: "center" }}>No State Data Found</h6>
+                                                    <h6 style={{ textAlign: "center" }}>
+                                                        No State Data Found
+                                                    </h6>
                                                 ) : (
                                                     states.map((state, sIndex) => {
                                                         const districtsObj = userObj[state] || {};
                                                         const districtNames = Object.keys(districtsObj);
 
-                                                        const stateTotals = computeTotalsForDistricts(districtsObj);
+                                                        const stateTotals =
+                                                            computeTotalsForDistricts(districtsObj);
 
                                                         return (
                                                             <div key={sIndex} style={{ marginBottom: "30px" }}>
-                                                                {/* STATE HEADER */}
                                                                 <div
                                                                     style={{
                                                                         backgroundColor: "#28837a",
@@ -653,7 +796,9 @@ const AllStaffsMonthlyCategoryReport = () => {
                                                                         >
                                                                             <tr>
                                                                                 <th style={{ minWidth: "80px" }}>S.No</th>
-                                                                                <th style={{ minWidth: "200px" }}>District</th>
+                                                                                <th style={{ minWidth: "200px" }}>
+                                                                                    District
+                                                                                </th>
 
                                                                                 {categories.map((c) => (
                                                                                     <th key={c} style={{ minWidth: "120px" }}>
@@ -671,7 +816,9 @@ const AllStaffsMonthlyCategoryReport = () => {
 
                                                                                 return (
                                                                                     <tr key={district}>
-                                                                                        <td style={{ fontWeight: "bold" }}>{idx + 1}</td>
+                                                                                        <td style={{ fontWeight: "bold" }}>
+                                                                                            {idx + 1}
+                                                                                        </td>
 
                                                                                         <td
                                                                                             style={{
@@ -689,10 +836,18 @@ const AllStaffsMonthlyCategoryReport = () => {
                                                                                                 <td
                                                                                                     key={c}
                                                                                                     style={{
-                                                                                                        fontWeight: value > 0 ? "bold" : "normal",
+                                                                                                        fontWeight:
+                                                                                                            value > 0
+                                                                                                                ? "bold"
+                                                                                                                : "normal",
                                                                                                         backgroundColor:
-                                                                                                            value > 0 ? "#d1f7ff" : "white",
-                                                                                                        color: value > 0 ? "#0b4f6c" : "black",
+                                                                                                            value > 0
+                                                                                                                ? "#d1f7ff"
+                                                                                                                : "white",
+                                                                                                        color:
+                                                                                                            value > 0
+                                                                                                                ? "#0b4f6c"
+                                                                                                                : "black",
                                                                                                     }}
                                                                                                 >
                                                                                                     {value}
@@ -713,7 +868,6 @@ const AllStaffsMonthlyCategoryReport = () => {
                                                                                 );
                                                                             })}
 
-                                                                            {/* TOTAL ROW */}
                                                                             <tr style={{ fontWeight: "bold" }}>
                                                                                 <td
                                                                                     colSpan={2}

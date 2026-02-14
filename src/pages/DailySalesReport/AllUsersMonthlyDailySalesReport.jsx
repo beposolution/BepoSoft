@@ -114,12 +114,20 @@ const AllUsersMonthlyDailySalesReport = () => {
         const wsData = [];
 
         // Title Row
-        wsData.push([`${reportData.state} - ${reportData.month} - ${user.user_name}`]);
+        wsData.push([
+          `${reportData.state} - ${reportData.month} - ${user.user_name}`,
+        ]);
         wsData.push([]);
 
         // ================= STATE SUMMARY =================
         wsData.push(["STATE SUMMARY"]);
-        wsData.push(["State", "Total Invoices", "Average/Day", "Highest Day", "Highest Day Count"]);
+        wsData.push([
+          "State",
+          "Total Invoices",
+          "Average/Day",
+          "Highest Day",
+          "Highest Day Count",
+        ]);
 
         if (user.state_summary && user.state_summary.length > 0) {
           user.state_summary.forEach((st) => {
@@ -135,8 +143,9 @@ const AllUsersMonthlyDailySalesReport = () => {
 
         wsData.push([]);
 
-        // Header Row
-        wsData.push(["District", ...reportData.dates, "Total"]);
+        // ================= MAIN HEADER =================
+        // TOTAL COLUMN SHOULD COME AFTER DISTRICT
+        wsData.push(["District", "Total", ...reportData.dates]);
 
         // State wise districts
         user.districts.forEach((stateBlock) => {
@@ -148,32 +157,39 @@ const AllUsersMonthlyDailySalesReport = () => {
           stateBlock.districts.forEach((dist) => {
             const row = [dist.district];
 
+            // TOTAL column right after district
+            row.push(dist.total || 0);
+
+            // Day columns
             reportData.dates.forEach((d) => {
               row.push(dist.daily_counts[d.toString()] || 0);
             });
 
-            row.push(dist.total || 0);
             wsData.push(row);
           });
 
           wsData.push([]);
         });
 
-        // Total Row
-        const totalRow = ["TOTAL"];
+        // ================= TOTAL ROW =================
+        const totalRow = ["TOTAL", user.grand_total || 0];
+
         reportData.dates.forEach((d) => {
           totalRow.push(user.column_totals[d.toString()] || 0);
         });
-        totalRow.push(user.grand_total || 0);
+
         wsData.push(totalRow);
 
         const ws = XLSX.utils.aoa_to_sheet(wsData);
 
         // Column widths
         ws["!cols"] = [
-          { wch: 25 },
-          ...reportData.dates.map(() => ({ wch: 8 })),
-          { wch: 12 },
+          { wch: 25 }, // Column A (State / District)
+          { wch: 18 }, // Column B (Total Invoices / Total)
+          { wch: 18 }, // Column C (Average/Day)
+          { wch: 18 }, // Column D (Highest Day)
+          { wch: 22 }, // Column E (Highest Day Count)
+          ...reportData.dates.map(() => ({ wch: 8 })), // Remaining date columns
         ];
 
         // Merge Title row
@@ -184,8 +200,14 @@ const AllUsersMonthlyDailySalesReport = () => {
           },
         ];
 
-        // Apply styles
         const range = XLSX.utils.decode_range(ws["!ref"]);
+
+        // ================= COLORS =================
+        const headingColor = "00BDB4"; // #00bdb4
+        const redFill = "FFD6D6";
+        const redText = "FF0000";
+        const greenFill = "D6FFD6";
+        const greenText = "008000";
 
         for (let R = range.s.r; R <= range.e.r; R++) {
           for (let C = range.s.c; C <= range.e.c; C++) {
@@ -194,10 +216,14 @@ const AllUsersMonthlyDailySalesReport = () => {
 
             if (!cell) continue;
 
-            // Default style
+            // Default Style
             cell.s = {
               font: { name: "Calibri", sz: 11 },
-              alignment: { horizontal: "center", vertical: "center", wrapText: true },
+              alignment: {
+                horizontal: "center",
+                vertical: "center",
+                wrapText: true,
+              },
               border: {
                 top: { style: "thin", color: { rgb: "AAAAAA" } },
                 bottom: { style: "thin", color: { rgb: "AAAAAA" } },
@@ -206,12 +232,21 @@ const AllUsersMonthlyDailySalesReport = () => {
               },
             };
 
-            // STATE SUMMARY heading row styling
+            // ================= TITLE ROW =================
+            if (R === 0) {
+              cell.s = {
+                font: { bold: true, sz: 16, color: { rgb: "FFFFFF" } },
+                alignment: { horizontal: "center", vertical: "center" },
+                fill: { fgColor: { rgb: "1F4E79" } },
+              };
+            }
+
+            // ================= STATE SUMMARY MERGE + STYLE =================
             if (cell.v === "STATE SUMMARY") {
               cell.s = {
                 font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } },
                 alignment: { horizontal: "center", vertical: "center" },
-                fill: { fgColor: { rgb: "28837A" } },
+                fill: { fgColor: { rgb: headingColor } },
               };
 
               ws["!merges"].push({
@@ -220,21 +255,19 @@ const AllUsersMonthlyDailySalesReport = () => {
               });
             }
 
-            // Title row styling
-            if (R === 0) {
-              cell.s = {
-                font: { bold: true, sz: 16, color: { rgb: "FFFFFF" } },
-                alignment: { horizontal: "center", vertical: "center" },
-                fill: { fgColor: { rgb: "1F4E79" } }, // dark blue
-              };
-            }
-
-            // Header row styling (Row index 2)
-            if (R === 2) {
+            // ================= HEADERS STYLE =================
+            // State Summary Header Row (State, Total Invoices...)
+            if (
+              cell.v === "State" ||
+              cell.v === "Total Invoices" ||
+              cell.v === "Average/Day" ||
+              cell.v === "Highest Day" ||
+              cell.v === "Highest Day Count"
+            ) {
               cell.s = {
                 font: { bold: true, color: { rgb: "FFFFFF" } },
                 alignment: { horizontal: "center", vertical: "center" },
-                fill: { fgColor: { rgb: "28837A" } }, // teal
+                fill: { fgColor: { rgb: headingColor } },
                 border: {
                   top: { style: "thin", color: { rgb: "000000" } },
                   bottom: { style: "thin", color: { rgb: "000000" } },
@@ -244,17 +277,32 @@ const AllUsersMonthlyDailySalesReport = () => {
               };
             }
 
-            // State heading rows (when first column has state name and others empty)
+            // Main Header Row District / Total / Dates
+            if (cell.v === "District" || cell.v === "Total" || reportData.dates.includes(cell.v)) {
+              cell.s = {
+                font: { bold: true, color: { rgb: "FFFFFF" } },
+                alignment: { horizontal: "center", vertical: "center" },
+                fill: { fgColor: { rgb: headingColor } },
+                border: {
+                  top: { style: "thin", color: { rgb: "000000" } },
+                  bottom: { style: "thin", color: { rgb: "000000" } },
+                  left: { style: "thin", color: { rgb: "000000" } },
+                  right: { style: "thin", color: { rgb: "000000" } },
+                },
+              };
+            }
+
+            // ================= STATE HEADING ROW STYLE =================
             if (cell.v && typeof cell.v === "string" && C === 0 && R > 2) {
               const nextCell = ws[XLSX.utils.encode_cell({ r: R, c: 1 })];
+
               if (!nextCell) {
                 cell.s = {
                   font: { bold: true, color: { rgb: "FFFFFF" } },
                   alignment: { horizontal: "center", vertical: "center" },
-                  fill: { fgColor: { rgb: "0B4F6C" } }, // dark teal
+                  fill: { fgColor: { rgb: "0B4F6C" } },
                 };
 
-                // Merge state heading across all columns
                 ws["!merges"].push({
                   s: { r: R, c: 0 },
                   e: { r: R, c: reportData.dates.length + 1 },
@@ -262,34 +310,95 @@ const AllUsersMonthlyDailySalesReport = () => {
               }
             }
 
-            // Total column styling
-            if (C === reportData.dates.length + 1 && R > 2 && R < range.e.r) {
+            // ================= DISTRICT / STATE NAME CELL (Yellow + White) =================
+            // Apply only for normal district/state names, NOT for headings
+            if (
+              C === 0 &&
+              R > 0 &&
+              cell.v &&
+              typeof cell.v === "string" &&
+              cell.v !== "District" &&
+              cell.v !== "State" &&
+              cell.v !== "STATE SUMMARY" &&
+              cell.v !== "TOTAL"
+            ) {
               cell.s = {
+                ...cell.s,
                 font: { bold: true, color: { rgb: "000000" } },
-                alignment: { horizontal: "center", vertical: "center" },
-                fill: { fgColor: { rgb: "FFF3CD" } }, // yellow
-                border: {
-                  top: { style: "thin", color: { rgb: "AAAAAA" } },
-                  bottom: { style: "thin", color: { rgb: "AAAAAA" } },
-                  left: { style: "thin", color: { rgb: "AAAAAA" } },
-                  right: { style: "thin", color: { rgb: "AAAAAA" } },
-                },
+                alignment: { horizontal: "left", vertical: "center" },
+                fill: { fgColor: { rgb: "FFC107" } }, // Yellow
               };
             }
 
-            // TOTAL row styling (last row)
+
+
+            // ================= ZERO / VALUE COLORING =================
+            if (typeof cell.v === "number") {
+              if (cell.v === 0) {
+                cell.s = {
+                  ...cell.s,
+                  font: { bold: true, color: { rgb: "FFFFFF" } }, // WHITE text
+                  fill: { fgColor: { rgb: "FF0000" } }, // RED background
+                };
+              } else if (cell.v > 0) {
+                cell.s = {
+                  ...cell.s,
+                  font: { bold: true, color: { rgb: "FFFFFF" } }, // WHITE text
+                  fill: { fgColor: { rgb: "28A745" } }, // GREEN background
+                };
+              }
+            }
+
+            // ================= TOTAL ROW STYLE =================
             if (R === range.e.r) {
-              cell.s = {
-                font: { bold: true, color: { rgb: "FFFFFF" } },
-                alignment: { horizontal: "center", vertical: "center" },
-                fill: { fgColor: { rgb: "28A745" } }, // green
-                border: {
-                  top: { style: "thin", color: { rgb: "000000" } },
-                  bottom: { style: "thin", color: { rgb: "000000" } },
-                  left: { style: "thin", color: { rgb: "000000" } },
-                  right: { style: "thin", color: { rgb: "000000" } },
-                },
-              };
+
+              // TOTAL LABEL CELL
+              if (C === 0) {
+                cell.s = {
+                  font: { bold: true, color: { rgb: "FFFFFF" } },
+                  alignment: { horizontal: "center", vertical: "center" },
+                  fill: { fgColor: { rgb: "28A745" } }, // green
+                  border: {
+                    top: { style: "thin", color: { rgb: "000000" } },
+                    bottom: { style: "thin", color: { rgb: "000000" } },
+                    left: { style: "thin", color: { rgb: "000000" } },
+                    right: { style: "thin", color: { rgb: "000000" } },
+                  },
+                };
+              }
+
+              // TOTAL VALUES CELLS
+              else {
+                if (typeof cell.v === "number") {
+                  if (cell.v === 0) {
+                    // RED background but WHITE number
+                    cell.s = {
+                      font: { bold: true, color: { rgb: "FFFFFF" } },
+                      alignment: { horizontal: "center", vertical: "center" },
+                      fill: { fgColor: { rgb: "FF0000" } }, // red
+                      border: {
+                        top: { style: "thin", color: { rgb: "000000" } },
+                        bottom: { style: "thin", color: { rgb: "000000" } },
+                        left: { style: "thin", color: { rgb: "000000" } },
+                        right: { style: "thin", color: { rgb: "000000" } },
+                      },
+                    };
+                  } else {
+                    // GREEN background and WHITE number
+                    cell.s = {
+                      font: { bold: true, color: { rgb: "FFFFFF" } },
+                      alignment: { horizontal: "center", vertical: "center" },
+                      fill: { fgColor: { rgb: "28A745" } }, // green
+                      border: {
+                        top: { style: "thin", color: { rgb: "000000" } },
+                        bottom: { style: "thin", color: { rgb: "000000" } },
+                        left: { style: "thin", color: { rgb: "000000" } },
+                        right: { style: "thin", color: { rgb: "000000" } },
+                      },
+                    };
+                  }
+                }
+              }
             }
           }
         }

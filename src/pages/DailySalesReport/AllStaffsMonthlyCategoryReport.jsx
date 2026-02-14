@@ -146,7 +146,7 @@ const AllStaffsMonthlyCategoryReport = () => {
 
             const wb = XLSX.utils.book_new();
 
-            // ===== STYLES =====
+            // ===================== STYLES =====================
             const titleStyle = {
                 font: { bold: true, sz: 16, color: { rgb: "FFFFFF" } },
                 alignment: { horizontal: "center", vertical: "center" },
@@ -159,16 +159,18 @@ const AllStaffsMonthlyCategoryReport = () => {
                 fill: { patternType: "solid", fgColor: { rgb: "D1F7FF" } },
             };
 
+            // STATE ROW STYLE (Yellow + White + Center)
             const stateStyle = {
-                font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } },
-                alignment: { horizontal: "left", vertical: "center" },
-                fill: { patternType: "solid", fgColor: { rgb: "203A43" } },
+                font: { bold: true, sz: 14, color: { rgb: "000000" } },
+                alignment: { horizontal: "center", vertical: "center" },
+                fill: { patternType: "solid", fgColor: { rgb: "FFC107" } }, // Yellow
             };
 
+            // HEADER STYLE (00bdb4 + white)
             const headerStyle = {
                 font: { bold: true, color: { rgb: "FFFFFF" } },
                 alignment: { horizontal: "center", vertical: "center", wrapText: true },
-                fill: { patternType: "solid", fgColor: { rgb: "28837A" } },
+                fill: { patternType: "solid", fgColor: { rgb: "00BDB4" } }, // #00bdb4
                 border: {
                     top: { style: "thin", color: { rgb: "AAAAAA" } },
                     bottom: { style: "thin", color: { rgb: "AAAAAA" } },
@@ -177,9 +179,11 @@ const AllStaffsMonthlyCategoryReport = () => {
                 },
             };
 
+            // DISTRICT COLUMN STYLE (Yellow + White)
             const districtStyle = {
-                font: { bold: true, color: { rgb: "0B4F6C" } },
+                font: { bold: true, color: { rgb: "000000" } },
                 alignment: { horizontal: "left", vertical: "center" },
+                fill: { patternType: "solid", fgColor: { rgb: "FFC107" } }, // Yellow
                 border: {
                     top: { style: "thin", color: { rgb: "AAAAAA" } },
                     bottom: { style: "thin", color: { rgb: "AAAAAA" } },
@@ -202,15 +206,11 @@ const AllStaffsMonthlyCategoryReport = () => {
                 fill: { patternType: "solid", fgColor: { rgb: "F8F9FA" } },
             };
 
-            const highlightStyle = {
-                font: { bold: true, color: { rgb: "0B4F6C" } },
-                fill: { patternType: "solid", fgColor: { rgb: "D1F7FF" } },
-            };
-
+            // TOTAL ROW GREEN STYLE (White text)
             const totalRowStyle = {
                 font: { bold: true, color: { rgb: "FFFFFF" } },
                 alignment: { horizontal: "center", vertical: "center" },
-                fill: { patternType: "solid", fgColor: { rgb: "28A745" } },
+                fill: { patternType: "solid", fgColor: { rgb: "28A745" } }, // Green
                 border: {
                     top: { style: "thin", color: { rgb: "AAAAAA" } },
                     bottom: { style: "thin", color: { rgb: "AAAAAA" } },
@@ -219,7 +219,7 @@ const AllStaffsMonthlyCategoryReport = () => {
                 },
             };
 
-            // ===================== SUMMARY SHEET (TOP) =====================
+            // ===================== SUMMARY SHEET =====================
             const summarySheetData = [];
 
             summarySheetData.push(["All Staff State Summary Report"]);
@@ -281,13 +281,28 @@ const AllStaffsMonthlyCategoryReport = () => {
 
                     if (R === 4) cell.s = headerStyle;
 
+                    // Staff & State name columns yellow + white
                     if (C === 1 && R > 4) cell.s = { ...districtStyle };
                     if (C === 2 && R > 4) cell.s = { ...districtStyle };
 
-                    if (C === 3 && R > 4 && typeof cell.v === "number" && cell.v > 0) {
-                        cell.s = { ...cell.s, ...highlightStyle };
+                    // Numeric Coloring
+                    if (typeof cell.v === "number") {
+                        if (cell.v === 0) {
+                            cell.s = {
+                                ...cell.s,
+                                font: { bold: true, color: { rgb: "FFFFFF" } },
+                                fill: { patternType: "solid", fgColor: { rgb: "FF0000" } }, // Red
+                            };
+                        } else {
+                            cell.s = {
+                                ...cell.s,
+                                font: { bold: true, color: { rgb: "FFFFFF" } },
+                                fill: { patternType: "solid", fgColor: { rgb: "28A745" } }, // Green
+                            };
+                        }
                     }
 
+                    // GRAND TOTAL Row
                     if (cell.v === "GRAND TOTAL") {
                         for (let cc = 0; cc <= summaryRange.e.c; cc++) {
                             const addr = XLSX.utils.encode_cell({ r: R, c: cc });
@@ -318,7 +333,7 @@ const AllStaffsMonthlyCategoryReport = () => {
                     wsData.push([`STATE: ${state}`]);
                     wsData.push([]);
 
-                    wsData.push(["S.No", "District", ...categories, "TOTAL"]);
+                    wsData.push(["S.No", "District", "TOTAL", ...categories]);
 
                     const districtsObj = userObj[state] || {};
                     const districtNames = Object.keys(districtsObj);
@@ -327,17 +342,17 @@ const AllStaffsMonthlyCategoryReport = () => {
                         const rowObj = districtsObj[district] || {};
                         const row = [idx + 1, district];
 
-                        categories.forEach((c) => row.push(safeNum(rowObj?.[c])));
                         row.push(safeNum(rowObj?.total));
+                        categories.forEach((c) => row.push(safeNum(rowObj?.[c])));
+
 
                         wsData.push(row);
                     });
 
                     const stateTotals = computeTotalsForDistricts(districtsObj);
 
-                    const totalRow = ["", "TOTAL"];
+                    const totalRow = ["", "TOTAL", safeNum(stateTotals.total)];
                     categories.forEach((c) => totalRow.push(safeNum(stateTotals[c])));
-                    totalRow.push(safeNum(stateTotals.total));
 
                     wsData.push(totalRow);
                     wsData.push([]);
@@ -379,10 +394,20 @@ const AllStaffsMonthlyCategoryReport = () => {
                         if (R === 0) cell.s = titleStyle;
                         if (R === 2) cell.s = monthStyle;
 
+                        // STATE row yellow + centered
                         if (typeof cell.v === "string" && cell.v.startsWith("STATE:")) {
                             cell.s = stateStyle;
+
+                            ws["!merges"].push({
+                                s: { r: R, c: 0 },
+                                e: { r: R, c: range.e.c },
+                            });
+
+                            if (!ws["!rows"]) ws["!rows"] = [];
+                            ws["!rows"][R] = { hpt: 22 };
                         }
 
+                        // HEADERS
                         if (
                             cell.v === "S.No" ||
                             cell.v === "District" ||
@@ -390,24 +415,61 @@ const AllStaffsMonthlyCategoryReport = () => {
                             cell.v === "TOTAL"
                         ) {
                             cell.s = headerStyle;
+                            continue;
                         }
 
+                        // Alternate row fill
                         if (R > 4 && R % 2 === 0) {
                             cell.s = { ...cell.s, ...altRowStyle };
                         }
 
-                        if (C === 1 && R > 4) {
+                        // District column yellow + white
+                        if (C === 1 && R > 4 && typeof cell.v === "string" && cell.v !== "District" && cell.v !== "TOTAL") {
                             cell.s = { ...districtStyle };
                         }
 
-                        if (typeof cell.v === "number" && cell.v > 0) {
-                            cell.s = { ...cell.s, ...highlightStyle };
+                        // Numeric Coloring (0 Red, >0 Green)
+                        if (typeof cell.v === "number") {
+                            if (cell.v === 0) {
+                                cell.s = {
+                                    ...cell.s,
+                                    font: { bold: true, color: { rgb: "FFFFFF" } },
+                                    fill: { patternType: "solid", fgColor: { rgb: "FF0000" } }, // Red
+                                };
+                            } else {
+                                cell.s = {
+                                    ...cell.s,
+                                    font: { bold: true, color: { rgb: "FFFFFF" } },
+                                    fill: { patternType: "solid", fgColor: { rgb: "28A745" } }, // Green
+                                };
+                            }
                         }
 
+                        // TOTAL row styling (Green + Red inside if value = 0)
                         if (cell.v === "TOTAL" && C === 1) {
                             for (let cc = 0; cc <= range.e.c; cc++) {
                                 const addr = XLSX.utils.encode_cell({ r: R, c: cc });
-                                if (ws[addr]) ws[addr].s = totalRowStyle;
+                                if (!ws[addr]) continue;
+
+                                const totalCell = ws[addr];
+
+                                // Total label cells
+                                if (cc === 0 || cc === 1) {
+                                    totalCell.s = totalRowStyle;
+                                } else {
+                                    if (typeof totalCell.v === "number") {
+                                        if (totalCell.v === 0) {
+                                            totalCell.s = {
+                                                ...totalRowStyle,
+                                                fill: { patternType: "solid", fgColor: { rgb: "FF0000" } }, // red
+                                            };
+                                        } else {
+                                            totalCell.s = totalRowStyle;
+                                        }
+                                    } else {
+                                        totalCell.s = totalRowStyle;
+                                    }
+                                }
                             }
                         }
                     }
@@ -427,6 +489,7 @@ const AllStaffsMonthlyCategoryReport = () => {
             toast.error("Excel export failed");
         }
     };
+
 
     return (
         <div style={{ padding: "20px" }}>
@@ -541,7 +604,7 @@ const AllStaffsMonthlyCategoryReport = () => {
                                     ))}
                                 </Input>
                             </Col>
-                        
+
                             <Col md="2" className="mt-4">
                                 <Button
                                     color="info"

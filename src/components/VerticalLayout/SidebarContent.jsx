@@ -760,7 +760,7 @@ const SidebarContent = (props) => {
               </li>
             )}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'IT' || role === 'COO' || role === 'CEO' || role === 'BDM' || role === 'BDO' ? (
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'COO' || role === 'CEO' || role === 'BDM' || role === 'BDO' ? (
 
               <li>
                 <Link to="/#" className="has-arrow">
@@ -780,7 +780,7 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/category/report/">{props.t("Category Report")}</Link>
                   </li>
-                  
+
                   {role !== "BDO" && role !== "BDM" && (
                     <>
                       <li>
@@ -791,6 +791,32 @@ const SidebarContent = (props) => {
                       </li>
                     </>
                   )}
+                </ul>
+              </li>
+
+            ) : null}
+
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'COO' || role === 'CEO' || role === 'BDM' ? (
+
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaUserTie size={17} style={{ marginRight: '6px' }} />
+                  <span>{props.t("BDO's BDM Sales Report")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  {role === "BDM" && (
+                    <>
+                      <li>
+                        <Link to="/bdm/sales/report/">{props.t("BDO's Sales Report")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/bdm/sales/report/view/">{props.t("BDO's Sales Report View")}</Link>
+                      </li>
+                    </>
+                  )}
+                  <li>
+                    <Link to="/bdm/sales/report/admin/view/">{props.t("BDO's Sales Report Admin View")}</Link>
+                  </li>
                 </ul>
               </li>
 

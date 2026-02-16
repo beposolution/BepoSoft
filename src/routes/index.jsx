@@ -409,6 +409,9 @@ import MonthlyDailySalesReport from "../pages/DailySalesReport/MonthlyDailySales
 import AllUsersMonthlyDailySalesReport from "../pages/DailySalesReport/AllUsersMonthlyDailySalesReport";
 import MonthlyCategoryReport from "../pages/DailySalesReport/MonthlyCategoryReport";
 import AllStaffsMonthlyCategoryReport from "../pages/DailySalesReport/AllStaffsMonthlyCategoryReport";
+import BDMSalesReport from "../pages/BDMSalesReport/BDMSalesReport";
+import BDMSalesViewReport from "../pages/BDMSalesReport/BDMSalesReportView";
+import BDMSalesReportAdminView from "../pages/BDMSalesReport/BDMSalesReportAdminView";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -658,6 +661,9 @@ const authProtectedRoutes = [
   { path: "/all/monthly/daily/report/", component: <AllUsersMonthlyDailySalesReport /> },
   { path: "/category/report/", component: <MonthlyCategoryReport /> },
   { path: "/all/category/report/", component: <AllStaffsMonthlyCategoryReport /> },
+  { path: "/bdm/sales/report/", component: <BDMSalesReport /> },
+  { path: "/bdm/sales/report/view/", component: <BDMSalesViewReport /> },
+  { path: "/bdm/sales/report/admin/view/", component: <BDMSalesReportAdminView /> },
 
   // Seller details
   { path: "/seller/creation/", component: <AddSeller /> },

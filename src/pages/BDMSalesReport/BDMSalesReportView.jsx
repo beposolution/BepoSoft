@@ -266,6 +266,182 @@ const BDMSalesViewReport = () => {
                 ]);
             });
 
+            // ================= FINAL SUMMARY CALCULATION =================
+            let totalVolume = 0;
+            let totalAverage = 0;
+            let totalCallDuration = 0;
+            let mdYes = 0;
+            let mdNo = 0;
+            let ncYes = 0;
+            let ncNo = 0;
+
+            filteredReports.forEach((item) => {
+                totalVolume += Number(item.volume || 0);
+                totalAverage += Number(item.average || 0);
+                totalCallDuration += Number(item.call_duration || 0);
+
+                if ((item.micro_dealer || "").toLowerCase() === "yes") mdYes++;
+                else mdNo++;
+
+                if ((item.new_coach || "").toLowerCase() === "yes") ncYes++;
+                else ncNo++;
+            });
+
+            // ================= ADD FINAL SUMMARY =================
+            wsData.push([]);
+            wsData.push(["FINAL SUMMARY"]);
+            wsData.push([
+                "Total Reports",
+                "Total VL",
+                "Total AVG",
+                "Total CD",
+                "MD YES",
+                "MD NO",
+                "NC YES",
+                "NC NO",
+            ]);
+            wsData.push([
+                filteredReports.length,
+                totalVolume,
+                totalAverage,
+                totalCallDuration,
+                mdYes,
+                mdNo,
+                ncYes,
+                ncNo,
+            ]);
+
+            // ================= BDO WISE SUMMARY =================
+            const bdoGrouped = {};
+
+            filteredReports.forEach((item) => {
+                const bdoName = item.bdo_name || "Unknown";
+
+                if (!bdoGrouped[bdoName]) {
+                    bdoGrouped[bdoName] = {
+                        name: bdoName,
+                        total_volume: 0,
+                        total_average: 0,
+                        total_call_duration: 0,
+                        md_yes: 0,
+                        md_no: 0,
+                        nc_yes: 0,
+                        nc_no: 0,
+                        total_reports: 0,
+                    };
+                }
+
+                bdoGrouped[bdoName].total_volume += Number(item.volume || 0);
+                bdoGrouped[bdoName].total_average += Number(item.average || 0);
+                bdoGrouped[bdoName].total_call_duration += Number(item.call_duration || 0);
+
+                if ((item.micro_dealer || "").toLowerCase() === "yes") bdoGrouped[bdoName].md_yes++;
+                else bdoGrouped[bdoName].md_no++;
+
+                if ((item.new_coach || "").toLowerCase() === "yes") bdoGrouped[bdoName].nc_yes++;
+                else bdoGrouped[bdoName].nc_no++;
+
+                bdoGrouped[bdoName].total_reports++;
+            });
+
+            const bdoSummaryList = Object.values(bdoGrouped);
+
+            wsData.push([]);
+            wsData.push(["BDO WISE SUMMARY"]);
+            wsData.push([
+                "#",
+                "BDO Name",
+                "Total VL",
+                "Total AVG",
+                "Total CD",
+                "MD YES",
+                "MD NO",
+                "NC YES",
+                "NC NO",
+                "Total Reports",
+            ]);
+
+            bdoSummaryList.forEach((bdo, index) => {
+                wsData.push([
+                    index + 1,
+                    bdo.name,
+                    bdo.total_volume,
+                    bdo.total_average,
+                    bdo.total_call_duration,
+                    bdo.md_yes,
+                    bdo.md_no,
+                    bdo.nc_yes,
+                    bdo.nc_no,
+                    bdo.total_reports,
+                ]);
+            });
+
+            // ================= STATE WISE SUMMARY =================
+            const stateGrouped = {};
+
+            filteredReports.forEach((item) => {
+                const stateName = item.state_name || "Unknown";
+
+                if (!stateGrouped[stateName]) {
+                    stateGrouped[stateName] = {
+                        name: stateName,
+                        total_volume: 0,
+                        total_average: 0,
+                        total_call_duration: 0,
+                        md_yes: 0,
+                        md_no: 0,
+                        nc_yes: 0,
+                        nc_no: 0,
+                        total_reports: 0,
+                    };
+                }
+
+                stateGrouped[stateName].total_volume += Number(item.volume || 0);
+                stateGrouped[stateName].total_average += Number(item.average || 0);
+                stateGrouped[stateName].total_call_duration += Number(item.call_duration || 0);
+
+                if ((item.micro_dealer || "").toLowerCase() === "yes") stateGrouped[stateName].md_yes++;
+                else stateGrouped[stateName].md_no++;
+
+                if ((item.new_coach || "").toLowerCase() === "yes") stateGrouped[stateName].nc_yes++;
+                else stateGrouped[stateName].nc_no++;
+
+                stateGrouped[stateName].total_reports++;
+            });
+
+            const stateSummaryList = Object.values(stateGrouped);
+
+            wsData.push([]);
+            wsData.push(["STATE WISE SUMMARY"]);
+            wsData.push([
+                "#",
+                "State Name",
+                "Total VL",
+                "Total AVG",
+                "Total CD",
+                "MD YES",
+                "MD NO",
+                "NC YES",
+                "NC NO",
+                "Total Reports",
+            ]);
+
+            stateSummaryList.forEach((st, index) => {
+                wsData.push([
+                    index + 1,
+                    st.name,
+                    st.total_volume,
+                    st.total_average,
+                    st.total_call_duration,
+                    st.md_yes,
+                    st.md_no,
+                    st.nc_yes,
+                    st.nc_no,
+                    st.total_reports,
+                ]);
+            });
+
+            // ================= CREATE SHEET =================
             const ws = XLSX.utils.aoa_to_sheet(wsData);
 
             // ================= COLUMN WIDTH =================
@@ -283,21 +459,41 @@ const BDMSalesViewReport = () => {
                 { wch: 22 },
             ];
 
-            // ================= MERGE TITLE ROW =================
-            ws["!merges"] = [
-                {
-                    s: { r: 0, c: 0 },
-                    e: { r: 0, c: 10 },
-                },
-            ];
+            // ================= COLORS =================
+            const headingColor = "00BDB4";
+            const titleColor = "1F4E79";
+            const yesColor = "28A745";
+            const noColor = "FF0000";
+            const summaryBg = "D9E1F2";
 
             const range = XLSX.utils.decode_range(ws["!ref"]);
 
-            // ================= COLORS =================
-            const headingColor = "00BDB4"; // #00bdb4
-            const titleColor = "1F4E79"; // dark blue
-            const yesColor = "28A745"; // green
-            const noColor = "FF0000"; // red
+            // ================= ROW CALCULATIONS =================
+            const reportHeaderRow = 2;
+            const reportDataStartRow = 3;
+            const reportDataEndRow = reportDataStartRow + filteredReports.length - 1;
+
+            const summaryTitleRow = reportDataEndRow + 2;
+            const summaryHeaderRow = reportDataEndRow + 3;
+            const summaryValueRow = reportDataEndRow + 4;
+
+            const bdoTitleRow = summaryValueRow + 2;
+            const bdoHeaderRow = summaryValueRow + 3;
+            const bdoDataStartRow = summaryValueRow + 4;
+            const bdoDataEndRow = bdoDataStartRow + bdoSummaryList.length - 1;
+
+            const stateTitleRow = bdoDataEndRow + 2;
+            const stateHeaderRow = bdoDataEndRow + 3;
+            const stateDataStartRow = bdoDataEndRow + 4;
+            const stateDataEndRow = stateDataStartRow + stateSummaryList.length - 1;
+
+            // ================= MERGES =================
+            ws["!merges"] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }, // main title
+                { s: { r: summaryTitleRow, c: 0 }, e: { r: summaryTitleRow, c: 7 } }, // final summary title
+                { s: { r: bdoTitleRow, c: 0 }, e: { r: bdoTitleRow, c: 9 } }, // bdo title
+                { s: { r: stateTitleRow, c: 0 }, e: { r: stateTitleRow, c: 9 } }, // state title
+            ];
 
             // ================= STYLE LOOP =================
             for (let R = range.s.r; R <= range.e.r; R++) {
@@ -309,11 +505,7 @@ const BDMSalesViewReport = () => {
                     // Default Style
                     cell.s = {
                         font: { name: "Calibri", sz: 11 },
-                        alignment: {
-                            horizontal: "center",
-                            vertical: "center",
-                            wrapText: true,
-                        },
+                        alignment: { horizontal: "center", vertical: "center", wrapText: true },
                         border: {
                             top: { style: "thin", color: { rgb: "AAAAAA" } },
                             bottom: { style: "thin", color: { rgb: "AAAAAA" } },
@@ -331,8 +523,8 @@ const BDMSalesViewReport = () => {
                         };
                     }
 
-                    // ================= HEADER ROW =================
-                    if (R === 2) {
+                    // ================= REPORT HEADER =================
+                    if (R === reportHeaderRow) {
                         cell.s = {
                             font: { bold: true, color: { rgb: "FFFFFF" } },
                             alignment: { horizontal: "center", vertical: "center" },
@@ -346,8 +538,8 @@ const BDMSalesViewReport = () => {
                         };
                     }
 
-                    // ================= MD COLUMN (YES/NO COLORS) =================
-                    if (C === 7 && R > 2) {
+                    // ================= MD COLUMN YES/NO =================
+                    if (C === 7 && R >= reportDataStartRow && R <= reportDataEndRow) {
                         if (cell.v === "YES") {
                             cell.s = {
                                 ...cell.s,
@@ -363,8 +555,8 @@ const BDMSalesViewReport = () => {
                         }
                     }
 
-                    // ================= NC COLUMN (YES/NO COLORS) =================
-                    if (C === 8 && R > 2) {
+                    // ================= NC COLUMN YES/NO =================
+                    if (C === 8 && R >= reportDataStartRow && R <= reportDataEndRow) {
                         if (cell.v === "YES") {
                             cell.s = {
                                 ...cell.s,
@@ -380,12 +572,99 @@ const BDMSalesViewReport = () => {
                         }
                     }
 
-                    // ================= NOTE COLUMN ALIGN LEFT =================
-                    if (C === 9 && R > 2) {
+                    // ================= NOTE LEFT ALIGN =================
+                    if (C === 9 && R >= reportDataStartRow && R <= reportDataEndRow) {
                         cell.s = {
                             ...cell.s,
                             alignment: { horizontal: "left", vertical: "center", wrapText: true },
                         };
+                    }
+
+                    // ================= FINAL SUMMARY TITLE =================
+                    if (R === summaryTitleRow) {
+                        cell.s = {
+                            font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: titleColor } },
+                        };
+                    }
+
+                    // ================= FINAL SUMMARY HEADER =================
+                    if (R === summaryHeaderRow) {
+                        cell.s = {
+                            font: { bold: true, color: { rgb: "FFFFFF" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: headingColor } },
+                        };
+                    }
+
+                    // ================= FINAL SUMMARY VALUES =================
+                    if (R === summaryValueRow) {
+                        cell.s = {
+                            font: { bold: true, sz: 12, color: { rgb: "000000" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: summaryBg } },
+                        };
+                    }
+
+                    // ================= BDO SUMMARY TITLE =================
+                    if (R === bdoTitleRow) {
+                        cell.s = {
+                            font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: titleColor } },
+                        };
+                    }
+
+                    // ================= BDO SUMMARY HEADER =================
+                    if (R === bdoHeaderRow) {
+                        cell.s = {
+                            font: { bold: true, color: { rgb: "FFFFFF" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: headingColor } },
+                        };
+                    }
+
+                    // ================= STATE SUMMARY TITLE =================
+                    if (R === stateTitleRow) {
+                        cell.s = {
+                            font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: titleColor } },
+                        };
+                    }
+
+                    // ================= STATE SUMMARY HEADER =================
+                    if (R === stateHeaderRow) {
+                        cell.s = {
+                            font: { bold: true, color: { rgb: "FFFFFF" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: headingColor } },
+                        };
+                    }
+
+                    // ================= BDO + STATE YES/NO COLORS =================
+                    if (
+                        (R >= bdoDataStartRow && R <= bdoDataEndRow) ||
+                        (R >= stateDataStartRow && R <= stateDataEndRow)
+                    ) {
+                        // YES columns -> MD YES (5) and NC YES (7)
+                        if (C === 5 || C === 7) {
+                            cell.s = {
+                                ...cell.s,
+                                font: { bold: true, color: { rgb: "FFFFFF" } },
+                                fill: { fgColor: { rgb: yesColor } },
+                            };
+                        }
+
+                        // NO columns -> MD NO (6) and NC NO (8)
+                        if (C === 6 || C === 8) {
+                            cell.s = {
+                                ...cell.s,
+                                font: { bold: true, color: { rgb: "FFFFFF" } },
+                                fill: { fgColor: { rgb: noColor } },
+                            };
+                        }
                     }
                 }
             }
@@ -400,6 +679,7 @@ const BDMSalesViewReport = () => {
 
             toast.success("Excel Exported Successfully");
         } catch (error) {
+            console.log(error);
             toast.error("Excel export failed");
         }
     };
@@ -436,31 +716,117 @@ const BDMSalesViewReport = () => {
                 groupedData[key].total_average += Number(item.average || 0);
                 groupedData[key].total_call_duration += Number(item.call_duration || 0);
 
-                if ((item.micro_dealer || "").toLowerCase() === "yes") {
-                    groupedData[key].md_yes += 1;
-                } else {
-                    groupedData[key].md_no += 1;
-                }
+                if ((item.micro_dealer || "").toLowerCase() === "yes") groupedData[key].md_yes += 1;
+                else groupedData[key].md_no += 1;
 
-                if ((item.new_coach || "").toLowerCase() === "yes") {
-                    groupedData[key].nc_yes += 1;
-                } else {
-                    groupedData[key].nc_no += 1;
-                }
+                if ((item.new_coach || "").toLowerCase() === "yes") groupedData[key].nc_yes += 1;
+                else groupedData[key].nc_no += 1;
 
                 groupedData[key].total_reports += 1;
             });
 
             const summaryList = Object.values(groupedData);
 
-            // ================= CREATE SHEET DATA =================
+            // ================= FINAL SUMMARY TOTAL =================
+            let totalVolume = 0;
+            let totalAverage = 0;
+            let totalCallDuration = 0;
+            let mdYes = 0;
+            let mdNo = 0;
+            let ncYes = 0;
+            let ncNo = 0;
+
+            summaryList.forEach((row) => {
+                totalVolume += Number(row.total_volume || 0);
+                totalAverage += Number(row.total_average || 0);
+                totalCallDuration += Number(row.total_call_duration || 0);
+
+                mdYes += Number(row.md_yes || 0);
+                mdNo += Number(row.md_no || 0);
+
+                ncYes += Number(row.nc_yes || 0);
+                ncNo += Number(row.nc_no || 0);
+            });
+
+            // ================= BDO WISE SUMMARY =================
+            const bdoGrouped = {};
+
+            summaryList.forEach((row) => {
+                const bdoName = row.bdo_name || "Unknown";
+
+                if (!bdoGrouped[bdoName]) {
+                    bdoGrouped[bdoName] = {
+                        name: bdoName,
+                        total_volume: 0,
+                        total_average: 0,
+                        total_call_duration: 0,
+                        md_yes: 0,
+                        md_no: 0,
+                        nc_yes: 0,
+                        nc_no: 0,
+                        total_reports: 0,
+                    };
+                }
+
+                bdoGrouped[bdoName].total_volume += Number(row.total_volume || 0);
+                bdoGrouped[bdoName].total_average += Number(row.total_average || 0);
+                bdoGrouped[bdoName].total_call_duration += Number(row.total_call_duration || 0);
+
+                bdoGrouped[bdoName].md_yes += Number(row.md_yes || 0);
+                bdoGrouped[bdoName].md_no += Number(row.md_no || 0);
+
+                bdoGrouped[bdoName].nc_yes += Number(row.nc_yes || 0);
+                bdoGrouped[bdoName].nc_no += Number(row.nc_no || 0);
+
+                bdoGrouped[bdoName].total_reports += Number(row.total_reports || 0);
+            });
+
+            const bdoSummaryList = Object.values(bdoGrouped);
+
+            // ================= STATE WISE SUMMARY =================
+            const stateGrouped = {};
+
+            summaryList.forEach((row) => {
+                const stateName = row.state_name || "Unknown";
+
+                if (!stateGrouped[stateName]) {
+                    stateGrouped[stateName] = {
+                        name: stateName,
+                        total_volume: 0,
+                        total_average: 0,
+                        total_call_duration: 0,
+                        md_yes: 0,
+                        md_no: 0,
+                        nc_yes: 0,
+                        nc_no: 0,
+                        total_reports: 0,
+                    };
+                }
+
+                stateGrouped[stateName].total_volume += Number(row.total_volume || 0);
+                stateGrouped[stateName].total_average += Number(row.total_average || 0);
+                stateGrouped[stateName].total_call_duration += Number(row.total_call_duration || 0);
+
+                stateGrouped[stateName].md_yes += Number(row.md_yes || 0);
+                stateGrouped[stateName].md_no += Number(row.md_no || 0);
+
+                stateGrouped[stateName].nc_yes += Number(row.nc_yes || 0);
+                stateGrouped[stateName].nc_no += Number(row.nc_no || 0);
+
+                stateGrouped[stateName].total_reports += Number(row.total_reports || 0);
+            });
+
+            const stateSummaryList = Object.values(stateGrouped);
+
+            // ================= EXCEL DATA =================
+            const wb = XLSX.utils.book_new();
             const wsData = [];
 
-            // Title Row
-            wsData.push(["BDM - BDO Monthly Sales Summary (State-wise)"]);
+            // ================= TITLE =================
+            wsData.push(["BDO Monthly Sales Summary (State-wise)"]);
             wsData.push([]);
 
-            // Header Row
+            // ================= HEADER =================
             wsData.push([
                 "#",
                 "BDO Name",
@@ -475,7 +841,7 @@ const BDMSalesViewReport = () => {
                 "Total Reports",
             ]);
 
-            // Rows
+            // ================= MAIN SUMMARY DATA =================
             summaryList.forEach((row, index) => {
                 wsData.push([
                     index + 1,
@@ -492,14 +858,98 @@ const BDMSalesViewReport = () => {
                 ]);
             });
 
+            // ================= FINAL SUMMARY SECTION =================
+            wsData.push([]);
+            wsData.push(["FINAL SUMMARY"]);
+            wsData.push([
+                "Total Rows",
+                "Total VL",
+                "Total AVG",
+                "Total CD",
+                "MD YES",
+                "MD NO",
+                "NC YES",
+                "NC NO",
+            ]);
+            wsData.push([
+                summaryList.length,
+                totalVolume,
+                totalAverage,
+                totalCallDuration,
+                mdYes,
+                mdNo,
+                ncYes,
+                ncNo,
+            ]);
+
+            // ================= BDO WISE SUMMARY SECTION =================
+            wsData.push([]);
+            wsData.push(["BDO WISE SUMMARY"]);
+            wsData.push([
+                "#",
+                "BDO Name",
+                "Total VL",
+                "Total AVG",
+                "Total CD",
+                "MD YES",
+                "MD NO",
+                "NC YES",
+                "NC NO",
+                "Total Reports",
+            ]);
+
+            bdoSummaryList.forEach((bdo, index) => {
+                wsData.push([
+                    index + 1,
+                    bdo.name,
+                    bdo.total_volume,
+                    bdo.total_average,
+                    bdo.total_call_duration,
+                    bdo.md_yes,
+                    bdo.md_no,
+                    bdo.nc_yes,
+                    bdo.nc_no,
+                    bdo.total_reports,
+                ]);
+            });
+
+            // ================= STATE WISE SUMMARY SECTION =================
+            wsData.push([]);
+            wsData.push(["STATE WISE SUMMARY"]);
+            wsData.push([
+                "#",
+                "State Name",
+                "Total VL",
+                "Total AVG",
+                "Total CD",
+                "MD YES",
+                "MD NO",
+                "NC YES",
+                "NC NO",
+                "Total Reports",
+            ]);
+
+            stateSummaryList.forEach((st, index) => {
+                wsData.push([
+                    index + 1,
+                    st.name,
+                    st.total_volume,
+                    st.total_average,
+                    st.total_call_duration,
+                    st.md_yes,
+                    st.md_no,
+                    st.nc_yes,
+                    st.nc_no,
+                    st.total_reports,
+                ]);
+            });
+
             const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-            // ================= MERGE TITLE =================
+            // ================= MERGES =================
+            const titleRow = 0;
             ws["!merges"] = [
-                {
-                    s: { r: 0, c: 0 },
-                    e: { r: 0, c: 10 },
-                },
+                { s: { r: titleRow, c: 0 }, e: { r: titleRow, c: 10 } },
             ];
 
             // ================= COLUMN WIDTH =================
@@ -517,14 +967,53 @@ const BDMSalesViewReport = () => {
                 { wch: 15 },
             ];
 
-            const range = XLSX.utils.decode_range(ws["!ref"]);
-
             // ================= COLORS =================
             const titleColor = "1F4E79";
             const headingColor = "00BDB4";
             const greenColor = "28A745";
             const redColor = "FF0000";
+            const summaryBg = "D9E1F2";
 
+            const range = XLSX.utils.decode_range(ws["!ref"]);
+
+            // ================= ROW CALCULATIONS =================
+            const mainHeaderRow = 2;
+            const mainDataStartRow = 3;
+            const mainDataEndRow = mainDataStartRow + summaryList.length - 1;
+
+            const finalSummaryTitleRow = mainDataEndRow + 2;
+            const finalSummaryHeaderRow = mainDataEndRow + 3;
+            const finalSummaryValueRow = mainDataEndRow + 4;
+
+            const bdoTitleRow = finalSummaryValueRow + 2;
+            const bdoHeaderRow = finalSummaryValueRow + 3;
+            const bdoDataStartRow = finalSummaryValueRow + 4;
+            const bdoDataEndRow = bdoDataStartRow + bdoSummaryList.length - 1;
+
+            const stateTitleRow = bdoDataEndRow + 2;
+            const stateHeaderRow = bdoDataEndRow + 3;
+            const stateDataStartRow = bdoDataEndRow + 4;
+            const stateDataEndRow = stateDataStartRow + stateSummaryList.length - 1;
+
+            // ================= MERGE FINAL SUMMARY TITLE =================
+            ws["!merges"].push({
+                s: { r: finalSummaryTitleRow, c: 0 },
+                e: { r: finalSummaryTitleRow, c: 7 },
+            });
+
+            // ================= MERGE BDO TITLE =================
+            ws["!merges"].push({
+                s: { r: bdoTitleRow, c: 0 },
+                e: { r: bdoTitleRow, c: 9 },
+            });
+
+            // ================= MERGE STATE TITLE =================
+            ws["!merges"].push({
+                s: { r: stateTitleRow, c: 0 },
+                e: { r: stateTitleRow, c: 9 },
+            });
+
+            // ================= STYLE LOOP =================
             for (let R = range.s.r; R <= range.e.r; R++) {
                 for (let C = range.s.c; C <= range.e.c; C++) {
                     const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
@@ -534,11 +1023,7 @@ const BDMSalesViewReport = () => {
                     // Default Style
                     cell.s = {
                         font: { name: "Calibri", sz: 11 },
-                        alignment: {
-                            horizontal: "center",
-                            vertical: "center",
-                            wrapText: true,
-                        },
+                        alignment: { horizontal: "center", vertical: "center", wrapText: true },
                         border: {
                             top: { style: "thin", color: { rgb: "AAAAAA" } },
                             bottom: { style: "thin", color: { rgb: "AAAAAA" } },
@@ -547,7 +1032,7 @@ const BDMSalesViewReport = () => {
                         },
                     };
 
-                    // Title row
+                    // Title Style
                     if (R === 0) {
                         cell.s = {
                             font: { bold: true, sz: 16, color: { rgb: "FFFFFF" } },
@@ -556,8 +1041,8 @@ const BDMSalesViewReport = () => {
                         };
                     }
 
-                    // Header row
-                    if (R === 2) {
+                    // Main Header Style
+                    if (R === mainHeaderRow) {
                         cell.s = {
                             font: { bold: true, color: { rgb: "FFFFFF" } },
                             alignment: { horizontal: "center", vertical: "center" },
@@ -571,8 +1056,8 @@ const BDMSalesViewReport = () => {
                         };
                     }
 
-                    // YES columns (MD YES, NC YES)
-                    if ((C === 6 || C === 8) && R > 2) {
+                    // MAIN TABLE YES GREEN (MD YES, NC YES)
+                    if ((C === 6 || C === 8) && R > mainHeaderRow && R <= mainDataEndRow) {
                         cell.s = {
                             ...cell.s,
                             font: { bold: true, color: { rgb: "FFFFFF" } },
@@ -580,31 +1065,117 @@ const BDMSalesViewReport = () => {
                         };
                     }
 
-                    // NO columns (MD NO, NC NO)
-                    if ((C === 7 || C === 9) && R > 2) {
+                    // MAIN TABLE NO RED (MD NO, NC NO)
+                    if ((C === 7 || C === 9) && R > mainHeaderRow && R <= mainDataEndRow) {
                         cell.s = {
                             ...cell.s,
                             font: { bold: true, color: { rgb: "FFFFFF" } },
                             fill: { fgColor: { rgb: redColor } },
                         };
                     }
+
+                    // FINAL SUMMARY TITLE
+                    if (R === finalSummaryTitleRow) {
+                        cell.s = {
+                            font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: titleColor } },
+                        };
+                    }
+
+                    // FINAL SUMMARY HEADER
+                    if (R === finalSummaryHeaderRow) {
+                        cell.s = {
+                            font: { bold: true, color: { rgb: "FFFFFF" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: headingColor } },
+                        };
+                    }
+
+                    // FINAL SUMMARY VALUE
+                    if (R === finalSummaryValueRow) {
+                        cell.s = {
+                            font: { bold: true, sz: 12, color: { rgb: "000000" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: summaryBg } },
+                        };
+                    }
+
+                    // BDO SUMMARY TITLE
+                    if (R === bdoTitleRow) {
+                        cell.s = {
+                            font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: titleColor } },
+                        };
+                    }
+
+                    // BDO SUMMARY HEADER
+                    if (R === bdoHeaderRow) {
+                        cell.s = {
+                            font: { bold: true, color: { rgb: "FFFFFF" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: headingColor } },
+                        };
+                    }
+
+                    // STATE SUMMARY TITLE
+                    if (R === stateTitleRow) {
+                        cell.s = {
+                            font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: titleColor } },
+                        };
+                    }
+
+                    // STATE SUMMARY HEADER
+                    if (R === stateHeaderRow) {
+                        cell.s = {
+                            font: { bold: true, color: { rgb: "FFFFFF" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            fill: { fgColor: { rgb: headingColor } },
+                        };
+                    }
+
+                    // BDO + STATE TABLE YES/NO coloring
+                    if (
+                        (R >= bdoDataStartRow && R <= bdoDataEndRow) ||
+                        (R >= stateDataStartRow && R <= stateDataEndRow)
+                    ) {
+                        // YES columns (MD YES & NC YES) -> index 5 & 7
+                        if (C === 5 || C === 7) {
+                            cell.s = {
+                                ...cell.s,
+                                font: { bold: true, color: { rgb: "FFFFFF" } },
+                                fill: { fgColor: { rgb: greenColor } },
+                            };
+                        }
+
+                        // NO columns (MD NO & NC NO) -> index 6 & 8
+                        if (C === 6 || C === 8) {
+                            cell.s = {
+                                ...cell.s,
+                                font: { bold: true, color: { rgb: "FFFFFF" } },
+                                fill: { fgColor: { rgb: redColor } },
+                            };
+                        }
+                    }
                 }
             }
 
-            const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Summary");
 
             XLSX.writeFile(
                 wb,
-                `BDM_BDO_StateWise_Summary_${new Date().toISOString().slice(0, 10)}.xlsx`
+                `BDO_StateWise_Summary_${new Date().toISOString().slice(0, 10)}.xlsx`
             );
 
             toast.success("Excel Summary Exported Successfully");
         } catch (error) {
+            console.log(error);
             toast.error("Excel export failed");
         }
     };
-
 
     return (
         <React.Fragment>

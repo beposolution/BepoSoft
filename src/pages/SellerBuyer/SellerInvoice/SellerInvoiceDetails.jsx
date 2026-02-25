@@ -4,6 +4,7 @@ import { useParams, Link } from "react-router-dom";
 import { Row, Col, Card, CardBody, Table, Button } from "reactstrap";
 import Breadcrumbs from "../../../components/Common/Breadcrumb";
 import { toast } from "react-toastify";
+import Select from "react-select";
 
 const SellerInvoiceDetails = () => {
     const { invoiceId } = useParams();
@@ -15,6 +16,19 @@ const SellerInvoiceDetails = () => {
     const [sellers, setSellers] = useState([]);
     const [selectedSellerId, setSelectedSellerId] = useState("");
     const [editableItems, setEditableItems] = useState([]);
+    const [products, setProducts] = useState([]);
+    const [newItem, setNewItem] = useState({
+        product_id: "",
+        quantity: "",
+        price: "",
+        discount: "",
+        tax: "",
+    });
+
+    const productOptions = products.map((p) => ({
+        value: p.id,
+        label: p.name,
+    }));
 
     document.title = "Seller Invoice Details | Beposoft";
 
@@ -22,6 +36,7 @@ const SellerInvoiceDetails = () => {
         fetchInvoiceDetails();
         fetchCompanies();
         fetchSellers();
+        fetchProducts();
     }, [invoiceId]);
 
     const fetchInvoiceDetails = async () => {
@@ -88,6 +103,57 @@ const SellerInvoiceDetails = () => {
         setEditableItems(updatedItems);
     };
 
+    const fetchProducts = async () => {
+        try {
+            const baseUrl = import.meta.env.VITE_APP_KEY;
+
+            const res = await axios.get(`${baseUrl}products/`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            setProducts(res.data.data || []);
+
+        } catch (err) {
+            console.log(err);
+        }
+    };
+
+    const addNewItem = async () => {
+        try {
+            const baseUrl = import.meta.env.VITE_APP_KEY;
+
+            await axios.post(
+                `${baseUrl}product/seller/invoice/item/add/`,
+                {
+                    invoice_id: invoiceId,
+                    product_id: newItem.product_id,
+                    quantity: parseInt(newItem.quantity || 1),
+                    price: parseFloat(newItem.price || 0),
+                    discount: parseFloat(newItem.discount || 0),
+                    tax: parseFloat(newItem.tax || 0),
+                },
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+
+            toast.success("Product added successfully");
+
+            setNewItem({
+                product_id: "",
+                quantity: "",
+                price: "",
+                discount: "",
+                tax: "",
+            });
+
+            fetchInvoiceDetails();
+
+        } catch (error) {
+            toast.error("Failed to add product");
+        }
+    };
+
     // Update Company Only
     const updateInvoiceCompany = async () => {
         try {
@@ -136,6 +202,25 @@ const SellerInvoiceDetails = () => {
 
         } catch (error) {
             toast.error("Failed to update seller");
+        }
+    };
+
+    const removeItem = async (itemId) => {
+        try {
+            const baseUrl = import.meta.env.VITE_APP_KEY;
+
+            await axios.delete(
+                `${baseUrl}product/seller/invoice/item/delete/${itemId}/`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+
+            toast.success("Item removed successfully");
+            fetchInvoiceDetails();
+
+        } catch (error) {
+            toast.error("Failed to remove item");
         }
     };
 
@@ -273,6 +358,81 @@ const SellerInvoiceDetails = () => {
                                         </Col>
                                     </Row>
 
+                                    <h5 className="mt-4">Add New Product</h5>
+
+                                    <Row className="mb-3">
+                                        <Col md={3}>
+                                            <Select
+                                                options={productOptions}
+                                                value={productOptions.find(
+                                                    (opt) => opt.value === newItem.product_id
+                                                )}
+                                                onChange={(selected) =>
+                                                    setNewItem({
+                                                        ...newItem,
+                                                        product_id: selected ? selected.value : "",
+                                                    })
+                                                }
+                                                placeholder="Search Product..."
+                                                isClearable
+                                            />
+                                        </Col>
+
+                                        <Col md={2}>
+                                            <input
+                                                type="number"
+                                                placeholder="Qty"
+                                                className="form-control"
+                                                value={newItem.quantity}
+                                                onChange={(e) =>
+                                                    setNewItem({ ...newItem, quantity: e.target.value })
+                                                }
+                                            />
+                                        </Col>
+
+                                        <Col md={2}>
+                                            <input
+                                                type="number"
+                                                placeholder="Price"
+                                                className="form-control"
+                                                value={newItem.price}
+                                                onChange={(e) =>
+                                                    setNewItem({ ...newItem, price: e.target.value })
+                                                }
+                                            />
+                                        </Col>
+
+                                        <Col md={2}>
+                                            <input
+                                                type="number"
+                                                placeholder="Discount"
+                                                className="form-control"
+                                                value={newItem.discount}
+                                                onChange={(e) =>
+                                                    setNewItem({ ...newItem, discount: e.target.value })
+                                                }
+                                            />
+                                        </Col>
+
+                                        <Col md={2}>
+                                            <input
+                                                type="number"
+                                                placeholder="Tax"
+                                                className="form-control"
+                                                value={newItem.tax}
+                                                onChange={(e) =>
+                                                    setNewItem({ ...newItem, tax: e.target.value })
+                                                }
+                                            />
+                                        </Col>
+
+                                        <Col md={1}>
+                                            <Button color="success" onClick={addNewItem}>
+                                                Add
+                                            </Button>
+                                        </Col>
+                                    </Row>
+
                                     {/* Items Table */}
                                     <h5>Invoice Items</h5>
                                     <div className="table-responsive">
@@ -287,6 +447,7 @@ const SellerInvoiceDetails = () => {
                                                     <th>Discount</th>
                                                     <th>Tax</th>
                                                     <th>Total</th>
+                                                    <th>Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -363,6 +524,15 @@ const SellerInvoiceDetails = () => {
                                                             </td>
 
                                                             <td>₹ {calculatedTotal.toFixed(2)}</td>
+                                                            <td>
+                                                                <Button
+                                                                    color="danger"
+                                                                    size="sm"
+                                                                    onClick={() => removeItem(item.id)}
+                                                                >
+                                                                    Remove
+                                                                </Button>
+                                                            </td>
                                                         </tr>
                                                     );
                                                 })}

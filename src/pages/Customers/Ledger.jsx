@@ -85,8 +85,11 @@ const BasicTable = () => {
 
 
                 // Set the fetched data into the state
-                setOrders(ledgerResponse.data.data);
-                setFilteredOrders(ledgerResponse.data.data.ledger || []);
+                const ledgerData = ledgerResponse.data.data.ledger || [];
+
+                setOrders(ledgerData);
+                setFilteredOrders(ledgerData);
+
                 setAdvanceReceipts(ledgerResponse.data.data.advance_receipts);
                 setPaymentReceipts(ledgerResponse.data.data.payment_receipts || []);
                 setGrvList(ledgerResponse.data.data.grv || []);
@@ -106,38 +109,29 @@ const BasicTable = () => {
 
 
     const handleFilter = () => {
-        const filtered = orders.filter(order => {
-            const orderDate = new Date(order.order_date);
-            const isWithinDateRange = (!startDate || orderDate >= new Date(startDate)) && (!endDate || orderDate <= new Date(endDate));
-            const matchesCompany = !companyFilter || order.company === companyFilter;
-            return isWithinDateRange && matchesCompany;
-        });
-        setFilteredOrders(filtered);
+        setFilteredOrders(orders);
     };
 
     const ledgerRows = React.useMemo(() => {
         let rows = [];
 
-        // Orders (Goods Sale)
+        // ===== ORDERS =====
         filteredOrders.forEach((order, orderIndex) => {
             if (order.status !== "Invoice Rejected" && order.status !== "Invoice Created") {
                 rows.push({
                     key: `O-${order.id}`,
-                    index: orderIndex + 1,
                     date: order.order_date,
                     invoice: `${order.invoice}/${order.company}`,
                     particular: "Goods Sale",
                     particularColor: "red",
-                    debit: order.total_amount,
+                    debit: Number(order.total_amount || 0),
                     credit: null,
                 });
             }
 
-            // Order-wise payments
             (order.recived_payment || []).forEach((receipt, idx) => {
                 rows.push({
                     key: `OP-${receipt.id}`,
-                    index: `${orderIndex + 1}.${idx + 1}`,
                     date: receipt.received_at,
                     invoice: receipt.bank,
                     particular: "Payment received",
@@ -148,24 +142,23 @@ const BasicTable = () => {
             });
         });
 
-        ledgerSentTransfers.forEach((t, idx) => {
+        // ===== TRANSFERS SENT =====
+        ledgerSentTransfers.forEach((t) => {
             rows.push({
                 key: `AST-${t.id}`,
-                index: `AST${idx + 1}`,
                 date: t.date,
                 invoice: "-",
                 particular: `Advance Transfer Sent to ${t.send_to_name}`,
-                particularColor: "#0d6efd", // blue
+                particularColor: "#0d6efd",
                 debit: Number(t.amount || 0),
                 credit: null,
             });
         });
 
-        // Advance receipts
-        advanceReceipts.forEach((advance, idx) => {
+        // ===== ADVANCE RECEIPTS =====
+        advanceReceipts.forEach((advance) => {
             rows.push({
                 key: `A-${advance.id}`,
-                index: `A${idx + 1}`,
                 date: advance.received_at,
                 invoice: bankIdToName[advance.bank] || advance.bank,
                 particular: "Advance Receipt",
@@ -175,11 +168,10 @@ const BasicTable = () => {
             });
         });
 
-        // Payment receipts
-        paymentReceipts.forEach((receipt, idx) => {
+        // ===== PAYMENT RECEIPTS =====
+        paymentReceipts.forEach((receipt) => {
             rows.push({
                 key: `P-${receipt.id}`,
-                index: `P${idx + 1}`,
                 date: receipt.received_at,
                 invoice: receipt.bank,
                 particular: "Payment Receipt",
@@ -189,38 +181,36 @@ const BasicTable = () => {
             });
         });
 
-        // Refund Receipts (DEBIT)
-        refundReceipts.forEach((refund, idx) => {
+        // ===== REFUNDS =====
+        refundReceipts.forEach((refund) => {
             rows.push({
                 key: `R-${refund.id}`,
-                index: `R${idx + 1}`,
                 date: refund.date,
                 invoice: refund.invoice_no,
                 particular: `Refund Issued (${refund.refund_no})`,
-                particularColor: "#dc3545", // red
+                particularColor: "#dc3545",
                 debit: Number(refund.amount || 0),
                 credit: null,
             });
         });
 
-        advanceTransfers.forEach((t, idx) => {
+        // ===== ADVANCE TRANSFERS RECEIVED =====
+        advanceTransfers.forEach((t) => {
             rows.push({
                 key: `AT-${t.id}`,
-                index: `AT${idx + 1}`,
                 date: t.date,
                 invoice: "-",
                 particular: `Advance Transfer Received from ${t.send_from_name}`,
-                particularColor: "#198754", // green
+                particularColor: "#198754",
                 debit: null,
                 credit: Number(t.amount || 0),
             });
         });
 
-        // GRV entries
+        // ===== GRV =====
         grvList
             .filter(g => g.status?.toLowerCase() === "approved")
-            .forEach((g, idx) => {
-
+            .forEach((g) => {
                 const qty = Number(g.quantity || 0);
                 const price = Number(g.price || 0);
 
@@ -228,11 +218,9 @@ const BasicTable = () => {
                 let label = "GRV";
                 let color = "#fd7e14";
 
-                if (g.remark === "return") {
-                    label = "Sales Return";
-                } else if (g.remark === "refund") {
-                    label = "Refund Issued";
-                } else if (g.remark === "cod_return") {
+                if (g.remark === "return") label = "Sales Return";
+                else if (g.remark === "refund") label = "Refund Issued";
+                else if (g.remark === "cod_return") {
                     amount = Number(g.cod_amount || amount);
                     label = "COD Return";
                     color = "#dc3545";
@@ -240,7 +228,6 @@ const BasicTable = () => {
 
                 rows.push({
                     key: `G-${g.id}`,
-                    index: `G${idx + 1}`,
                     date: g.date,
                     invoice: g.invoice,
                     particular: `${label} (${g.product})`,
@@ -250,10 +237,26 @@ const BasicTable = () => {
                 });
             });
 
-        // SORT BY DATE (ascending)
-        return rows.sort(
-            (a, b) => new Date(a.date) - new Date(b.date)
-        );
+        // ===========================
+        // 🔥 APPLY FILTER HERE
+        // ===========================
+        rows = rows.filter(row => {
+            const rowDate = new Date(row.date?.split("T")[0]);
+
+            const isWithinDateRange =
+                (!startDate || rowDate >= new Date(startDate)) &&
+                (!endDate || rowDate <= new Date(endDate));
+
+            const matchesCompany =
+                !companyFilter ||
+                (row.invoice && row.invoice.toString().includes(companyFilter));
+
+            return isWithinDateRange && matchesCompany;
+        });
+
+        // SORT
+        return rows.sort((a, b) => new Date(a.date) - new Date(b.date));
+
     }, [
         filteredOrders,
         advanceReceipts,
@@ -262,7 +265,10 @@ const BasicTable = () => {
         grvList,
         advanceTransfers,
         ledgerSentTransfers,
-        bankIdToName
+        bankIdToName,
+        startDate,
+        endDate,
+        companyFilter
     ]);
 
     const blackBorder = {

@@ -895,6 +895,17 @@ const SidebarContent = (props) => {
                     </li>
                   </ul>
                 </li>
+                <li>
+                  <Link to="/#" className="has-arrow">
+                    <FaEarthAmericas size={20} style={{ marginRight: '8px' }} />
+                    <span>{props.t("Currency")}</span>
+                  </Link>
+                  <ul className="sub-menu" aria-expanded="false">
+                    <li>
+                      <Link to="/currency/view/">{props.t("Currency List")}</Link>
+                    </li>
+                  </ul>
+                </li>
               </>
             ) : null}
 

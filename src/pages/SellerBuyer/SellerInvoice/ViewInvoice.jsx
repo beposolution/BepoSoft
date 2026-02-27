@@ -168,7 +168,7 @@ const ViewInvoice = () => {
                                                                     </Link>
                                                                 </td>
                                                                 <td>{order.seller_name}</td>
-                                                                <td>{order.total_amount}</td>
+                                                                <td>{order?.currency_name} {order.total_amount}</td>
                                                                 <td>{order.invoice_date}</td>
                                                             </tr>
                                                         );

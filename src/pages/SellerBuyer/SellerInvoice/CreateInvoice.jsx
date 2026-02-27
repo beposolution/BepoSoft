@@ -17,6 +17,10 @@ const CreateInvoice = () => {
     const [companies, setCompanies] = useState([]);
     const [products, setProducts] = useState([]);
 
+    const [currencyList, setCurrencyList] = useState([]);
+    const [selectedCurrencyId, setSelectedCurrencyId] = useState("");
+    const [currencyRate, setCurrencyRate] = useState("");
+
     const [cartItems, setCartItems] = useState([]);
 
     const [sellerId, setSellerId] = useState("");
@@ -37,6 +41,7 @@ const CreateInvoice = () => {
         fetchCompanies();
         fetchProducts();
         fetchCartItems();
+        fetchCurrency();
 
         const today = new Date().toISOString().split("T")[0];
         setInvoiceDate(today);
@@ -50,6 +55,17 @@ const CreateInvoice = () => {
             setSellers(response.data.data || []);
         } catch (error) {
             console.error("Seller fetch error:", error);
+        }
+    };
+
+    const fetchCurrency = async () => {
+        try {
+            const response = await axios.get(`${baseUrl}currency/add/`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setCurrencyList(response.data.data || []);
+        } catch (error) {
+            console.error("Currency fetch error:", error);
         }
     };
 
@@ -91,6 +107,12 @@ const CreateInvoice = () => {
         try {
             if (!selectedProductId) {
                 toast.error("Please select product");
+                return;
+            }
+
+            const exists = cartItems.find(i => i.product_id === selectedProductId);
+            if (exists) {
+                toast.error("Product already in cart");
                 return;
             }
 
@@ -164,6 +186,8 @@ const CreateInvoice = () => {
                 company: companyId,
                 invoice_date: invoiceDate,
                 note: note,
+                currency: selectedCurrencyId,
+                currency_rate: currencyRate,
             };
 
             const response = await axios.post(
@@ -219,7 +243,7 @@ const CreateInvoice = () => {
 
                                     {/* Invoice Form */}
                                     <Row className="mt-4">
-                                        <Col md={6}>
+                                        <Col md={4}>
                                             <FormGroup>
                                                 <Label>Select Seller</Label>
                                                 <Select
@@ -242,7 +266,7 @@ const CreateInvoice = () => {
                                             </FormGroup>
                                         </Col>
 
-                                        <Col md={6}>
+                                        <Col md={4}>
                                             <FormGroup>
                                                 <Label>Select Company</Label>
                                                 <Select
@@ -264,10 +288,8 @@ const CreateInvoice = () => {
                                                 />
                                             </FormGroup>
                                         </Col>
-                                    </Row>
 
-                                    <Row>
-                                        <Col md={6}>
+                                        <Col md={4}>
                                             <FormGroup>
                                                 <Label>Invoice Date</Label>
                                                 <Input
@@ -277,8 +299,49 @@ const CreateInvoice = () => {
                                                 />
                                             </FormGroup>
                                         </Col>
+                                    </Row>
 
-                                        <Col md={6}>
+                                    <Row>
+                                        <Col md={4}>
+                                            <FormGroup>
+                                                <Label>Select Currency</Label>
+                                                <Select
+                                                    options={currencyList.map((c) => ({
+                                                        value: c.id,
+                                                        label: `${c.currency} (${c.country_name})`,
+                                                    }))}
+                                                    value={
+                                                        selectedCurrencyId
+                                                            ? {
+                                                                value: selectedCurrencyId,
+                                                                label: currencyList.find((c) => c.id == selectedCurrencyId)?.currency,
+                                                            }
+                                                            : null
+                                                    }
+                                                    onChange={(selected) => {
+                                                        setSelectedCurrencyId(selected.value);
+
+                                                        // OPTIONAL: auto set rate if API gives
+                                                        setCurrencyRate(1);
+                                                    }}
+                                                    placeholder="Select Currency..."
+                                                    isSearchable
+                                                />
+                                            </FormGroup>
+                                        </Col>
+
+                                        <Col md={4}>
+                                            <FormGroup>
+                                                <Label>Currency Rate</Label>
+                                                <Input
+                                                    type="number"
+                                                    value={currencyRate}
+                                                    onChange={(e) => setCurrencyRate(e.target.value)}
+                                                />
+                                            </FormGroup>
+                                        </Col>
+
+                                        <Col md={4}>
                                             <FormGroup>
                                                 <Label>Note</Label>
                                                 <Input
@@ -414,8 +477,8 @@ const CreateInvoice = () => {
                                         </Table>
                                     </div>
 
-                                    <div className="text-end mt-3">
-                                        <h5>Total Cart Amount: ₹ {getCartTotal()}</h5>
+                                    <div style={{ fontSize: "18px", fontWeight: "600" }}>
+                                        Subtotal: ₹ {getCartTotal()}
                                     </div>
 
                                     <div className="text-end mt-4">

@@ -412,6 +412,7 @@ import AllStaffsMonthlyCategoryReport from "../pages/DailySalesReport/AllStaffsM
 import BDMSalesReport from "../pages/BDMSalesReport/BDMSalesReport";
 import BDMSalesViewReport from "../pages/BDMSalesReport/BDMSalesReportView";
 import BDMSalesReportAdminView from "../pages/BDMSalesReport/BDMSalesReportAdminView";
+import Currency from "../pages/currency/Currency";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -579,6 +580,9 @@ const authProtectedRoutes = [
 
   // districts
   { path: "/district/view/", component: <District /> },
+
+  // currency
+  { path: "/currency/view/", component: <Currency /> },
 
 
   //   //Ecommerce

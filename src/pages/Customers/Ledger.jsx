@@ -271,6 +271,22 @@ const BasicTable = () => {
         companyFilter
     ]);
 
+    const { totalDebit, totalCredit, closingBalance, closingBalanceDebit, closingBalanceCredit } =
+        React.useMemo(() => {
+            const d = ledgerRows.reduce((sum, r) => sum + (Number(r.debit) || 0), 0);
+            const c = ledgerRows.reduce((sum, r) => sum + (Number(r.credit) || 0), 0);
+
+            const cb = d - c;
+
+            return {
+                totalDebit: d,
+                totalCredit: c,
+                closingBalance: cb,
+                closingBalanceDebit: cb > 0 ? cb : 0,
+                closingBalanceCredit: cb < 0 ? Math.abs(cb) : 0,
+            };
+        }, [ledgerRows]);
+
     const blackBorder = {
         top: { style: "thin", color: { rgb: "FF000000" } },
         bottom: { style: "thin", color: { rgb: "FF000000" } },
@@ -425,14 +441,16 @@ const BasicTable = () => {
     const convertToPDF = () => {
         const pdf = new jsPDF("p", "mm", "a4");
 
-        // Company + customer header (same as you had, with safe fallbacks)
         const companyName =
             (filteredOrders[0]?.company || name || "Company").toUpperCase();
 
-        const customerName = filteredOrders[0]?.customer_name || "Customer";
+        const customerName =
+            filteredOrders[0]?.customer_name || "Customer";
 
         const selectedCompany = companys.find(
-            (c) => c.name?.toUpperCase() === filteredOrders[0]?.company?.toUpperCase()
+            (c) =>
+                c.name?.toUpperCase() ===
+                filteredOrders[0]?.company?.toUpperCase()
         );
 
         const companyAddress = selectedCompany
@@ -442,155 +460,50 @@ const BasicTable = () => {
         const pdfWidth = pdf.internal.pageSize.getWidth();
 
         const drawHeader = () => {
-
-            // === COMPANY NAME ===
             pdf.setFont("helvetica", "bold");
             pdf.setFontSize(16);
             const companyTextWidth = pdf.getTextDimensions(companyName).w;
             pdf.text(companyName, (pdfWidth - companyTextWidth) / 2, 20);
 
-            // === COMPANY ADDRESS ===
             pdf.setFont("helvetica", "normal");
             pdf.setFontSize(12);
             const addressTextWidth = pdf.getTextDimensions(companyAddress).w;
             pdf.text(companyAddress, (pdfWidth - addressTextWidth) / 2, 27);
 
-            // === CUSTOMER NAME ===
             pdf.setFont("helvetica", "bold");
             pdf.setFontSize(13);
             const customerLabel = `Customer Name: ${customerName}`;
             const customerTextWidth = pdf.getTextDimensions(customerLabel).w;
             pdf.text(customerLabel, (pdfWidth - customerTextWidth) / 2, 34);
 
-            // divider
             pdf.setLineWidth(0.5);
             pdf.line(10, 38, pdfWidth - 10, 38);
         };
 
         drawHeader();
 
-        // Build flat rows (keep “PARTICULAR” colors same as UI)
-        // Bootstrap-ish RGBs: red(220,53,69), green(40,167,69), blue(0,123,255)
-        const colorRed = [220, 53, 69];
-        const colorGreen = [40, 167, 69];
-        const colorBlue = [0, 123, 255];
+        // 🔥 Build rows ONLY from ledgerRows (filtered source of truth)
+        const rows = ledgerRows.map((row, index) => ({
+            index: index + 1,
+            date: row.date,
+            invoice: row.invoice,
+            particular: row.particular,
+            debit: row.debit !== null ? row.debit.toFixed(2) : "-",
+            credit: row.credit !== null ? row.credit.toFixed(2) : "-",
+            _particularColor:
+                row.particularColor === "red" ? [220, 53, 69] :
+                    row.particularColor === "green" ? [40, 167, 69] :
+                        row.particularColor === "blue" ? [0, 123, 255] :
+                            row.particularColor === "#6f42c1" ? [111, 66, 193] :
+                                row.particularColor === "#fd7e14" ? [253, 126, 20] :
+                                    row.particularColor === "#dc3545" ? [220, 53, 69] :
+                                        row.particularColor === "#0d6efd" ? [13, 110, 253] :
+                                            row.particularColor === "#198754" ? [25, 135, 84] :
+                                                [0, 0, 0],
+            _bold: false,
+        }));
 
-        const rows = [];
-
-        filteredOrders.forEach((order, orderIndex) => {
-            const showInvoice =
-                order.status !== "Invoice Rejected" && order.status !== "Invoice Created";
-
-            if (showInvoice) {
-                rows.push({
-                    index: `${orderIndex + 1}`,
-                    date: order.order_date,
-                    invoice: `${order.invoice}/${order.company}`,
-                    particular: "Goods Sale",
-                    debit: Number(order.total_amount || 0).toFixed(2),
-                    credit: "-",
-                    _particularColor: colorRed,
-                    _bold: false,
-                });
-            }
-
-            (order.recived_payment || []).forEach((receipt, idx) => {
-                rows.push({
-                    index: `${orderIndex + 1}.${idx + 1}`,
-                    date: receipt.received_at,
-                    invoice: receipt.bank, // (already mapping bank name in table view; optional to map here too)
-                    particular: "Payment received",
-                    debit: "-",
-                    credit: Number(receipt.amount || 0).toFixed(2),
-                    _particularColor: colorGreen,
-                    _bold: false,
-                });
-            });
-        });
-
-        (advanceReceipts || []).forEach((advance, idx) => {
-            rows.push({
-                index: `A${idx + 1}`,
-                date: advance.received_at,
-                invoice: bankIdToName[advance.bank] || advance.bank,
-                particular: "Advance Receipt",
-                debit: "-",
-                credit: Number(advance.amount || 0).toFixed(2),
-                _particularColor: colorBlue,
-                _bold: false,
-            });
-        });
-
-        (paymentReceipts || []).forEach((receipt, idx) => {
-            rows.push({
-                index: `P${idx + 1}`,
-                date: receipt.received_at,
-                invoice: receipt.bank,
-                particular: "Payment Receipt",
-                debit: "-",
-                credit: Number(receipt.amount || 0).toFixed(2),
-                _particularColor: [111, 66, 193], // purple
-                _bold: false,
-            });
-        });
-
-        (advanceTransfers || []).forEach((t) => {
-            rows.push({
-                date: t.date,
-                invoice: "-",
-                particular: `Advance Transfer Received from ${t.send_from_name}`,
-                debit: "-",
-                credit: Number(t.amount || 0).toFixed(2),
-                _particularColor: [25, 135, 84], // green
-                _bold: false,
-            });
-        });
-
-        (grvList || []).forEach((g, idx) => {
-            const qty = Number(g.quantity || 0);
-            const price = Number(g.price || 0);
-
-            const amount =
-                g.remark === "cod_return"
-                    ? Number(g.cod_amount || 0)
-                    : (qty * price);
-
-
-            rows.push({
-                // index: `G${idx + 1}`,
-                date: g.date,
-                invoice: g.invoice,
-                particular:
-                    g.remark === "cod_return"
-                        ? "COD Return"
-                        : g.remark === "refund"
-                            ? "Refund Issued"
-                            : "Sales Return",
-                debit: "-",
-                credit: Number(amount || 0).toFixed(2),
-                _particularColor:
-                    g.remark === "cod_return" ? [220, 53, 69] : [253, 126, 20],
-                _bold: false,
-            });
-        });
-
-        (refundReceipts || []).forEach((refund, idx) => {
-            rows.push({
-                index: `R${idx + 1}`,
-                date: refund.date,
-                invoice: refund.invoice_no,
-                particular: `Refund Issued (${refund.refund_no})`,
-                debit: Number(refund.amount || 0).toFixed(2),
-                credit: "-",
-                _particularColor: [220, 53, 69], // red
-                _bold: false,
-            });
-        });
-
-        //date-wise sort
-        rows.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-        // Append Grand Total & Closing Balance rows (bold)
+        // Add Grand Total & Closing Balance
         rows.push(
             {
                 index: "",
@@ -616,8 +529,8 @@ const BasicTable = () => {
 
         autoTable(pdf, {
             head: [["#", "DATE", "INVOICE", "PARTICULAR", "DEBIT", "CREDIT"]],
-            body: rows.map((r, i) => [
-                i + 1,
+            body: rows.map((r) => [
+                r.index,
                 r.date,
                 r.invoice,
                 r.particular,
@@ -646,13 +559,12 @@ const BasicTable = () => {
                 0: { cellWidth: 14, halign: "center" },
                 1: { cellWidth: 28 },
                 2: { cellWidth: 60 },
-                3: { cellWidth: 38, fontStyle: "bold" },
+                3: { cellWidth: 38 },
                 4: { cellWidth: 25, halign: "right" },
                 5: { cellWidth: 25, halign: "right" },
             },
             margin: { top: 10, right: 10, bottom: 14, left: 10 },
 
-            // Header only on first page
             didDrawPage: (data) => {
                 if (data.pageNumber === 1) {
                     drawHeader();
@@ -662,9 +574,11 @@ const BasicTable = () => {
             didParseCell: (data) => {
                 if (data.section === "body") {
                     const raw = rows[data.row.index];
+
                     if (raw?._bold) {
                         data.cell.styles.fontStyle = "bold";
                     }
+
                     if (data.column.index === 3 && raw?._particularColor) {
                         data.cell.styles.textColor = raw._particularColor;
                     }
@@ -675,70 +589,70 @@ const BasicTable = () => {
         pdf.save(`${customerName}_Ledger.pdf`);
     };
 
-    const approvedGrvList = grvList.filter(
-        g => g.status?.toLowerCase() === "approved"
-    );
+    // const approvedGrvList = grvList.filter(
+    //     g => g.status?.toLowerCase() === "approved"
+    // );
 
-    const totalDebit =
-        filteredOrders.reduce((total, order) => {
-            if (order.status !== "Invoice Rejected" && order.status !== "Invoice Created") {
-                return total + order.total_amount;
-            }
-            return total;
-        }, 0)
-        +
-        refundReceipts.reduce(
-            (sum, refund) => sum + parseFloat(refund.amount || 0),
-            0
-        )
-        +
-        ledgerSentTransfers.reduce(
-            (sum, t) => sum + parseFloat(t.amount || 0),
-            0
-        );
+    // const totalDebit =
+    //     filteredOrders.reduce((total, order) => {
+    //         if (order.status !== "Invoice Rejected" && order.status !== "Invoice Created") {
+    //             return total + order.total_amount;
+    //         }
+    //         return total;
+    //     }, 0)
+    //     +
+    //     refundReceipts.reduce(
+    //         (sum, refund) => sum + parseFloat(refund.amount || 0),
+    //         0
+    //     )
+    //     +
+    //     ledgerSentTransfers.reduce(
+    //         (sum, t) => sum + parseFloat(t.amount || 0),
+    //         0
+    //     );
 
-    const totalCredit =
-        filteredOrders.reduce((total, order) => {
-            const receivedPayments = Array.isArray(order.recived_payment)
-                ? order.recived_payment
-                : [];
+    // const totalCredit =
+    //     filteredOrders.reduce((total, order) => {
+    //         const receivedPayments = Array.isArray(order.recived_payment)
+    //             ? order.recived_payment
+    //             : [];
 
-            return total + receivedPayments.reduce(
-                (sum, receipt) => sum + parseFloat(receipt.amount || 0),
-                0
-            );
-        }, 0)
-        +
-        advanceReceipts.reduce(
-            (sum, receipt) => sum + parseFloat(receipt.amount || 0),
-            0
-        )
-        +
-        paymentReceipts.reduce(
-            (sum, receipt) => sum + parseFloat(receipt.amount || 0),
-            0
-        )
-        +
-        approvedGrvList.reduce((sum, g) => {
-            if (g.remark === "cod_return") {
-                return sum + parseFloat(g.cod_amount || 0);
-            }
+    //         return total + receivedPayments.reduce(
+    //             (sum, receipt) => sum + parseFloat(receipt.amount || 0),
+    //             0
+    //         );
+    //     }, 0)
+    //     +
+    //     advanceReceipts.reduce(
+    //         (sum, receipt) => sum + parseFloat(receipt.amount || 0),
+    //         0
+    //     )
+    //     +
+    //     paymentReceipts.reduce(
+    //         (sum, receipt) => sum + parseFloat(receipt.amount || 0),
+    //         0
+    //     )
+    //     +
+    //     approvedGrvList.reduce((sum, g) => {
+    //         if (g.remark === "cod_return") {
+    //             return sum + parseFloat(g.cod_amount || 0);
+    //         }
 
-            const qty = Number(g.quantity || 0);
-            const price = Number(g.price || 0);
+    //         const qty = Number(g.quantity || 0);
+    //         const price = Number(g.price || 0);
 
-            return sum + (qty * price);
-        }, 0)
-        +
-        advanceTransfers.reduce(
-            (sum, t) => sum + parseFloat(t.amount || 0),
-            0
-        );
+    //         return sum + (qty * price);
+    //     }, 0)
+    //     +
+    //     advanceTransfers.reduce(
+    //         (sum, t) => sum + parseFloat(t.amount || 0),
+    //         0
+    //     );
 
-    const closingBalance = totalDebit - totalCredit;
+    // const closingBalance = totalDebit - totalCredit;
 
-    const closingBalanceDebit = closingBalance > 0 ? closingBalance : 0;
-    const closingBalanceCredit = closingBalance < 0 ? Math.abs(closingBalance) : 0;
+    // const closingBalanceDebit = closingBalance > 0 ? closingBalance : 0;
+    // const closingBalanceCredit = closingBalance < 0 ? Math.abs(closingBalance) : 0;
 
     if (loading) {
         return <p>Loading...</p>;

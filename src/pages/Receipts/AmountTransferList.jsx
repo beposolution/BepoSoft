@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import Select from "react-select";
 import {
     Card,
     Col,
@@ -26,6 +27,7 @@ const AmountTransferList = () => {
 
     const token = localStorage.getItem("token");
     const [transfers, setTransfers] = useState([]);
+    const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
     const [modalLoading, setModalLoading] = useState(false);
@@ -34,8 +36,8 @@ const AmountTransferList = () => {
     const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
     const [activeImage, setActiveImage] = useState(null);
     const [formData, setFormData] = useState({
-        send_from_name: "",
-        send_to_name: "",
+        send_from: "",
+        send_to: "",
         amount: "",
         date: "",
         note: "",
@@ -47,7 +49,12 @@ const AmountTransferList = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const perPageData = 10;
-    const FIELDS = ["amount", "date", "note"];
+    const FIELDS = [
+        "send_from",
+        "send_to",
+        "amount",
+        "date",
+        "note"];
 
     const pickFields = (obj) => {
         const out = {};
@@ -72,6 +79,24 @@ const AmountTransferList = () => {
         });
 
         return { before_data, after_data };
+    };
+
+    const customerOptions = customers.map(customer => ({
+        value: customer.id,
+        label: customer.name
+    }));
+
+    const fetchCustomers = async () => {
+        try {
+            const res = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}customers/`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            setCustomers(res.data?.data || []);
+        } catch (err) {
+            toast.error("Failed to fetch customers");
+        }
     };
 
     const fetchStaffs = async () => {
@@ -104,6 +129,7 @@ const AmountTransferList = () => {
     useEffect(() => {
         fetchTransfers();
         fetchStaffs();
+        fetchCustomers();
     }, []);
 
     const handleView = async (id) => {
@@ -120,8 +146,8 @@ const AmountTransferList = () => {
             setSelectedTransfer(data);
 
             setFormData({
-                send_from_name: data.send_from_name,
-                send_to_name: data.send_to_name,
+                send_from: Number(data.send_from),
+                send_to: Number(data.send_to),
                 amount: data.amount,
                 date: data.date,
                 note: data.note || "",
@@ -147,6 +173,8 @@ const AmountTransferList = () => {
 
         try {
             const payload = new FormData();
+            payload.append("send_from", formData.send_from);
+            payload.append("send_to", formData.send_to);
             payload.append("amount", formData.amount);
             payload.append("date", formData.date);
             payload.append("note", formData.note);
@@ -245,6 +273,27 @@ const AmountTransferList = () => {
     const indexOfLastItem = currentPage * perPageData;
     const indexOfFirstItem = indexOfLastItem - perPageData;
     const currentItems = filtered.slice(indexOfFirstItem, indexOfLastItem);
+
+
+    const selectStyles = {
+        menuPortal: (base) => ({
+            ...base,
+            zIndex: 9999
+        }),
+        menu: (base) => ({
+            ...base,
+            backgroundColor: "#ffffff"
+        }),
+        control: (base) => ({
+            ...base,
+            backgroundColor: "#ffffff"
+        }),
+        option: (base, state) => ({
+            ...base,
+            backgroundColor: state.isFocused ? "#f2f2f2" : "#ffffff",
+            color: "#000"
+        })
+    };
 
     return (
         <React.Fragment>
@@ -359,7 +408,7 @@ const AmountTransferList = () => {
                                         <ModalBody>
                                             {modalLoading ? <Spinner /> : (
                                                 <>
-                                                    <Row>
+                                                    {/* <Row>
                                                         <Col md={6}>
                                                             <Label>Send From</Label>
                                                             <Input value={formData.send_from_name} disabled />
@@ -367,6 +416,47 @@ const AmountTransferList = () => {
                                                         <Col md={6}>
                                                             <Label>Send To</Label>
                                                             <Input value={formData.send_to_name} disabled />
+                                                        </Col>
+                                                    </Row> */}
+                                                    <Row>
+                                                        <Col md={6}>
+                                                            <Label>Send From</Label>
+                                                            <Select
+                                                                options={customerOptions}
+                                                                value={customerOptions.find(
+                                                                    option => option.value === formData.send_from
+                                                                )}
+                                                                onChange={(selected) =>
+                                                                    setFormData({
+                                                                        ...formData,
+                                                                        send_from: selected ? selected.value : ""
+                                                                    })
+                                                                }
+                                                                isSearchable
+                                                                placeholder="Search customer..."
+                                                                menuPortalTarget={document.body}
+                                                                styles={selectStyles}
+                                                            />
+                                                        </Col>
+
+                                                        <Col md={6}>
+                                                            <Label>Send To</Label>
+                                                            <Select
+                                                                options={customerOptions}
+                                                                value={customerOptions.find(
+                                                                    option => option.value === formData.send_to
+                                                                )}
+                                                                onChange={(selected) =>
+                                                                    setFormData({
+                                                                        ...formData,
+                                                                        send_to: selected ? selected.value : ""
+                                                                    })
+                                                                }
+                                                                isSearchable
+                                                                placeholder="Search customer..."
+                                                                menuPortalTarget={document.body}
+                                                                styles={selectStyles}
+                                                            />
                                                         </Col>
                                                     </Row>
 

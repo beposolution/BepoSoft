@@ -30,10 +30,9 @@ const BasicTable = () => {
     const [prevPage, setPrevPage] = useState(null);
     const token = localStorage.getItem("token");
     const [role, setRole] = useState(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const perPageData = 25;
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
+    const [pageNumber, setPageNumber] = useState(1);
 
     document.title = "Orders | Beposoft";
 
@@ -51,8 +50,10 @@ const BasicTable = () => {
             setLoading(true);
 
             let apiUrl = url;
+
             if (!apiUrl) {
                 const baseUrl = import.meta.env.VITE_APP_KEY;
+
                 if (role === "BDM" || role === "BDO") {
                     apiUrl = `${baseUrl}family/department/orders/`;
                 } else {
@@ -64,19 +65,35 @@ const BasicTable = () => {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
-            let results = Array.isArray(response.data)
-                ? response.data
-                : response.data.results || [];
+            setNextPage(response.data.next);
+            setPrevPage(response.data.previous);
+
+            // detect page number
+            const pageMatch = apiUrl.match(/page=(\d+)/);
+            const page = pageMatch ? parseInt(pageMatch[1]) : 1;
+            setPageNumber(page);
+
+            let results = [];
+
+            if (Array.isArray(response.data)) {
+                results = response.data;
+            }
+            else if (Array.isArray(response.data.results)) {
+                results = response.data.results;
+            }
+            else if (Array.isArray(response.data.results?.results)) {
+                results = response.data.results.results;
+            }
 
             if (role === "Warehouse Admin" || role === "warehouse") {
-                const filterOrders = results.filter(order => order.status === "To Print");
-                setOrders(filterOrders);
-            } else {
-                setOrders(results);
+                results = results.filter(order => order.status === "To Print");
             }
+
+            setOrders(results);
+
         } catch (error) {
             console.error("Fetch error:", error);
-            setError("Error fetching orders data. Please try again later.");
+            setError("Error fetching orders data.");
         } finally {
             setLoading(false);
         }
@@ -115,10 +132,6 @@ const BasicTable = () => {
 
         return matchesSearch && matchesStatus && matchesStaff && matchesDate;
     });
-
-    const indexOfLastItem = currentPage * perPageData;
-    const indexOfFirstItem = indexOfLastItem - perPageData;
-    const currentPageOrders = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
 
     const getStatusStyle = (status) => {
         switch (status) {
@@ -252,120 +265,130 @@ const BasicTable = () => {
                                     <CardTitle className="h4">BEPOSOFT ORDERS</CardTitle>
                                     <div className="table-responsive">
                                         {loading ? <div>Loading...</div> : error ? <div className="text-danger">{error}</div> : (
-                                            <Table className="table mb-0">
-                                                <thead>
-                                                    <tr>
-                                                        <th>#</th>
-                                                        <th>INVOICE NO</th>
-                                                        <th>STAFF</th>
-                                                        <th>CUSTOMER</th>
-                                                        <th>STATUS</th>
-                                                        <th>BILL AMOUNT</th>
-                                                        <th>CREATED AT</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {currentPageOrders?.map((order, index) => {
-                                                        const rowStyle = getRowStyleByPayment(order?.payment_status);
+                                            <>
+                                                <Table className="table mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>#</th>
+                                                            <th>INVOICE NO</th>
+                                                            <th>STAFF</th>
+                                                            <th>CUSTOMER</th>
+                                                            <th>STATUS</th>
+                                                            <th>BILL AMOUNT</th>
+                                                            <th>CREATED AT</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {filteredOrders?.map((order, index) => {
+                                                            const rowStyle = getRowStyleByPayment(order?.payment_status);
 
-                                                        return (
-                                                            <tr key={order?.id}>
-                                                                <th scope="row" style={rowStyle}>
-                                                                    {indexOfFirstItem + index + 1}
-                                                                </th>
+                                                            return (
+                                                                <tr key={order?.id}>
+                                                                    <th scope="row" style={rowStyle}>
+                                                                        {((pageNumber - 1) * 50) + index + 1}
+                                                                    </th>
 
-                                                                <td style={rowStyle}>
-                                                                    <Link
-                                                                        to={`/order/${order?.id}/items/`}
-                                                                        state={{ orderIds: filteredOrders.map(o => o.id) }}
+                                                                    <td style={rowStyle}>
+                                                                        <Link
+                                                                            to={`/order/${order?.id}/items/`}
+                                                                            state={{ orderIds: filteredOrders.map(o => o.id) }}
+                                                                        >
+                                                                            {order?.invoice}
+                                                                        </Link>
+                                                                    </td>
+
+                                                                    <td style={rowStyle}>
+                                                                        {order?.manage_staff} ({order?.family})
+                                                                    </td>
+
+                                                                    <td style={rowStyle}>
+                                                                        <Link to={`/customer/${order?.customer?.id}/ledger/`}>
+                                                                            {order?.customer?.name}
+                                                                        </Link>
+                                                                    </td>
+
+                                                                    <td
+                                                                        style={{
+                                                                            ...rowStyle,
+                                                                            verticalAlign: "top",
+                                                                            ...getStatusStyle(order?.status)
+                                                                        }}
                                                                     >
-                                                                        {order?.invoice}
-                                                                    </Link>
-                                                                </td>
+                                                                        <strong>{order?.status}</strong>
 
-                                                                <td style={rowStyle}>
-                                                                    {order?.manage_staff} ({order?.family})
-                                                                </td>
-
-                                                                <td style={rowStyle}>
-                                                                    <Link to={`/customer/${order?.customer?.id}/ledger/`}>
-                                                                        {order?.customer?.name}
-                                                                    </Link>
-                                                                </td>
-
-                                                                <td
-                                                                    style={{
-                                                                        ...rowStyle,
-                                                                        verticalAlign: "top",
-                                                                        ...getStatusStyle(order?.status)
-                                                                    }}
-                                                                >
-                                                                    <strong>{order?.status}</strong>
-
-                                                                    {(["Ready to ship", "Shipped"].includes(order?.status)) &&
-                                                                        (order?.warehouse_data?.length > 0 ||
-                                                                            order?.warehouse?.length > 0) && (
-                                                                            <Table
-                                                                                bordered
-                                                                                size="sm"
-                                                                                className="mt-2"
-                                                                                style={{ width: "100%", fontSize: "12px" }}
-                                                                            >
-                                                                                <thead>
-                                                                                    <tr>
-                                                                                        <th style={{ border: "1px solid green" }}>#</th>
-                                                                                        <th style={{ border: "1px solid green" }}>Box</th>
-                                                                                        <th style={{ border: "1px solid green" }}>Tracking ID</th>
-                                                                                    </tr>
-                                                                                </thead>
-                                                                                <tbody>
-                                                                                    {(order.warehouse_data ??
-                                                                                        order.warehouse ??
-                                                                                        []
-                                                                                    ).map((entry, idx) => (
-                                                                                        <tr key={idx}>
-                                                                                            <td style={{ border: "1px solid green" }}>
-                                                                                                {idx + 1}
-                                                                                            </td>
-                                                                                            <td style={{ border: "1px solid green" }}>
-                                                                                                {entry.box}
-                                                                                            </td>
-                                                                                            <td style={{ border: "1px solid green" }}>
-                                                                                                {entry.tracking_id}
-                                                                                            </td>
+                                                                        {(["Ready to ship", "Shipped"].includes(order?.status)) &&
+                                                                            (order?.warehouse_data?.length > 0 ||
+                                                                                order?.warehouse?.length > 0) && (
+                                                                                <Table
+                                                                                    bordered
+                                                                                    size="sm"
+                                                                                    className="mt-2"
+                                                                                    style={{ width: "100%", fontSize: "12px" }}
+                                                                                >
+                                                                                    <thead>
+                                                                                        <tr>
+                                                                                            <th style={{ border: "1px solid green" }}>#</th>
+                                                                                            <th style={{ border: "1px solid green" }}>Box</th>
+                                                                                            <th style={{ border: "1px solid green" }}>Tracking ID</th>
                                                                                         </tr>
-                                                                                    ))}
-                                                                                </tbody>
-                                                                            </Table>
-                                                                        )}
-                                                                </td>
+                                                                                    </thead>
+                                                                                    <tbody>
+                                                                                        {(order.warehouse_data ??
+                                                                                            order.warehouse ??
+                                                                                            []
+                                                                                        ).map((entry, idx) => (
+                                                                                            <tr key={idx}>
+                                                                                                <td style={{ border: "1px solid green" }}>
+                                                                                                    {idx + 1}
+                                                                                                </td>
+                                                                                                <td style={{ border: "1px solid green" }}>
+                                                                                                    {entry.box}
+                                                                                                </td>
+                                                                                                <td style={{ border: "1px solid green" }}>
+                                                                                                    {entry.tracking_id}
+                                                                                                </td>
+                                                                                            </tr>
+                                                                                        ))}
+                                                                                    </tbody>
+                                                                                </Table>
+                                                                            )}
+                                                                    </td>
 
-                                                                <td style={rowStyle}>
-                                                                    {order?.total_amount?.toFixed(2)}
-                                                                </td>
+                                                                    <td style={rowStyle}>
+                                                                        {order?.total_amount?.toFixed(2)}
+                                                                    </td>
 
-                                                                <td style={rowStyle}>
-                                                                    {order?.order_date?.substring(0, 10)}
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
+                                                                    <td style={rowStyle}>
+                                                                        {order?.order_date?.substring(0, 10)}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
 
-                                            </Table>
+                                                </Table>
+                                                <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
+
+                                                    <Button
+                                                        disabled={!prevPage}
+                                                        onClick={() => fetchOrders(prevPage)}
+                                                    >
+                                                        Previous
+                                                    </Button>
+
+                                                    <Button
+                                                        disabled={!nextPage}
+                                                        onClick={() => fetchOrders(nextPage)}
+                                                    >
+                                                        Next
+                                                    </Button>
+
+                                                </div>
+
+                                            </>
+
                                         )}
                                     </div>
-                                    <Pagination
-                                        perPageData={perPageData}
-                                        data={filteredOrders}
-                                        currentPage={currentPage}
-                                        setCurrentPage={setCurrentPage}
-                                        isShowingPageLength={true}
-                                        paginationDiv="col-auto"
-                                        paginationClass="pagination-rounded"
-                                        indexOfFirstItem={indexOfFirstItem}
-                                        indexOfLastItem={indexOfLastItem}
-                                    />
                                 </CardBody>
                             </Card>
                         </Col>

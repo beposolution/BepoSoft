@@ -15,6 +15,7 @@ import {
 } from "reactstrap";
 import "react-toastify/dist/ReactToastify.css";
 import Select from "react-select";
+import AsyncSelect from "react-select/async";
 
 const RefundReceipt = () => {
     const token = localStorage.getItem("token");
@@ -74,7 +75,7 @@ const RefundReceipt = () => {
                     `${import.meta.env.VITE_APP_KEY}customers/`,
                     { headers: authHeaders }
                 );
-                if (res.status === 200) setCustomers(res.data?.data || []);
+                if (res.status === 200) setCustomers(res.data?.results || []);
             } catch {
                 toast.error("Failed to fetch customers");
             }
@@ -82,6 +83,25 @@ const RefundReceipt = () => {
         fetchCustomers();
         // eslint-disable-next-line
     }, []);
+
+    const loadCustomerOptions = async (inputValue) => {
+        try {
+            const res = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}customers/?search=${inputValue}`,
+                { headers: authHeaders }
+            );
+
+            const customers = res.data?.results || [];
+
+            return customers.map((c) => ({
+                label: `${c.name} (${c.phone})`,
+                value: c.id,
+            }));
+        } catch (err) {
+            console.error("Customer search error:", err);
+            return [];
+        }
+    };
 
     // ---------------- FETCH INVOICES (ORDERS) ----------------
     useEffect(() => {
@@ -92,7 +112,7 @@ const RefundReceipt = () => {
                     { headers: authHeaders }
                 );
                 if (res.status === 200)
-                    setInvoices(res.data?.results || []);
+                    setInvoices(res.data?.results?.results || []);
             } catch {
                 toast.error("Failed to fetch invoices");
             }
@@ -100,6 +120,26 @@ const RefundReceipt = () => {
         fetchInvoices();
         // eslint-disable-next-line
     }, []);
+
+
+    const loadInvoiceOptions = async (inputValue) => {
+        try {
+            const res = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}orders/?search=${inputValue}`,
+                { headers: authHeaders }
+            );
+
+            const invoices = res.data?.results?.results || [];
+
+            return invoices.map((inv) => ({
+                label: `${inv.invoice} - ${inv.customer?.name || ""}`,
+                value: inv.id,
+            }));
+        } catch (err) {
+            console.error("Invoice search error:", err);
+            return [];
+        }
+    };
 
     // ---------------- SELECT HANDLERS ----------------
     const handleBankChange = (selected) => {
@@ -154,7 +194,6 @@ const RefundReceipt = () => {
             );
         } catch (err) {
             toast.warn("Refund receipt saved, but DataLog creation failed.");
-            console.error("DataLog error:", err?.response?.data || err.message);
         }
     };
 
@@ -175,7 +214,7 @@ const RefundReceipt = () => {
                 formData,
                 { headers: authHeaders }
             );
-            
+
             if (res.status === 200 || res.status === 201) {
 
                 const refundData = res.data?.data;
@@ -201,7 +240,6 @@ const RefundReceipt = () => {
             }
         } catch (err) {
             toast.error("Failed to create refund receipt");
-            console.error(err?.response?.data || err.message);
         } finally {
             setIsLoading(false);
         }
@@ -239,15 +277,14 @@ const RefundReceipt = () => {
                                             <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label>Customer</Label>
-                                                    <Select
+                                                    <AsyncSelect
+                                                        cacheOptions
+                                                        loadOptions={loadCustomerOptions}
+                                                        defaultOptions
                                                         value={selectedCustomer}
                                                         onChange={handleCustomerChange}
-                                                        options={customers.map((c) => ({
-                                                            label: `${c.name} (${c.phone})`,
-                                                            value: c.id,
-                                                        }))}
                                                         isClearable
-                                                        placeholder="Select Customer"
+                                                        placeholder="Search Customer..."
                                                     />
                                                 </div>
                                             </Col>
@@ -255,15 +292,14 @@ const RefundReceipt = () => {
                                             <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label>Invoice (Optional)</Label>
-                                                    <Select
+                                                    <AsyncSelect
+                                                        cacheOptions
+                                                        loadOptions={loadInvoiceOptions}
+                                                        defaultOptions
                                                         value={selectedInvoice}
                                                         onChange={handleInvoiceChange}
-                                                        options={invoices.map((i) => ({
-                                                            label: i.invoice,
-                                                            value: i.id,
-                                                        }))}
                                                         isClearable
-                                                        placeholder="Select Invoice"
+                                                        placeholder="Search Invoice..."
                                                     />
                                                 </div>
                                             </Col>

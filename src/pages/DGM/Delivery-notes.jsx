@@ -26,11 +26,10 @@ const BasicTable = () => {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
 
-    const [currentPage, setCurrentPage] = useState(1);
-    const [perPageData, setPerPageData] = useState(10);
-
-    const indexOfLastItem = currentPage * perPageData;
-    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const [nextPage, setNextPage] = useState(null);
+    const [prevPage, setPrevPage] = useState(null);
+    const [pageNumber, setPageNumber] = useState(1);
+    const [rowStart, setRowStart] = useState(1);
 
     document.title = "Orders | Beposoft";
 
@@ -46,14 +45,28 @@ const BasicTable = () => {
 
     const fetchOrders = async (url) => {
         if (!url) return;
+
         try {
             setLoading(true);
+
             const response = await axios.get(url, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
+            const data = response.data.results.results;
+
+            const urlParams = new URL(url).searchParams;
+            const page = parseInt(urlParams.get("page")) || 1;
+
+            setPageNumber(page);
+            const pageSize = 50;
+            setRowStart((page - 1) * pageSize + 1);
+
+            setNextPage(response.data.next);
+            setPrevPage(response.data.previous);
+
             if (role === "Warehouse Admin") {
-                const filterOrders = response.data.results.filter(
+                const filterOrders = data.filter(
                     (order) => order.status === "To Print"
                 );
                 setOrders(filterOrders);
@@ -64,12 +77,13 @@ const BasicTable = () => {
                     "Waiting For Confirmation",
                 ];
 
-                const filteredOrders = response.data.results.filter(
+                const filteredOrders = data.filter(
                     (order) => !excludedStatuses.includes(order.status)
                 );
 
                 setOrders(filteredOrders);
             }
+
         } catch (error) {
             setError("Error fetching orders data. Please try again later.");
         } finally {
@@ -237,76 +251,82 @@ const BasicTable = () => {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {filteredOrders
-                                                            .slice(indexOfFirstItem, indexOfLastItem)
-                                                            .map((order, index) => (
-                                                                <tr key={order.id}>
-                                                                    <th scope="row">
-                                                                        {indexOfFirstItem + index + 1}
-                                                                    </th>
-                                                                    <td>{order.invoice}</td>
-                                                                    <td>{order.customer.name}</td>
-                                                                    <td>{order.manage_staff}</td>
-                                                                    <td>{order.status}</td>
-                                                                    <td>{order.total_amount}</td>
-                                                                    <td>{order.order_date}</td>
-                                                                    <td>
-                                                                        <div
+                                                        {filteredOrders.map((order, index) => (
+                                                            <tr key={order.id}>
+                                                                <th scope="row">
+                                                                    {rowStart + index}
+                                                                </th>
+                                                                <td>{order.invoice}</td>
+                                                                <td>{order.customer.name}</td>
+                                                                <td>{order.manage_staff}</td>
+                                                                <td>{order.status}</td>
+                                                                <td>{order.total_amount}</td>
+                                                                <td>{order.order_date}</td>
+                                                                <td>
+                                                                    <div
+                                                                        style={{
+                                                                            display: "flex",
+                                                                            flexDirection: "column",
+                                                                        }}
+                                                                    >
+                                                                        <button
+                                                                            onClick={() =>
+                                                                                viewDeliveryNote(order.id)
+                                                                            }
                                                                             style={{
-                                                                                display: "flex",
-                                                                                flexDirection: "column",
-                                                                            }}
-                                                                        >
-                                                                            <button
-                                                                                onClick={() =>
-                                                                                    viewDeliveryNote(order.id)
-                                                                                }
-                                                                                style={{
-                                                                                    padding: "10px 20px",
-                                                                                    border: "none",
-                                                                                    background: "#3258a8",
-                                                                                    color: "white",
-                                                                                    cursor: "pointer",
-                                                                                    marginBottom: "5px",
-                                                                                    opacity:
-                                                                                        order.locked_by &&
+                                                                                padding: "10px 20px",
+                                                                                border: "none",
+                                                                                background: "#3258a8",
+                                                                                color: "white",
+                                                                                cursor: "pointer",
+                                                                                marginBottom: "5px",
+                                                                                opacity:
+                                                                                    order.locked_by &&
                                                                                         order.locked_by !==
                                                                                         localStorage.getItem("username")
-                                                                                            ? 0.7
-                                                                                            : 1,
-                                                                                }}
-                                                                            >
-                                                                                View
-                                                                            </button>
-                                                                            {order.locked_by &&
-                                                                                order.locked_by !==
-                                                                                localStorage.getItem("username") && (
-                                                                                    <span
-                                                                                        className="text-danger"
-                                                                                        style={{ fontSize: "0.85rem" }}
-                                                                                    >
-                                                                                        In use by:{" "}
-                                                                                        {order.locked_by.toUpperCase()}
-                                                                                    </span>
-                                                                                )}
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
+                                                                                        ? 0.7
+                                                                                        : 1,
+                                                                            }}
+                                                                        >
+                                                                            View
+                                                                        </button>
+                                                                        {order.locked_by &&
+                                                                            order.locked_by !==
+                                                                            localStorage.getItem("username") && (
+                                                                                <span
+                                                                                    className="text-danger"
+                                                                                    style={{ fontSize: "0.85rem" }}
+                                                                                >
+                                                                                    In use by:{" "}
+                                                                                    {order.locked_by.toUpperCase()}
+                                                                                </span>
+                                                                            )}
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
                                                     </tbody>
                                                 </Table>
 
-                                                <Paginations
-                                                    perPageData={perPageData}
-                                                    data={filteredOrders}
-                                                    currentPage={currentPage}
-                                                    setCurrentPage={setCurrentPage}
-                                                    isShowingPageLength={true}
-                                                    paginationDiv="col-auto"
-                                                    paginationClass="pagination"
-                                                    indexOfFirstItem={indexOfFirstItem}
-                                                    indexOfLastItem={indexOfLastItem}
-                                                />
+                                                <div className="d-flex justify-content-between mt-3">
+
+                                                    <button
+                                                        className="btn btn-primary"
+                                                        disabled={!prevPage || loading}
+                                                        onClick={() => fetchOrders(prevPage)}
+                                                    >
+                                                        Previous
+                                                    </button>
+
+                                                    <button
+                                                        className="btn btn-primary"
+                                                        disabled={!nextPage || loading}
+                                                        onClick={() => fetchOrders(nextPage)}
+                                                    >
+                                                        Next
+                                                    </button>
+
+                                                </div>
                                             </>
                                         )}
                                     </div>

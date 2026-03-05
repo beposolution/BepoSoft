@@ -40,7 +40,9 @@ const AmountTransfer = () => {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            const options = (res.data?.data || []).map(c => ({
+            console.log("Customers:", res);
+
+            const options = (res.data?.results || []).map(c => ({
                 value: c.id,
                 label: c.name,
             }));

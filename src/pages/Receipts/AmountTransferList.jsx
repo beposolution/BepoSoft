@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import Select from "react-select";
+import AsyncSelect from "react-select/async";
 import {
     Card,
     Col,
@@ -93,9 +94,34 @@ const AmountTransferList = () => {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            setCustomers(res.data?.data || []);
+            setCustomers(res.data?.results || []);
         } catch (err) {
             toast.error("Failed to fetch customers");
+        }
+    };
+
+    const loadCustomers = async (inputValue) => {
+
+        if (!inputValue) return [];
+
+        try {
+            const res = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}customers/?search=${inputValue}`,
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            const customers = res.data?.results || [];
+
+            return customers.map(c => ({
+                value: c.id,
+                label: `${c.name} - ${c.phone ?? ""}`
+            }));
+
+        } catch (error) {
+            console.error("Customer search error", error);
+            return [];
         }
     };
 
@@ -421,19 +447,27 @@ const AmountTransferList = () => {
                                                     <Row>
                                                         <Col md={6}>
                                                             <Label>Send From</Label>
-                                                            <Select
-                                                                options={customerOptions}
-                                                                value={customerOptions.find(
-                                                                    option => option.value === formData.send_from
-                                                                )}
+                                                            <AsyncSelect
+                                                                cacheOptions
+                                                                defaultOptions
+                                                                loadOptions={loadCustomers}
+                                                                value={
+                                                                    formData.send_from
+                                                                        ? {
+                                                                            value: formData.send_from,
+                                                                            label:
+                                                                                customers.find(c => c.id === formData.send_from)?.name || ""
+                                                                        }
+                                                                        : null
+                                                                }
                                                                 onChange={(selected) =>
                                                                     setFormData({
                                                                         ...formData,
                                                                         send_from: selected ? selected.value : ""
                                                                     })
                                                                 }
-                                                                isSearchable
-                                                                placeholder="Search customer..."
+                                                                placeholder="Search Customer (Name / Phone)"
+                                                                isClearable
                                                                 menuPortalTarget={document.body}
                                                                 styles={selectStyles}
                                                             />
@@ -441,19 +475,27 @@ const AmountTransferList = () => {
 
                                                         <Col md={6}>
                                                             <Label>Send To</Label>
-                                                            <Select
-                                                                options={customerOptions}
-                                                                value={customerOptions.find(
-                                                                    option => option.value === formData.send_to
-                                                                )}
+                                                            <AsyncSelect
+                                                                cacheOptions
+                                                                defaultOptions
+                                                                loadOptions={loadCustomers}
+                                                                value={
+                                                                    formData.send_to
+                                                                        ? {
+                                                                            value: formData.send_to,
+                                                                            label:
+                                                                                customers.find(c => c.id === formData.send_to)?.name || ""
+                                                                        }
+                                                                        : null
+                                                                }
                                                                 onChange={(selected) =>
                                                                     setFormData({
                                                                         ...formData,
                                                                         send_to: selected ? selected.value : ""
                                                                     })
                                                                 }
-                                                                isSearchable
-                                                                placeholder="Search customer..."
+                                                                placeholder="Search Customer (Name / Phone)"
+                                                                isClearable
                                                                 menuPortalTarget={document.body}
                                                                 styles={selectStyles}
                                                             />

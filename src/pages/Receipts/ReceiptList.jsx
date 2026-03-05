@@ -58,7 +58,7 @@ const OtherReceipt = () => {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 if (response.status === 200) {
-                    setCustomers(response?.data?.data);
+                    setCustomers(response?.data?.results || []);
                 }
             } catch (error) {
                 toast.error('Error fetching bank data:');

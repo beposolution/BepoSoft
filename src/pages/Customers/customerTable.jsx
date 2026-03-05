@@ -33,6 +33,7 @@ const BasicTable = () => {
   const [selectedManager, setSelectedManager] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPageData] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
 
   const [familyData, setFamilyData] = useState([]);
 
@@ -60,12 +61,13 @@ const BasicTable = () => {
         setLoading(true);
 
         const customerResponse = await axios.get(
-          `${import.meta.env.VITE_APP_KEY}customers/`,
+          `${import.meta.env.VITE_APP_KEY}customers/?page=${currentPage}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
         if (customerResponse.status === 200) {
-          setData(customerResponse.data.data || []);
+          setData(customerResponse.data.results || []);
+          setTotalCount(customerResponse.data.count);
 
           const [responseState, responseManager] = await Promise.all([
             axios.get(`${import.meta.env.VITE_APP_KEY}states/`, {
@@ -89,7 +91,11 @@ const BasicTable = () => {
     };
 
     if (token) fetchData();
-  }, [token]);
+  }, [token, currentPage]);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
 
   const handleSearch = (e) => setSearchTerm(e.target.value);
   const handleStateFilter = (e) => setSelectedState(e.target.value);
@@ -175,10 +181,6 @@ const BasicTable = () => {
     XLSX.writeFile(workbook, "Customer_List.xlsx");
   };
 
-  // Pagination
-  const indexOfLastItem = currentPage * perPageData;
-  const indexOfFirstItem = indexOfLastItem - perPageData;
-  const currentPageData = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
   document.title = "Customer List | BEPOSOFT";
 
@@ -259,7 +261,7 @@ const BasicTable = () => {
                           <option value="">All Managers</option>
                           {managers.map((m) => (
                             <option key={m.id} value={m.id}>
-                              {m.name} 
+                              {m.name}
                               {/* {m.allocated_states_names ? ` — ${m.allocated_states_names.join(', ')}` : ''} */}
                             </option>
                           ))}
@@ -300,9 +302,9 @@ const BasicTable = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {currentPageData.map((customer, index) => (
+                            {filteredData.map((customer, index) => (
                               <tr key={customer.id}>
-                                <th scope="row">{indexOfFirstItem + index + 1}</th>
+                                <th scope="row">{(currentPage - 1) * 50 + index + 1}</th>
                                 <td>{customer.name}</td>
                                 <td>{customer.gst || "N/A"}</td>
                                 <td>{customer.email || "N/A"}</td>
@@ -344,15 +346,13 @@ const BasicTable = () => {
                       </div>
 
                       <Paginations
-                        perPageData={perPageData}
-                        data={filteredData}
+                        perPageData={50}
+                        data={Array(totalCount)}
                         currentPage={currentPage}
                         setCurrentPage={setCurrentPage}
                         isShowingPageLength={true}
                         paginationDiv="mt-3 d-flex justify-content-center"
                         paginationClass="pagination pagination-rounded"
-                        indexOfFirstItem={indexOfFirstItem}
-                        indexOfLastItem={indexOfLastItem}
                       />
                     </>
                   )}

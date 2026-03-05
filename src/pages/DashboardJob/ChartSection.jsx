@@ -47,11 +47,27 @@ const ChartSection = () => {
                 const response = await axios.get(`${import.meta.env.VITE_APP_KEY}orders/`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                setOrders(response?.data?.results || []);
+
+                let ordersData = [];
+
+                if (Array.isArray(response.data)) {
+                    ordersData = response.data;
+                }
+                else if (Array.isArray(response.data.results)) {
+                    ordersData = response.data.results;
+                }
+                else if (Array.isArray(response.data.results?.results)) {
+                    ordersData = response.data.results.results;
+                }
+
+                setOrders(ordersData);
+
+
             } catch (error) {
-                toast.error('Error fetching order data:');
+                toast.error("Error fetching order data");
             }
         };
+
         fetchOrdersData();
     }, []);
 

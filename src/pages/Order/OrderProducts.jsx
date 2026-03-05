@@ -17,6 +17,7 @@ import { useLocation } from "react-router-dom";
 import { Link } from 'react-router-dom';
 import PaymentImages from "./PaymentImages";
 import Select from "react-select";
+import AsyncSelect from "react-select/async";
 
 const FormLayouts = () => {
 
@@ -82,7 +83,8 @@ const FormLayouts = () => {
                     `${import.meta.env.VITE_APP_KEY}customers/`,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
-                setCustomers(res.data.data || []);
+                setCustomers(res.data.results || []);
+                console.log("Fetched customers:", res);
             } catch (err) {
                 toast.error("Failed to load customers");
             }
@@ -90,6 +92,31 @@ const FormLayouts = () => {
 
         fetchCustomers();
     }, []);
+
+    const loadCustomerOptions = async (inputValue) => {
+        try {
+
+            const res = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}customers/?search=${inputValue}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            const customers = res.data.results || [];
+
+            return customers.map((c) => ({
+                value: c.id,
+                label: `${c.name} - ${c.phone}`,
+            }));
+
+        } catch (error) {
+            console.error("Customer search failed", error);
+            return [];
+        }
+    };
 
     const writeCustomerChangeLog = async (beforeCustomer, afterCustomer) => {
         const token = localStorage.getItem("token");
@@ -1453,8 +1480,10 @@ const FormLayouts = () => {
                                                 ) : (
                                                     <>
                                                         <div style={{ width: "300px" }}>
-                                                            <Select
-                                                                options={customerOptions}
+                                                            <AsyncSelect
+                                                                cacheOptions
+                                                                defaultOptions
+                                                                loadOptions={loadCustomerOptions}
                                                                 placeholder="Search customer..."
                                                                 isClearable
                                                                 onChange={(option) => setSelectedCustomer(option?.value || "")}

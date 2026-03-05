@@ -42,7 +42,7 @@ const BasicTable = () => {
                 const response = await axios.get(`${import.meta.env.VITE_APP_KEY}staff/orders/`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                setOrdersFamily(response?.data?.data);
+                setOrdersFamily(response?.data?.results?.data || []);
             } catch (error) {
                 toast.error('Error fetching user data:', error);
             }
@@ -86,7 +86,7 @@ const BasicTable = () => {
     // Filtered data based on search and filter conditions
     const filteredOrders = orders.filter((order) =>
         (order.invoice.toLowerCase().includes(searchTerm.toLowerCase()) || order.manage_staff.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            order.customer.name.toLowerCase().includes(searchTerm.toLowerCase())) &&
+            order.customer?.name.toLowerCase().includes(searchTerm.toLowerCase())) &&
         (selectedState === "" || order.status === selectedState) &&
         (selectedStaff === "" || order.manage_staff === selectedStaff)
     );
@@ -216,6 +216,43 @@ const BasicTable = () => {
                                             <div>Loading...</div>
                                         ) : error ? (
                                             <div className="text-danger">{error}</div>
+                                        ) : role === "BDO" ? (
+                                            ordersFamily.length === 0 ? (
+                                                <div>No orders available.</div>
+                                            ) : (
+                                                <Table className="table mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>#</th>
+                                                            <th>INVOICE NO</th>
+                                                            <th>STAFF</th>
+                                                            <th>CUSTOMER</th>
+                                                            <th>STATUS</th>
+                                                            <th>BILL AMOUNT</th>
+                                                            <th>CREATED AT</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {ordersFamily.map((order, index) => (
+                                                            <tr key={order.id}>
+                                                                <th scope="row">{index + 1}</th>
+                                                                <td>
+                                                                    <Link to={`/order/${order.id}/stafforder/`}>
+                                                                        {order.invoice}
+                                                                    </Link>
+                                                                </td>
+                                                                <td>{order.manage_staff} ({order.family})</td>
+                                                                <td>{order.customer?.name}</td>
+                                                                <td style={getStatusColor(order.status)}>
+                                                                    {order.status}
+                                                                </td>
+                                                                <td>{order.total_amount}</td>
+                                                                <td>{order.order_date}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </Table>
+                                            )
                                         ) : filteredOrders.length === 0 ? (
                                             <div>No orders available.</div>
                                         ) : (
@@ -232,42 +269,23 @@ const BasicTable = () => {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {role === "BDO"
-                                                        ? (Array.isArray(ordersFamily) ? ordersFamily : []).map((order, index) => (
-                                                            <tr key={order.id}>
-                                                                <th scope="row">{index + 1}</th>
-                                                                <td>
-                                                                    <Link to={`/order/${order.id}/stafforder/`}>
-                                                                        {order.invoice}
-                                                                    </Link>
-                                                                </td>
-                                                                <td>{order.manage_staff} ({order.family})</td>
-                                                                <td>{order.customer.name}</td>
-                                                                <td style={getStatusColor(order.status)}>
-                                                                    {order.status}
-                                                                </td>
-                                                                <td>{order.total_amount}</td>
-                                                                <td>{order.order_date}</td>
-                                                            </tr>
-                                                        ))
-                                                        : filteredOrders.map((order, index) => (
-                                                            <tr key={order.id}>
-                                                                <th scope="row">{index + 1}</th>
-                                                                <td>
-                                                                    <Link to={`/order/${order.id}/stafforder/`}>
-                                                                        {order.invoice}
-                                                                    </Link>
-                                                                </td>
-                                                                <td>{order.manage_staff} ({order.family})</td>
-                                                                <td>{order.customer.name}</td>
-                                                                <td style={getStatusColor(order.status)}>
-                                                                    {order.status}
-                                                                </td>
-                                                                <td>{order.total_amount}</td>
-                                                                <td>{order.order_date}</td>
-                                                            </tr>
-                                                        ))
-                                                    }
+                                                    {filteredOrders.map((order, index) => (
+                                                        <tr key={order.id}>
+                                                            <th scope="row">{index + 1}</th>
+                                                            <td>
+                                                                <Link to={`/order/${order.id}/stafforder/`}>
+                                                                    {order.invoice}
+                                                                </Link>
+                                                            </td>
+                                                            <td>{order.manage_staff} ({order.family})</td>
+                                                            <td>{order.customer?.name}</td>
+                                                            <td style={getStatusColor(order.status)}>
+                                                                {order.status}
+                                                            </td>
+                                                            <td>{order.total_amount}</td>
+                                                            <td>{order.order_date}</td>
+                                                        </tr>
+                                                    ))}
                                                 </tbody>
                                             </Table>
                                         )}

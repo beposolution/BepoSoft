@@ -28,8 +28,7 @@ const FormLayouts = () => {
     const [bankName, setBankName] = useState("");
     const [transactionId, setTransactionId] = useState("");
     const [cartProducts, setCartProducts] = useState([]);
-    const [customerAddresses, setCustomerAddresses] = useState([]); // State for customer addresses
-    const [searchTerm, setSearchTerm] = useState("");
+    const [customerAddresses, setCustomerAddresses] = useState([]);
     const [modalOpen, setModalOpen] = useState(false);
     const [banks, setBank] = useState([]);
     const [companys, setCompany] = useState([]);
@@ -41,6 +40,10 @@ const FormLayouts = () => {
     const [cartTotalAmount, setCartTotalAmount] = useState(0);
     const [cartTotalDiscount, setCartTotalDiscount] = useState(0);
     const [finalAmount, setFinalAmount] = useState(0);
+
+    const [customerSearch, setCustomerSearch] = useState("");
+    const [customerResults, setCustomerResults] = useState([]);
+    const [customerLoading, setCustomerLoading] = useState(false);
 
     const toggleModal = () => setModalOpen(!modalOpen);
 
@@ -122,6 +125,35 @@ const FormLayouts = () => {
         }
 
     });
+
+    const searchCustomers = async (query) => {
+
+        setCustomerSearch(query);
+
+        if (!query || query.length < 2) {
+            setCustomerResults([]);
+            return;
+        }
+
+        setCustomerLoading(true);
+
+        try {
+
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}customers/?search=${query}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            setCustomerResults(response?.data?.results || []);
+
+        } catch (error) {
+
+            console.error("Customer search error:", error);
+
+        } finally {
+            setCustomerLoading(false);
+        }
+    };
 
     const generateInvoice = async () => {
         const doc = new jsPDF();
@@ -209,10 +241,6 @@ const FormLayouts = () => {
         }
     }, [token,]);
 
-    // Search and select customer   
-    const handleSearchChange = (event) => {
-        setSearchTerm(event.target.value);
-    };
 
     const handleCustomerChange = async (event) => {
         const selectedCustomerId = event.target.value;
@@ -230,11 +258,6 @@ const FormLayouts = () => {
             setCustomerAddresses([]);
         }
     };
-
-    // Filter customers based on search term
-    const filteredCustomers = customers.filter(customer =>
-        customer.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
 
     const fetchCartProducts = async () => {
         try {
@@ -486,50 +509,70 @@ const FormLayouts = () => {
                                             <Col md={8}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="customer">Customer</Label>
-                                                    <input
+
+                                                    <Input
                                                         type="text"
-                                                        placeholder="Search Customer..."
-                                                        value={searchTerm}
-                                                        onChange={handleSearchChange}
-                                                        className="form-control"
+                                                        placeholder="Search Customer (name / phone)"
+                                                        value={customerSearch}
+                                                        onChange={(e) => searchCustomers(e.target.value)}
                                                     />
-                                                    {searchTerm && filteredCustomers.length > 0 && (
-                                                        <ul className="customer-dropdown" style={{ border: '1px solid #ccc', maxHeight: '150px', overflowY: 'auto', marginTop: 0, paddingLeft: 0 }}>
-                                                            {filteredCustomers.map(customer => (
+
+                                                    {customerLoading && (
+                                                        <div style={{ padding: "6px" }}>Searching...</div>
+                                                    )}
+
+                                                    {customerResults.length > 0 && (
+                                                        <ul
+                                                            style={{
+                                                                border: "1px solid #ccc",
+                                                                maxHeight: "200px",
+                                                                overflowY: "auto",
+                                                                marginTop: "0",
+                                                                paddingLeft: "0",
+                                                                background: "#fff",
+                                                                position: "absolute",
+                                                                zIndex: 1000,
+                                                                width: "96%"
+                                                            }}
+                                                        >
+
+                                                            {customerResults.map(customer => (
+
                                                                 <li
                                                                     key={customer.id}
-                                                                    style={{ listStyle: 'none', padding: '8px', cursor: 'pointer' }}
+                                                                    style={{
+                                                                        listStyle: "none",
+                                                                        padding: "8px",
+                                                                        cursor: "pointer"
+                                                                    }}
                                                                     onClick={() => {
-                                                                        formik.setFieldValue('customer', customer.id);
-                                                                        setSearchTerm(customer.name); // Show selected customer's name in input
-                                                                        handleCustomerChange({ target: { value: customer.id } });
+
+                                                                        formik.setFieldValue("customer", customer.id);
+                                                                        setCustomerSearch(customer.name);
+                                                                        setCustomerResults([]);
+
+                                                                        handleCustomerChange({
+                                                                            target: { value: customer.id }
+                                                                        });
+
                                                                     }}
                                                                 >
-                                                                    {customer.name}
+
+                                                                    {customer.name} - {customer.phone}
+
                                                                 </li>
+
                                                             ))}
+
                                                         </ul>
                                                     )}
-                                                    <Input
-                                                        type="select"
-                                                        name="customer"
-                                                        className="form-control mt-2"
-                                                        id="customer"
-                                                        value={formik.values.customer}
-                                                        onChange={handleCustomerChange} // Use the new handler
-                                                        onBlur={formik.handleBlur}
-                                                        invalid={formik.touched.customer && formik.errors.customer ? true : false}
-                                                    >
-                                                        <option value="">Select a Customer...</option>
-                                                        {filteredCustomers.map((custo) => (
-                                                            <option key={custo.id} value={custo.id}>
-                                                                {custo.name}
-                                                            </option>
-                                                        ))}
-                                                    </Input>
-                                                    {formik.errors.customer && formik.touched.customer ? (
-                                                        <FormFeedback type="invalid">{formik.errors.customer}</FormFeedback>
-                                                    ) : null}
+
+                                                    {formik.errors.customer && formik.touched.customer && (
+                                                        <FormFeedback style={{ display: "block" }}>
+                                                            {formik.errors.customer}
+                                                        </FormFeedback>
+                                                    )}
+
                                                 </div>
                                             </Col>
 

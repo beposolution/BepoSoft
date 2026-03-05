@@ -45,19 +45,19 @@ const BasicTable = () => {
         if (token && role) fetchOrders();
     }, [token, role]);
 
-    const fetchOrders = async (url = null) => {
+    const fetchOrders = async (url = null, search = "") => {
         try {
             setLoading(true);
+
+            const baseUrl = import.meta.env.VITE_APP_KEY;
 
             let apiUrl = url;
 
             if (!apiUrl) {
-                const baseUrl = import.meta.env.VITE_APP_KEY;
-
                 if (role === "BDM" || role === "BDO") {
-                    apiUrl = `${baseUrl}family/department/orders/`;
+                    apiUrl = `${baseUrl}family/department/orders/?search=${search}`;
                 } else {
-                    apiUrl = `${baseUrl}orders/`;
+                    apiUrl = `${baseUrl}orders/?search=${search}`;
                 }
             }
 
@@ -68,7 +68,6 @@ const BasicTable = () => {
             setNextPage(response.data.next);
             setPrevPage(response.data.previous);
 
-            // detect page number
             const pageMatch = apiUrl.match(/page=(\d+)/);
             const page = pageMatch ? parseInt(pageMatch[1]) : 1;
             setPageNumber(page);
@@ -92,22 +91,22 @@ const BasicTable = () => {
             setOrders(results);
 
         } catch (error) {
-            console.error("Fetch error:", error);
+            console.error(error);
             setError("Error fetching orders data.");
         } finally {
             setLoading(false);
         }
     };
 
+    const handleSearch = (value) => {
+        setSearchTerm(value);
+        fetchOrders(null, value);
+    };
+
     const filteredOrders = orders.filter(order => {
         const invoice = order.invoice?.toString().toLowerCase() || "";
         const customerName = order.customer?.name?.toLowerCase() || "";
         const order_date = order.order_date ? new Date(order.order_date) : null;
-
-        const matchesSearch =
-            searchTerm === "" ||
-            invoice.includes(searchTerm.toLowerCase()) ||
-            customerName.includes(searchTerm.toLowerCase());
 
         const matchesStatus =
             selectedState === "" ||
@@ -130,7 +129,7 @@ const BasicTable = () => {
             return true;
         })();
 
-        return matchesSearch && matchesStatus && matchesStaff && matchesDate;
+        return matchesStatus && matchesStaff && matchesDate;
     });
 
     const getStatusStyle = (status) => {
@@ -196,7 +195,12 @@ const BasicTable = () => {
                         <Col md={3}>
                             <FormGroup>
                                 <Label>Search by Invoice or Customer</Label>
-                                <Input type="text" placeholder="Search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                <Input
+                                    type="text"
+                                    placeholder="Search"
+                                    value={searchTerm}
+                                    onChange={(e) => handleSearch(e.target.value)}
+                                />
                             </FormGroup>
                         </Col>
                         <Col md={2}>
@@ -279,7 +283,7 @@ const BasicTable = () => {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {filteredOrders?.map((order, index) => {
+                                                        {orders?.map((order, index) => {
                                                             const rowStyle = getRowStyleByPayment(order?.payment_status);
 
                                                             return (
@@ -291,7 +295,7 @@ const BasicTable = () => {
                                                                     <td style={rowStyle}>
                                                                         <Link
                                                                             to={`/order/${order?.id}/items/`}
-                                                                            state={{ orderIds: filteredOrders.map(o => o.id) }}
+                                                                            state={{ orderIds: orders.map(o => o.id) }}
                                                                         >
                                                                             {order?.invoice}
                                                                         </Link>
@@ -371,14 +375,14 @@ const BasicTable = () => {
 
                                                     <Button
                                                         disabled={!prevPage}
-                                                        onClick={() => fetchOrders(prevPage)}
+                                                        onClick={() => fetchOrders(prevPage + `&search=${searchTerm}`)}
                                                     >
                                                         Previous
                                                     </Button>
 
                                                     <Button
                                                         disabled={!nextPage}
-                                                        onClick={() => fetchOrders(nextPage)}
+                                                        onClick={() => fetchOrders(nextPage + `&search=${searchTerm}`)}
                                                     >
                                                         Next
                                                     </Button>

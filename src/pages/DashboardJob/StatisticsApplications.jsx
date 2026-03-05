@@ -24,6 +24,7 @@ const StatisticsApplications = () => {
     const [selectedExpenseRows, setSelectedExpenseRows] = useState([]);
     const [serviceTotals, setServiceTotals] = useState([]);
     const [warehouseSummary, setWarehouseSummary] = useState(null);
+    const [ordersCount, setOrdersCount] = useState(0);
 
 
     const [todayParcelRows, setTodayParcelRows] = useState([]);
@@ -127,19 +128,32 @@ const StatisticsApplications = () => {
     const grandTotalAverage =
         warehouseSummary?.current_month_summary?.average || 0;
 
-    useEffect(() => {
-        const fetchOrdersData = async () => {
-            try {
-                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}orders/`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setOrders(response?.data?.results || []);
-            } catch (error) {
-                toast.error('Error fetching order data:');
+    const fetchOrdersData = async () => {
+        try {
+            const response = await axios.get(`${import.meta.env.VITE_APP_KEY}orders/`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            setOrdersCount(response.data.count);
+
+            let ordersData = [];
+
+            if (Array.isArray(response.data)) {
+                ordersData = response.data;
             }
-        };
-        fetchOrdersData();
-    }, []);
+            else if (Array.isArray(response.data.results)) {
+                ordersData = response.data.results;
+            }
+            else if (Array.isArray(response.data.results?.results)) {
+                ordersData = response.data.results.results;
+            }
+
+            setOrders(ordersData);
+
+        } catch (error) {
+            toast.error("Error fetching order data");
+        }
+    };
 
     useEffect(() => {
         const fetchOrdersData = async () => {
@@ -475,11 +489,13 @@ const StatisticsApplications = () => {
 
     const monthRangeLabel = `${fmtRangeDate(firstDay)} - ${fmtRangeDate(lastDay)}`;
 
-    const ordersThisMonth = orders.filter(order => {
-        if (!order.order_date) return false;
-        const orderDate = new Date(order.order_date);
-        return orderDate >= firstDayOfMonth && orderDate <= lastDayOfMonth;
-    });
+    const ordersThisMonth = Array.isArray(orders)
+        ? orders.filter(order => {
+            if (!order.order_date) return false;
+            const orderDate = new Date(order.order_date);
+            return orderDate >= firstDayOfMonth && orderDate <= lastDayOfMonth;
+        })
+        : [];
 
     const calculateCredit = (payments, dateFilter) => {
         if (!payments || payments.length === 0) return 0;
@@ -555,7 +571,7 @@ const StatisticsApplications = () => {
     );
 
     // const todayBills = chartsData?.find(item => item?.title === "Today Bills");
-    const todayBills = orders.length;
+    const todayBills = ordersCount;
     const totalVolume = orders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
     const totalexpense = expense.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
 

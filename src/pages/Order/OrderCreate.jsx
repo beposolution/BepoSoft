@@ -250,7 +250,7 @@ const FormLayouts = () => {
                         setStaffs(ManagedResponse.data.data);
                     }
                     if (staffcustomersResponse.status === 200) {
-                        setCustomers(staffcustomersResponse?.data?.data);
+                        setCustomers(staffcustomersResponse?.data?.results || []);
                     }
                     if (StaffResponse.status === 200) {
                         const user = StaffResponse.data.data;
@@ -295,8 +295,22 @@ const FormLayouts = () => {
 
 
     // Search and select customer
-    const handleSearchChange = (event) => {
-        setSearchTerm(event.target.value);
+    const handleSearchChange = async (event) => {
+        const value = event.target.value;
+        setSearchTerm(value);
+
+        if (value.length < 2) return;
+
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}customers/?search=${value}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            setCustomers(response.data.results || []);
+        } catch (error) {
+            console.error("Customer search failed", error);
+        }
     };
 
     const handleCustomerChange = async (event) => {
@@ -316,10 +330,7 @@ const FormLayouts = () => {
         }
     };
 
-    // Filter customers based on search term
-    const filteredCustomers = customers.filter(customer =>
-        customer.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredCustomers = customers.slice(0, 20);
 
     const fetchCartProducts = async () => {
         try {
@@ -584,23 +595,31 @@ const FormLayouts = () => {
                                                         onChange={handleSearchChange}
                                                         className="form-control"
                                                     />
-                                                    {searchTerm && filteredCustomers.length > 0 && (
-                                                        <ul className="customer-dropdown" style={{ border: '1px solid #ccc', maxHeight: '150px', overflowY: 'auto', marginTop: 0, paddingLeft: 0 }}>
-                                                            {filteredCustomers.map(customer => (
-                                                                <li
-                                                                    key={customer.id}
-                                                                    style={{ listStyle: 'none', padding: '8px', cursor: 'pointer' }}
-                                                                    onClick={() => {
-                                                                        formik.setFieldValue('customer', customer.id);
-                                                                        setSearchTerm(customer.name); // Show selected customer's name in input
-                                                                        handleCustomerChange({ target: { value: customer.id } });
-                                                                    }}
-                                                                >
-                                                                    {customer.name}
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    )}
+
+                                                    <ul
+                                                        className="customer-dropdown"
+                                                        style={{
+                                                            border: "1px solid #ccc",
+                                                            maxHeight: "150px",
+                                                            overflowY: "auto",
+                                                            marginTop: 0,
+                                                            paddingLeft: 0
+                                                        }}
+                                                    >
+                                                        {filteredCustomers.map(customer => (
+                                                            <li
+                                                                key={customer.id}
+                                                                style={{ listStyle: "none", padding: "8px", cursor: "pointer" }}
+                                                                onClick={() => {
+                                                                    formik.setFieldValue("customer", customer.id);
+                                                                    setSearchTerm(customer.name);
+                                                                    handleCustomerChange({ target: { value: customer.id } });
+                                                                }}
+                                                            >
+                                                                {customer.name}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
                                                     <Input
                                                         type="select"
                                                         name="customer"

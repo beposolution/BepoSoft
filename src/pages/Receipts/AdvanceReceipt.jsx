@@ -5,6 +5,7 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Card, CardBody, Col, Row, Label, CardTitle, Form, Input, Button } from "reactstrap";
 import "react-toastify/dist/ReactToastify.css";
 import Select from "react-select";
+import AsyncSelect from "react-select/async";
 
 const AdvanceReceipt = () => {
   const [banks, setBanks] = useState([]);
@@ -54,7 +55,6 @@ const AdvanceReceipt = () => {
       // optional: toast.info("Advance receipt action logged.");
     } catch (err) {
       toast.warn("Advance receipt saved, but logging to DataLog failed.");
-      console.error("DataLog error:", err?.response?.data || err.message);
     }
   };
 
@@ -120,17 +120,41 @@ const AdvanceReceipt = () => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_APP_KEY}customers/`, {
-          headers: authHeaders,
-        });
-        if (response.status === 200) setCustomers(response?.data?.data);
+        const response = await axios.get(
+          `${import.meta.env.VITE_APP_KEY}customers/`,
+          { headers: authHeaders }
+        );
+
+        if (response.status === 200) {
+          setCustomers(response?.data?.results || []);
+        }
+
       } catch {
         toast.error("Error fetching customer data");
       }
     };
+
     fetchCustomers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const loadCustomerOptions = async (inputValue) => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_APP_KEY}customers/?search=${inputValue}`,
+        { headers: authHeaders }
+      );
+
+      const customers = response?.data?.results || [];
+
+      return customers.map((c) => ({
+        label: `${c.name} (${c.phone})`,
+        value: c.id,
+      }));
+    } catch (error) {
+      console.error("Customer search error:", error);
+      return [];
+    }
+  };
 
   const handleBankChange = (selected) => {
     setSelectedBank(selected);
@@ -196,15 +220,14 @@ const AdvanceReceipt = () => {
                       <Col md={4}>
                         <div className="mb-3">
                           <Label>Customer</Label>
-                          <Select
+                          <AsyncSelect
+                            cacheOptions
+                            loadOptions={loadCustomerOptions}
+                            defaultOptions
                             value={selectedCustomer}
                             onChange={handleCustomerChange}
-                            options={customers.map((c) => ({
-                              label: `${c.name} (${c.phone})`,
-                              value: c.id,
-                            }))}
                             isClearable
-                            placeholder="Select Customer"
+                            placeholder="Search Customer..."
                           />
                         </div>
                       </Col>

@@ -5,6 +5,7 @@ import { ToastContainer, toast } from "react-toastify";
 import { Card, Col, Container, Row, CardBody, CardTitle, Table, Spinner, Input, Modal, ModalHeader, ModalBody, Label, ModalFooter, Button } from "reactstrap";
 import Paginations from '../../components/Common/Pagination';
 import Select from 'react-select';
+import AsyncSelect from 'react-select/async';
 
 const OtherReceiptList = () => {
     const [receipts, setReceipts] = useState([])
@@ -57,7 +58,7 @@ const OtherReceiptList = () => {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 if (response?.status === 200) {
-                    setOrders(response?.data?.results);
+                    setOrders(response?.data?.results?.results);
                 }
             } catch (error) {
                 toast.error("Error fetching banks:");
@@ -66,6 +67,30 @@ const OtherReceiptList = () => {
         fetchOrders();
     }, []);
 
+    const loadOrders = async (inputValue) => {
+        if (!inputValue) return [];
+
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}orders/?search=${inputValue}`,
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            const orders = response?.data?.results?.results || [];
+
+            return orders.map(o => ({
+                label: `${o.invoice} - ${o.customer?.name ?? ""} - ₹${o.total_amount ?? 0}`,
+                value: o.id
+            }));
+
+        } catch (error) {
+            console.error("Order search error:", error);
+            return [];
+        }
+    };
+
     useEffect(() => {
         const fetchCustomers = async () => {
             try {
@@ -73,7 +98,7 @@ const OtherReceiptList = () => {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 if (response.status === 200) {
-                    setCustomers(response?.data?.data);
+                    setCustomers(response?.data?.results);
                 }
             } catch (error) {
                 toast.error('Error fetching bank data:');
@@ -81,6 +106,30 @@ const OtherReceiptList = () => {
         };
         fetchCustomers();
     }, []);
+
+    const loadCustomers = async (inputValue) => {
+        if (!inputValue) return [];
+
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}customers/?search=${inputValue}`,
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            const customers = response?.data?.results || [];
+
+            return customers.map(c => ({
+                label: `${c.name} - ${c.phone ?? ""}`,
+                value: c.id
+            }));
+
+        } catch (error) {
+            console.error("Customer search error:", error);
+            return [];
+        }
+    };
 
     const fetchReceiptData = async () => {
         try {
@@ -330,7 +379,6 @@ const OtherReceiptList = () => {
             setModalOpen(false);
             setOriginalReceipt(null); // reset snapshot
         } catch (error) {
-            console.error("Error:", error);
             toast.error("Failed to update receipt.");
         }
     };
@@ -577,18 +625,23 @@ const OtherReceiptList = () => {
                                                         <Col md={6}>
                                                             <div className="mb-3">
                                                                 <Label>Select Customer</Label>
-                                                                <Select
-                                                                    options={customers.map(c => ({ label: c.name, value: c.id }))}
+                                                                <AsyncSelect
+                                                                    cacheOptions
+                                                                    defaultOptions
+                                                                    loadOptions={loadCustomers}
                                                                     onChange={(selected) => setFormData(prev => ({
                                                                         ...prev,
                                                                         customer: selected?.value || '',
-                                                                        order: ''  // clear order if customer is selected
+                                                                        order: ''
                                                                     }))}
                                                                     isClearable
-                                                                    placeholder="Choose Customer"
+                                                                    placeholder="Search Customer (Name / Phone)"
                                                                     value={
                                                                         formData.customer
-                                                                            ? { label: customers.find(c => c.id === formData.customer)?.name || '', value: formData.customer }
+                                                                            ? {
+                                                                                label: customerNameById(formData.customer),
+                                                                                value: formData.customer
+                                                                            }
                                                                             : null
                                                                     }
                                                                     isDisabled={!!formData.order}
@@ -603,24 +656,21 @@ const OtherReceiptList = () => {
                                                         <Col md={6}>
                                                             <div className="mb-3">
                                                                 <Label>Select Order</Label>
-                                                                <Select
-                                                                    options={orders.map(order => ({
-                                                                        label: `${order.invoice} - ${order.customer?.name} - ₹${order.total_amount}`,
-                                                                        value: order.id
-                                                                    }))}
+                                                                <AsyncSelect
+                                                                    cacheOptions
+                                                                    defaultOptions
+                                                                    loadOptions={loadOrders}
                                                                     onChange={(selected) => setFormData(prev => ({
                                                                         ...prev,
                                                                         order: selected?.value || '',
-                                                                        customer: ''  // clear customer if order is selected
+                                                                        customer: ''
                                                                     }))}
                                                                     isClearable
-                                                                    placeholder="Choose Order"
+                                                                    placeholder="Search Order (Invoice / Customer)"
                                                                     value={
                                                                         formData.order
                                                                             ? {
-                                                                                label: orders.find(o => o.id === formData.order)?.invoice +
-                                                                                    ' - ' + orders.find(o => o.id === formData.order)?.customer?.name +
-                                                                                    ' - ₹' + orders.find(o => o.id === formData.order)?.total_amount,
+                                                                                label: orderLabelById(formData.order),
                                                                                 value: formData.order
                                                                             }
                                                                             : null

@@ -5,6 +5,7 @@ import { ToastContainer, toast } from "react-toastify";
 import { Card, Col, Container, Row, CardBody, CardTitle, Table, Spinner, Input, Modal, ModalHeader, ModalBody, Label, ModalFooter, Button } from "reactstrap";
 import Paginations from '../../components/Common/Pagination';
 import Select from "react-select";
+import AsyncSelect from "react-select/async";
 
 const OrderReceiptList = () => {
     const [receipts, setReceipts] = useState([])
@@ -14,7 +15,7 @@ const OrderReceiptList = () => {
     const [selectedReceipt, setSelectedReceipt] = useState(null);
     const [formData, setFormData] = useState({ bank: '', amount: '' });
     const [selectedOrderId, setSelectedOrderId] = useState('');
-    const [customerId, setCustomerId] = useState('')
+    const [selectedCustomer, setSelectedCustomer] = useState(null)
     const [modalLoading, setModalLoading] = useState(false);
     const [banks, setBanks] = useState([]);
     const [order, setOrder] = useState([]);
@@ -25,37 +26,72 @@ const OrderReceiptList = () => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
-    useEffect(() => {
-        const fetchCustomers = async () => {
-            try {
-                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}customers/`, {
+    const loadCustomers = async (inputValue) => {
+        if (!inputValue) return [];
+
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}customers/?search=${inputValue}`,
+                {
                     headers: { Authorization: `Bearer ${token}` }
-                });
-                if (response.status === 200) {
-                    setCustomer(response?.data?.data);
                 }
-            } catch (error) {
-                toast.error("Error fetching banks:");
-            }
-        };
-        fetchCustomers();
-    }, []);
+            );
+
+            return (response.data.results || []).map(c => ({
+                value: String(c.id),
+                label: `${c.name} - ${c.phone ?? ""}`
+            }));
+
+        } catch (err) {
+            return [];
+        }
+    };
 
     useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}orders/`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}orders/`,
+                    {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }
+                );
+
                 if (response.status === 200) {
-                    setOrder(response?.data?.results);
+                    setOrder(response?.data?.results?.results || []);
                 }
+
             } catch (error) {
-                toast.error("Error fetching banks:");
+                toast.error("Error fetching orders:");
             }
         };
+
         fetchOrders();
     }, []);
+
+    const loadOrders = async (inputValue) => {
+        if (!inputValue) return [];
+
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}orders/?search=${inputValue}`,
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            const orders = response.data?.results?.results || [];
+
+            return orders.map(o => ({
+                value: String(o.id),
+                label: `${o.invoice} - ${o.customer?.name ?? ""} - ₹${o.total_amount ?? 0}`
+            }));
+
+        } catch (error) {
+            console.error("Order search error:", error);
+            return [];
+        }
+    };
 
     useEffect(() => {
         const fetchBanks = async () => {
@@ -106,10 +142,14 @@ const OrderReceiptList = () => {
                 created_by_name: data.created_by_name,
                 transactionID: data.transactionID,
                 remark: data.remark,
-                received_at: data.received_at
+                customer_name: data.customer_name,
+                received_at: data.received_at ? data.received_at.split("T")[0] : ""
             });
             setSelectedOrderId(data.order);
-            setCustomerId(data.customer)
+            setSelectedCustomer({
+                value: String(data.customer),
+                label: data.customer_name
+            })
         } catch (error) {
             toast.error("Error fetching receipt details:");
         } finally {
@@ -135,7 +175,7 @@ const OrderReceiptList = () => {
                     amount: formData.amount,
                     transactionID: formData.transactionID,
                     received_at: formData.received_at,
-                    customer: customerId,
+                    customer: selectedCustomer?.value,
                     remark: formData.remark,
                     created_by: selectedReceipt.created_by,
                 },
@@ -160,7 +200,7 @@ const OrderReceiptList = () => {
                     amount: formData.amount,
                     transactionID: formData.transactionID,
                     received_at: formData.received_at,
-                    customer: customerId,
+                    customer: selectedCustomer?.value,
                     remark: formData.remark,
                     created_by: selectedReceipt.created_by,
                 };
@@ -182,7 +222,6 @@ const OrderReceiptList = () => {
                 );
             }
         } catch (error) {
-            console.error(error);
             toast.error("Failed to update receipt.");
         }
     };
@@ -215,13 +254,12 @@ const OrderReceiptList = () => {
         return matchesSearch && isAfterStart && isBeforeEnd;
     });
 
-    // put these above your return (or inside the component body)
-    const orderOptions = order.map(o => ({
-        value: String(o.id), // make types consistent
+    const orderOptions = (order || []).map(o => ({
+        value: String(o.id),
         label: `${o.invoice} - ${o.customer?.name ?? ""} - ₹${o.total_amount ?? 0}`,
     }));
 
-    const customerOptions = customer.map(c => ({
+    const customerOptions = (customer || []).map(c => ({
         value: String(c.id),
         label: c.name,
     }));
@@ -232,7 +270,6 @@ const OrderReceiptList = () => {
 
     // If your state is numeric, normalize it to string once:
     const selectedOrderValue = selectedOrderId ? String(selectedOrderId) : "";
-    const selectedCustomerValue = customerId ? String(customerId) : "";
 
     const rsStyles = {
         menuPortal: base => ({ ...base, zIndex: 9999 }),
@@ -396,13 +433,18 @@ const OrderReceiptList = () => {
                                                         <Col md={4}>
                                                             <div className="mb-3">
                                                                 <Label>Orders</Label>
-                                                                <Select
-                                                                    options={orderOptions}
-                                                                    value={orderOptions.find(opt => opt.value === selectedOrderValue) || null}
+                                                                <AsyncSelect
+                                                                    cacheOptions
+                                                                    defaultOptions
+                                                                    loadOptions={loadOrders}
+                                                                    value={
+                                                                        selectedOrderId
+                                                                            ? { value: selectedOrderId, label: selectedReceipt?.order_name }
+                                                                            : null
+                                                                    }
                                                                     onChange={(opt) => setSelectedOrderId(opt?.value || "")}
-                                                                    placeholder="Select Order"
+                                                                    placeholder="Search Order (Invoice / Customer)"
                                                                     isClearable
-                                                                    isSearchable
                                                                     menuPortalTarget={document.body}
                                                                     styles={rsStyles}
                                                                 />
@@ -456,13 +498,14 @@ const OrderReceiptList = () => {
                                                         <Col md={4}>
                                                             <div className="mb-3">
                                                                 <Label>Customer Name</Label>
-                                                                <Select
-                                                                    options={customerOptions}
-                                                                    value={customerOptions.find(opt => opt.value === selectedCustomerValue) || null}
-                                                                    onChange={(opt) => setCustomerId(opt?.value || "")}
-                                                                    placeholder="Select Customer"
+                                                                <AsyncSelect
+                                                                    cacheOptions
+                                                                    defaultOptions
+                                                                    loadOptions={loadCustomers}
+                                                                    value={selectedCustomer}
+                                                                    onChange={(opt) => setSelectedCustomer(opt)}
+                                                                    placeholder="Search Customer (Name / Phone / Email)"
                                                                     isClearable
-                                                                    isSearchable
                                                                     menuPortalTarget={document.body}
                                                                     styles={rsStyles}
                                                                 />

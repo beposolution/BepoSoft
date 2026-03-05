@@ -104,7 +104,6 @@ const OrderReceipt = () => {
       }
     } catch (error) {
       toast.error("Failed to create order receipt");
-      console.error("Receipt error:", error?.response?.data || error.message);
     } finally {
       setIsLoading(false);
     }
@@ -127,22 +126,30 @@ const OrderReceipt = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_APP_KEY}orders/`, {
-          headers: authHeaders,
-        });
-        if (response.status === 200) {
-          setOrder(response?.data?.results);
-        }
-      } catch (error) {
-        toast.error("Error fetching orders");
+
+  const fetchOrders = async (search = "") => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_APP_KEY}orders/?search=${search}`,
+        { headers: authHeaders }
+      );
+
+      if (response.status === 200) {
+        setOrder(response?.data?.results?.results || []);
       }
-    };
+    } catch (error) {
+      toast.error("Error fetching orders");
+    }
+  };
+
+  useEffect(() => {
     fetchOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleOrderSearch = (inputValue) => {
+    setSearchOrder(inputValue);
+    fetchOrders(inputValue);
+  };
 
   const filteredBanks = banks.filter((bank) =>
     (bank?.name || "").toLowerCase().includes(searchBank.toLowerCase())
@@ -182,12 +189,13 @@ const OrderReceipt = () => {
                           <Select
                             value={selectedOrder}
                             onChange={handleOrderChange}
-                            options={filteredOrders.map((o) => ({
+                            onInputChange={handleOrderSearch}
+                            options={order.map((o) => ({
                               label: `${o.invoice} - ${o.customer?.name} - ₹${o.total_amount}`,
                               value: o.id,
                             }))}
                             isClearable
-                            placeholder="Select Order"
+                            placeholder="Search Order"
                           />
                         </div>
                       </Col>

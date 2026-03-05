@@ -6,6 +6,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Paginations from '../../components/Common/Pagination';
 import Select from "react-select";
+import AsyncSelect from "react-select/async";
 
 
 const AdvanceReceiptList = () => {
@@ -34,7 +35,7 @@ const AdvanceReceiptList = () => {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 if (response.status === 200) {
-                    setCustomer(response?.data?.data);
+                    setCustomer(response?.data?.results);
                 }
             } catch (error) {
                 toast.error("Error fetching banks:");
@@ -42,6 +43,30 @@ const AdvanceReceiptList = () => {
         };
         fetchCustomers();
     }, []);
+
+    const loadCustomers = async (inputValue) => {
+        if (!inputValue) return [];
+
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}customers/?search=${inputValue}`,
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            const customers = response?.data?.results || [];
+
+            return customers.map(c => ({
+                value: String(c.id),
+                label: `${c.name} - ${c.phone ?? ""}`
+            }));
+
+        } catch (error) {
+            console.error("Customer search error:", error);
+            return [];
+        }
+    };
 
     useEffect(() => {
         const fetchBanks = async () => {
@@ -66,7 +91,7 @@ const AdvanceReceiptList = () => {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 if (response?.status === 200) {
-                    setOrders(response?.data?.results || []);
+                    setOrders(response?.data?.results?.results || []);
                 }
             } catch (error) {
                 toast.error("Error fetching orders");
@@ -74,6 +99,30 @@ const AdvanceReceiptList = () => {
         };
         fetchOrders();
     }, []);
+
+    const loadOrders = async (inputValue) => {
+        if (!inputValue) return [];
+
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}orders/?search=${inputValue}`,
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            const orders = response?.data?.results?.results || [];
+
+            return orders.map(o => ({
+                value: String(o.id),
+                label: `${o.invoice} - ${o.customer?.name ?? ""} - ₹${o.total_amount ?? 0}`
+            }));
+
+        } catch (error) {
+            console.error("Order search error:", error);
+            return [];
+        }
+    };
 
     const fetchReceiptData = async () => {
         try {
@@ -95,12 +144,19 @@ const AdvanceReceiptList = () => {
     const handleView = async (id) => {
         setModalLoading(true);
         setModalOpen(true);
+
         try {
-            const response = await axios.get(`${import.meta.env.VITE_APP_KEY}advancereceipt/view/${id}/`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}advancereceipt/view/${id}/`,
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
             const data = response.data;
+
             setSelectedReceipt(data);
+
             setFormData({
                 bank: data.bank,
                 amount: data.amount,
@@ -108,10 +164,14 @@ const AdvanceReceiptList = () => {
                 created_by_name: data.created_by_name,
                 transactionID: data.transactionID,
                 remark: data.remark,
-                received_at: data.received_at
+                received_at: data.received_at,
+                order: data.order ? String(data.order) : ""
             });
-            setCustomerId(data.customer)
 
+            // set selected customer
+            setCustomerId(data.customer ? String(data.customer) : "");
+
+            // snapshot for datalog
             setBeforeSnapshot(pickFields({
                 payment_receipt: data.payment_receipt,
                 bank: data.bank,
@@ -121,6 +181,7 @@ const AdvanceReceiptList = () => {
                 customer: data.customer,
                 remark: data.remark,
             }));
+
         } catch (error) {
             toast.error("Error fetching receipt details:");
         } finally {
@@ -510,13 +571,18 @@ const AdvanceReceiptList = () => {
                                                         <Col md={4}>
                                                             <div className="mb-3">
                                                                 <Label>Customer Name</Label>
-                                                                <Select
-                                                                    options={customerOptions}
-                                                                    value={customerOptions.find(o => o.value === String(customerId)) || null}
+                                                                <AsyncSelect
+                                                                    cacheOptions
+                                                                    defaultOptions
+                                                                    loadOptions={loadCustomers}
+                                                                    value={
+                                                                        customerId
+                                                                            ? { value: String(customerId), label: customer.find(c => c.id === Number(customerId))?.name }
+                                                                            : null
+                                                                    }
                                                                     onChange={(opt) => setCustomerId(opt?.value || "")}
-                                                                    placeholder="Select Customer"
+                                                                    placeholder="Search Customer (Name / Phone)"
                                                                     isClearable
-                                                                    isSearchable
                                                                     menuPortalTarget={document.body}
                                                                     styles={rsStyles}
                                                                 />
@@ -531,28 +597,26 @@ const AdvanceReceiptList = () => {
                                                         <Col md={4}>
                                                             <div className="mb-3">
                                                                 <Label>Select Order</Label>
-                                                                <Select
-                                                                    options={orders.map(o => ({
-                                                                        value: String(o.id),
-                                                                        label: `${o.invoice} - ${o.customer?.name || ''} - ₹${o.total_amount || 0}`,
-                                                                    }))}
+                                                                <AsyncSelect
+                                                                    cacheOptions
+                                                                    defaultOptions
+                                                                    loadOptions={loadOrders}
                                                                     value={
                                                                         formData.order
                                                                             ? {
-                                                                                label: `${orders.find(o => o.id === Number(formData.order))?.invoice || ''} - ${orders.find(o => o.id === Number(formData.order))?.customer?.name || ''} - ₹${orders.find(o => o.id === Number(formData.order))?.total_amount || 0}`,
                                                                                 value: String(formData.order),
+                                                                                label: `${orders.find(o => o.id === Number(formData.order))?.invoice || ''} - ${orders.find(o => o.id === Number(formData.order))?.customer?.name || ''}`
                                                                             }
                                                                             : null
                                                                     }
                                                                     onChange={(opt) =>
-                                                                        setFormData((prev) => ({
+                                                                        setFormData(prev => ({
                                                                             ...prev,
-                                                                            order: opt?.value || '',
+                                                                            order: opt?.value || ''
                                                                         }))
                                                                     }
-                                                                    placeholder="Choose Order"
+                                                                    placeholder="Search Order (Invoice / Customer)"
                                                                     isClearable
-                                                                    isSearchable
                                                                     menuPortalTarget={document.body}
                                                                     styles={rsStyles}
                                                                 />

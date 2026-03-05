@@ -61,8 +61,17 @@ const BasicTable = () => {
         setLoading(true);
 
         const customerResponse = await axios.get(
-          `${import.meta.env.VITE_APP_KEY}customers/?page=${currentPage}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          `${import.meta.env.VITE_APP_KEY}customers/`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            params: {
+              page: currentPage,
+              search: searchTerm,
+              state: selectedState,
+              family: selectedFamily,
+              manager: selectedManager
+            }
+          }
         );
 
         if (customerResponse.status === 200) {
@@ -91,7 +100,7 @@ const BasicTable = () => {
     };
 
     if (token) fetchData();
-  }, [token, currentPage]);
+  }, [token, currentPage, searchTerm, selectedState, selectedFamily, selectedManager]);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -302,7 +311,7 @@ const BasicTable = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {filteredData.map((customer, index) => (
+                            {data.map((customer, index) => (
                               <tr key={customer.id}>
                                 <th scope="row">{(currentPage - 1) * 50 + index + 1}</th>
                                 <td>{customer.name}</td>

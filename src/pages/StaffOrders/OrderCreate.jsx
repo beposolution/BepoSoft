@@ -168,7 +168,7 @@ const FormLayouts = () => {
                     setCustomers(staffcustomersResponse.data.data || []);
                     setCompany(companyResponse.data.data || []);
                     setBank(bankResponse.data.data || []);
-                    setCustomerDetails(allCustomersResponse.data.data || []);
+                    setCustomerDetails(allCustomersResponse.data.results || []);
 
                     if (StaffResponse.status === 200) {
                         const user = StaffResponse.data.data;
@@ -435,7 +435,7 @@ const FormLayouts = () => {
                                                         invalid={formik.touched.customer && formik.errors.customer ? true : false}
                                                     >
                                                         <option value="">Select a Customer...</option>
-                                                        {(role === "BDM" ? matchedCustomers : filteredCustomers).map((custo) => (
+                                                        {filteredCustomers.map((custo) => (
                                                             <option key={custo.id} value={custo.id}>
                                                                 {custo.name}
                                                             </option>
@@ -638,7 +638,7 @@ const FormLayouts = () => {
                                                             {/* AddProduct Modal */}
                                                             <AddProduct
                                                                 isOpen={modalOpen}
-                                                                toggle={toggleModal} 
+                                                                toggle={toggleModal}
                                                                 ProductsFetch={fetchCartProducts}
                                                             />
                                                         </CardBody>

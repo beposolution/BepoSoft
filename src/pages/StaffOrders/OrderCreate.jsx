@@ -435,7 +435,7 @@ const FormLayouts = () => {
                                                         invalid={formik.touched.customer && formik.errors.customer ? true : false}
                                                     >
                                                         <option value="">Select a Customer...</option>
-                                                        {filteredCustomers.map((custo) => (
+                                                        {(role === "BDM" ? matchedCustomers : filteredCustomers).map((custo) => (
                                                             <option key={custo.id} value={custo.id}>
                                                                 {custo.name}
                                                             </option>
@@ -638,7 +638,7 @@ const FormLayouts = () => {
                                                             {/* AddProduct Modal */}
                                                             <AddProduct
                                                                 isOpen={modalOpen}
-                                                                toggle={toggleModal}
+                                                                toggle={toggleModal} 
                                                                 ProductsFetch={fetchCartProducts}
                                                             />
                                                         </CardBody>

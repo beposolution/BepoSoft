@@ -30,6 +30,7 @@ const BasicTable = () => {
     const [prevPage, setPrevPage] = useState(null);
     const token = localStorage.getItem("token");
     const [role, setRole] = useState(null);
+    const [staffList, setStaffList] = useState([]);
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [pageNumber, setPageNumber] = useState(1);
@@ -42,10 +43,31 @@ const BasicTable = () => {
     }, []);
 
     useEffect(() => {
-        if (token && role) fetchOrders();
-    }, [token, role]);
+        fetchStaff();
+    }, []);
 
-    const fetchOrders = async (url = null, search = "") => {
+    useEffect(() => {
+        if (token && role) {
+            fetchOrders();
+        }
+    }, [token, role, searchTerm, selectedState, selectedStaff, startDate, endDate]);
+
+    const fetchStaff = async () => {
+        try {
+            const baseUrl = import.meta.env.VITE_APP_KEY;
+
+            const response = await axios.get(`${baseUrl}staffs/`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            setStaffList(response.data.data);
+
+        } catch (error) {
+            console.error("Error fetching staff:", error);
+        }
+    };
+
+    const fetchOrders = async (url = null) => {
         try {
             setLoading(true);
 
@@ -54,10 +76,19 @@ const BasicTable = () => {
             let apiUrl = url;
 
             if (!apiUrl) {
+
+                const params = new URLSearchParams();
+
+                if (searchTerm) params.append("search", searchTerm);
+                if (selectedState) params.append("status", selectedState);
+                if (selectedStaff) params.append("staff", selectedStaff);
+                if (startDate) params.append("start_date", startDate);
+                if (endDate) params.append("end_date", endDate);
+
                 if (role === "BDM" || role === "BDO") {
-                    apiUrl = `${baseUrl}family/department/orders/?search=${search}`;
+                    apiUrl = `${baseUrl}family/department/orders/?${params.toString()}`;
                 } else {
-                    apiUrl = `${baseUrl}orders/?search=${search}`;
+                    apiUrl = `${baseUrl}orders/?${params.toString()}`;
                 }
             }
 
@@ -76,16 +107,10 @@ const BasicTable = () => {
 
             if (Array.isArray(response.data)) {
                 results = response.data;
-            }
-            else if (Array.isArray(response.data.results)) {
+            } else if (Array.isArray(response.data.results)) {
                 results = response.data.results;
-            }
-            else if (Array.isArray(response.data.results?.results)) {
+            } else if (Array.isArray(response.data.results?.results)) {
                 results = response.data.results.results;
-            }
-
-            if (role === "Warehouse Admin" || role === "warehouse") {
-                results = results.filter(order => order.status === "To Print");
             }
 
             setOrders(results);
@@ -100,7 +125,6 @@ const BasicTable = () => {
 
     const handleSearch = (value) => {
         setSearchTerm(value);
-        fetchOrders(null, value);
     };
 
     const filteredOrders = orders.filter(order => {
@@ -117,15 +141,12 @@ const BasicTable = () => {
 
         const matchesDate = (() => {
             if (!startDate && !endDate) return true;
-            if (!order_date) return false;
 
-            // Convert to India local date boundaries
-            const localUpdated = new Date(order_date.getTime() - order_date.getTimezoneOffset() * 60000);
-            const start = startDate ? new Date(`${startDate}T00:00:00+05:30`) : null;
-            const end = endDate ? new Date(`${endDate}T23:59:59+05:30`) : null;
+            const orderDate = order.order_date?.substring(0, 10); // YYYY-MM-DD
 
-            if (start && localUpdated < start) return false;
-            if (end && localUpdated > end) return false;
+            if (startDate && orderDate < startDate) return false;
+            if (endDate && orderDate > endDate) return false;
+
             return true;
         })();
 
@@ -225,11 +246,19 @@ const BasicTable = () => {
                         <Col md={2}>
                             <FormGroup>
                                 <Label>Filter by Staff</Label>
-                                <Input type="select" value={selectedStaff} onChange={(e) => setSelectedStaff(e.target.value)}>
+                                <Input
+                                    type="select"
+                                    value={selectedStaff}
+                                    onChange={(e) => setSelectedStaff(e.target.value)}
+                                >
                                     <option value="">All Staff</option>
-                                    {[...new Set(orders.map(order => order.manage_staff))].map((staff, index) => (
-                                        <option key={index} value={staff}>{staff}</option>
+
+                                    {staffList.map((staff) => (
+                                        <option key={staff.id} value={staff.name}>
+                                            {staff.name}
+                                        </option>
                                     ))}
+
                                 </Input>
                             </FormGroup>
                         </Col>

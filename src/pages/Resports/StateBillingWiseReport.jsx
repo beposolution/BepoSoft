@@ -320,7 +320,7 @@ const StateBillingWiseReport = () => {
         // Save the file
         XLSX.writeFile(workbook, "State_Billing_Report.xlsx");
     };
-    
+
 
     const exportToPDF = () => {
         const families = data.filter(
@@ -482,206 +482,230 @@ const StateBillingWiseReport = () => {
     };
 
 
+   
     return (
         <React.Fragment>
             <div className="page-content">
-                <Breadcrumbs title="Reports" breadcrumbItem="State Wise & Billing Wise Report" />
-                <Row>
-                    <Row className="mb-4">
 
-                        <Col md={3}>
-                            <Label>Start Date</Label>
-                            <input
-                                type="date"
-                                className="form-control"
-                                value={fromDate}
-                                onChange={(e) => setFromDate(e.target.value)}
-                            />
-                        </Col>
+                {/* <Breadcrumbs title="Reports" breadcrumbItem="State Wise & Billing Wise Report" /> */}
 
-                        <Col md={3}>
-                            <Label>End Date</Label>
-                            <input
-                                type="date"
-                                className="form-control"
-                                value={toDate}
-                                onChange={(e) => setToDate(e.target.value)}
-                            />
-                        </Col>
+                {/* ================= HEADER SECTION ================= */}
 
-                        <Col md={2} style={{ marginTop: "28px" }}>
-                            <button
-                                className="btn btn-primary"
-                                onClick={() => fetchReport(fromDate, toDate)}
-                            >
-                                Filter
-                            </button>
-                        </Col>
-                        <Col md={2} style={{ marginTop: "28px" }}>
-                            <button
-                                className="btn btn-success"
-                                onClick={exportToExcel}
-                            >
-                                Export Excel
-                            </button>
-                        </Col>
+                <Card className="mb-4" style={{ background: "#0f2f3a", color: "#fff" }}>
+                    <CardBody>
 
-                        <Col md={2} style={{ marginTop: "28px" }}>
-                            <button
-                                className="btn btn-danger"
-                                onClick={exportToPDF}
-                            >
-                                Export PDF
-                            </button>
-                        </Col>
+                        <Row className="align-items-center">
 
-                    </Row>
-                    <Col lg={12}>
+                            <Col md={8}>
+                                <h3 style={{ marginBottom: "0" }}>
+                                    STATE WISE & BILLING WISE REPORT
+                                </h3>
+                                <p style={{ marginBottom: "0", opacity: "0.8" }}>
+                                    View state wise and billing wise report and export to Excel / PDF
+                                </p>
+                            </Col>
 
+                            <Col md={4} className="text-end">
 
-                        <Row>
+                                <button
+                                    className="btn btn-success me-2"
+                                    onClick={exportToExcel}
+                                >
+                                    Export Excel
+                                </button>
 
-                            {data
-                                .filter((family) => family.family === "cycling" || family.family === "skating")
-                                .map((family, index) => {
+                                <button
+                                    className="btn btn-danger"
+                                    onClick={exportToPDF}
+                                >
+                                    Export PDF
+                                </button>
 
-                                    const { totalBills, totalAmount } = calculateTotals(family.states);
-
-                                    return (
-
-                                        <Col lg={6} key={index}>
-
-                                            <Card id={`report-${family.family}`}>
-                                                <CardBody>
-
-                                                    <style>
-                                                        {`
-        .report-table {
-            border: 2px solid black;
-        }
-
-        .report-table th,
-        .report-table td {
-            border: 1px solid black !important;
-        }
-
-        .report-table thead th {
-            background: #94ebf1 ;
-            color: red ;
-            font-weight: 700 ;
-        }
-
-        .report-table tbody tr.row-peach,
-        .report-table tbody tr.row-peach td {
-            background-color: #fcc08c ;
-        }
-
-        .report-table tbody tr.row-white,
-        .report-table tbody tr.row-white td {
-            background-color: #ffffff !important;
-        }
-
-        .report-table .total-row td{
-            background: red !important;
-            color: white !important;
-            font-weight: bold;
-        }
-    `}
-                                                    </style>
-
-                                                    <h4 style={{ marginBottom: "5px", textTransform: "uppercase", textAlign: "center" }}>
-                                                        {family.family}
-                                                    </h4>
-
-                                                    <div style={{ textAlign: "center", fontWeight: "600", marginBottom: "10px" }}>
-                                                        {fromDate} to {toDate}
-                                                    </div>
-
-                                                    <Table responsive className="text-center align-middle report-table">
-
-                                                        <thead className="fw-bold text-center">
-                                                            <tr>
-                                                                <th>#NO</th>
-                                                                <th>STATE</th>
-                                                                <th>BDO</th>
-                                                                <th>BILL</th>
-                                                                <th>AMOUNT</th>
-                                                                <th>STATE WISE TOTAL</th>
-                                                            </tr>
-                                                        </thead>
-
-                                                        <tbody>
-
-                                                            {family.states.map((state, stateIndex) => {
-
-                                                                const totalAmount = state.bdo_details.reduce(
-                                                                    (sum, b) => sum + b.amount,
-                                                                    0
-                                                                )
-
-                                                                const totalBills = state.bdo_details.reduce(
-                                                                    (sum, b) => sum + b.bills,
-                                                                    0
-                                                                )
-
-                                                                return state.bdo_details.map((bdo, i) => (
-
-                                                                    <tr key={i} className={stateIndex % 2 === 0 ? "row-peach" : "row-white"}>
-
-                                                                        {i === 0 && (
-                                                                            <>
-                                                                                <td rowSpan={state.bdo_details.length} className="fw-bold">
-                                                                                    {stateIndex + 1}
-                                                                                </td>
-
-                                                                                <td rowSpan={state.bdo_details.length} className="fw-bold">
-                                                                                    {state.state}
-                                                                                </td>
-                                                                            </>
-                                                                        )}
-
-                                                                        <td className="fw-semibold ">{bdo.name}</td>
-
-                                                                        <td className="fw-semibold ">{bdo.bills}</td>
-
-                                                                        <td className="fw-semibold ">{bdo.amount}</td>
-
-                                                                        {i === 0 && (
-                                                                            <td rowSpan={state.bdo_details.length} className="fw-bold">
-                                                                                {totalAmount?.toFixed(2)}
-                                                                            </td>
-                                                                        )}
-
-                                                                    </tr>
-                                                                ))
-                                                            })}
-
-                                                            <tr className="total-row">
-                                                                <td colSpan="3">TOTAL</td>
-                                                                <td>{totalBills}</td>
-                                                                <td>{totalAmount?.toFixed(2)}</td>
-                                                                <td>{totalAmount?.toFixed(2)}</td>
-                                                            </tr>
-
-                                                        </tbody>
-
-                                                    </Table>
-
-                                                </CardBody>
-                                            </Card>
-
-                                        </Col>
-
-                                    )
-                                })}
+                            </Col>
 
                         </Row>
 
-                    </Col>
+                    </CardBody>
+                </Card>
+
+
+                {/* ================= FILTER SECTION ================= */}
+
+                <Card className="mb-4">
+                    <CardBody>
+
+                        <Row className="align-items-end">
+
+                            <Col md={3}>
+                                <Label>Start Date</Label>
+                                <input
+                                    type="date"
+                                    className="form-control"
+                                    value={fromDate}
+                                    onChange={(e) => setFromDate(e.target.value)}
+                                />
+                            </Col>
+
+                            <Col md={3}>
+                                <Label>End Date</Label>
+                                <input
+                                    type="date"
+                                    className="form-control"
+                                    value={toDate}
+                                    onChange={(e) => setToDate(e.target.value)}
+                                />
+                            </Col>
+
+                            <Col md={2}>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={() => fetchReport(fromDate, toDate)}
+                                >
+                                    Filter
+                                </button>
+                            </Col>
+
+                        </Row>
+
+                    </CardBody>
+                </Card>
+
+
+                {/* ================= REPORT TABLE SECTION ================= */}
+
+                <Row>
+
+                    {data
+                        .filter((family) => family.family === "cycling" || family.family === "skating")
+                        .map((family, index) => {
+
+                            const { totalBills, totalAmount } = calculateTotals(family.states)
+
+                            return (
+
+                                <Col lg={6} key={index}>
+
+                                    <Card id={`report-${family.family}`}>
+                                        <CardBody>
+
+                                            <style>
+                                                {`
+.report-table {
+border:2px solid black;
+}
+
+.report-table th,
+.report-table td{
+border:1px solid black !important;
+}
+
+.report-table thead th{
+background:#94ebf1;
+color:red;
+font-weight:700;
+}
+
+.report-table tbody tr.row-peach,
+.report-table tbody tr.row-peach td{
+background-color:#fcc08c;
+}
+
+.report-table tbody tr.row-white,
+.report-table tbody tr.row-white td{
+background-color:#ffffff !important;
+}
+
+.report-table .total-row td{
+background:red !important;
+color:white !important;
+font-weight:bold;
+}
+`}
+                                            </style>
+
+                                            <h4 style={{ textAlign: "center", textTransform: "uppercase" }}>
+                                                {family.family}
+                                            </h4>
+
+                                            <div style={{ textAlign: "center", fontWeight: "600", marginBottom: "10px" }}>
+                                                {fromDate} to {toDate}
+                                            </div>
+
+                                            <Table responsive className="text-center align-middle report-table">
+
+                                                <thead>
+                                                    <tr>
+                                                        <th>#NO</th>
+                                                        <th>STATE</th>
+                                                        <th>BDO</th>
+                                                        <th>BILL</th>
+                                                        <th>AMOUNT</th>
+                                                        <th>STATE WISE TOTAL</th>
+                                                    </tr>
+                                                </thead>
+
+                                                <tbody>
+
+                                                    {family.states.map((state, stateIndex) => {
+
+                                                        const totalAmount = state.bdo_details.reduce((sum, b) => sum + b.amount, 0)
+
+                                                        return state.bdo_details.map((bdo, i) => (
+
+                                                            <tr key={i} className={stateIndex % 2 === 0 ? "row-peach" : "row-white"}>
+
+                                                                {i === 0 && (
+                                                                    <>
+                                                                        <td rowSpan={state.bdo_details.length} className="fw-bold">
+                                                                            {stateIndex + 1}
+                                                                        </td>
+
+                                                                        <td rowSpan={state.bdo_details.length} className="fw-bold">
+                                                                            {state.state}
+                                                                        </td>
+                                                                    </>
+                                                                )}
+
+                                                                <td className="fw-semibold">{bdo.name}</td>
+                                                                <td className="fw-semibold">{bdo.bills}</td>
+                                                                <td className="fw-semibold">{bdo.amount}</td>
+
+                                                                {i === 0 && (
+                                                                    <td rowSpan={state.bdo_details.length} className="fw-bold">
+                                                                        {totalAmount?.toFixed(2)}
+                                                                    </td>
+                                                                )}
+
+                                                            </tr>
+
+                                                        ))
+                                                    })}
+
+                                                    <tr className="total-row">
+                                                        <td colSpan="3">TOTAL</td>
+                                                        <td>{totalBills}</td>
+                                                        <td>{totalAmount?.toFixed(2)}</td>
+                                                        <td>{totalAmount?.toFixed(2)}</td>
+                                                    </tr>
+
+                                                </tbody>
+
+                                            </Table>
+
+                                        </CardBody>
+                                    </Card>
+
+                                </Col>
+
+                            )
+
+                        })}
+
                 </Row>
+
             </div>
         </React.Fragment>
-    )
+    );
 }
 
 export default StateBillingWiseReport;

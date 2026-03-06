@@ -15,9 +15,7 @@ import {
 } from "reactstrap";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Link } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Pagination from "../../components/Common/Pagination"
 
 const BasicTable = () => {
     const [orders, setOrders] = useState([]);
@@ -28,28 +26,45 @@ const BasicTable = () => {
     const [selectedStaff, setSelectedStaff] = useState("");
     const [nextPage, setNextPage] = useState(null);
     const [prevPage, setPrevPage] = useState(null);
-    const token = localStorage.getItem("token");
     const [role, setRole] = useState(null);
     const [staffList, setStaffList] = useState([]);
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [pageNumber, setPageNumber] = useState(1);
 
+    const token = localStorage.getItem("token");
+    const debounceRef = useRef(null);
+    const controllerRef = useRef(null);
+
     document.title = "Orders | Beposoft";
 
     useEffect(() => {
-        const role = localStorage.getItem("active");
-        setRole(role);
+        const activeRole = localStorage.getItem("active");
+        setRole(activeRole);
     }, []);
 
     useEffect(() => {
-        fetchStaff();
-    }, []);
-
-    useEffect(() => {
-        if (token && role) {
-            fetchOrders();
+        if (token) {
+            fetchStaff();
         }
+    }, [token]);
+
+    useEffect(() => {
+        if (!token || !role) return;
+
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
+
+        debounceRef.current = setTimeout(() => {
+            fetchOrders();
+        }, 400);
+
+        return () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+            }
+        };
     }, [token, role, searchTerm, selectedState, selectedStaff, startDate, endDate]);
 
     const fetchStaff = async () => {
@@ -60,47 +75,52 @@ const BasicTable = () => {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
-            setStaffList(response.data.data);
-
+            setStaffList(response.data.data || []);
         } catch (error) {
             console.error("Error fetching staff:", error);
         }
     };
 
+    const buildOrdersUrl = () => {
+        const baseUrl = import.meta.env.VITE_APP_KEY;
+        const params = new URLSearchParams();
+
+        if (searchTerm.trim()) params.append("search", searchTerm.trim());
+        if (selectedState) params.append("status", selectedState);
+        if (selectedStaff) params.append("staff", selectedStaff);
+        if (startDate) params.append("start_date", startDate);
+        if (endDate) params.append("end_date", endDate);
+
+        if (role === "BDM" || role === "BDO") {
+            return `${baseUrl}family/department/orders/?${params.toString()}`;
+        }
+
+        return `${baseUrl}orders/?${params.toString()}`;
+    };
+
     const fetchOrders = async (url = null) => {
         try {
             setLoading(true);
+            setError(null);
 
-            const baseUrl = import.meta.env.VITE_APP_KEY;
-
-            let apiUrl = url;
-
-            if (!apiUrl) {
-
-                const params = new URLSearchParams();
-
-                if (searchTerm) params.append("search", searchTerm);
-                if (selectedState) params.append("status", selectedState);
-                if (selectedStaff) params.append("staff", selectedStaff);
-                if (startDate) params.append("start_date", startDate);
-                if (endDate) params.append("end_date", endDate);
-
-                if (role === "BDM" || role === "BDO") {
-                    apiUrl = `${baseUrl}family/department/orders/?${params.toString()}`;
-                } else {
-                    apiUrl = `${baseUrl}orders/?${params.toString()}`;
-                }
+            if (controllerRef.current) {
+                controllerRef.current.abort();
             }
+
+            controllerRef.current = new AbortController();
+
+            const apiUrl = url || buildOrdersUrl();
 
             const response = await axios.get(apiUrl, {
                 headers: { Authorization: `Bearer ${token}` },
+                signal: controllerRef.current.signal
             });
 
             setNextPage(response.data.next);
             setPrevPage(response.data.previous);
 
-            const pageMatch = apiUrl.match(/page=(\d+)/);
-            const page = pageMatch ? parseInt(pageMatch[1]) : 1;
+            const pageMatch = apiUrl.match(/[?&]page=(\d+)/);
+            const page = pageMatch ? parseInt(pageMatch[1], 10) : 1;
             setPageNumber(page);
 
             let results = [];
@@ -114,44 +134,17 @@ const BasicTable = () => {
             }
 
             setOrders(results);
-
         } catch (error) {
-            console.error(error);
+            if (error.name === "CanceledError" || error.code === "ERR_CANCELED") {
+                return;
+            }
+
+            console.error("Error fetching orders:", error);
             setError("Error fetching orders data.");
         } finally {
             setLoading(false);
         }
     };
-
-    const handleSearch = (value) => {
-        setSearchTerm(value);
-    };
-
-    const filteredOrders = orders.filter(order => {
-        const invoice = order.invoice?.toString().toLowerCase() || "";
-        const customerName = order.customer?.name?.toLowerCase() || "";
-        const order_date = order.order_date ? new Date(order.order_date) : null;
-
-        const matchesStatus =
-            selectedState === "" ||
-            order.status?.toLowerCase() === selectedState.toLowerCase();
-
-        const matchesStaff =
-            selectedStaff === "" || order.manage_staff === selectedStaff;
-
-        const matchesDate = (() => {
-            if (!startDate && !endDate) return true;
-
-            const orderDate = order.order_date?.substring(0, 10); // YYYY-MM-DD
-
-            if (startDate && orderDate < startDate) return false;
-            if (endDate && orderDate > endDate) return false;
-
-            return true;
-        })();
-
-        return matchesStatus && matchesStaff && matchesDate;
-    });
 
     const getStatusStyle = (status) => {
         switch (status) {
@@ -176,10 +169,10 @@ const BasicTable = () => {
         const status = paymentStatus.toLowerCase();
 
         if (status === "cod") {
-            return { backgroundColor: "#d6ecff" };   // light blue
+            return { backgroundColor: "#d6ecff" };
         }
         if (status === "credit") {
-            return { backgroundColor: "#ffd6d6" };   // light red
+            return { backgroundColor: "#ffd6d6" };
         }
 
         return {};
@@ -192,9 +185,9 @@ const BasicTable = () => {
             "Company Name": order.company,
             "Order Date": order.order_date,
             "Status": order.status,
-            "Customer Name": order.customer.name,
-            "Customer Phone": order.customer.phone,
-            "Customer Email": order.customer.email,
+            "Customer Name": order.customer?.name,
+            "Customer Phone": order.customer?.phone,
+            "Customer Email": order.customer?.email,
             "Staff": order.manage_staff,
             "Family": order.family,
             "Total Amount": order.total_amount,
@@ -212,57 +205,74 @@ const BasicTable = () => {
             <div className="page-content">
                 <div className="container-fluid">
                     <Breadcrumbs title="Tables" breadcrumbItem="ORDERS LIST" />
+
                     <Row className="align-items-end mb-3">
                         <Col md={3}>
                             <FormGroup>
                                 <Label>Search by Invoice or Customer</Label>
                                 <Input
                                     type="text"
-                                    placeholder="Search"
+                                    placeholder="Enter exact invoice or exact customer name"
                                     value={searchTerm}
-                                    onChange={(e) => handleSearch(e.target.value)}
+                                    onChange={(e) => {
+                                        setPageNumber(1);
+                                        setSearchTerm(e.target.value);
+                                    }}
                                 />
                             </FormGroup>
                         </Col>
+
                         <Col md={2}>
                             <FormGroup>
                                 <Label>Filter by Status</Label>
-                                <Input type="select" value={selectedState} onChange={(e) => setSelectedState(e.target.value)}>
+                                <Input
+                                    type="select"
+                                    value={selectedState}
+                                    onChange={(e) => {
+                                        setPageNumber(1);
+                                        setSelectedState(e.target.value);
+                                    }}
+                                >
                                     <option value="">All Status</option>
-                                    {['Invoice Approved',
-                                        'Waiting For Confirmation',
-                                        'To Print',
-                                        'Packing under progress',
-                                        'Packed',
-                                        'Ready to ship',
-                                        'Shipped',
-                                        'Invoice Rejected',
-                                        'Invoice created',].map(status => (
-                                            <option key={status} value={status}>{status}</option>
-                                        ))}
+                                    {[
+                                        "Invoice Approved",
+                                        "Waiting For Confirmation",
+                                        "To Print",
+                                        "Packing under progress",
+                                        "Packed",
+                                        "Ready to ship",
+                                        "Shipped",
+                                        "Invoice Rejected",
+                                        "Invoice Created",
+                                    ].map((status) => (
+                                        <option key={status} value={status}>
+                                            {status}
+                                        </option>
+                                    ))}
                                 </Input>
                             </FormGroup>
                         </Col>
+
                         <Col md={2}>
                             <FormGroup>
                                 <Label>Filter by Staff</Label>
                                 <Input
                                     type="select"
                                     value={selectedStaff}
-                                    onChange={(e) => setSelectedStaff(e.target.value)}
+                                    onChange={(e) => {
+                                        setPageNumber(1);
+                                        setSelectedStaff(e.target.value);
+                                    }}
                                 >
                                     <option value="">All Staff</option>
-
                                     {staffList.map((staff) => (
                                         <option key={staff.id} value={staff.name}>
                                             {staff.name}
                                         </option>
                                     ))}
-
                                 </Input>
                             </FormGroup>
                         </Col>
-
 
                         <Col md={2}>
                             <FormGroup>
@@ -270,7 +280,10 @@ const BasicTable = () => {
                                 <Input
                                     type="date"
                                     value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
+                                    onChange={(e) => {
+                                        setPageNumber(1);
+                                        setStartDate(e.target.value);
+                                    }}
                                 />
                             </FormGroup>
                         </Col>
@@ -281,23 +294,35 @@ const BasicTable = () => {
                                 <Input
                                     type="date"
                                     value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
+                                    onChange={(e) => {
+                                        setPageNumber(1);
+                                        setEndDate(e.target.value);
+                                    }}
                                 />
                             </FormGroup>
                         </Col>
-                        <Col md={1} >
+
+                        <Col md={1}>
                             <FormGroup>
-                                <Button color="success" onClick={exportToExcel}>Export to Excel</Button>
+                                <Button color="success" onClick={exportToExcel}>
+                                    Export to Excel
+                                </Button>
                             </FormGroup>
                         </Col>
                     </Row>
+
                     <Row>
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
                                     <CardTitle className="h4">BEPOSOFT ORDERS</CardTitle>
+
                                     <div className="table-responsive">
-                                        {loading ? <div>Loading...</div> : error ? <div className="text-danger">{error}</div> : (
+                                        {loading ? (
+                                            <div>Loading...</div>
+                                        ) : error ? (
+                                            <div className="text-danger">{error}</div>
+                                        ) : (
                                             <>
                                                 <Table className="table mb-0">
                                                     <thead>
@@ -324,7 +349,7 @@ const BasicTable = () => {
                                                                     <td style={rowStyle}>
                                                                         <Link
                                                                             to={`/order/${order?.id}/items/`}
-                                                                            state={{ orderIds: orders.map(o => o.id) }}
+                                                                            state={{ orderIds: orders.map((o) => o.id) }}
                                                                         >
                                                                             {order?.invoice}
                                                                         </Link>
@@ -349,7 +374,7 @@ const BasicTable = () => {
                                                                     >
                                                                         <strong>{order?.status}</strong>
 
-                                                                        {(["Ready to ship", "Shipped"].includes(order?.status)) &&
+                                                                        {["Ready to ship", "Shipped"].includes(order?.status) &&
                                                                             (order?.warehouse_data?.length > 0 ||
                                                                                 order?.warehouse?.length > 0) && (
                                                                                 <Table
@@ -366,22 +391,21 @@ const BasicTable = () => {
                                                                                         </tr>
                                                                                     </thead>
                                                                                     <tbody>
-                                                                                        {(order.warehouse_data ??
-                                                                                            order.warehouse ??
-                                                                                            []
-                                                                                        ).map((entry, idx) => (
-                                                                                            <tr key={idx}>
-                                                                                                <td style={{ border: "1px solid green" }}>
-                                                                                                    {idx + 1}
-                                                                                                </td>
-                                                                                                <td style={{ border: "1px solid green" }}>
-                                                                                                    {entry.box}
-                                                                                                </td>
-                                                                                                <td style={{ border: "1px solid green" }}>
-                                                                                                    {entry.tracking_id}
-                                                                                                </td>
-                                                                                            </tr>
-                                                                                        ))}
+                                                                                        {(order.warehouse_data ?? order.warehouse ?? []).map(
+                                                                                            (entry, idx) => (
+                                                                                                <tr key={idx}>
+                                                                                                    <td style={{ border: "1px solid green" }}>
+                                                                                                        {idx + 1}
+                                                                                                    </td>
+                                                                                                    <td style={{ border: "1px solid green" }}>
+                                                                                                        {entry.box}
+                                                                                                    </td>
+                                                                                                    <td style={{ border: "1px solid green" }}>
+                                                                                                        {entry.tracking_id}
+                                                                                                    </td>
+                                                                                                </tr>
+                                                                                            )
+                                                                                        )}
                                                                                     </tbody>
                                                                                 </Table>
                                                                             )}
@@ -398,28 +422,24 @@ const BasicTable = () => {
                                                             );
                                                         })}
                                                     </tbody>
-
                                                 </Table>
-                                                <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
 
+                                                <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
                                                     <Button
                                                         disabled={!prevPage}
-                                                        onClick={() => fetchOrders(prevPage + `&search=${searchTerm}`)}
+                                                        onClick={() => fetchOrders(prevPage)}
                                                     >
                                                         Previous
                                                     </Button>
 
                                                     <Button
                                                         disabled={!nextPage}
-                                                        onClick={() => fetchOrders(nextPage + `&search=${searchTerm}`)}
+                                                        onClick={() => fetchOrders(nextPage)}
                                                     >
                                                         Next
                                                     </Button>
-
                                                 </div>
-
                                             </>
-
                                         )}
                                     </div>
                                 </CardBody>

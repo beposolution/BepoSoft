@@ -168,7 +168,7 @@ const FormLayouts = () => {
                     setCustomers(staffcustomersResponse.data.data || []);
                     setCompany(companyResponse.data.data || []);
                     setBank(bankResponse.data.data || []);
-                    setCustomerDetails(allCustomersResponse.data.data || []);
+                    setCustomerDetails(allCustomersResponse.data.results || []);
 
                     if (StaffResponse.status === 200) {
                         const user = StaffResponse.data.data;

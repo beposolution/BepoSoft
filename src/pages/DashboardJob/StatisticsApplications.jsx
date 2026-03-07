@@ -25,7 +25,8 @@ const StatisticsApplications = () => {
     const [serviceTotals, setServiceTotals] = useState([]);
     const [warehouseSummary, setWarehouseSummary] = useState(null);
     const [ordersCount, setOrdersCount] = useState(0);
-
+    const [stateBdoReport, setStateBdoReport] = useState([]);
+    const [stateBdoLoading, setStateBdoLoading] = useState(false);
 
     const [todayParcelRows, setTodayParcelRows] = useState([]);
     const [monthlyParcelRows, setMonthlyParcelRows] = useState([]);
@@ -127,6 +128,98 @@ const StatisticsApplications = () => {
 
     const grandTotalAverage =
         warehouseSummary?.current_month_summary?.average || 0;
+
+    const calculateStateBdoSummary = (reportData) => {
+        if (!Array.isArray(reportData)) {
+            return {
+                families: [],
+                grandBills: 0,
+                grandAmount: 0,
+                totalStates: 0,
+                totalBdos: 0,
+            };
+        }
+
+        const families = reportData
+            .filter(
+                (family) =>
+                    family?.family === "cycling" || family?.family === "skating"
+            )
+            .map((family) => {
+                let familyBills = 0;
+                let familyAmount = 0;
+                let familyBdos = 0;
+
+                (family.states || []).forEach((state) => {
+                    (state.bdo_details || []).forEach((bdo) => {
+                        familyBills += Number(bdo?.bills || 0);
+                        familyAmount += Number(bdo?.amount || 0);
+                        familyBdos += 1;
+                    });
+                });
+
+                return {
+                    family: family.family,
+                    totalBills: familyBills,
+                    totalAmount: familyAmount,
+                    totalStates: (family.states || []).length,
+                    totalBdos: familyBdos,
+                };
+            });
+
+        const grandBills = families.reduce((sum, item) => sum + item.totalBills, 0);
+        const grandAmount = families.reduce((sum, item) => sum + item.totalAmount, 0);
+        const totalStates = families.reduce((sum, item) => sum + item.totalStates, 0);
+        const totalBdos = families.reduce((sum, item) => sum + item.totalBdos, 0);
+
+        return {
+            families,
+            grandBills,
+            grandAmount,
+            totalStates,
+            totalBdos,
+        };
+    };
+
+    useEffect(() => {
+        const fetchStateBdoSummary = async () => {
+            try {
+                setStateBdoLoading(true);
+
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}reports/state/wise/bdo/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        params: {
+                            start_date: todayDate,
+                            end_date: todayDate,
+                        },
+                    }
+                );
+
+                setStateBdoReport(response?.data?.data || []);
+            } catch (error) {
+                toast.error("Failed to fetch state wise BDO summary");
+            } finally {
+                setStateBdoLoading(false);
+            }
+        };
+
+        if (token) {
+            fetchStateBdoSummary();
+        }
+    }, [token, todayDate]);
+
+    const stateBdoSummary = React.useMemo(() => {
+        return calculateStateBdoSummary(stateBdoReport);
+    }, [stateBdoReport]);
+
+    const goToStateWiseBillingReport = () => {
+        navigate("/state/wise/billing/wise/report/");
+    };
+
 
     const fetchOrdersData = async () => {
         try {
@@ -708,6 +801,61 @@ const StatisticsApplications = () => {
                                                 )}
                                             </tbody>
                                         </Table>
+                                    </div>
+
+                                    <div
+                                        className="p-3 mt-3 border rounded-4 shadow-sm bg-white"
+                                        onClick={goToStateWiseBillingReport}
+                                        style={{ cursor: "pointer" }}
+                                    >
+                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <h5 className="mb-0 text-primary">📍 State Wise BDO Summary</h5>
+                                            <small className="text-muted">{todayDate}</small>
+                                        </div>
+
+                                        {stateBdoLoading ? (
+                                            <div className="text-center text-muted py-3">Loading...</div>
+                                        ) : stateBdoSummary.families.length > 0 ? (
+                                            <>
+                                                <Table bordered responsive className="mb-2 text-center">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Family</th>
+                                                            <th>Bills</th>
+                                                            <th>Amount</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {stateBdoSummary.families.map((item, index) => (
+                                                            <tr key={index}>
+                                                                <td className="fw-bold text-uppercase">{item.family}</td>
+                                                                <td className="fw-semibold">{item.totalBills}</td>
+                                                                <td className="fw-bold text-success">
+                                                                    ₹ {Number(item.totalAmount || 0).toLocaleString("en-IN", {
+                                                                        minimumFractionDigits: 2,
+                                                                        maximumFractionDigits: 2,
+                                                                    })}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                    <tfoot>
+                                                        <tr className="table-primary fw-bold">
+                                                            <td>GRAND TOTAL</td>
+                                                            <td>{stateBdoSummary.grandBills}</td>
+                                                            <td>
+                                                                ₹ {Number(stateBdoSummary.grandAmount || 0).toLocaleString("en-IN", {
+                                                                    minimumFractionDigits: 2,
+                                                                    maximumFractionDigits: 2,
+                                                                })}
+                                                            </td>
+                                                        </tr>
+                                                    </tfoot>
+                                                </Table>
+                                            </>
+                                        ) : (
+                                            <div className="text-center text-muted py-3">No summary available</div>
+                                        )}
                                     </div>
 
                                 </div>

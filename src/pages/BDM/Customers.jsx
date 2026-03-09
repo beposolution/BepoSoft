@@ -60,7 +60,7 @@ const BasicTable = () => {
                     axios.get(`${import.meta.env.VITE_APP_KEY}staffs/`, { headers: { 'Authorization': `Bearer ${token}` } }),
                 ]);
 
-                if (response.status === 200) setData(response?.data?.data);
+                if (response.status === 200) setData(response?.data?.results);
                 if (responseState.status === 200) setStates(responseState.data.data); // Fetch and set states
                 if (responseManager.status === 200) setManager(responseManager.data.data);
             } catch (error) {

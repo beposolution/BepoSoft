@@ -52,8 +52,7 @@ const BasicTable = () => {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.status === 200)
-                    setCustomers(response?.data?.data);
-                console.log("sdhfg", response)
+                    setCustomers(response?.data?.results);
             } catch {
                 toast.error("Error fetching customer data");
             }

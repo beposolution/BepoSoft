@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import {
     Table,
@@ -10,7 +10,6 @@ import {
 } from "reactstrap";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { useNavigate } from "react-router-dom";
-import Paginations from "../../components/Common/Pagination";
 
 const BasicTable = () => {
     const [orders, setOrders] = useState([]);
@@ -29,7 +28,9 @@ const BasicTable = () => {
     const [nextPage, setNextPage] = useState(null);
     const [prevPage, setPrevPage] = useState(null);
     const [pageNumber, setPageNumber] = useState(1);
-    const [rowStart, setRowStart] = useState(1);
+
+    const debounceRef = useRef(null);
+    const controllerRef = useRef(null);
 
     document.title = "Orders | Beposoft";
 
@@ -39,31 +40,69 @@ const BasicTable = () => {
     }, []);
 
     useEffect(() => {
-        if (token && role)
-            fetchOrders(`${import.meta.env.VITE_APP_KEY}orders/`);
-    }, [token, role]);
+        if (!token || !role) return;
 
-    const fetchOrders = async (url) => {
-        if (!url) return;
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
 
+        debounceRef.current = setTimeout(() => {
+            fetchOrders();
+        }, 400);
+
+        return () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+            }
+        };
+    }, [token, role, globalSearch, statusFilter, startDate, endDate]);
+
+    const buildOrdersUrl = () => {
+        const baseUrl = import.meta.env.VITE_APP_KEY;
+        const params = new URLSearchParams();
+
+        if (globalSearch.trim()) params.append("search", globalSearch.trim());
+        if (statusFilter) params.append("status", statusFilter);
+        if (startDate) params.append("start_date", startDate);
+        if (endDate) params.append("end_date", endDate);
+
+        return `${baseUrl}orders/?${params.toString()}`;
+    };
+
+    const fetchOrders = async (url = null) => {
         try {
             setLoading(true);
+            setError(null);
 
-            const response = await axios.get(url, {
+            if (controllerRef.current) {
+                controllerRef.current.abort();
+            }
+
+            controllerRef.current = new AbortController();
+
+            const apiUrl = url || buildOrdersUrl();
+
+            const response = await axios.get(apiUrl, {
                 headers: { Authorization: `Bearer ${token}` },
+                signal: controllerRef.current.signal,
             });
 
-            const data = response.data.results.results;
-
-            const urlParams = new URL(url).searchParams;
-            const page = parseInt(urlParams.get("page")) || 1;
-
+            const pageMatch = apiUrl.match(/[?&]page=(\d+)/);
+            const page = pageMatch ? parseInt(pageMatch[1], 10) : 1;
             setPageNumber(page);
-            const pageSize = 50;
-            setRowStart((page - 1) * pageSize + 1);
 
             setNextPage(response.data.next);
             setPrevPage(response.data.previous);
+
+            let data = [];
+
+            if (Array.isArray(response.data)) {
+                data = response.data;
+            } else if (Array.isArray(response.data.results)) {
+                data = response.data.results;
+            } else if (Array.isArray(response.data.results?.results)) {
+                data = response.data.results.results;
+            }
 
             if (role === "Warehouse Admin") {
                 const filterOrders = data.filter(
@@ -83,8 +122,12 @@ const BasicTable = () => {
 
                 setOrders(filteredOrders);
             }
-
         } catch (error) {
+            if (error.name === "CanceledError" || error.code === "ERR_CANCELED") {
+                return;
+            }
+
+            console.error("Error fetching orders:", error);
             setError("Error fetching orders data. Please try again later.");
         } finally {
             setLoading(false);
@@ -128,7 +171,6 @@ const BasicTable = () => {
         }
     };
 
-    // Unlock order when leaving page
     useEffect(() => {
         const handleUnload = () => {
             if (!lockedOrderId) return;
@@ -148,29 +190,6 @@ const BasicTable = () => {
         };
     }, [lockedOrderId]);
 
-    // Combined filter logic
-    const filteredOrders = orders.filter((order) => {
-        const matchesStatus = !statusFilter || order.status === statusFilter;
-
-        // Global search match
-        const search = globalSearch.toLowerCase().trim();
-        const matchesSearch =
-            !search ||
-            order.invoice?.toLowerCase().includes(search) ||
-            order.customer?.name?.toLowerCase().includes(search) ||
-            order.manage_staff?.toLowerCase().includes(search) ||
-            String(order.total_amount).toLowerCase().includes(search) ||
-            order.status?.toLowerCase().includes(search);
-
-        // Date range match
-        const orderDate = new Date(order.order_date);
-        const matchesDate =
-            (!startDate || orderDate >= new Date(startDate)) &&
-            (!endDate || orderDate <= new Date(endDate));
-
-        return matchesStatus && matchesSearch && matchesDate;
-    });
-
     return (
         <React.Fragment>
             <div className="page-content">
@@ -180,26 +199,36 @@ const BasicTable = () => {
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
-                                    <Row className="mb-3">
+                                    <Row className="align-items-end mb-3">
                                         <Col md={3}>
-                                            <label className="form-label fw-bold">Search</label>
+                                            <label className="form-label fw-bold">
+                                                Search by Invoice or Customer
+                                            </label>
                                             <input
                                                 type="text"
                                                 className="form-control"
-                                                placeholder="Search by Invoice, Customer, Staff, Amount or Status"
+                                                placeholder="Enter invoice, customer, staff, amount or status"
                                                 value={globalSearch}
-                                                onChange={(e) => setGlobalSearch(e.target.value)}
+                                                onChange={(e) => {
+                                                    setPageNumber(1);
+                                                    setGlobalSearch(e.target.value);
+                                                }}
                                             />
                                         </Col>
 
                                         <Col md={3}>
-                                            <label className="form-label fw-bold">Filter by Status</label>
+                                            <label className="form-label fw-bold">
+                                                Filter by Status
+                                            </label>
                                             <select
                                                 className="form-select"
                                                 value={statusFilter}
-                                                onChange={(e) => setStatusFilter(e.target.value)}
+                                                onChange={(e) => {
+                                                    setPageNumber(1);
+                                                    setStatusFilter(e.target.value);
+                                                }}
                                             >
-                                                <option value="">All</option>
+                                                <option value="">All Status</option>
                                                 {statusOptions.map((status, index) => (
                                                     <option key={index} value={status}>
                                                         {status}
@@ -208,28 +237,54 @@ const BasicTable = () => {
                                             </select>
                                         </Col>
 
-                                        <Col md={3}>
-                                            <label className="form-label fw-bold">From Date</label>
+                                        <Col md={2}>
+                                            <label className="form-label fw-bold">
+                                                From Date
+                                            </label>
                                             <input
                                                 type="date"
                                                 className="form-control"
                                                 value={startDate}
-                                                onChange={(e) => setStartDate(e.target.value)}
+                                                onChange={(e) => {
+                                                    setPageNumber(1);
+                                                    setStartDate(e.target.value);
+                                                }}
                                             />
                                         </Col>
 
-                                        <Col md={3}>
-                                            <label className="form-label fw-bold">To Date</label>
+                                        <Col md={2}>
+                                            <label className="form-label fw-bold">
+                                                To Date
+                                            </label>
                                             <input
                                                 type="date"
                                                 className="form-control"
                                                 value={endDate}
-                                                onChange={(e) => setEndDate(e.target.value)}
+                                                onChange={(e) => {
+                                                    setPageNumber(1);
+                                                    setEndDate(e.target.value);
+                                                }}
                                             />
+                                        </Col>
+
+                                        <Col md={2}>
+                                            <button
+                                                className="btn btn-secondary w-100"
+                                                onClick={() => {
+                                                    setGlobalSearch("");
+                                                    setStatusFilter("");
+                                                    setStartDate("");
+                                                    setEndDate("");
+                                                    setPageNumber(1);
+                                                }}
+                                            >
+                                                Clear Filters
+                                            </button>
                                         </Col>
                                     </Row>
 
                                     <CardTitle className="h4"></CardTitle>
+
                                     <div className="table-responsive">
                                         {loading ? (
                                             <div>Loading...</div>
@@ -251,17 +306,17 @@ const BasicTable = () => {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {filteredOrders.map((order, index) => (
+                                                        {orders.map((order, index) => (
                                                             <tr key={order.id}>
                                                                 <th scope="row">
-                                                                    {rowStart + index}
+                                                                    {((pageNumber - 1) * 50) + index + 1}
                                                                 </th>
                                                                 <td>{order.invoice}</td>
-                                                                <td>{order.customer.name}</td>
+                                                                <td>{order.customer?.name}</td>
                                                                 <td>{order.manage_staff}</td>
                                                                 <td>{order.status}</td>
                                                                 <td>{order.total_amount}</td>
-                                                                <td>{order.order_date}</td>
+                                                                <td>{order.order_date?.substring(0, 10)}</td>
                                                                 <td>
                                                                     <div
                                                                         style={{
@@ -290,6 +345,7 @@ const BasicTable = () => {
                                                                         >
                                                                             View
                                                                         </button>
+
                                                                         {order.locked_by &&
                                                                             order.locked_by !==
                                                                             localStorage.getItem("username") && (
@@ -309,7 +365,6 @@ const BasicTable = () => {
                                                 </Table>
 
                                                 <div className="d-flex justify-content-between mt-3">
-
                                                     <button
                                                         className="btn btn-primary"
                                                         disabled={!prevPage || loading}
@@ -325,7 +380,6 @@ const BasicTable = () => {
                                                     >
                                                         Next
                                                     </button>
-
                                                 </div>
                                             </>
                                         )}

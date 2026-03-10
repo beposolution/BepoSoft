@@ -105,9 +105,18 @@ const BasicTable = () => {
             }
 
             if (role === "Warehouse Admin") {
-                const filterOrders = data.filter(
-                    (order) => order.status === "To Print"
+                const warehouseStatuses = [
+                    "To Print",
+                    "Packing under progress",
+                    "Packed",
+                    "Ready to ship",
+                    "Shipped",
+                ];
+
+                const filterOrders = data.filter((order) =>
+                    warehouseStatuses.includes(order.status)
                 );
+
                 setOrders(filterOrders);
             } else {
                 const excludedStatuses = [

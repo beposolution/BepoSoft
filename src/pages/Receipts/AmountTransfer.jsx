@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import {
@@ -15,13 +15,11 @@ import {
 } from "reactstrap";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Select from "react-select";
+import AsyncSelect from "react-select/async";
 
 const AmountTransfer = () => {
-
     const token = localStorage.getItem("token");
 
-    const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -33,41 +31,49 @@ const AmountTransfer = () => {
         images: [],
     });
 
-    const fetchCustomers = async () => {
+    const loadCustomerOptions = async (inputValue) => {
         try {
             const res = await axios.get(
                 `${import.meta.env.VITE_APP_KEY}customers/`,
-                { headers: { Authorization: `Bearer ${token}` } }
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    },
+                    params: {
+                        search: inputValue || ""
+                    }
+                }
             );
 
-            console.log("Customers:", res);
-
-            const options = (res.data?.results || []).map(c => ({
+            const options = (res.data?.results || []).map((c) => ({
                 value: c.id,
                 label: c.name,
+                phone: c.phone,
+                email: c.email,
             }));
 
-            setCustomers(options);
-        } catch {
-            toast.error("Failed to load customers");
+            return options;
+        } catch (error) {
+            console.error("Customer search failed:", error);
+            return [];
         }
     };
 
-    useEffect(() => {
-        fetchCustomers();
-    }, []);
-
     const handleFileChange = (e) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
             images: Array.from(e.target.files),
         }));
     };
 
     const handleSubmit = async () => {
-
         if (!formData.send_from || !formData.send_to || !formData.amount || !formData.date) {
             toast.error("Please fill all required fields");
+            return;
+        }
+
+        if (formData.send_from.value === formData.send_to.value) {
+            toast.error("Send From and Send To cannot be the same customer");
             return;
         }
 
@@ -81,7 +87,7 @@ const AmountTransfer = () => {
             payload.append("date", formData.date);
             payload.append("note", formData.note);
 
-            formData.images.forEach(img => {
+            formData.images.forEach((img) => {
                 payload.append("images", img);
             });
 
@@ -130,7 +136,6 @@ const AmountTransfer = () => {
                     images: [],
                 });
             }
-
         } catch (err) {
             console.error(err);
             toast.error("Failed to create transfer");
@@ -152,29 +157,53 @@ const AmountTransfer = () => {
                                     <CardTitle className="mb-4">ADVANCE AMOUNT TRANSFER</CardTitle>
 
                                     <Row>
-
                                         <Col md={4}>
                                             <Label>Product Send From *</Label>
-                                            <Select
-                                                options={customers}
+                                            <AsyncSelect
+                                                cacheOptions
+                                                defaultOptions
+                                                loadOptions={loadCustomerOptions}
                                                 value={formData.send_from}
-                                                onChange={(val) => setFormData({ ...formData, send_from: val })}
+                                                onChange={(val) =>
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        send_from: val,
+                                                    }))
+                                                }
+                                                placeholder="Search customer by name / phone / email"
+                                                isClearable
                                             />
                                         </Col>
+
                                         <Col md={4}>
                                             <Label>Product Send To *</Label>
-                                            <Select
-                                                options={customers}
+                                            <AsyncSelect
+                                                cacheOptions
+                                                defaultOptions
+                                                loadOptions={loadCustomerOptions}
                                                 value={formData.send_to}
-                                                onChange={(val) => setFormData({ ...formData, send_to: val })}
+                                                onChange={(val) =>
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        send_to: val,
+                                                    }))
+                                                }
+                                                placeholder="Search customer by name / phone / email"
+                                                isClearable
                                             />
                                         </Col>
+
                                         <Col md={4}>
                                             <Label>Date *</Label>
                                             <Input
                                                 type="date"
                                                 value={formData.date}
-                                                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                                onChange={(e) =>
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        date: e.target.value,
+                                                    }))
+                                                }
                                             />
                                         </Col>
                                     </Row>
@@ -185,7 +214,12 @@ const AmountTransfer = () => {
                                             <Input
                                                 type="number"
                                                 value={formData.amount}
-                                                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                                                onChange={(e) =>
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        amount: e.target.value,
+                                                    }))
+                                                }
                                             />
                                         </Col>
 
@@ -193,7 +227,12 @@ const AmountTransfer = () => {
                                             <Label>Note</Label>
                                             <Input
                                                 value={formData.note}
-                                                onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                                                onChange={(e) =>
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        note: e.target.value,
+                                                    }))
+                                                }
                                             />
                                         </Col>
 
@@ -201,9 +240,7 @@ const AmountTransfer = () => {
                                             <Label>Upload Images</Label>
                                             <Input type="file" multiple onChange={handleFileChange} />
                                         </Col>
-
                                     </Row>
-
 
                                     <Row className="mt-4">
                                         <Col>
@@ -212,7 +249,6 @@ const AmountTransfer = () => {
                                             </Button>
                                         </Col>
                                     </Row>
-
                                 </CardBody>
                             </Card>
                         </Col>

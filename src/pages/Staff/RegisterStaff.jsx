@@ -53,7 +53,20 @@ const FormLayouts = () => {
             family: "",
             image: "",
             warehouse_id: "",
-            country_code: ""
+            country_code: "",
+            staff_id: "",
+            place: "",
+            emergency_contact_name: "",
+            emergency_contact_number: "",
+            experience: "",
+            exp_letter: "",
+            previous_company: "",
+            blood_group: "",
+            education: "",
+            salrary_slip: "",
+            aadhar_no: "",
+            pan_no: "",
+            address: ""
         },
         validationSchema: Yup.object({
             name: Yup.string().required("This field is required"),
@@ -94,29 +107,70 @@ const FormLayouts = () => {
                 .required("This field is required"),
             approval_status: Yup.string().required("This field is required"),
             gender: Yup.string().required("This field is required"),
+            staff_id: Yup.string().nullable(),
+            place: Yup.string().nullable(),
+            emergency_contact_name: Yup.string().nullable(),
+            emergency_contact_number: Yup.string()
+                .nullable()
+                .notRequired()
+                .test("emergency-phone-valid", "Emergency contact number must be 10 digits", function (value) {
+                    if (!value) return true;
+                    return /^[0-9]{10}$/.test(value);
+                }),
+            experience: Yup.number()
+                .typeError("Experience must be a number")
+                .nullable()
+                .transform((value, originalValue) => originalValue === "" ? null : value)
+                .min(0, "Experience cannot be negative"),
+            previous_company: Yup.string().nullable(),
+            blood_group: Yup.string().nullable(),
+            education: Yup.string().nullable(),
+            aadhar_no: Yup.string()
+                .nullable()
+                .notRequired()
+                .test("aadhar-valid", "Aadhar number must be 12 digits", function (value) {
+                    if (!value) return true;
+                    return /^[0-9]{12}$/.test(value);
+                }),
+            pan_no: Yup.string()
+                .nullable()
+                .notRequired()
+                .test("pan-valid", "PAN number must be 10 characters", function (value) {
+                    if (!value) return true;
+                    return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value.toUpperCase());
+                }),
+            address: Yup.string().nullable()
         }),
 
+        // 
         onSubmit: async (values, { resetForm }) => {
             try {
-
                 const formData = new FormData();
 
                 for (let key in values) {
                     if (key === "signatur_up" && values[key]) {
                         formData.append(key, values[key]);
-                    } else if (key === "allocated_states") {
-                        if (Array.isArray(values[key]) && values[key].length > 0) {
-                            values[key].forEach(val => {
-                                formData.append('allocated_states', val);
-                            });
-                        } else {
-                            formData.append('allocated_states', '');
-                        }
                     } else if (key === "image" && values[key]) {
                         formData.append(key, values[key]);
-                    } else if (values[key] !== '') {
+                    } else if (key === "exp_letter" && values[key]) {
+                        formData.append(key, values[key]);
+                    } else if (key === "salrary_slip" && values[key]) {
+                        formData.append(key, values[key]);
+                    } else if (key === "allocated_states") {
+                        if (Array.isArray(values[key]) && values[key].length > 0) {
+                            values[key].forEach((val) => {
+                                formData.append("allocated_states", val);
+                            });
+                        } else {
+                            formData.append("allocated_states", "");
+                        }
+                    } else if (values[key] !== "" && values[key] !== null && values[key] !== undefined) {
                         formData.append(key, values[key]);
                     }
+                }
+                
+                for (let pair of formData.entries()) {
+                    console.log(pair[0], pair[1]);
                 }
 
                 const response = await axios.post(
@@ -128,6 +182,7 @@ const FormLayouts = () => {
                         }
                     }
                 );
+
 
                 if (response.status === 201) {
                     const staffData = response?.data?.data;
@@ -148,20 +203,13 @@ const FormLayouts = () => {
                     });
 
                     resetForm();
+                    setSelectedStates([]);
                 } else {
                     setError("Failed to submit the form");
-                    toast.error("Failed to submit the order!", {
-                        position: "top-right",
-                        autoClose: 4000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        theme: "colored",
-                    });
+                    toast.error("Failed to submit the form!");
                 }
             } catch (error) {
+
                 const message =
                     error.response?.data?.message || "Something went wrong. Please try again.";
                 toast.error(message);
@@ -182,27 +230,34 @@ const FormLayouts = () => {
 
                     after_data: {
                         action: "Staff Created",
-
                         name: staffData.name,
                         username: staffData.username,
                         email: staffData.email,
                         phone: staffData.phone,
                         designation: staffData.designation,
-
                         department: staffData.department?.name || "",
                         supervisor: staffData.supervisor?.name || "",
                         family: staffData.family?.name || "",
                         warehouse: staffData.warehouse?.name || "",
-
                         country: staffData.country,
                         state: staffData.state?.name || "",
                         gender: staffData.gender,
                         marital_status: staffData.marital_status,
                         employment_status: staffData.employment_status,
                         approval_status: staffData.approval_status,
-
+                        staff_id: staffData.staff_id || "",
+                        place: staffData.place || "",
+                        emergency_contact_name: staffData.emergency_contact_name || "",
+                        emergency_contact_number: staffData.emergency_contact_number || "",
+                        experience: staffData.experience || "",
+                        previous_company: staffData.previous_company || "",
+                        blood_group: staffData.blood_group || "",
+                        education: staffData.education || "",
+                        aadhar_no: staffData.aadhar_no || "",
+                        pan_no: staffData.pan_no || "",
+                        address: staffData.address || "",
                         allocated_states: Array.isArray(staffData.allocated_states)
-                            ? staffData.allocated_states.map(s => s.name)
+                            ? staffData.allocated_states.map(s => s.name || s)
                             : [],
                     }
                 },
@@ -339,7 +394,7 @@ const FormLayouts = () => {
 
                                     <Form onSubmit={formik.handleSubmit}>
                                         <Row>
-                                            <Col md={6}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-name-Input"> Name</Label>
                                                     <Input
@@ -363,7 +418,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col md={6}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-username-Input"> Username</Label>
                                                     <Input
@@ -387,31 +442,26 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col md={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-email-Input">Email</Label>
+                                                    <Label htmlFor="formrow-staffid-Input">Staff ID</Label>
                                                     <Input
-                                                        type="email"
-                                                        name="email"
-                                                        className="form-control"
-                                                        id="formrow-email-Input"
-                                                        placeholder="Enter Staff Email ID"
-                                                        value={formik.values.email}
+                                                        type="text"
+                                                        name="staff_id"
+                                                        id="formrow-staffid-Input"
+                                                        placeholder="Enter Staff ID"
+                                                        value={formik.values.staff_id}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
-                                                        invalid={
-                                                            formik.touched.email && formik.errors.email ? true : false
-                                                        }
+                                                        invalid={formik.touched.staff_id && !!formik.errors.staff_id}
                                                     />
-                                                    {
-                                                        formik.errors.email && formik.touched.email ? (
-                                                            <FormFeedback type="invalid">{formik.errors.email}</FormFeedback>
-                                                        ) : null
-                                                    }
+                                                    {formik.errors.staff_id && formik.touched.staff_id && (
+                                                        <FormFeedback>{formik.errors.staff_id}</FormFeedback>
+                                                    )}
                                                 </div>
                                             </Col>
 
-                                            <Col md={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-password-Input">Password</Label>
                                                     <Input
@@ -436,30 +486,76 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
-                                                <div className="mb-3">
-                                                    <Label htmlFor="formrow-family-Input">Division</Label>
-                                                    <select
-                                                        name="family"
-                                                        id="formrow-family-Input"
-                                                        className={`form-control ${formik.touched.family && formik.errors.family ? 'is-invalid' : ''}`}
-                                                        value={formik.values.family}
-                                                        onChange={formik.handleChange}
-                                                        onBlur={formik.handleBlur}
-                                                    >
-                                                        <option value="">Select Division</option>
-                                                        {familys.map((sta) => (
-                                                            <option key={sta.id} value={sta.id}>
-                                                                {sta.name}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            </Col>
                                         </Row>
 
                                         <Row>
-                                            <Col lg={4}>
+
+                                            <Col lg={6}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-address-Input">Address</Label>
+                                                    <Input
+                                                        type="textarea"
+                                                        name="address"
+                                                        id="formrow-address-Input"
+                                                        placeholder="Enter Address"
+                                                        value={formik.values.address}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.address && !!formik.errors.address}
+                                                    />
+                                                    {formik.errors.address && formik.touched.address && (
+                                                        <FormFeedback>{formik.errors.address}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-place-Input">Place</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="place"
+                                                        id="formrow-place-Input"
+                                                        placeholder="Enter Place"
+                                                        value={formik.values.place}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.place && !!formik.errors.place}
+                                                    />
+                                                    {formik.errors.place && formik.touched.place && (
+                                                        <FormFeedback>{formik.errors.place}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-email-Input">Email</Label>
+                                                    <Input
+                                                        type="email"
+                                                        name="email"
+                                                        className="form-control"
+                                                        id="formrow-email-Input"
+                                                        placeholder="Enter Staff Email ID"
+                                                        value={formik.values.email}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={
+                                                            formik.touched.email && formik.errors.email ? true : false
+                                                        }
+                                                    />
+                                                    {
+                                                        formik.errors.email && formik.touched.email ? (
+                                                            <FormFeedback type="invalid">{formik.errors.email}</FormFeedback>
+                                                        ) : null
+                                                    }
+                                                </div>
+                                            </Col>
+
+                                        </Row>
+
+                                        <Row>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Input-country">Country</Label>
                                                     <Input
@@ -483,7 +579,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-state-Input">State</Label>
                                                     <select
@@ -504,20 +600,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
-                                                <div className="mb-3">
-                                                    <Label className="control-label">Allocated States</Label>
-                                                    <Select
-                                                        value={selectedStates}
-                                                        isMulti={true}
-                                                        onChange={handleMultiChange}
-                                                        options={states}
-                                                        className="select2-selection"
-                                                    />
-                                                </div>
-                                            </Col>
-
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-dateofbirth-Imput">Date Of Birth</Label>
                                                     <Input
@@ -539,9 +622,81 @@ const FormLayouts = () => {
                                                         ) : null
                                                     }
                                                 </div>
+
                                             </Col>
 
-                                            <Col lg={4}>
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-bloodgroup-Input">Blood Group</Label>
+                                                    <select
+                                                        name="blood_group"
+                                                        id="formrow-bloodgroup-Input"
+                                                        className={`form-control ${formik.touched.blood_group && formik.errors.blood_group ? "is-invalid" : ""}`}
+                                                        value={formik.values.blood_group}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                    >
+                                                        <option value="">Select Blood Group</option>
+                                                        <option value="A+">A+</option>
+                                                        <option value="A-">A-</option>
+                                                        <option value="B+">B+</option>
+                                                        <option value="B-">B-</option>
+                                                        <option value="AB+">AB+</option>
+                                                        <option value="AB-">AB-</option>
+                                                        <option value="O+">O+</option>
+                                                        <option value="O-">O-</option>
+                                                    </select>
+                                                    {formik.errors.blood_group && formik.touched.blood_group && (
+                                                        <FormFeedback className="d-block">{formik.errors.blood_group}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+                                        </Row>
+
+                                        <Row>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-aadhar-Input">Aadhar No</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="aadhar_no"
+                                                        id="formrow-aadhar-Input"
+                                                        placeholder="Enter Aadhar Number"
+                                                        value={formik.values.aadhar_no}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.aadhar_no && !!formik.errors.aadhar_no}
+                                                    />
+                                                    {formik.errors.aadhar_no && formik.touched.aadhar_no && (
+                                                        <FormFeedback>{formik.errors.aadhar_no}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-pan-Input">PAN No</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="pan_no"
+                                                        id="formrow-pan-Input"
+                                                        placeholder="Enter PAN Number"
+                                                        value={formik.values.pan_no}
+                                                        onChange={(e) => formik.setFieldValue("pan_no", e.target.value.toUpperCase())}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.pan_no && !!formik.errors.pan_no}
+                                                    />
+                                                    {formik.errors.pan_no && formik.touched.pan_no && (
+                                                        <FormFeedback>{formik.errors.pan_no}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+
+
+
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-gender-Input">Gender</Label>
                                                     <select
@@ -564,7 +719,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-MaritalStatus-Input">Marital Status</Label>
                                                     <select
@@ -587,7 +742,11 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col md={6}>
+                                        </Row>
+
+                                        <Row>
+
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Phone-Input">Phone</Label>
                                                     <Input
@@ -612,7 +771,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col md={6}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-alt-phone-Input">Alt Phone</Label>
                                                     <Input
@@ -637,7 +796,49 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col md={4}>
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-emergency-name-Input">Emergency Contact Name</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="emergency_contact_name"
+                                                        id="formrow-emergency-name-Input"
+                                                        placeholder="Enter Emergency Contact Name"
+                                                        value={formik.values.emergency_contact_name}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.emergency_contact_name && !!formik.errors.emergency_contact_name}
+                                                    />
+                                                    {formik.errors.emergency_contact_name && formik.touched.emergency_contact_name && (
+                                                        <FormFeedback>{formik.errors.emergency_contact_name}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-emergency-phone-Input">Emergency Contact Number</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="emergency_contact_number"
+                                                        id="formrow-emergency-phone-Input"
+                                                        placeholder="Enter Emergency Contact Number"
+                                                        value={formik.values.emergency_contact_number}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.emergency_contact_number && !!formik.errors.emergency_contact_number}
+                                                    />
+                                                    {formik.errors.emergency_contact_number && formik.touched.emergency_contact_number && (
+                                                        <FormFeedback>{formik.errors.emergency_contact_number}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+
+
+                                        </Row>
+
+                                        <Row>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-countryCode">Country Code</Label>
                                                     <select
@@ -661,7 +862,107 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col md={4}>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-education-Input">Education</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="education"
+                                                        id="formrow-education-Input"
+                                                        placeholder="Enter Education"
+                                                        value={formik.values.education}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.education && !!formik.errors.education}
+                                                    />
+                                                    {formik.errors.education && formik.touched.education && (
+                                                        <FormFeedback>{formik.errors.education}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={6}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-previouscompany-Input">Previous Company</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="previous_company"
+                                                        id="formrow-previouscompany-Input"
+                                                        placeholder="Enter Previous Company"
+                                                        value={formik.values.previous_company}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.previous_company && !!formik.errors.previous_company}
+                                                    />
+                                                    {formik.errors.previous_company && formik.touched.previous_company && (
+                                                        <FormFeedback>{formik.errors.previous_company}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+                                        </Row>
+
+                                        <Row>
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-experience-Input">Experience (Months)</Label>
+                                                    <Input
+                                                        type="number"
+                                                        name="experience"
+                                                        id="formrow-experience-Input"
+                                                        placeholder="Enter Experience in Months"
+                                                        value={formik.values.experience}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.experience && !!formik.errors.experience}
+                                                    />
+                                                    {formik.errors.experience && formik.touched.experience && (
+                                                        <FormFeedback>{formik.errors.experience}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+
+
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-exp-letter-Input">Experience Letter</Label>
+                                                    <Input
+                                                        type="file"
+                                                        name="exp_letter"
+                                                        id="formrow-exp-letter-Input"
+                                                        onChange={(event) => {
+                                                            formik.setFieldValue("exp_letter", event.currentTarget.files[0]);
+                                                        }}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.exp_letter && !!formik.errors.exp_letter}
+                                                    />
+                                                    {formik.errors.exp_letter && formik.touched.exp_letter && (
+                                                        <FormFeedback>{formik.errors.exp_letter}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-salary-slip-Input">Salary Slip</Label>
+                                                    <Input
+                                                        type="file"
+                                                        name="salrary_slip"
+                                                        id="formrow-salary-slip-Input"
+                                                        onChange={(event) => {
+                                                            formik.setFieldValue("salrary_slip", event.currentTarget.files[0]);
+                                                        }}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.salrary_slip && !!formik.errors.salrary_slip}
+                                                    />
+                                                    {formik.errors.salrary_slip && formik.touched.salrary_slip && (
+                                                        <FormFeedback>{formik.errors.salrary_slip}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Supervisor-Input">warehouse</Label>
                                                     <select
@@ -685,8 +986,10 @@ const FormLayouts = () => {
                                                     </select>
                                                 </div>
                                             </Col>
+                                        </Row>
 
-                                            <Col md={4}>
+                                        <Row>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-driving-Input">Driving License</Label>
                                                     <Input
@@ -711,7 +1014,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col md={6}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Driving-date-Input">Driving License Exp Date</Label>
                                                     <Input
@@ -736,7 +1039,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={6}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-employment-Input">Employment Status</Label>
                                                     <select
@@ -762,7 +1065,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Designation">Designation</Label>
                                                     <Input
@@ -785,6 +1088,105 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
+                                        </Row>
+
+                                        <Row>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-family-Input">Division</Label>
+                                                    <select
+                                                        name="family"
+                                                        id="formrow-family-Input"
+                                                        className={`form-control ${formik.touched.family && formik.errors.family ? 'is-invalid' : ''}`}
+                                                        value={formik.values.family}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                    >
+                                                        <option value="">Select Division</option>
+                                                        {familys.map((sta) => (
+                                                            <option key={sta.id} value={sta.id}>
+                                                                {sta.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label className="control-label">Allocated States</Label>
+                                                    <Select
+                                                        value={selectedStates}
+                                                        isMulti={true}
+                                                        onChange={handleMultiChange}
+                                                        options={states}
+                                                        className="select2-selection"
+                                                    />
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-Signature-Input">Signature Upload</Label>
+                                                    <Input
+                                                        type="file"
+                                                        name="signatur_up"
+                                                        id="formrow-Signature-Input"
+                                                        onChange={(event) => {
+                                                            formik.setFieldValue("signatur_up", event.currentTarget.files[0]);
+                                                        }}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.signatur_up && formik.errors.signatur_up ? true : false}
+                                                    />
+                                                    {formik.errors.signatur_up && formik.touched.signatur_up ? (
+                                                        <FormFeedback type="invalid">{formik.errors.signatur_up}</FormFeedback>
+                                                    ) : null}
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-Signature-Input">image Upload</Label>
+                                                    <Input
+                                                        type="file"
+                                                        name="image"
+                                                        id="formrow-Signature-Input"
+                                                        onChange={(event) => {
+                                                            formik.setFieldValue("image", event.currentTarget.files[0]);
+                                                        }}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.image && formik.errors.image ? true : false}
+                                                    />
+                                                    {formik.errors.image && formik.touched.image ? (
+                                                        <FormFeedback type="invalid">{formik.errors.image}</FormFeedback>
+                                                    ) : null}
+                                                </div>
+                                            </Col>
+                                        </Row>
+
+                                        <Row>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
                                             <Col lg={4}>
                                                 <div className="mb-3">
@@ -932,43 +1334,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
-                                                <div className="mb-3">
-                                                    <Label htmlFor="formrow-Signature-Input">Signature Upload</Label>
-                                                    <Input
-                                                        type="file"
-                                                        name="signatur_up"
-                                                        id="formrow-Signature-Input"
-                                                        onChange={(event) => {
-                                                            formik.setFieldValue("signatur_up", event.currentTarget.files[0]);
-                                                        }}
-                                                        onBlur={formik.handleBlur}
-                                                        invalid={formik.touched.signatur_up && formik.errors.signatur_up ? true : false}
-                                                    />
-                                                    {formik.errors.signatur_up && formik.touched.signatur_up ? (
-                                                        <FormFeedback type="invalid">{formik.errors.signatur_up}</FormFeedback>
-                                                    ) : null}
-                                                </div>
-                                            </Col>
 
-                                            <Col lg={4}>
-                                                <div className="mb-3">
-                                                    <Label htmlFor="formrow-Signature-Input">image Upload</Label>
-                                                    <Input
-                                                        type="file"
-                                                        name="image"
-                                                        id="formrow-Signature-Input"
-                                                        onChange={(event) => {
-                                                            formik.setFieldValue("image", event.currentTarget.files[0]);
-                                                        }}
-                                                        onBlur={formik.handleBlur}
-                                                        invalid={formik.touched.image && formik.errors.image ? true : false}
-                                                    />
-                                                    {formik.errors.image && formik.touched.image ? (
-                                                        <FormFeedback type="invalid">{formik.errors.image}</FormFeedback>
-                                                    ) : null}
-                                                </div>
-                                            </Col>
                                         </Row>
                                         <div className="mb-3">
                                             <Button type="submit" color="primary" disabled={formik.isSubmitting}>
@@ -983,7 +1349,7 @@ const FormLayouts = () => {
                 </Container>
                 <ToastContainer />
             </div>
-        </React.Fragment>
+        </React.Fragment >
     );
 };
 

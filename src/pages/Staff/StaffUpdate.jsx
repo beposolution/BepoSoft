@@ -29,6 +29,7 @@ const FormLayouts = () => {
     const [countryCodes, setCountryCodes] = useState([]);
     const { id } = useParams();
     const [oldStaffData, setOldStaffData] = useState(null);
+    const [warehouseDetails, setWarehouseDetails] = useState([]);
 
     // Formik setup
     const formik = useFormik({
@@ -40,6 +41,7 @@ const FormLayouts = () => {
             country: "",
             state: "",
             allocated_states: [],
+            warehouse_id: "",
             date_of_birth: "",
             gender: "",
             marital_status: "",
@@ -343,8 +345,28 @@ const FormLayouts = () => {
         }
     };
 
+    const fetchWarehouse = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                throw new Error("No token found in localStorage");
+            }
+
+            const res = await axios.get(`${import.meta.env.VITE_APP_KEY}warehouse/add/`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            setWarehouseDetails(res.data || []);
+        } catch (error) {
+            toast.error("Error fetching warehouse data:");
+        }
+    };
+
+
     useEffect(() => {
         fetchCountryCodes();
+        fetchWarehouse();
     }, [token]);
 
     useEffect(() => {
@@ -364,8 +386,6 @@ const FormLayouts = () => {
                     if (staffResponse.status === 200) {
                         const staffData = staffResponse.data.data;
 
-                        console.log("response", staffData)
-
                         setOldStaffData(staffData);
 
                         // Populate the form with the fetched staff data
@@ -378,6 +398,7 @@ const FormLayouts = () => {
                             state: staffData.state || "",
                             family: staffData.family || "",
                             allocated_states: staffData.allocated_states || [],
+                            warehouse_id: staffData.warehouse_id || "",
                             date_of_birth: staffData.date_of_birth || "",
                             gender: staffData.gender || "",
                             marital_status: staffData.marital_status || "",
@@ -1079,6 +1100,36 @@ const FormLayouts = () => {
                                                     </div>
                                                 </Col>
 
+                                                <Col lg={3}>
+                                                    <div className="mb-3">
+                                                        <Label htmlFor="formrow-Warehouse-Input">Warehouse</Label>
+
+                                                        <select
+                                                            name="warehouse_id"
+                                                            id="formrow-Warehouse-Input"
+                                                            className={`form-control ${formik.touched.warehouse_id && formik.errors.warehouse_id ? 'is-invalid' : ''}`}
+                                                            value={formik.values.warehouse_id}
+                                                            onChange={formik.handleChange}
+                                                            onBlur={formik.handleBlur}
+                                                        >
+                                                            <option value="">Select Warehouse</option>
+
+                                                            {warehouseDetails.length > 0 ? (
+                                                                warehouseDetails.map((wh) => (
+                                                                    <option key={wh.id} value={wh.id}>
+                                                                        {wh.name} - {wh.location}
+                                                                    </option>
+                                                                ))
+                                                            ) : (
+                                                                <option disabled>No warehouse available</option>
+                                                            )}
+                                                        </select>
+
+                                                        {formik.errors.warehouse_id && formik.touched.warehouse_id ? (
+                                                            <FormFeedback type="invalid">{formik.errors.warehouse_id}</FormFeedback>
+                                                        ) : null}
+                                                    </div>
+                                                </Col>
 
 
                                             </Row>

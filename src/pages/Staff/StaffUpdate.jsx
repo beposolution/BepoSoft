@@ -2,6 +2,7 @@ import axios from 'axios';
 import {
     Card, Col, Container, Row, CardBody, CardTitle, Label, Form, Input, InputGroup, FormFeedback, Button
 } from "reactstrap";
+import { Modal, ModalHeader, ModalBody } from "reactstrap";
 import * as Yup from 'yup';
 import { useFormik } from "formik";
 import React, { useState, useEffect } from "react";
@@ -30,6 +31,9 @@ const FormLayouts = () => {
     const { id } = useParams();
     const [oldStaffData, setOldStaffData] = useState(null);
     const [warehouseDetails, setWarehouseDetails] = useState([]);
+    const [docModal, setDocModal] = useState(false);
+    const [docUrl, setDocUrl] = useState("");
+    const [docTitle, setDocTitle] = useState("");
 
     // Formik setup
     const formik = useFormik({
@@ -241,6 +245,12 @@ const FormLayouts = () => {
         }
 
     });
+
+    const openDocument = (url, title) => {
+        setDocUrl(url);
+        setDocTitle(title);
+        setDocModal(true);
+    };
 
     const writeStaffUpdateLog = async (beforeData, afterData) => {
         try {
@@ -1064,7 +1074,23 @@ const FormLayouts = () => {
 
                                                 <Col md={3}>
                                                     <div className="mb-3">
-                                                        <Label htmlFor="formrow-exp-letter-Input">Experience Letter</Label>
+                                                        <Label htmlFor="formrow-exp-letter-Input">
+                                                            Experience Letter
+
+                                                            {oldStaffData?.exp_letter && (
+                                                                <span
+                                                                    style={{ marginLeft: "10px", cursor: "pointer", color: "#007bff" }}
+                                                                    onClick={() =>
+                                                                        openDocument(
+                                                                            `${import.meta.env.VITE_APP_IMAGE}${oldStaffData.exp_letter}`,
+                                                                            "Experience Letter"
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    ({oldStaffData.exp_letter.split("/").pop()})
+                                                                </span>
+                                                            )}
+                                                        </Label>
                                                         <Input
                                                             type="file"
                                                             name="exp_letter"
@@ -1083,7 +1109,23 @@ const FormLayouts = () => {
 
                                                 <Col md={3}>
                                                     <div className="mb-3">
-                                                        <Label htmlFor="formrow-salary-slip-Input">Salary Slip</Label>
+                                                        <Label htmlFor="formrow-salary-slip-Input">
+                                                            Salary Slip
+
+                                                            {oldStaffData?.salrary_slip && (
+                                                                <span
+                                                                    style={{ marginLeft: "10px", cursor: "pointer", color: "#007bff" }}
+                                                                    onClick={() =>
+                                                                        openDocument(
+                                                                            `${import.meta.env.VITE_APP_IMAGE}${oldStaffData.salrary_slip}`,
+                                                                            "Salary Slip"
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    ({oldStaffData.salrary_slip.split("/").pop()})
+                                                                </span>
+                                                            )}
+                                                        </Label>
                                                         <Input
                                                             type="file"
                                                             name="salrary_slip"
@@ -1278,7 +1320,23 @@ const FormLayouts = () => {
 
                                                 <Col lg={3}>
                                                     <div className="mb-3">
-                                                        <Label htmlFor="formrow-Signature-Input">Signature Upload</Label>
+                                                        <Label htmlFor="formrow-Signature-Input">
+                                                            Signature
+
+                                                            {oldStaffData?.signatur_up && (
+                                                                <span
+                                                                    style={{ marginLeft: "10px", cursor: "pointer", color: "#007bff" }}
+                                                                    onClick={() =>
+                                                                        openDocument(
+                                                                            `${import.meta.env.VITE_APP_IMAGE}${oldStaffData.signatur_up}`,
+                                                                            "Signature"
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    ({oldStaffData.signatur_up.split("/").pop()})
+                                                                </span>
+                                                            )}
+                                                        </Label>
                                                         <Input
                                                             type="file"
                                                             name="signatur_up"
@@ -1297,7 +1355,23 @@ const FormLayouts = () => {
 
                                                 <Col md={3}>
                                                     <div className="mb-3">
-                                                        <Label htmlFor="formrow-image-Input">Image Upload</Label>
+                                                        <Label htmlFor="formrow-image-Input">
+                                                            Staff Image
+
+                                                            {oldStaffData?.image && (
+                                                                <span
+                                                                    style={{ marginLeft: "10px", cursor: "pointer", color: "#007bff" }}
+                                                                    onClick={() =>
+                                                                        openDocument(
+                                                                            `${import.meta.env.VITE_APP_IMAGE}${oldStaffData.image}`,
+                                                                            "Staff Image"
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    ({oldStaffData.image.split("/").pop()})
+                                                                </span>
+                                                            )}
+                                                        </Label>
                                                         <Input
                                                             type="file"
                                                             name="image"
@@ -1512,6 +1586,29 @@ const FormLayouts = () => {
                 </Container>
                 <ToastContainer />
             </div>
+            <Modal isOpen={docModal} toggle={() => setDocModal(false)} size="lg">
+                <ModalHeader toggle={() => setDocModal(false)}>
+                    {docTitle}
+                </ModalHeader>
+
+                <ModalBody style={{ height: "600px" }}>
+                    {docUrl.endsWith(".pdf") ? (
+                        <iframe
+                            src={docUrl}
+                            title="Document"
+                            width="100%"
+                            height="100%"
+                            style={{ border: "none" }}
+                        />
+                    ) : (
+                        <img
+                            src={docUrl}
+                            alt="Document"
+                            style={{ width: "100%" }}
+                        />
+                    )}
+                </ModalBody>
+            </Modal>
         </React.Fragment>
     );
 };

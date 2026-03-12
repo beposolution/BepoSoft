@@ -39,16 +39,34 @@ const BasicTable = () => {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}staff/orders/`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const params = {};
+
+                if (searchTerm.trim() !== "") {
+                    params.search = searchTerm.trim();
+                }
+
+                if (selectedState !== "") {
+                    params.status = selectedState;
+                }
+
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}staff/orders/`,
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                        params: params,
+                    }
+                );
+
                 setOrdersFamily(response?.data?.results?.data || []);
             } catch (error) {
-                toast.error('Error fetching user data:', error);
+                toast.error("Error fetching user data");
             }
         };
-        fetchUserData();
-    }, []);
+
+        if (role === "BDO") {
+            fetchUserData();
+        }
+    }, [token, searchTerm, selectedState, role]);
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -69,8 +87,6 @@ const BasicTable = () => {
         fetchOrders();
     }, [token]);
 
-
-    // Status color based on status type
     const getStatusColor = (status) => {
         const statusColors = {
             Pending: "red",
@@ -83,24 +99,21 @@ const BasicTable = () => {
         return { color: statusColors[status] || "black" };
     };
 
-    // Filtered data based on search and filter conditions
     const filteredOrders = orders.filter((order) =>
-        (order.invoice.toLowerCase().includes(searchTerm.toLowerCase()) || order.manage_staff.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            order.customer?.name.toLowerCase().includes(searchTerm.toLowerCase())) &&
+        (
+            order.invoice?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            order.manage_staff?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            order.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+        ) &&
         (selectedState === "" || order.status === selectedState) &&
         (selectedStaff === "" || order.manage_staff === selectedStaff)
     );
 
-    // Handle search input
     const handleSearch = (e) => {
         setSearchTerm(e.target.value);
     };
 
-    // Export to Excel functionality
-    // Inside BasicTable component
-
     const exportToExcel = () => {
-        // Flattening the data structure to make it Excel-friendly
         const formattedData = orders.flatMap((order, index) => {
             return order.items.map((item, itemIndex) => ({
                 "Order #": index + 1,
@@ -110,7 +123,7 @@ const BasicTable = () => {
                 "Customer Name": order.customer.name,
                 "Customer Phone": order.customer.phone,
                 "Customer Email": order.customer.email,
-                "Billing Address": `${order.billing_address.address}, ${order.billing_address.city}, ${order.billing_address.state}, ${order.billing_address.zipcode}`,  // Combined as a single string
+                "Billing Address": `${order.billing_address.address}, ${order.billing_address.city}, ${order.billing_address.state}, ${order.billing_address.zipcode}`,
                 "Staff": order.manage_staff,
                 "Family": order.family,
                 "Total Amount": order.total_amount,
@@ -124,7 +137,7 @@ const BasicTable = () => {
                 "Tax %": item.tax,
                 "Exclude Price": item.exclude_price,
                 "Item Total": item.price * item.quantity,
-                "Images": item.images.join(", ")  // Concatenate image URLs as a single string
+                "Images": item.images.join(", ")
             }));
         });
 
@@ -135,6 +148,10 @@ const BasicTable = () => {
         XLSX.writeFile(workbook, "Orders_List.xlsx");
     };
 
+    const staffOptions =
+        role === "BDO"
+            ? [...new Set(ordersFamily.map(order => order.manage_staff))]
+            : [...new Set(orders.map(order => order.manage_staff))];
 
     return (
         <React.Fragment>
@@ -153,6 +170,7 @@ const BasicTable = () => {
                                 />
                             </FormGroup>
                         </Col>
+
                         <Col md={3}>
                             <FormGroup className="w-100 mb-0">
                                 <Label>Filter by Status</Label>
@@ -162,24 +180,16 @@ const BasicTable = () => {
                                     onChange={(e) => setSelectedState(e.target.value)}
                                 >
                                     <option value="">All Status</option>
-                                    <option value="Pending">Pending</option>
-                                    <option value="Approved">Approved</option>
                                     <option value="Waiting For Confirmation">Waiting For Confirmation</option>
                                     <option value="To Print">To Print</option>
                                     <option value="Invoice Created">Invoice Created</option>
                                     <option value="Invoice Approved">Invoice Approved</option>
-                                    <option value="Invoice Rejectd">Invoice Rejectd</option>
+                                    <option value="Invoice Rejected">Invoice Rejected</option>
                                     <option value="Shipped">Shipped</option>
-                                    <option value="Processing">Processing</option>
-                                    <option value="Refunded">Refunded</option>
-                                    <option value="Rejected">Rejected</option>
-                                    <option value="Return">Return</option>
-                                    <option value="Completed">Completed</option>
-                                    <option value="Cancelled">Cancelled</option>
-
                                 </Input>
                             </FormGroup>
                         </Col>
+
                         <Col md={3}>
                             <FormGroup className="w-100 mb-0">
                                 <Label>Filter by Staff</Label>
@@ -187,9 +197,10 @@ const BasicTable = () => {
                                     type="select"
                                     value={selectedStaff}
                                     onChange={(e) => setSelectedStaff(e.target.value)}
+                                    disabled={role === "BDO"}
                                 >
                                     <option value="">All Staff</option>
-                                    {[...new Set(orders.map(order => order.manage_staff))].map((staff, index) => (
+                                    {staffOptions.map((staff, index) => (
                                         <option key={index} value={staff}>
                                             {staff}
                                         </option>
@@ -197,13 +208,13 @@ const BasicTable = () => {
                                 </Input>
                             </FormGroup>
                         </Col>
+
                         <Col md={2} className="d-flex justify-content-end">
                             <Button color="success" onClick={exportToExcel} className="w-100">
                                 Export to Excel
                             </Button>
                         </Col>
                     </Row>
-
 
                     <Row>
                         <Col xl={12}>
@@ -296,6 +307,7 @@ const BasicTable = () => {
                     </Row>
                 </div>
             </div>
+            <ToastContainer />
         </React.Fragment>
     );
 };

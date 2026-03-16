@@ -176,46 +176,86 @@ const FormLayouts = () => {
         }),
         onSubmit: async (values) => {
             try {
-                const formData = new FormData();
+                const hasFiles =
+                    values.signatur_up instanceof File ||
+                    values.image instanceof File ||
+                    values.exp_letter instanceof File ||
+                    values.salrary_slip instanceof File;
 
-                for (let key in values) {
-                    if (key === "signatur_up" && values[key]) {
-                        formData.append(key, values[key]);
-                    } else if (key === "image" && values[key]) {
-                        formData.append(key, values[key]);
-                    } else if (key === "exp_letter" && values[key]) {
-                        formData.append(key, values[key]);
-                    } else if (key === "salrary_slip" && values[key]) {
-                        formData.append(key, values[key]);
-                    } else if (key === "allocated_states") {
-                        if (Array.isArray(values[key]) && values[key].length > 0) {
-                            values[key].forEach(state => formData.append("allocated_states", state));
-                        }
-                    } else if (key === "password") {
-                        if (values[key] && values[key].trim() !== "") {
+                let response;
+
+                if (hasFiles) {
+                    const formData = new FormData();
+
+                    for (let key in values) {
+                        if (key === "signatur_up" && values[key]) {
+                            formData.append(key, values[key]);
+                        } else if (key === "image" && values[key]) {
+                            formData.append(key, values[key]);
+                        } else if (key === "exp_letter" && values[key]) {
+                            formData.append(key, values[key]);
+                        } else if (key === "salrary_slip" && values[key]) {
+                            formData.append(key, values[key]);
+                        } else if (key === "allocated_states") {
+                            if (Array.isArray(values[key]) && values[key].length > 0) {
+                                values[key].forEach((state) => formData.append("allocated_states", state));
+                            }
+                        } else if (key === "password") {
+                            if (values[key] && values[key].trim() !== "") {
+                                formData.append(key, values[key]);
+                            }
+                        } else if (
+                            key !== "check" &&
+                            values[key] !== "" &&
+                            values[key] !== null &&
+                            values[key] !== undefined
+                        ) {
                             formData.append(key, values[key]);
                         }
-                    } else if (key !== "check" && values[key] !== "" && values[key] !== null && values[key] !== undefined) {
-                        formData.append(key, values[key]);
                     }
-                }
 
-                for (let pair of formData.entries()) {
-                    console.log(pair[0], pair[1]);
-                }
+                    response = await axios.put(
+                        `${import.meta.env.VITE_APP_KEY}staff/update/${id}/`,
+                        formData,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                            },
+                        }
+                    );
+                } else {
+                    const payload = {};
 
-                const response = await axios.put(
-                    `${import.meta.env.VITE_APP_KEY}staff/update/${id}/`,
-                    formData,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            "Content-Type": "multipart/form-data",
+                    for (let key in values) {
+                        if (key === "allocated_states") {
+                            payload[key] = Array.isArray(values[key]) ? values[key] : [];
+                        } else if (key === "password") {
+                            if (values[key] && values[key].trim() !== "") {
+                                payload[key] = values[key];
+                            }
+                        } else if (
+                            !["signatur_up", "image", "exp_letter", "salrary_slip", "check"].includes(key) &&
+                            values[key] !== "" &&
+                            values[key] !== null &&
+                            values[key] !== undefined
+                        ) {
+                            payload[key] = values[key];
                         }
                     }
-                );
 
-                if (response.status === 201 || response.status === 200) {
+                    response = await axios.put(
+                        `${import.meta.env.VITE_APP_KEY}staff/update/${id}/`,
+                        payload,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                                "Content-Type": "application/json",
+                            },
+                        }
+                    );
+                }
+
+                if (response.status === 200 || response.status === 201) {
                     const updatedStaff = response?.data?.data;
 
                     if (oldStaffData && updatedStaff) {
@@ -228,6 +268,7 @@ const FormLayouts = () => {
                     setError("Failed to submit the form");
                 }
             } catch (err) {
+
                 if (err.response && err.response.data && err.response.data.errors) {
                     const backendErrors = err.response.data.errors;
 
@@ -238,8 +279,13 @@ const FormLayouts = () => {
                     if (backendErrors.staff_id) formik.setFieldError("staff_id", backendErrors.staff_id[0]);
                     if (backendErrors.aadhar_no) formik.setFieldError("aadhar_no", backendErrors.aadhar_no[0]);
                     if (backendErrors.pan_no) formik.setFieldError("pan_no", backendErrors.pan_no[0]);
+                    if (backendErrors.password) formik.setFieldError("password", backendErrors.password[0]);
                 } else {
-                    setError("An error occurred. Please try again.");
+                    setError(
+                        err?.response?.data?.errors ||
+                        err?.response?.data?.message ||
+                        "An error occurred. Please try again."
+                    );
                 }
             }
         }

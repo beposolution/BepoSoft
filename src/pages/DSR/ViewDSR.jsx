@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import Select from "react-select";
 import {
     Card,
     CardBody,
@@ -20,10 +21,10 @@ import {
 import "react-toastify/dist/ReactToastify.css";
 
 const ViewDSR = () => {
+    const [summary, setSummary] = useState(null);
     const [dsrList, setDsrList] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    // FILTER STATES
     const [search, setSearch] = useState("");
     const [callStatus, setCallStatus] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
@@ -32,14 +33,12 @@ const ViewDSR = () => {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
 
-    // DROPDOWN DATA
     const [stateList, setStateList] = useState([]);
     const [allDistricts, setAllDistricts] = useState([]);
     const [districtList, setDistrictList] = useState([]);
     const [customerList, setCustomerList] = useState([]);
     const [invoiceList, setInvoiceList] = useState([]);
 
-    // MODAL STATES
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [editMode, setEditMode] = useState(false);
@@ -80,7 +79,14 @@ const ViewDSR = () => {
                 }
             );
 
+
+
+
+
+            const summaryData = response?.data?.results || null;
             const data = response?.data?.results?.results || [];
+
+            setSummary(summaryData);   
             setDsrList(data);
 
         } catch (error) {
@@ -143,7 +149,6 @@ const ViewDSR = () => {
         fetchInvoices();
     }, []);
 
-    // ✅ UPDATED VIEW (API CALL)
     const handleView = async (item) => {
         try {
             setLoading(true);
@@ -163,7 +168,7 @@ const ViewDSR = () => {
 
             setEditMode(false);
             setEditData({
-                customer_id: data.customer_id,   // ✅ IMPORTANT
+                customer_id: data.customer_id,  
                 call_status: data.call_status || "",
                 invoice: data.invoice || ""
             });
@@ -182,7 +187,7 @@ const ViewDSR = () => {
 
         try {
             await axios.delete(
-                `${BASE_URL}sales/analysis/edit/${selectedItem.id}/`, // ✅ FIXED API
+                `${BASE_URL}sales/analysis/edit/${selectedItem.id}/`, 
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -193,25 +198,23 @@ const ViewDSR = () => {
             toast.success("Deleted successfully");
 
             setModalOpen(false);
-            setSelectedItem(null);   // ✅ good practice
+            setSelectedItem(null);   
             fetchDSR();
 
         } catch (error) {
-            console.log(error); // ✅ debug
+            console.log(error); 
             toast.error("Delete failed");
         }
     };
 
     const handleUpdate = async () => {
         try {
-            // ✅ ADD THIS PART
 
 
             const selectedInvoice = invoiceList.find(
                 i => i.invoice === editData.invoice
             );
 
-            // OPTIONAL DEBUG
             console.log("Invoice:", selectedInvoice);
 
             await axios.put(
@@ -228,7 +231,6 @@ const ViewDSR = () => {
                 }
             );
 
-            // ✅ update modal instantly
             setSelectedItem((prev) => ({
                 ...prev,
                 customer_name: customerList.find(c => String(c.id) === String(editData.customer_id))?.name || "-",
@@ -245,6 +247,15 @@ const ViewDSR = () => {
             toast.error("Update failed");
         }
     };
+    const stateOptions = stateList.map((s) => ({
+        value: s.id,
+        label: s.name,
+    }));
+
+    const districtOptions = districtList.map((d) => ({
+        value: d.id,
+        label: d.name,
+    }));
 
     return (
         <React.Fragment>
@@ -288,37 +299,33 @@ const ViewDSR = () => {
                                         </Col>
 
                                         <Col md={2}>
-                                            <Input type="select" value={state}
-                                                onChange={(e) => {
-                                                    const selected = e.target.value;
-                                                    setState(selected);
+                                            <Select
+                                                options={stateOptions}
+                                                value={stateOptions.find((s) => s.value === state) || null}
+                                                onChange={(selected) => {
+                                                    const val = selected?.value || "";
+                                                    setState(val);
                                                     setDistrict("");
 
-                                                    if (selected) {
-                                                        const filtered = allDistricts.filter(
-                                                            (d) => String(d.state) === String(selected)
-                                                        );
-                                                        setDistrictList(filtered);
-                                                    } else {
-                                                        setDistrictList([]);
-                                                    }
-                                                }}>
-                                                <option value="">Select State</option>
-                                                {stateList.map((s) => (
-                                                    <option key={s.id} value={s.id}>{s.name}</option>
-                                                ))}
-                                            </Input>
+                                                    const filtered = allDistricts.filter(
+                                                        (d) => String(d.state) === String(val)
+                                                    );
+                                                    setDistrictList(filtered);
+                                                }}
+                                                placeholder="Search State..."
+                                                isClearable
+                                            />
                                         </Col>
 
                                         <Col md={2}>
-                                            <Input type="select" value={district}
-                                                onChange={(e) => setDistrict(e.target.value)}
-                                                disabled={!state}>
-                                                <option value="">Select District</option>
-                                                {districtList.map((d) => (
-                                                    <option key={d.id} value={d.id}>{d.name}</option>
-                                                ))}
-                                            </Input>
+                                            <Select
+                                                options={districtOptions}
+                                                value={districtOptions.find((d) => d.value === district) || null}
+                                                onChange={(selected) => setDistrict(selected?.value || "")}
+                                                placeholder="Search District..."
+                                                isClearable
+                                                isDisabled={!state}
+                                            />
                                         </Col>
 
                                         <Col md={2}>
@@ -354,6 +361,102 @@ const ViewDSR = () => {
                                     </Row>
                                 </div>
 
+                                {summary && (
+                                    <Row className="mb-4">
+
+                                        {/* Active */}
+                                        <Col md={2}>
+                                            <div style={{
+                                                background: "#f4e7c5",
+                                                padding: 15,
+                                                borderRadius: 12,
+                                                color: "#8a6d1d"
+                                            }}>
+                                                <div>Active</div>
+                                                <div style={{ fontSize: 22, fontWeight: "bold" }}>
+                                                    {summary.active_count || 0}
+                                                </div>
+                                            </div>
+                                        </Col>
+
+                                        {/* Productive */}
+                                        <Col md={2}>
+                                            <div style={{
+                                                background: "#d7efe1",
+                                                padding: 15,
+                                                borderRadius: 12,
+                                                color: "#1f6f4a"
+                                            }}>
+                                                <div>Productive</div>
+                                                <div style={{ fontSize: 22, fontWeight: "bold" }}>
+                                                    {summary.productive_count || 0}
+                                                </div>
+                                            </div>
+                                        </Col>
+
+                                        {/* Created */}
+                                        <Col md={2}>
+                                            <div style={{
+                                                background: "#dce9f7",
+                                                padding: 15,
+                                                borderRadius: 12,
+                                                color: "#1f4e8c"
+                                            }}>
+                                                <div>DSR Created</div>
+                                                <div style={{ fontSize: 22, fontWeight: "bold" }}>
+                                                    {summary.dsr_created_count || 0}
+                                                </div>
+                                            </div>
+                                        </Col>
+
+                                        {/* Approved */}
+                                        <Col md={2}>
+                                            <div style={{
+                                                background: "#e2f4e8",
+                                                padding: 15,
+                                                borderRadius: 12,
+                                                color: "#2e7d32"
+                                            }}>
+                                                <div>DSR Approved</div>
+                                                <div style={{ fontSize: 22, fontWeight: "bold" }}>
+                                                    {summary.dsr_approved_count || 0}
+                                                </div>
+                                            </div>
+                                        </Col>
+
+                                        {/* Confirmed */}
+                                        <Col md={2}>
+                                            <div style={{
+                                                background: "#ece3f7",
+                                                padding: 15,
+                                                borderRadius: 12,
+                                                color: "#5e3ea1"
+                                            }}>
+                                                <div>DSR Confirmed</div>
+                                                <div style={{ fontSize: 22, fontWeight: "bold" }}>
+                                                    {summary.dsr_confirmed_count || 0}
+                                                </div>
+                                            </div>
+                                        </Col>
+
+                                        {/* Rejected */}
+                                        <Col md={2}>
+                                            <div style={{
+                                                background: "#f8d7da",
+                                                padding: 15,
+                                                borderRadius: 12,
+                                                color: "#842029"
+                                            }}>
+                                                <div>DSR Rejected</div>
+                                                <div style={{ fontSize: 22, fontWeight: "bold" }}>
+                                                    {summary.dsr_rejected_count || 0}
+                                                </div>
+                                            </div>
+                                        </Col>
+
+                                    </Row>
+                                )}
+
                                 {/* TABLE */}
                                 <div className="table-responsive">
                                     <Table className="table table-bordered table-striped">
@@ -380,23 +483,41 @@ const ViewDSR = () => {
                                                     <td>{item.customer_name}</td>
 
                                                     <td>
-                                                        <span className={`badge ${item.call_status === "productive"
-                                                            ? "bg-success"
-                                                            : "bg-warning"
-                                                            }`}>
+                                                        <span
+                                                            style={{
+                                                                backgroundColor: item.call_status === "productive" ? "#d7efe1" : "#f4e7c5",
+                                                                color: item.call_status === "productive" ? "#1f6f4a" : "#8a6d1d",
+                                                                padding: "6px 14px",
+                                                                borderRadius: "20px",
+                                                                fontSize: "13px",
+                                                                fontWeight: "600",
+                                                                display: "inline-block"
+                                                            }}
+                                                        >
                                                             {item.call_status}
                                                         </span>
                                                     </td>
 
                                                     <td>
-                                                        <span className={`badge ${item.status === "dsr confirmed"
-                                                            ? "bg-success"
-                                                            : item.status === "dsr rejected"
-                                                                ? "bg-danger"
-                                                                : item.status === "dsr created"
-                                                                    ? "bg-primary"
-                                                                    : "bg-warning"
-                                                            }`}>
+                                                        <span
+                                                            style={{
+                                                                backgroundColor:
+                                                                    item.status === "dsr confirmed" ? "#ece3f7" :
+                                                                        item.status === "dsr rejected" ? "#f8d7da" :
+                                                                            item.status === "dsr created" ? "#dce9f7" :
+                                                                                "#e2f4e8",
+                                                                color:
+                                                                    item.status === "dsr confirmed" ? "#5e3ea1" :
+                                                                        item.status === "dsr rejected" ? "#842029" :
+                                                                            item.status === "dsr created" ? "#1f4e8c" :
+                                                                                "#2e7d32",
+                                                                padding: "6px 14px",
+                                                                borderRadius: "20px",
+                                                                fontSize: "13px",
+                                                                fontWeight: "600",
+                                                                display: "inline-block"
+                                                            }}
+                                                        >
                                                             {item.status}
                                                         </span>
                                                     </td>
@@ -433,7 +554,7 @@ const ViewDSR = () => {
                         isOpen={modalOpen}
                         toggle={() => setModalOpen(!modalOpen)}
                         size="lg"
-                        centered   // ✅ center modal
+                        centered   
                     >
                         <ModalHeader toggle={() => setModalOpen(false)}>
                             <span className="fw-bold">DSR Details</span>
@@ -493,7 +614,6 @@ const ViewDSR = () => {
                                                     setEditData({
                                                         ...editData,
                                                         call_status: value,
-                                                        // ✅ Clear customer if active
                                                         customer_id: value === "active" ? "" : editData.customer_id
                                                     });
                                                 }}
@@ -613,7 +733,7 @@ const ViewDSR = () => {
                         <ModalFooter className="d-flex justify-content-between">
 
                             {/* ✅ Hide delete in edit mode */}
-                            {!editMode &&  (
+                            {!editMode && (
                                 <div>
                                     <Button color="danger" onClick={handleDelete}>
                                         Delete

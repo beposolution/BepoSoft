@@ -37,6 +37,18 @@ const ViewDailySalesReport = () => {
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [updatingStatus, setUpdatingStatus] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState("");
+    // 🔽 ADD HERE (below selectedStatus state)
+    const [search, setSearch] = useState("");
+    const [callStatus, setCallStatus] = useState("");
+    const [statusFilter, setStatusFilter] = useState("");
+    const [stateFilter, setStateFilter] = useState("");
+    const [district, setDistrict] = useState("");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+
+    const [stateList, setStateList] = useState([]);
+    const [allDistricts, setAllDistricts] = useState([]);
+    const [districtList, setDistrictList] = useState([]);
 
     const token = localStorage.getItem("token");
     const baseUrl = import.meta.env.VITE_APP_KEY;
@@ -78,11 +90,39 @@ const ViewDailySalesReport = () => {
         }
     }, [token, baseUrl]);
 
+    const fetchStates = async () => {
+        try {
+            const res = await axios.get(`${baseUrl}states/`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setStateList(res?.data?.data || res?.data || []);
+        } catch {
+            toast.error("Failed to load states");
+        }
+    };
+
+    const fetchDistricts = async () => {
+        try {
+            const res = await axios.get(`${baseUrl}districts/add/`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setAllDistricts(res?.data?.data || res?.data || []);
+        } catch {
+            toast.error("Failed to load districts");
+        }
+    };
+
     const fetchReport = async () => {
         if (!familyId) return;
 
         try {
             setLoadingReport(true);
+
+            const selectedStateName =
+                stateList.find((s) => String(s.id) === String(stateFilter))?.name || "";
+
+            const selectedDistrictName =
+                districtList.find((d) => String(d.id) === String(district))?.name || "";
 
             const response = await axios.get(
                 `${baseUrl}sales/analysis/family/${familyId}/`,
@@ -90,9 +130,17 @@ const ViewDailySalesReport = () => {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
+                    params: {
+                        search,
+                        call_status: callStatus,
+                        status: statusFilter,
+                        state: selectedStateName,
+                        district: selectedDistrictName,
+                        start_date: startDate,
+                        end_date: endDate,
+                    },
                 }
             );
-
             const summaryData = response?.data?.results || null;
             const reportData = response?.data?.results?.results || [];
 
@@ -110,6 +158,8 @@ const ViewDailySalesReport = () => {
     useEffect(() => {
         if (familyId) {
             fetchReport();
+            fetchStates();
+            fetchDistricts();
         }
     }, [familyId]);
 
@@ -330,6 +380,96 @@ const ViewDailySalesReport = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                <Row className="mb-3 g-2">
+
+                                    <Col md={3}>
+                                        <Input placeholder="Search..." value={search}
+                                            onChange={(e) => setSearch(e.target.value)} />
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <Input type="select" value={callStatus}
+                                            onChange={(e) => setCallStatus(e.target.value)}>
+                                            <option value="">Call Status</option>
+                                            <option value="productive">Productive</option>
+                                            <option value="active">Active</option>
+                                        </Input>
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <Input type="select" value={statusFilter}
+                                            onChange={(e) => setStatusFilter(e.target.value)}>
+                                            <option value="">DSR Status</option>
+                                            <option value="dsr created">DSR Created</option>
+                                            <option value="dsr approved">DSR Approved</option>
+                                            <option value="dsr confirmed">DSR Confirmed</option>
+                                            <option value="dsr rejected">DSR Rejected</option>
+                                        </Input>
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <Input type="select" value={stateFilter}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setStateFilter(val);
+                                                setDistrict("");
+
+                                                const filtered = allDistricts.filter(
+                                                    (d) => String(d.state) === String(val)
+                                                );
+                                                setDistrictList(filtered);
+                                            }}>
+                                            <option value="">State</option>
+                                            {stateList.map((s) => (
+                                                <option key={s.id} value={s.id}>{s.name}</option>
+                                            ))}
+                                        </Input>
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <Input type="select" value={district}
+                                            onChange={(e) => setDistrict(e.target.value)}>
+                                            <option value="">District</option>
+                                            {districtList.map((d) => (
+                                                <option key={d.id} value={d.id}>{d.name}</option>
+                                            ))}
+                                        </Input>
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <Input type="date" value={startDate}
+                                            onChange={(e) => setStartDate(e.target.value)} />
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <Input type="date" value={endDate}
+                                            onChange={(e) => setEndDate(e.target.value)} />
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <Button color="success" onClick={fetchReport} block>
+                                            Apply
+                                        </Button>
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <Button color="secondary" block onClick={() => {
+                                            setSearch("");
+                                            setCallStatus("");
+                                            setStatusFilter("");
+                                            setStateFilter("");
+                                            setDistrict("");
+                                            setStartDate("");
+                                            setEndDate("");
+                                            setTimeout(fetchReport, 0);
+                                        }}>
+                                            Reset
+                                        </Button>
+                                    </Col>
+
+                                </Row>
+
 
                                 {loadingUser || loadingReport ? (
                                     <div className="text-center my-5">

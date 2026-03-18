@@ -416,6 +416,7 @@ import Currency from "../pages/currency/Currency";
 import StateBillingWiseReport from "../pages/Resports/StateBillingWiseReport";
 import AddDSR from "../pages/DSR/AddDSR";
 import ViewDSR from "../pages/DSR/ViewDSR";
+import ViewDSRFamilyWise from "../pages/DSR/ViewDSRFamilyWise";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -674,6 +675,7 @@ const authProtectedRoutes = [
   { path: "/state/wise/billing/wise/report/", component: <StateBillingWiseReport /> },
   { path: "/daily/dsr/", component: <AddDSR /> },
   { path: "/daily/dsr/report/view/", component: <ViewDSR /> },
+  { path: "/daily/dsr/family/based/", component: <ViewDSRFamilyWise /> },
 
 
   // Seller details

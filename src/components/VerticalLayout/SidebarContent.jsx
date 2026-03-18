@@ -799,24 +799,45 @@ const SidebarContent = (props) => {
 
             ) : null}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'COO' || role === 'CEO' || role === 'BDM' ? (
-
+            {[
+              'ADMIN',
+              'COO',
+              'CEO',
+              'BDM',
+              'BDO',
+              'ASD',
+              'SD',
+            ].includes(role) ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUserTie size={17} style={{ marginRight: '6px' }} />
                   <span>{props.t("Daily DSR")}</span>
                 </Link>
+
                 <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/daily/dsr/">{props.t("Daily DSR")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/daily/dsr/report/view/">{props.t("Daily DSR Report View")}</Link>
-                  </li>
-                  
+                  {role === 'BDO' && (
+                    <li>
+                      <Link to="/daily/dsr/">{props.t("Daily DSR")}</Link>
+                    </li>
+                  )}
+
+                  {role === 'BDM' && (
+                    <li>
+                      <Link to="/daily/dsr/report/view/">
+                        {props.t("Daily DSR Report View")}
+                      </Link>
+                    </li>
+                  )}
+
+                  {['ASD', 'SD', 'ADMIN', 'CEO', 'COO'].includes(role) && (
+                    <li>
+                      <Link to="/daily/dsr/family/based/">
+                        {props.t("Family Wise DSR Report")}
+                      </Link>
+                    </li>
+                  )}
                 </ul>
               </li>
-
             ) : null}
 
 

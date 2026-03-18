@@ -249,6 +249,37 @@ const ViewDailySalesReport = () => {
         }
     };
 
+    const getAllowedStatusOptions = () => {
+        const normalizedRole = (role || "").toUpperCase();
+
+        const allOptions = [
+            { value: "dsr created", label: "DSR Created" },
+            { value: "dsr approved", label: "DSR Approved" },
+            { value: "dsr confirmed", label: "DSR Confirmed" },
+            { value: "dsr rejected", label: "DSR Rejected" },
+        ];
+
+        if (normalizedRole === "BDM") {
+            return allOptions.filter((item) => item.value !== "dsr confirmed");
+        }
+
+        if (normalizedRole === "ASD") {
+            return allOptions.filter((item) => item.value !== "dsr approved");
+        }
+
+        if (
+            normalizedRole === "ADMIN" ||
+            normalizedRole === "COO" ||
+            normalizedRole === "CEO"
+        ) {
+            return allOptions;
+        }
+
+        return allOptions;
+    };
+
+    const statusOptions = getAllowedStatusOptions();
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -479,10 +510,11 @@ const ViewDailySalesReport = () => {
                                             onChange={(e) => setSelectedStatus(e.target.value)}
                                         >
                                             <option value="">Select status</option>
-                                            <option value="dsr created">DSR Created</option>
-                                            <option value="dsr approved">DSR Approved</option>
-                                            <option value="dsr confirmed">DSR Confirmed</option>
-                                            <option value="dsr rejected">DSR Rejected</option>
+                                            {statusOptions.map((option) => (
+                                                <option key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            ))}
                                         </Input>
                                     </FormGroup>
                                 </Col>

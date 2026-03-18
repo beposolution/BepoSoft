@@ -804,6 +804,23 @@ const SidebarContent = (props) => {
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUserTie size={17} style={{ marginRight: '6px' }} />
+                  <span>{props.t("Daily DSR")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li>
+                    <Link to="/daily/dsr/">{props.t("Daily DSR")}</Link>
+                  </li>
+                </ul>
+              </li>
+
+            ) : null}
+
+
+            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'COO' || role === 'CEO' || role === 'BDM' ? (
+
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaUserTie size={17} style={{ marginRight: '6px' }} />
                   <span>{props.t("BDO's BDM Sales Report")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">

@@ -415,6 +415,7 @@ import BDMSalesReportAdminView from "../pages/BDMSalesReport/BDMSalesReportAdmin
 import Currency from "../pages/currency/Currency";
 import StateBillingWiseReport from "../pages/Resports/StateBillingWiseReport";
 import AddDSR from "../pages/DSR/AddDSR";
+import ViewDSR from "../pages/DSR/ViewDSR";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -672,6 +673,8 @@ const authProtectedRoutes = [
   { path: "/bdm/sales/report/admin/view/", component: <BDMSalesReportAdminView /> },
   { path: "/state/wise/billing/wise/report/", component: <StateBillingWiseReport /> },
   { path: "/daily/dsr/", component: <AddDSR /> },
+  { path: "/daily/dsr/report/view/", component: <ViewDSR /> },
+
 
   // Seller details
   { path: "/seller/creation/", component: <AddSeller /> },

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import Select from "react-select";
 import {
     Card,
     CardBody,
@@ -37,7 +38,6 @@ const ViewDailySalesReport = () => {
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [updatingStatus, setUpdatingStatus] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState("");
-    // 🔽 ADD HERE (below selectedStatus state)
     const [search, setSearch] = useState("");
     const [callStatus, setCallStatus] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
@@ -49,6 +49,15 @@ const ViewDailySalesReport = () => {
     const [stateList, setStateList] = useState([]);
     const [allDistricts, setAllDistricts] = useState([]);
     const [districtList, setDistrictList] = useState([]);
+    const stateOptions = stateList.map((s) => ({
+        value: s.id,
+        label: s.name,
+    }));
+
+    const districtOptions = districtList.map((d) => ({
+        value: d.id,
+        label: d.name,
+    }));
 
     const token = localStorage.getItem("token");
     const baseUrl = import.meta.env.VITE_APP_KEY;
@@ -409,9 +418,11 @@ const ViewDailySalesReport = () => {
                                     </Col>
 
                                     <Col md={2}>
-                                        <Input type="select" value={stateFilter}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
+                                        <Select
+                                            options={stateOptions}
+                                            value={stateOptions.find((s) => s.value === stateFilter) || null}
+                                            onChange={(selected) => {
+                                                const val = selected?.value || "";
                                                 setStateFilter(val);
                                                 setDistrict("");
 
@@ -419,22 +430,21 @@ const ViewDailySalesReport = () => {
                                                     (d) => String(d.state) === String(val)
                                                 );
                                                 setDistrictList(filtered);
-                                            }}>
-                                            <option value="">State</option>
-                                            {stateList.map((s) => (
-                                                <option key={s.id} value={s.id}>{s.name}</option>
-                                            ))}
-                                        </Input>
+                                            }}
+                                            placeholder="Search State..."
+                                            isClearable
+                                        />
                                     </Col>
 
                                     <Col md={2}>
-                                        <Input type="select" value={district}
-                                            onChange={(e) => setDistrict(e.target.value)}>
-                                            <option value="">District</option>
-                                            {districtList.map((d) => (
-                                                <option key={d.id} value={d.id}>{d.name}</option>
-                                            ))}
-                                        </Input>
+                                        <Select
+                                            options={districtOptions}
+                                            value={districtOptions.find((d) => d.value === district) || null}
+                                            onChange={(selected) => setDistrict(selected?.value || "")}
+                                            placeholder="Search District..."
+                                            isClearable
+                                            isDisabled={!stateFilter}
+                                        />
                                     </Col>
 
                                     <Col md={2}>

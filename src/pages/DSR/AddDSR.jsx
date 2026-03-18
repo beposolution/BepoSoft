@@ -16,8 +16,6 @@ import "react-toastify/dist/ReactToastify.css";
 import Select from "react-select";
 
 const AddDSR = () => {
-    const token = localStorage.getItem("token");
-
     const [customerList, setCustomerList] = useState([]);
     const [invoiceList, setInvoiceList] = useState([]);
     const [stateList, setStateList] = useState([]);
@@ -28,20 +26,17 @@ const AddDSR = () => {
     const [selectedState, setSelectedState] = useState(null);
     const [selectedDistrict, setSelectedDistrict] = useState(null);
 
-    // ✅ SINGLE TIME FIELD
     const [callDuration, setCallDuration] = useState("00:00:00");
-
     const [note, setNote] = useState("");
+    const [customerNameManual, setCustomerNameManual] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const [callStatus, setCallStatus] = useState({
         value: "active",
         label: "Active",
     });
 
-    const [customerNameManual, setCustomerNameManual] = useState("");
-
-    const [loading, setLoading] = useState(false);
-
+    const token = localStorage.getItem("token");
     const BASE_URL = import.meta.env.VITE_APP_KEY || "/api/";
 
     const callStatusOptions = [
@@ -49,47 +44,46 @@ const AddDSR = () => {
         { value: "productive", label: "Productive" },
     ];
 
-    // ---------------- FETCH ----------------
     const fetchCustomers = async () => {
         try {
-            const res = await axios.get(`${BASE_URL}staff/customers/`, {
+            const response = await axios.get(`${BASE_URL}staff/customers/`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            setCustomerList(res?.data?.data || res?.data || []);
-        } catch {
+            setCustomerList(response?.data?.data || response?.data || []);
+        } catch (error) {
             toast.error("Failed to load Customers");
         }
     };
 
     const fetchInvoices = async () => {
         try {
-            const res = await axios.get(`${BASE_URL}my/orders/`, {
+            const response = await axios.get(`${BASE_URL}my/orders/`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            setInvoiceList(res?.data?.data || res?.data || []);
-        } catch {
+            setInvoiceList(response?.data?.data || response?.data || []);
+        } catch (error) {
             toast.error("Failed to load Invoices");
         }
     };
 
     const fetchStates = async () => {
         try {
-            const res = await axios.get(`${BASE_URL}states/`, {
+            const response = await axios.get(`${BASE_URL}states/`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            setStateList(res?.data?.data || res?.data || []);
-        } catch {
+            setStateList(response?.data?.data || response?.data || []);
+        } catch (error) {
             toast.error("Failed to load States");
         }
     };
 
     const fetchDistricts = async () => {
         try {
-            const res = await axios.get(`${BASE_URL}districts/add/`, {
+            const response = await axios.get(`${BASE_URL}districts/add/`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            setDistrictList(res?.data?.data || res?.data || []);
-        } catch {
+            setDistrictList(response?.data?.data || response?.data || []);
+        } catch (error) {
             toast.error("Failed to load Districts");
         }
     };
@@ -101,56 +95,63 @@ const AddDSR = () => {
         fetchDistricts();
     }, []);
 
-    // ---------------- OPTIONS ----------------
-    const customerOptions = customerList.map(item => ({
+    const customerOptions = customerList.map((item) => ({
         value: item?.id,
         label: item?.name,
     }));
 
-    const invoiceOptions = invoiceList.map(item => ({
+    const invoiceOptions = invoiceList.map((item) => ({
         value: item?.id,
         label: item?.invoice || `Invoice #${item?.id}`,
     }));
 
-    const stateOptionsMapped = stateList.map(item => ({
+    const stateOptions = stateList.map((item) => ({
         value: item?.id,
         label: item?.name,
     }));
 
-    const districtOptions = districtList
-        .filter(d => d?.state === selectedState?.value)
-        .map(item => ({
-            value: item?.id,
-            label: item?.name,
-        }));
+    const filteredDistricts = selectedState
+        ? districtList.filter((dist) => dist?.state === selectedState.value)
+        : [];
 
-    // ---------------- SUBMIT ----------------
+    const districtOptions = filteredDistricts.map((item) => ({
+        value: item?.id,
+        label: item?.name,
+    }));
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!selectedState) return toast.error("Select State");
-        if (!selectedDistrict) return toast.error("Select District");
+        if (!selectedState) {
+            toast.error("Please select a State");
+            return;
+        }
+
+        if (!selectedDistrict) {
+            toast.error("Please select a District");
+            return;
+        }
 
         if (callDuration === "00:00:00") {
-            return toast.error("Call Duration cannot be zero");
+            toast.error("Call Duration cannot be zero");
+            return;
         }
 
-        if (callStatus.value === "active" && !selectedCustomer) {
-            return toast.error("Select Customer");
+        if (callStatus.value === "active" && !customerNameManual.trim()) {
+            toast.error("Please enter Customer Name");
+            return;
         }
 
-        if (callStatus.value === "productive" && !customerNameManual) {
-            return toast.error("Enter Customer Name");
+        if (callStatus.value === "productive" && !selectedCustomer) {
+            toast.error("Please select a Customer");
+            return;
         }
 
         try {
             setLoading(true);
 
-            // ✅ ensure HH:MM:SS format
             const formattedDuration =
-                callDuration.length === 5
-                    ? `${callDuration}:00`
-                    : callDuration;
+                callDuration.length === 5 ? `${callDuration}:00` : callDuration;
 
             const payload = {
                 call_duration: formattedDuration,
@@ -158,36 +159,28 @@ const AddDSR = () => {
                 note,
                 state: selectedState.value,
                 district: selectedDistrict.value,
+                status: "dsr created",
 
                 ...(callStatus.value === "active" && {
+                    customer_name: customerNameManual,
+                }),
+
+                ...(callStatus.value === "productive" && {
                     customer: selectedCustomer?.value,
                     customer_name: selectedCustomer?.label,
                     invoice: selectedInvoice?.value || null,
                 }),
-
-                ...(callStatus.value === "productive" && {
-                    customer_name: customerNameManual,
-                }),
-
-                status: "dsr created",
             };
 
-            console.log("FINAL PAYLOAD:", payload);
-
-            await axios.post(
-                `${BASE_URL}sales/analysis/add/`,
-                payload,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
+            await axios.post(`${BASE_URL}sales/analysis/add/`, payload, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
 
             toast.success("Sales Analysis Added Successfully");
 
-            // RESET
             setSelectedCustomer(null);
             setSelectedInvoice(null);
             setSelectedState(null);
@@ -195,27 +188,30 @@ const AddDSR = () => {
             setCallDuration("00:00:00");
             setNote("");
             setCustomerNameManual("");
-            setCallStatus({ value: "active", label: "Active" });
-
+            setCallStatus({
+                value: "active",
+                label: "Active",
+            });
         } catch (error) {
-            console.log("ERROR:", error?.response?.data);
-
-            toast.error(
+            const backendMessage =
                 error?.response?.data?.message ||
                 JSON.stringify(error?.response?.data) ||
-                "Failed to submit"
-            );
+                "Failed to submit";
+
+            toast.error(backendMessage);
         } finally {
             setLoading(false);
         }
     };
 
-    // ---------------- UI ----------------
     return (
-        <>
+        <React.Fragment>
             <ToastContainer />
             <div className="page-content">
-                <Breadcrumbs title="Daily Sales Report" breadcrumbItem="Add Daily Sales Report" />
+                <Breadcrumbs
+                    title="Daily Sales Report"
+                    breadcrumbItem="Add Daily Sales Report"
+                />
 
                 <Row>
                     <Col lg={12}>
@@ -226,11 +222,9 @@ const AddDSR = () => {
                                 </CardTitle>
 
                                 <Form onSubmit={handleSubmit}>
-                                    <Row className="g-4">
-
-                                        {/* ROW 1 */}
-                                        <Row className="mb-3">
-                                            <Col md={4}>
+                                    <Row>
+                                        <Col md={6}>
+                                            <div className="mb-3">
                                                 <Label>Call Duration</Label>
                                                 <input
                                                     type="time"
@@ -241,109 +235,141 @@ const AddDSR = () => {
                                                         setCallDuration(e.target.value)
                                                     }
                                                 />
-                                            </Col>
+                                            </div>
+                                        </Col>
 
-                                            <Col md={4}>
+                                        <Col md={6}>
+                                            <div className="mb-3">
                                                 <Label>Call Status</Label>
                                                 <Select
                                                     options={callStatusOptions}
                                                     value={callStatus}
-                                                    onChange={setCallStatus}
+                                                    onChange={(selectedOption) => {
+                                                        setCallStatus(selectedOption);
+                                                        setSelectedCustomer(null);
+                                                        setSelectedInvoice(null);
+                                                        setCustomerNameManual("");
+                                                    }}
+                                                    placeholder="Select Call Status"
                                                 />
-                                            </Col>
+                                            </div>
+                                        </Col>
+                                    </Row>
 
-                                            {callStatus.value === "productive" ? (
-                                                <Col md={4}>
+                                    <Row>
+                                        {callStatus.value === "active" ? (
+                                            <Col md={6}>
+                                                <div className="mb-3">
                                                     <Label>Customer Name</Label>
                                                     <input
+                                                        type="text"
                                                         className="form-control"
                                                         value={customerNameManual}
                                                         onChange={(e) =>
                                                             setCustomerNameManual(e.target.value)
                                                         }
+                                                        placeholder="Enter Customer Name"
                                                     />
+                                                </div>
+                                            </Col>
+                                        ) : (
+                                            <>
+                                                <Col md={6}>
+                                                    <div className="mb-3">
+                                                        <Label>Customer</Label>
+                                                        <Select
+                                                            options={customerOptions}
+                                                            value={selectedCustomer}
+                                                            onChange={(selectedOption) =>
+                                                                setSelectedCustomer(selectedOption)
+                                                            }
+                                                            placeholder="Select Customer"
+                                                            isClearable
+                                                        />
+                                                    </div>
                                                 </Col>
-                                            ) : (
-                                                <Col md={4}>
-                                                    <Label>Customer</Label>
-                                                    <Select
-                                                        options={customerOptions}
-                                                        value={selectedCustomer}
-                                                        onChange={setSelectedCustomer}
-                                                    />
-                                                </Col>
-                                            )}
-                                        </Row>
 
-                                        {/* ROW 2 */}
-                                        <Row className="mb-3">
-                                            {callStatus.value !== "productive" && (
-                                                <Col md={4}>
-                                                    <Label>Invoice</Label>
-                                                    <Select
-                                                        options={invoiceOptions}
-                                                        value={selectedInvoice}
-                                                        onChange={setSelectedInvoice}
-                                                        isClearable
-                                                    />
+                                                <Col md={6}>
+                                                    <div className="mb-3">
+                                                        <Label>Invoice</Label>
+                                                        <Select
+                                                            options={invoiceOptions}
+                                                            value={selectedInvoice}
+                                                            onChange={(selectedOption) =>
+                                                                setSelectedInvoice(selectedOption)
+                                                            }
+                                                            placeholder="Select Invoice"
+                                                            isClearable
+                                                        />
+                                                    </div>
                                                 </Col>
-                                            )}
+                                            </>
+                                        )}
+                                    </Row>
 
-                                            <Col md={4}>
+                                    <Row>
+                                        <Col md={6}>
+                                            <div className="mb-3">
                                                 <Label>State</Label>
                                                 <Select
-                                                    options={stateOptionsMapped}
+                                                    options={stateOptions}
                                                     value={selectedState}
-                                                    onChange={(val) => {
-                                                        setSelectedState(val);
+                                                    onChange={(selectedOption) => {
+                                                        setSelectedState(selectedOption);
                                                         setSelectedDistrict(null);
                                                     }}
+                                                    placeholder="Select State"
+                                                    isClearable
                                                 />
-                                            </Col>
+                                            </div>
+                                        </Col>
 
-                                            <Col md={4}>
+                                        <Col md={6}>
+                                            <div className="mb-3">
                                                 <Label>District</Label>
                                                 <Select
                                                     options={districtOptions}
                                                     value={selectedDistrict}
-                                                    onChange={setSelectedDistrict}
+                                                    onChange={(selectedOption) =>
+                                                        setSelectedDistrict(selectedOption)
+                                                    }
+                                                    placeholder="Select District"
+                                                    isClearable
                                                     isDisabled={!selectedState}
                                                 />
-                                            </Col>
-                                        </Row>
+                                            </div>
+                                        </Col>
+                                    </Row>
 
-                                        {/* ROW 3 */}
-                                        <Row className="mb-3">
-                                            <Col md={4}>
+                                    <Row>
+                                        <Col md={12}>
+                                            <div className="mb-3">
                                                 <Label>Note</Label>
                                                 <textarea
                                                     className="form-control"
                                                     rows="3"
                                                     value={note}
-                                                    onChange={(e) =>
-                                                        setNote(e.target.value)
-                                                    }
+                                                    onChange={(e) => setNote(e.target.value)}
+                                                    placeholder="Enter Note"
                                                 />
-                                            </Col>
-                                        </Row>
-
-                                        <Row>
-                                            <Col md={12} className="mt-2">
-                                                <Button color="primary" disabled={loading}>
-                                                    {loading ? "Saving..." : "Submit"}
-                                                </Button>
-                                            </Col>
-                                        </Row>
-
+                                            </div>
+                                        </Col>
                                     </Row>
-                                </Form>
 
+                                    <Button
+                                        color="primary"
+                                        type="submit"
+                                        disabled={loading}
+                                    >
+                                        {loading ? "Saving..." : "Submit"}
+                                    </Button>
+                                </Form>
                             </CardBody>
                         </Card>
                     </Col>
                 </Row>
             </div>
-        </>
+        </React.Fragment>
     );
 };
 

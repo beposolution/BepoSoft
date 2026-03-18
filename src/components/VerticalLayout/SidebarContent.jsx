@@ -816,20 +816,19 @@ const SidebarContent = (props) => {
 
                 <ul className="sub-menu" aria-expanded="false">
                   {role === 'BDO' && (
-                    <li>
-                      <Link to="/daily/dsr/">{props.t("Daily DSR")}</Link>
-                    </li>
+                    <>
+                      <li>
+                        <Link to="/daily/dsr/">{props.t("Daily DSR")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/daily/dsr/report/view/">
+                          {props.t("Daily DSR Report View")}
+                        </Link>
+                      </li>
+                    </>
                   )}
 
-                  {role === 'BDM' && (
-                    <li>
-                      <Link to="/daily/dsr/report/view/">
-                        {props.t("Daily DSR Report View")}
-                      </Link>
-                    </li>
-                  )}
-
-                  {['ASD', 'SD', 'ADMIN', 'CEO', 'COO'].includes(role) && (
+                  {['BDM', 'ASD', 'SD', 'ADMIN', 'CEO', 'COO'].includes(role) && (
                     <li>
                       <Link to="/daily/dsr/family/based/">
                         {props.t("Family Wise DSR Report")}

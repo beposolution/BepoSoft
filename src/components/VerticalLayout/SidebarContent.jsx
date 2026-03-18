@@ -810,6 +810,10 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/daily/dsr/">{props.t("Daily DSR")}</Link>
                   </li>
+                  <li>
+                    <Link to="/daily/dsr/report/view/">{props.t("Daily DSR Report View")}</Link>
+                  </li>
+                  
                 </ul>
               </li>
 

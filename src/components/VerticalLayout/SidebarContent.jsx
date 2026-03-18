@@ -835,6 +835,16 @@ const SidebarContent = (props) => {
                       </Link>
                     </li>
                   )}
+
+                  {['ADMIN', 'CEO', 'COO'].includes(role) && (
+                    <li>
+                      <Link to="/daily/dsr/all/report/view/">
+                        {props.t("Daily DSR Report All View")}
+                      </Link>
+                    </li>
+                  )}
+
+
                 </ul>
               </li>
             ) : null}

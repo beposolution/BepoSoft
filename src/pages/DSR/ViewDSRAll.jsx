@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
@@ -12,8 +12,12 @@ import {
     Spinner,
     Button,
     Input,
+    Label
 } from "reactstrap";
 import Select from "react-select";
+import * as XLSX from "xlsx-js-style";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import "react-toastify/dist/ReactToastify.css";
 
 const ViewDSRAll = () => {
@@ -37,26 +41,44 @@ const ViewDSRAll = () => {
     const [staff, setStaff] = useState("");
     const [staffList, setStaffList] = useState([]);
 
-    const stateOptions = stateList.map((s) => ({
-        value: s.id,
-        label: s.name,
-    }));
-
-    const districtOptions = districtList.map((d) => ({
-        value: d.id,
-        label: d.name,
-    }));
-    const familyOptions = familyList.map((f) => ({
-        value: f.id,
-        label: f.name,
-    }));
-    const staffOptions = staffList.map((s) => ({
-        value: s.id,
-        label: s.name,
-    }));
-
     const token = localStorage.getItem("token");
     const baseUrl = import.meta.env.VITE_APP_KEY;
+
+    const stateOptions = useMemo(
+        () =>
+            stateList.map((s) => ({
+                value: s.id,
+                label: s.name,
+            })),
+        [stateList]
+    );
+
+    const districtOptions = useMemo(
+        () =>
+            districtList.map((d) => ({
+                value: d.id,
+                label: d.name,
+            })),
+        [districtList]
+    );
+
+    const familyOptions = useMemo(
+        () =>
+            familyList.map((f) => ({
+                value: f.id,
+                label: f.name,
+            })),
+        [familyList]
+    );
+
+    const staffOptions = useMemo(
+        () =>
+            staffList.map((s) => ({
+                value: s.id,
+                label: s.name,
+            })),
+        [staffList]
+    );
 
     const fetchDSR = async () => {
         try {
@@ -67,39 +89,38 @@ const ViewDSRAll = () => {
 
             const selectedDistrictName =
                 districtList.find((d) => String(d.id) === String(district))?.name || "";
+
             const selectedFamilyName =
                 familyList.find((f) => String(f.id) === String(family))?.name || "";
+
             const selectedStaffName =
                 staffList.find((s) => String(s.id) === String(staff))?.name || "";
 
-            const response = await axios.get(
-                `${baseUrl}sales/analysis/all/`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                    params: {
-                        search,
-                        call_status: callStatus,
-                        status: statusFilter,
-                        state: selectedStateName,
-                        district: selectedDistrictName,
-                        family: selectedFamilyName,
-                        staff: selectedStaffName,
-                        start_date: startDate,
-                        end_date: endDate,
-                    },
-                }
-            );
+            const response = await axios.get(`${baseUrl}sales/analysis/all/`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                params: {
+                    search,
+                    call_status: callStatus,
+                    status: statusFilter,
+                    state: selectedStateName,
+                    district: selectedDistrictName,
+                    family: selectedFamilyName,
+                    staff: selectedStaffName,
+                    start_date: startDate,
+                    end_date: endDate,
+                },
+            });
 
             const summaryData = response?.data?.results || null;
             const reportData = response?.data?.results?.results || [];
 
             setSummary(summaryData);
-            setData(reportData);
-
+            setData(Array.isArray(reportData) ? reportData : []);
         } catch {
             toast.error("Failed to load DSR data");
+            setSummary(null);
             setData([]);
         } finally {
             setLoading(false);
@@ -127,46 +148,78 @@ const ViewDSRAll = () => {
             toast.error("Failed to load districts");
         }
     };
+
     const fetchFamilies = async () => {
         try {
             const res = await axios.get(`${baseUrl}familys/`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setFamilyList(res?.data?.data || res?.data || []);
-
         } catch {
             toast.error("Failed to load families");
         }
     };
+
     const fetchStaffByFamily = async (familyId) => {
         try {
             const res = await axios.get(`${baseUrl}users/family/${familyId}/`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-
-
             setStaffList(res?.data?.data || res?.data || []);
-        } catch (err) {
+        } catch {
             toast.error("Failed to load staff");
         }
     };
 
     useEffect(() => {
-        fetchDSR();
         fetchStates();
         fetchDistricts();
         fetchFamilies();
     }, []);
 
-    const formatDate = (date) => {
-        return new Date(date).toLocaleDateString();
-    };
-    const getRowStyle = (callStatus) => {
-        if (callStatus === "active") {
-            return { backgroundColor: "#f5e6b3" }; 
+    useEffect(() => {
+        fetchDSR();
+    }, [stateList, districtList, familyList, staffList]);
+
+    useEffect(() => {
+        if (!stateFilter) {
+            setDistrictList([]);
+            setDistrict("");
+            return;
         }
-        if (callStatus === "productive") {
-            return { backgroundColor: "#cfe6d3" }; 
+
+        const filtered = allDistricts.filter(
+            (d) => String(d.state) === String(stateFilter)
+        );
+        setDistrictList(filtered);
+    }, [stateFilter, allDistricts]);
+
+    const formatDate = (date) => {
+        if (!date) return "-";
+        return new Date(date).toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+        });
+    };
+
+    const formatDateTime = (date) => {
+        if (!date) return "-";
+        return new Date(date).toLocaleString("en-IN", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    };
+
+    const getRowStyle = (currentCallStatus) => {
+        if ((currentCallStatus || "").toLowerCase() === "active") {
+            return { backgroundColor: "#f5e6b3" };
+        }
+        if ((currentCallStatus || "").toLowerCase() === "productive") {
+            return { backgroundColor: "#cfe6d3" };
         }
         return {};
     };
@@ -178,19 +231,16 @@ const ViewDSRAll = () => {
         let color = "#374151";
 
         if (s === "dsr created") {
-            bg = "#dbeafe";   
+            bg = "#dbeafe";
             color = "#1d4ed8";
-        }
-        else if (s === "dsr approved") {
-            bg = "#bbf7d0";   
+        } else if (s === "dsr approved") {
+            bg = "#bbf7d0";
             color = "#166534";
-        }
-        else if (s === "dsr confirmed") {
-            bg = "#ddd6fe";   
+        } else if (s === "dsr confirmed") {
+            bg = "#ddd6fe";
             color = "#5b21b6";
-        }
-        else if (s === "dsr rejected") {
-            bg = "#fecaca";   
+        } else if (s === "dsr rejected") {
+            bg = "#fecaca";
             color = "#991b1b";
         }
 
@@ -206,57 +256,454 @@ const ViewDSRAll = () => {
         };
     };
 
+    const selectedStateLabel =
+        stateOptions.find((s) => String(s.value) === String(stateFilter))?.label || "All States";
+
+    const selectedDistrictLabel =
+        districtOptions.find((d) => String(d.value) === String(district))?.label ||
+        "All Districts";
+
+    const selectedFamilyLabel =
+        familyOptions.find((f) => String(f.value) === String(family))?.label || "All Families";
+
+    const selectedStaffLabel =
+        staffOptions.find((s) => String(s.value) === String(staff))?.label || "All Staff";
+
+    const exportToExcel = () => {
+        try {
+            if (!data || data.length === 0) {
+                toast.error("No data to export");
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+            const wsData = [];
+
+            wsData.push(["ALL DAILY SALES REPORT"]);
+            wsData.push([]);
+
+            wsData.push(["FILTERS", "", "", ""]);
+            wsData.push(["Search", search || "All", "Call Status", callStatus || "All"]);
+            wsData.push(["DSR Status", statusFilter || "All", "State", selectedStateLabel]);
+            wsData.push(["District", selectedDistrictLabel, "Family", selectedFamilyLabel]);
+            wsData.push(["Staff", selectedStaffLabel, "Start Date", startDate || "-"]);
+            wsData.push(["End Date", endDate || "-", "", ""]);
+            wsData.push([]);
+
+            wsData.push(["SUMMARY", "", "", "", "", "", "", ""]);
+            wsData.push([
+                "Total",
+                "Active",
+                "Productive",
+                "DSR Created",
+                "DSR Approved",
+                "DSR Confirmed",
+                "DSR Rejected",
+                "Call Duration",
+            ]);
+            wsData.push([
+                summary?.count || 0,
+                summary?.active_count || 0,
+                summary?.productive_count || 0,
+                summary?.dsr_created_count || 0,
+                summary?.dsr_approved_count || 0,
+                summary?.dsr_confirmed_count || 0,
+                summary?.dsr_rejected_count || 0,
+                summary?.total_call_duration || 0,
+            ]);
+            wsData.push([]);
+
+            wsData.push([
+                "#",
+                "Customer",
+                "Call Status",
+                "DSR Status",
+                "Duration",
+                "State",
+                "District",
+                "Invoice",
+                "Staff",
+                "Date",
+            ]);
+
+            data.forEach((item, index) => {
+                wsData.push([
+                    index + 1,
+                    item.customer_name || "-",
+                    item.call_status || "-",
+                    item.status || "-",
+                    item.call_duration || "-",
+                    item.state_name || "-",
+                    item.district_name || "-",
+                    item.invoice_number || "-",
+                    item.created_by_name || "-",
+                    formatDate(item.created_at),
+                ]);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const range = XLSX.utils.decode_range(ws["!ref"]);
+
+            ws["!merges"] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } },
+                { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
+                { s: { r: 9, c: 0 }, e: { r: 9, c: 7 } },
+            ];
+
+            ws["!cols"] = [
+                { wch: 8 },
+                { wch: 24 },
+                { wch: 16 },
+                { wch: 18 },
+                { wch: 14 },
+                { wch: 18 },
+                { wch: 18 },
+                { wch: 16 },
+                { wch: 22 },
+                { wch: 18 },
+            ];
+
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+                for (let C = range.s.c; C <= range.e.c; ++C) {
+                    const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[cellAddress]) continue;
+
+                    ws[cellAddress].s = {
+                        font: { name: "Calibri", sz: 11 },
+                        alignment: {
+                            vertical: "center",
+                            horizontal: "center",
+                            wrapText: true,
+                        },
+                        border: {
+                            top: { style: "thin", color: { rgb: "D9D9D9" } },
+                            bottom: { style: "thin", color: { rgb: "D9D9D9" } },
+                            left: { style: "thin", color: { rgb: "D9D9D9" } },
+                            right: { style: "thin", color: { rgb: "D9D9D9" } },
+                        },
+                    };
+                }
+            }
+
+            for (let C = 0; C <= 9; C++) {
+                const cell = XLSX.utils.encode_cell({ r: 0, c: C });
+                if (ws[cell]) {
+                    ws[cell].s = {
+                        font: { bold: true, sz: 16, color: { rgb: "FFFFFF" } },
+                        alignment: { horizontal: "center", vertical: "center" },
+                        fill: { fgColor: { rgb: "1F4E79" } },
+                        border: {
+                            top: { style: "thin", color: { rgb: "1F4E79" } },
+                            bottom: { style: "thin", color: { rgb: "1F4E79" } },
+                            left: { style: "thin", color: { rgb: "1F4E79" } },
+                            right: { style: "thin", color: { rgb: "1F4E79" } },
+                        },
+                    };
+                }
+            }
+
+            [2, 9].forEach((row) => {
+                for (let C = 0; C <= 9; C++) {
+                    const cell = XLSX.utils.encode_cell({ r: row, c: C });
+                    if (ws[cell]) {
+                        ws[cell].s = {
+                            font: { bold: true, sz: 12, color: { rgb: "FFFFFF" } },
+                            alignment: { horizontal: "left", vertical: "center" },
+                            fill: { fgColor: { rgb: "203A43" } },
+                            border: {
+                                top: { style: "thin", color: { rgb: "203A43" } },
+                                bottom: { style: "thin", color: { rgb: "203A43" } },
+                                left: { style: "thin", color: { rgb: "203A43" } },
+                                right: { style: "thin", color: { rgb: "203A43" } },
+                            },
+                        };
+                    }
+                }
+            });
+
+            [3, 4, 5, 6, 7].forEach((row) => {
+                [0, 2].forEach((col) => {
+                    const cell = XLSX.utils.encode_cell({ r: row, c: col });
+                    if (ws[cell]) {
+                        ws[cell].s = {
+                            ...ws[cell].s,
+                            font: { bold: true, color: { rgb: "000000" } },
+                            fill: { fgColor: { rgb: "EAF4F4" } },
+                        };
+                    }
+                });
+            });
+
+            for (let C = 0; C <= 7; C++) {
+                const headerCell = XLSX.utils.encode_cell({ r: 10, c: C });
+                if (ws[headerCell]) {
+                    ws[headerCell].s = {
+                        font: { bold: true, color: { rgb: "FFFFFF" } },
+                        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+                        fill: { fgColor: { rgb: "28837A" } },
+                        border: {
+                            top: { style: "thin", color: { rgb: "000000" } },
+                            bottom: { style: "thin", color: { rgb: "000000" } },
+                            left: { style: "thin", color: { rgb: "000000" } },
+                            right: { style: "thin", color: { rgb: "000000" } },
+                        },
+                    };
+                }
+
+                const valueCell = XLSX.utils.encode_cell({ r: 11, c: C });
+                if (ws[valueCell]) {
+                    ws[valueCell].s = {
+                        font: { bold: true, sz: 12, color: { rgb: "000000" } },
+                        alignment: { horizontal: "center", vertical: "center" },
+                        fill: { fgColor: { rgb: "F8F9FA" } },
+                        border: {
+                            top: { style: "thin", color: { rgb: "D9D9D9" } },
+                            bottom: { style: "thin", color: { rgb: "D9D9D9" } },
+                            left: { style: "thin", color: { rgb: "D9D9D9" } },
+                            right: { style: "thin", color: { rgb: "D9D9D9" } },
+                        },
+                    };
+                }
+            }
+
+            const tableHeaderRow = 13;
+            for (let C = 0; C <= 9; C++) {
+                const cell = XLSX.utils.encode_cell({ r: tableHeaderRow, c: C });
+                if (ws[cell]) {
+                    ws[cell].s = {
+                        font: { bold: true, color: { rgb: "FFFFFF" } },
+                        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+                        fill: { fgColor: { rgb: "28837A" } },
+                        border: {
+                            top: { style: "thin", color: { rgb: "000000" } },
+                            bottom: { style: "thin", color: { rgb: "000000" } },
+                            left: { style: "thin", color: { rgb: "000000" } },
+                            right: { style: "thin", color: { rgb: "000000" } },
+                        },
+                    };
+                }
+            }
+
+            const dataStartRow = 14;
+            data.forEach((item, index) => {
+                const excelRow = dataStartRow + index;
+                const normalizedCallStatus = (item.call_status || "").toLowerCase();
+
+                let fillColor = null;
+                if (normalizedCallStatus === "active") {
+                    fillColor = "FFF3CD";
+                } else if (normalizedCallStatus === "productive") {
+                    fillColor = "D4EDDA";
+                }
+
+                if (fillColor) {
+                    for (let C = 0; C <= 9; C++) {
+                        const cell = XLSX.utils.encode_cell({ r: excelRow, c: C });
+                        if (ws[cell]) {
+                            ws[cell].s = {
+                                ...ws[cell].s,
+                                fill: { fgColor: { rgb: fillColor } },
+                            };
+                        }
+                    }
+                }
+            });
+
+            XLSX.utils.book_append_sheet(wb, ws, "All DSR Report");
+            XLSX.writeFile(wb, "All_Daily_Sales_Report.xlsx");
+            toast.success("Excel exported successfully");
+        } catch {
+            toast.error("Excel export failed");
+        }
+    };
+
+    const exportToPDF = () => {
+        try {
+            if (!data || data.length === 0) {
+                toast.error("No data to export");
+                return;
+            }
+
+            const doc = new jsPDF("landscape");
+
+            doc.setFontSize(18);
+            doc.setTextColor(31, 78, 121);
+            doc.text("ALL DAILY SALES REPORT", 14, 15);
+
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            doc.text(`Search: ${search || "All"}`, 14, 24);
+            doc.text(`Call Status: ${callStatus || "All"}`, 70, 24);
+            doc.text(`DSR Status: ${statusFilter || "All"}`, 125, 24);
+            doc.text(`State: ${selectedStateLabel}`, 180, 24);
+            doc.text(`District: ${selectedDistrictLabel}`, 240, 24);
+
+            doc.text(`Family: ${selectedFamilyLabel}`, 14, 31);
+            doc.text(`Staff: ${selectedStaffLabel}`, 70, 31);
+            doc.text(`Start Date: ${startDate || "-"}`, 125, 31);
+            doc.text(`End Date: ${endDate || "-"}`, 180, 31);
+
+            autoTable(doc, {
+                startY: 38,
+                head: [["Metric", "Value"]],
+                body: [
+                    ["Total", summary?.count || 0],
+                    ["Active", summary?.active_count || 0],
+                    ["Productive", summary?.productive_count || 0],
+                    ["DSR Created", summary?.dsr_created_count || 0],
+                    ["DSR Approved", summary?.dsr_approved_count || 0],
+                    ["DSR Confirmed", summary?.dsr_confirmed_count || 0],
+                    ["DSR Rejected", summary?.dsr_rejected_count || 0],
+                    ["Call Duration", summary?.total_call_duration || 0],
+                ],
+                theme: "grid",
+                styles: {
+                    fontSize: 9,
+                    halign: "left",
+                    valign: "middle",
+                },
+                headStyles: {
+                    fillColor: [32, 58, 67],
+                    textColor: [255, 255, 255],
+                    fontStyle: "bold",
+                },
+                margin: { left: 14, right: 14 },
+                tableWidth: 110,
+            });
+
+            const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 8 : 95;
+
+            const head = [[
+                "#",
+                "Customer",
+                "Call Status",
+                "DSR Status",
+                "Duration",
+                "State",
+                "District",
+                "Invoice",
+                "Staff",
+                "Date",
+            ]];
+
+            const body = data.map((item, index) => [
+                index + 1,
+                item.customer_name || "-",
+                item.call_status || "-",
+                item.status || "-",
+                item.call_duration || "-",
+                item.state_name || "-",
+                item.district_name || "-",
+                item.invoice_number || "-",
+                item.created_by_name || "-",
+                formatDate(item.created_at),
+            ]);
+
+            autoTable(doc, {
+                startY: finalY,
+                head,
+                body,
+                theme: "grid",
+                styles: {
+                    fontSize: 7.5,
+                    halign: "center",
+                    valign: "middle",
+                    cellPadding: 2,
+                },
+                headStyles: {
+                    fillColor: [40, 131, 122],
+                    textColor: [255, 255, 255],
+                    fontStyle: "bold",
+                },
+                didParseCell: function (hookData) {
+                    if (hookData.section === "body") {
+                        const row = data[hookData.row.index];
+                        const currentStatus = (row?.call_status || "").toLowerCase();
+
+                        if (currentStatus === "active") {
+                            hookData.cell.styles.fillColor = [245, 230, 179];
+                        }
+
+                        if (currentStatus === "productive") {
+                            hookData.cell.styles.fillColor = [207, 230, 211];
+                        }
+                    }
+                },
+            });
+
+            doc.save("All_Daily_Sales_Report.pdf");
+            toast.success("PDF exported successfully");
+        } catch {
+            toast.error("PDF export failed");
+        }
+    };
+
     return (
         <React.Fragment>
             <div className="page-content">
                 <ToastContainer />
-                <Breadcrumbs title="DSR" breadcrumbItem="All DSR" />
+                {/* <Breadcrumbs title="DSR" breadcrumbItem="All DSR" /> */}
+
+                <Card
+                    style={{
+                        borderRadius: "15px",
+                        boxShadow: "0px 4px 12px rgba(0,0,0,0.15)",
+                        marginBottom: "20px",
+                        background: "linear-gradient(90deg, #0f2027, #203a43, #2c5364)",
+                        color: "white",
+                    }}
+                >
+                    <CardBody className="m-1">
+                        <Row className="align-items-center">
+                            <Col md="8">
+                                <h2 style={{ margin: 0, fontWeight: "bold" }}>
+                                    All Daily Sales Report
+                                </h2>
+                                <p style={{ margin: 0, opacity: 0.85 }}>
+                                    View all daily sales reports and export to Excel / PDF
+                                </p>
+                            </Col>
+
+                            <Col md="4" className="text-end">
+                                <Button
+                                    color="primary"
+                                    style={{ marginRight: "10px", fontWeight: "bold" }}
+                                    onClick={exportToExcel}
+                                    disabled={loading || data.length === 0}
+                                >
+                                    Export Excel
+                                </Button>
+
+                                <Button
+                                    color="success"
+                                    style={{ fontWeight: "bold" }}
+                                    onClick={exportToPDF}
+                                    disabled={loading || data.length === 0}
+                                >
+                                    Export PDF
+                                </Button>
+                            </Col>
+                        </Row>
+                    </CardBody>
+                </Card>
 
                 <Row>
                     <Col lg="12">
-                        <Card>
+                        <Card
+                            style={{
+                                borderRadius: "12px",
+                                boxShadow: "0px 3px 10px rgba(0,0,0,0.12)",
+                                marginBottom: "20px",
+                            }}
+                        >
                             <CardBody>
+                                <CardTitle tag="h5" style={{ fontWeight: "bold", marginBottom: "15px" }}>
+                                    Search Filters
+                                </CardTitle>
 
-                                <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-
-                                    <CardTitle className="h4 mb-0">
-                                        ALL DAILY SALES REPORT
-                                    </CardTitle>
-
-                                    <div className="d-flex align-items-center gap-3">
-
-                                        <div className="d-flex align-items-center">
-                                            <span style={{
-                                                width: "14px",
-                                                height: "14px",
-                                                backgroundColor: "#f5e6b3",
-                                                border: "1px solid #d6c37a",
-                                                borderRadius: "3px",
-                                                marginRight: "6px",
-                                                display: "inline-block"
-                                            }} />
-                                            <span style={{ fontSize: "13px" }}>Active</span>
-                                        </div>
-
-                                        <div className="d-flex align-items-center">
-                                            <span style={{
-                                                width: "14px",
-                                                height: "14px",
-                                                backgroundColor: "#cfe6d3",
-                                                border: "1px solid #9fcca9",
-                                                borderRadius: "3px",
-                                                marginRight: "6px",
-                                                display: "inline-block"
-                                            }} />
-                                            <span style={{ fontSize: "13px" }}>Productive</span>
-                                        </div>
-
-                                    </div>
-                                </div>
-
-                                <Row className="mb-3 g-2">
-
+                                <Row className="mb-3 g-3">
                                     <Col md={3}>
+                                        <Label style={{ fontWeight: "bold" }}>Search</Label>
                                         <Input
                                             placeholder="Search..."
                                             value={search}
@@ -265,8 +712,12 @@ const ViewDSRAll = () => {
                                     </Col>
 
                                     <Col md={2}>
-                                        <Input type="select" value={callStatus}
-                                            onChange={(e) => setCallStatus(e.target.value)}>
+                                        <Label style={{ fontWeight: "bold" }}>Call Status</Label>
+                                        <Input
+                                            type="select"
+                                            value={callStatus}
+                                            onChange={(e) => setCallStatus(e.target.value)}
+                                        >
                                             <option value="">Call Status</option>
                                             <option value="productive">Productive</option>
                                             <option value="active">Active</option>
@@ -274,8 +725,12 @@ const ViewDSRAll = () => {
                                     </Col>
 
                                     <Col md={2}>
-                                        <Input type="select" value={statusFilter}
-                                            onChange={(e) => setStatusFilter(e.target.value)}>
+                                        <Label style={{ fontWeight: "bold" }}>DSR Status</Label>
+                                        <Input
+                                            type="select"
+                                            value={statusFilter}
+                                            onChange={(e) => setStatusFilter(e.target.value)}
+                                        >
                                             <option value="">DSR Status</option>
                                             <option value="dsr created">DSR Created</option>
                                             <option value="dsr approved">DSR Approved</option>
@@ -285,9 +740,14 @@ const ViewDSRAll = () => {
                                     </Col>
 
                                     <Col md={2}>
+                                        <Label style={{ fontWeight: "bold", display: "block" }}>State</Label>
                                         <Select
                                             options={stateOptions}
-                                            value={stateOptions.find((s) => s.value === stateFilter) || null}
+                                            value={
+                                                stateOptions.find(
+                                                    (s) => String(s.value) === String(stateFilter)
+                                                ) || null
+                                            }
                                             onChange={(selected) => {
                                                 const val = selected?.value || "";
                                                 setStateFilter(val);
@@ -304,112 +764,156 @@ const ViewDSRAll = () => {
                                     </Col>
 
                                     <Col md={2}>
+                                        <Label style={{ fontWeight: "bold", display: "block" }}>District</Label>
                                         <Select
                                             options={districtOptions}
-                                            value={districtOptions.find((d) => d.value === district) || null}
+                                            value={
+                                                districtOptions.find(
+                                                    (d) => String(d.value) === String(district)
+                                                ) || null
+                                            }
                                             onChange={(selected) => setDistrict(selected?.value || "")}
                                             placeholder="Search District..."
                                             isClearable
                                             isDisabled={!stateFilter}
                                         />
                                     </Col>
+
                                     <Col md={2}>
+                                        <Label style={{ fontWeight: "bold", display: "block" }}>Family</Label>
                                         <Select
                                             options={familyOptions}
-                                            value={familyOptions.find((f) => f.value === family) || null}
+                                            value={
+                                                familyOptions.find(
+                                                    (f) => String(f.value) === String(family)
+                                                ) || null
+                                            }
                                             onChange={(selected) => {
                                                 const val = selected?.value || "";
                                                 setFamily(val);
-                                                setStaff("");        
-                                                setStaffList([]);    
+                                                setStaff("");
+                                                setStaffList([]);
 
                                                 if (val) {
-                                                    fetchStaffByFamily(val); 
+                                                    fetchStaffByFamily(val);
                                                 }
-                                            }} placeholder="Search Family..."
+                                            }}
+                                            placeholder="Search Family..."
                                             isClearable
                                         />
                                     </Col>
+
                                     <Col md={2}>
+                                        <Label style={{ fontWeight: "bold", display: "block" }}>Staff</Label>
                                         <Select
                                             options={family ? staffOptions : []}
-                                            value={staffOptions.find((s) => s.value === staff) || null}
+                                            value={
+                                                staffOptions.find(
+                                                    (s) => String(s.value) === String(staff)
+                                                ) || null
+                                            }
                                             onChange={(selected) => setStaff(selected?.value || "")}
                                             placeholder="Search Staff..."
                                             noOptionsMessage={() =>
-                                                family ? (
-                                                    "No staff found"
-                                                ) : (
-                                                    <div
-                                                        style={{
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            gap: "8px",
-                                                            padding: "8px 10px",
-                                                            borderRadius: "6px",
-                                                            background: "#fff7ed",
-                                                        }}
-                                                    >
-                                                        <span
-                                                            style={{
-                                                                color: "#f59e0b",
-                                                                fontSize: "14px",
-                                                            }}
-                                                        >
-                                                            ⚠
-                                                        </span>
-
-                                                        <span
-                                                            style={{
-                                                                color: "#b91c1c",
-                                                                fontSize: "13px",
-                                                                fontWeight: "500",
-                                                            }}
-                                                        >
-                                                            Please select a family first
-                                                        </span>
-                                                    </div>
-                                                )
+                                                family ? "No staff found" : "Please select a family first"
                                             }
                                             isClearable
                                         />
                                     </Col>
 
                                     <Col md={2}>
-                                        <Input type="date" value={startDate}
-                                            onChange={(e) => setStartDate(e.target.value)} />
+                                        <Label style={{ fontWeight: "bold" }}>Start Date</Label>
+                                        <Input
+                                            type="date"
+                                            value={startDate}
+                                            onChange={(e) => setStartDate(e.target.value)}
+                                        />
                                     </Col>
 
                                     <Col md={2}>
-                                        <Input type="date" value={endDate}
-                                            onChange={(e) => setEndDate(e.target.value)} />
+                                        <Label style={{ fontWeight: "bold" }}>End Date</Label>
+                                        <Input
+                                            type="date"
+                                            value={endDate}
+                                            onChange={(e) => setEndDate(e.target.value)}
+                                        />
                                     </Col>
 
-                                    <Col md={2}>
-                                        <Button color="success" onClick={fetchDSR} block>
+                                    <Col md={2} className="d-flex align-items-end">
+                                        <Button color="success" style={{ width: "100%", fontWeight: "bold" }} onClick={fetchDSR}>
                                             Apply
                                         </Button>
                                     </Col>
 
-                                    <Col md={2}>
-                                        <Button color="secondary" block onClick={() => {
-                                            setSearch("");
-                                            setCallStatus("");
-                                            setStatusFilter("");
-                                            setStateFilter("");
-                                            setDistrict("");
-                                            setStartDate("");
-                                            setEndDate("");
-                                            setFamily("");
-                                            setStaff("");
-                                            setStaffList([]);
-                                            setTimeout(fetchDSR, 0);
-                                        }}>
+                                    <Col md={2} className="d-flex align-items-end">
+                                        <Button
+                                            color="secondary"
+                                            style={{ width: "100%", fontWeight: "bold" }}
+                                            onClick={() => {
+                                                setSearch("");
+                                                setCallStatus("");
+                                                setStatusFilter("");
+                                                setStateFilter("");
+                                                setDistrict("");
+                                                setStartDate("");
+                                                setEndDate("");
+                                                setFamily("");
+                                                setStaff("");
+                                                setStaffList([]);
+                                                setTimeout(fetchDSR, 0);
+                                            }}
+                                        >
                                             Reset
                                         </Button>
                                     </Col>
-
                                 </Row>
+                            </CardBody>
+                        </Card>
+
+                        <Card
+                            style={{
+                                borderRadius: "12px",
+                                boxShadow: "0px 3px 10px rgba(0,0,0,0.12)",
+                            }}
+                        >
+                            <CardBody>
+                                <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+                                    <CardTitle className="h4 mb-0">
+                                        ALL DAILY SALES REPORT
+                                    </CardTitle>
+
+                                    <div className="d-flex align-items-center gap-3">
+                                        <div className="d-flex align-items-center">
+                                            <span
+                                                style={{
+                                                    width: "14px",
+                                                    height: "14px",
+                                                    backgroundColor: "#f5e6b3",
+                                                    border: "1px solid #d6c37a",
+                                                    borderRadius: "3px",
+                                                    marginRight: "6px",
+                                                    display: "inline-block",
+                                                }}
+                                            />
+                                            <span style={{ fontSize: "13px" }}>Active</span>
+                                        </div>
+
+                                        <div className="d-flex align-items-center">
+                                            <span
+                                                style={{
+                                                    width: "14px",
+                                                    height: "14px",
+                                                    backgroundColor: "#cfe6d3",
+                                                    border: "1px solid #9fcca9",
+                                                    borderRadius: "3px",
+                                                    marginRight: "6px",
+                                                    display: "inline-block",
+                                                }}
+                                            />
+                                            <span style={{ fontSize: "13px" }}>Productive</span>
+                                        </div>
+                                    </div>
+                                </div>
 
                                 {summary && (
                                     <Row className="mb-4 g-3">
@@ -587,13 +1091,16 @@ const ViewDSRAll = () => {
                                     <div className="text-center my-5">
                                         <Spinner color="primary" />
                                     </div>
+                                ) : data.length === 0 ? (
+                                    <div className="text-center my-4">
+                                        <p className="mb-0">No report data found</p>
+                                    </div>
                                 ) : (
-                                    <Table bordered responsive hover>
+                                    <Table bordered responsive hover className="align-middle">
                                         <thead className="table-light">
                                             <tr>
                                                 <th>#</th>
                                                 <th>Customer</th>
-                                                {/* <th>Call Status</th> */}
                                                 <th>DSR Status</th>
                                                 <th>Duration</th>
                                                 <th>State</th>
@@ -605,26 +1112,25 @@ const ViewDSRAll = () => {
                                         </thead>
                                         <tbody>
                                             {data.map((item, index) => (
-                                                <tr key={item.id}>
+                                                <tr key={item.id || index}>
                                                     <td style={getRowStyle(item.call_status)}>{index + 1}</td>
-                                                    <td style={getRowStyle(item.call_status)}>{item.customer_name}</td>
-                                                    {/* <td style={getRowStyle(item.call_status)}>{item.call_status}</td> */}
+                                                    <td style={getRowStyle(item.call_status)}>{item.customer_name || "-"}</td>
                                                     <td style={getRowStyle(item.call_status)}>
                                                         <span style={getStatusStyle(item.status)}>
-                                                            {item.status}
+                                                            {item.status || "-"}
                                                         </span>
-                                                    </td>                                                    <td style={getRowStyle(item.call_status)}>{item.call_duration}</td>
-                                                    <td style={getRowStyle(item.call_status)}>{item.state_name}</td>
-                                                    <td style={getRowStyle(item.call_status)}>{item.district_name}</td>
-                                                    <td style={getRowStyle(item.call_status)}>{item.invoice_number}</td>
-                                                    <td style={getRowStyle(item.call_status)}>{item.created_by_name}</td>
+                                                    </td>
+                                                    <td style={getRowStyle(item.call_status)}>{item.call_duration || "-"}</td>
+                                                    <td style={getRowStyle(item.call_status)}>{item.state_name || "-"}</td>
+                                                    <td style={getRowStyle(item.call_status)}>{item.district_name || "-"}</td>
+                                                    <td style={getRowStyle(item.call_status)}>{item.invoice_number || "-"}</td>
+                                                    <td style={getRowStyle(item.call_status)}>{item.created_by_name || "-"}</td>
                                                     <td style={getRowStyle(item.call_status)}>{formatDate(item.created_at)}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </Table>
                                 )}
-
                             </CardBody>
                         </Card>
                     </Col>

@@ -541,7 +541,7 @@ const ViewDailySalesReport = () => {
                                 ) : (
                                     <>
                                         <Row className="mb-4 g-3">
-                                            {/* <Col md="2">
+                                            <Col md="2">
                                                 <div
                                                     style={{
                                                         background: "#f8f9fa",
@@ -560,7 +560,7 @@ const ViewDailySalesReport = () => {
                                                         {summary?.count || 0}
                                                     </span>
                                                 </div>
-                                            </Col> */}
+                                            </Col>
 
                                             <Col md="2">
                                                 <div
@@ -684,6 +684,27 @@ const ViewDailySalesReport = () => {
                                                     <span style={{ fontSize: "13px", color: "#842029" }}>DSR Rejected</span>
                                                     <span style={{ fontSize: "22px", color: "#842029" }}>
                                                         {summary?.dsr_rejected_count || 0}
+                                                    </span>
+                                                </div>
+                                            </Col>
+
+                                            <Col md="2">
+                                                <div
+                                                    style={{
+                                                        background: "#98c7c5",
+                                                        borderRadius: "10px",
+                                                        padding: "14px 16px",
+                                                        fontWeight: "600",
+                                                        border: "1px solid #00bdb4",
+                                                        minHeight: "70px",
+                                                        display: "flex",
+                                                        flexDirection: "column",
+                                                        justifyContent: "center",
+                                                    }}
+                                                >
+                                                    <span style={{ fontSize: "13px", color: "#013432" }}>Call Duration</span>
+                                                    <span style={{ fontSize: "22px", color: "#012c2a" }}>
+                                                        {summary?.total_call_duration || 0}
                                                     </span>
                                                 </div>
                                             </Col>

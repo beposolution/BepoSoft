@@ -285,7 +285,7 @@ const ChartSection = () => {
                     </>
                 )}
 
-                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === 'CSO' || role === 'Marketing' || role === 'COO') && (
+                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === 'CSO' || role === 'SD' || role === 'Marketing' || role === 'COO') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}
                             onClick={() => navigate("/dashboard/todaysbill-details")}>
@@ -318,7 +318,7 @@ const ChartSection = () => {
                 )}
 
 
-                {(role === "CSO") && (
+                {(role === "CSO" || role === 'SD') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}>
                             <Card className="mini-stats-wid">
@@ -340,7 +340,7 @@ const ChartSection = () => {
                         </div>
                     </Col>
                 )}
-                {(role === "CSO") && (
+                {(role === "CSO" || role === 'SD') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}>
                             <Card className="mini-stats-wid">
@@ -363,7 +363,7 @@ const ChartSection = () => {
                     </Col>
                 )}
 
-                {(role === "BDM" || role === 'CSO' || role === 'Marketing') && (
+                {(role === "BDM" || role === 'CSO' || role === 'SD' || role === 'Marketing') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}>
                             <Card className="mini-stats-wid">

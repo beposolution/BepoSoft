@@ -181,7 +181,6 @@ const ViewDSRAll = () => {
                                         ALL DAILY SALES REPORT
                                     </CardTitle>
 
-                                    {/* ✅ LEGEND */}
                                     <div className="d-flex align-items-center gap-3">
 
                                         <div className="d-flex align-items-center">
@@ -306,60 +305,175 @@ const ViewDSRAll = () => {
 
                                 </Row>
 
-                                {/* ✅ COLORFUL SUMMARY BOXES */}
                                 {summary && (
-                                    <Row className="mb-4">
-
-                                        <Col md={2}>
-                                            <div style={{ background: "#f5e6b3", padding: 15, borderRadius: 10 }}>
-                                                <div>Active</div>
-                                                <div style={{ fontSize: 22, fontWeight: "bold" }}>{summary.active_count}</div>
+                                    <Row className="mb-4 g-3">
+                                        <Col md="2">
+                                            <div
+                                                style={{
+                                                    background: "#f8f9fa",
+                                                    borderRadius: "10px",
+                                                    padding: "14px 16px",
+                                                    fontWeight: "600",
+                                                    border: "1px solid #e9ecef",
+                                                    minHeight: "70px",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                <span style={{ fontSize: "13px", color: "#6c757d" }}>Total</span>
+                                                <span style={{ fontSize: "22px", color: "#212529" }}>
+                                                    {summary?.count || 0}
+                                                </span>
                                             </div>
                                         </Col>
 
-                                        <Col md={2}>
-                                            <div style={{ background: "#cfe6d3", padding: 15, borderRadius: 10 }}>
-                                                <div>Productive</div>
-                                                <div style={{ fontSize: 22, fontWeight: "bold" }}>{summary.productive_count}</div>
+                                        <Col md="2">
+                                            <div
+                                                style={{
+                                                    background: "#fff3cd",
+                                                    borderRadius: "10px",
+                                                    padding: "14px 16px",
+                                                    fontWeight: "600",
+                                                    border: "1px solid #ffe69c",
+                                                    minHeight: "70px",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                <span style={{ fontSize: "13px", color: "#856404" }}>Active</span>
+                                                <span style={{ fontSize: "22px", color: "#856404" }}>
+                                                    {summary?.active_count || 0}
+                                                </span>
                                             </div>
                                         </Col>
 
-                                        <Col md={2}>
-                                            <div style={{ background: "#dbeafe", padding: 15, borderRadius: 10 }}>
-                                                <div>DSR Created</div>
-                                                <div style={{ fontSize: 22, fontWeight: "bold", color: "#1d4ed8" }}>
-                                                    {summary.dsr_created_count}
-                                                </div>
+                                        <Col md="2">
+                                            <div
+                                                style={{
+                                                    background: "#d4edda",
+                                                    borderRadius: "10px",
+                                                    padding: "14px 16px",
+                                                    fontWeight: "600",
+                                                    border: "1px solid #a3cfbb",
+                                                    minHeight: "70px",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                <span style={{ fontSize: "13px", color: "#155724" }}>Productive</span>
+                                                <span style={{ fontSize: "22px", color: "#155724" }}>
+                                                    {summary?.productive_count || 0}
+                                                </span>
                                             </div>
                                         </Col>
 
-                                        <Col md={2}>
-                                            <div style={{ background: "#bbf7d0", padding: 15, borderRadius: 10 }}>
-                                                <div>DSR Approved</div>
-                                                <div style={{ fontSize: 22, fontWeight: "bold", color: "#166534" }}>
-                                                    {summary.dsr_approved_count}
-                                                </div>
+                                        <Col md="2">
+                                            <div
+                                                style={{
+                                                    background: "#d1ecf1",
+                                                    borderRadius: "10px",
+                                                    padding: "14px 16px",
+                                                    fontWeight: "600",
+                                                    border: "1px solid #abdde5",
+                                                    minHeight: "70px",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                <span style={{ fontSize: "13px", color: "#0c5460" }}>DSR Created</span>
+                                                <span style={{ fontSize: "22px", color: "#0c5460" }}>
+                                                    {summary?.dsr_created_count || 0}
+                                                </span>
                                             </div>
                                         </Col>
 
-                                        <Col md={2}>
-                                            <div style={{ background: "#ddd6fe", padding: 15, borderRadius: 10 }}>
-                                                <div>DSR Confirmed</div>
-                                                <div style={{ fontSize: 22, fontWeight: "bold", color: "#5b21b6" }}>
-                                                    {summary.dsr_confirmed_count}
-                                                </div>
+                                        <Col md="2">
+                                            <div
+                                                style={{
+                                                    background: "#cfe2ff",
+                                                    borderRadius: "10px",
+                                                    padding: "14px 16px",
+                                                    fontWeight: "600",
+                                                    border: "1px solid #9ec5fe",
+                                                    minHeight: "70px",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                <span style={{ fontSize: "13px", color: "#084298" }}>DSR Approved</span>
+                                                <span style={{ fontSize: "22px", color: "#084298" }}>
+                                                    {summary?.dsr_approved_count || 0}
+                                                </span>
                                             </div>
                                         </Col>
 
-                                        <Col md={2}>
-                                            <div style={{ background: "#fecaca", padding: 15, borderRadius: 10 }}>
-                                                <div>DSR Rejected</div>
-                                                <div style={{ fontSize: 22, fontWeight: "bold", color: "#991b1b" }}>
-                                                    {summary.dsr_rejected_count}
-                                                </div>
+                                        <Col md="2">
+                                            <div
+                                                style={{
+                                                    background: "#e2d9f3",
+                                                    borderRadius: "10px",
+                                                    padding: "14px 16px",
+                                                    fontWeight: "600",
+                                                    border: "1px solid #cbbbe9",
+                                                    minHeight: "70px",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                <span style={{ fontSize: "13px", color: "#5a3d8a" }}>DSR Confirmed</span>
+                                                <span style={{ fontSize: "22px", color: "#5a3d8a" }}>
+                                                    {summary?.dsr_confirmed_count || 0}
+                                                </span>
                                             </div>
                                         </Col>
 
+                                        <Col md="2">
+                                            <div
+                                                style={{
+                                                    background: "#f8d7da",
+                                                    borderRadius: "10px",
+                                                    padding: "14px 16px",
+                                                    fontWeight: "600",
+                                                    border: "1px solid #f1aeb5",
+                                                    minHeight: "70px",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                <span style={{ fontSize: "13px", color: "#842029" }}>DSR Rejected</span>
+                                                <span style={{ fontSize: "22px", color: "#842029" }}>
+                                                    {summary?.dsr_rejected_count || 0}
+                                                </span>
+                                            </div>
+                                        </Col>
+
+                                        <Col md="2">
+                                            <div
+                                                style={{
+                                                    background: "#98c7c5",
+                                                    borderRadius: "10px",
+                                                    padding: "14px 16px",
+                                                    fontWeight: "600",
+                                                    border: "1px solid #00bdb4",
+                                                    minHeight: "70px",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                <span style={{ fontSize: "13px", color: "#013432" }}>Call Duration</span>
+                                                <span style={{ fontSize: "22px", color: "#012c2a" }}>
+                                                    {summary?.total_call_duration || 0}
+                                                </span>
+                                            </div>
+                                        </Col>
                                     </Row>
                                 )}
 

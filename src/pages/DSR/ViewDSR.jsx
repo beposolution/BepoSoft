@@ -135,7 +135,6 @@ const ViewDSR = () => {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setInvoiceList(res?.data?.results || res?.data?.data || res?.data || []);
-            console.log("Invoices:", res.data);
         } catch {
             toast.error("Failed to load invoices");
         }
@@ -202,7 +201,6 @@ const ViewDSR = () => {
             fetchDSR();
 
         } catch (error) {
-            console.log(error); 
             toast.error("Delete failed");
         }
     };
@@ -214,8 +212,6 @@ const ViewDSR = () => {
             const selectedInvoice = invoiceList.find(
                 i => i.invoice === editData.invoice
             );
-
-            console.log("Invoice:", selectedInvoice);
 
             await axios.put(
                 `${BASE_URL}sales/analysis/edit/${selectedItem.id}/`,
@@ -243,7 +239,6 @@ const ViewDSR = () => {
             fetchDSR();
 
         } catch (error) {
-            console.log(error);
             toast.error("Update failed");
         }
     };

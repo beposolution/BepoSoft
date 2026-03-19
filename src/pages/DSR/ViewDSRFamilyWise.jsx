@@ -45,6 +45,8 @@ const ViewDailySalesReport = () => {
     const [district, setDistrict] = useState("");
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
+    const [createdBy, setCreatedBy] = useState("");
+    const [familyUsers, setFamilyUsers] = useState([]);
 
     const [stateList, setStateList] = useState([]);
     const [allDistricts, setAllDistricts] = useState([]);
@@ -57,6 +59,16 @@ const ViewDailySalesReport = () => {
     const districtOptions = districtList.map((d) => ({
         value: d.id,
         label: d.name,
+    }));
+
+    const createdByOptions = familyUsers.map((user) => ({
+        value: user.id,
+        label:
+            user.full_name ||
+            user.name ||
+            user.username ||
+            user.email ||
+            `User ${user.id}`,
     }));
 
     const token = localStorage.getItem("token");
@@ -121,6 +133,21 @@ const ViewDailySalesReport = () => {
         }
     };
 
+    const fetchFamilyUsers = async () => {
+        try {
+            const res = await axios.get(
+                `${baseUrl}users/family/${familyId}/`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+
+            setFamilyUsers(res?.data?.data || res?.data || []);
+        } catch {
+            toast.error("Failed to load family users");
+        }
+    };
+
     const fetchReport = async () => {
         if (!familyId) return;
 
@@ -145,6 +172,7 @@ const ViewDailySalesReport = () => {
                         status: statusFilter,
                         state: selectedStateName,
                         district: selectedDistrictName,
+                        created_by: createdBy,
                         start_date: startDate,
                         end_date: endDate,
                     },
@@ -169,6 +197,7 @@ const ViewDailySalesReport = () => {
             fetchReport();
             fetchStates();
             fetchDistricts();
+            fetchFamilyUsers();
         }
     }, [familyId]);
 
@@ -496,6 +525,22 @@ const ViewDailySalesReport = () => {
                                     </Col>
 
                                     <Col md={2}>
+                                        <Select
+                                            options={createdByOptions}
+                                            value={
+                                                createdByOptions.find(
+                                                    (u) => String(u.value) === String(createdBy)
+                                                ) || null
+                                            }
+                                            onChange={(selected) =>
+                                                setCreatedBy(selected?.value || "")
+                                            }
+                                            placeholder="Created By..."
+                                            isClearable
+                                        />
+                                    </Col>
+
+                                    <Col md={2}>
                                         <Input type="date" value={startDate}
                                             onChange={(e) => setStartDate(e.target.value)} />
                                     </Col>
@@ -518,6 +563,7 @@ const ViewDailySalesReport = () => {
                                             setStatusFilter("");
                                             setStateFilter("");
                                             setDistrict("");
+                                            setCreatedBy("");
                                             setStartDate("");
                                             setEndDate("");
                                             setTimeout(fetchReport, 0);

@@ -86,7 +86,7 @@ const ViewDSR = () => {
             const summaryData = response?.data?.results || null;
             const data = response?.data?.results?.results || [];
 
-            setSummary(summaryData);   
+            setSummary(summaryData);
             setDsrList(data);
 
         } catch (error) {
@@ -167,7 +167,7 @@ const ViewDSR = () => {
 
             setEditMode(false);
             setEditData({
-                customer_id: data.customer_id,  
+                customer_id: data.customer_id,
                 call_status: data.call_status || "",
                 invoice: data.invoice || ""
             });
@@ -186,7 +186,7 @@ const ViewDSR = () => {
 
         try {
             await axios.delete(
-                `${BASE_URL}sales/analysis/edit/${selectedItem.id}/`, 
+                `${BASE_URL}sales/analysis/edit/${selectedItem.id}/`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -197,7 +197,7 @@ const ViewDSR = () => {
             toast.success("Deleted successfully");
 
             setModalOpen(false);
-            setSelectedItem(null);   
+            setSelectedItem(null);
             fetchDSR();
 
         } catch (error) {
@@ -549,7 +549,7 @@ const ViewDSR = () => {
                         isOpen={modalOpen}
                         toggle={() => setModalOpen(!modalOpen)}
                         size="lg"
-                        centered   
+                        centered
                     >
                         <ModalHeader toggle={() => setModalOpen(false)}>
                             <span className="fw-bold">DSR Details</span>
@@ -567,23 +567,37 @@ const ViewDSR = () => {
                                         </div>
 
                                         {editMode && editData.call_status === "productive" ? (
-                                            <Input
-                                                type="select"
-                                                value={editData.customer_id}
-                                                onChange={(e) =>
+                                            <Select
+                                                options={customerList.map((c) => ({
+                                                    value: c.id,
+                                                    label: c.name,
+                                                }))}
+                                                value={
+                                                    customerList
+                                                        .map((c) => ({ value: c.id, label: c.name }))
+                                                        .find((opt) => String(opt.value) === String(editData.customer_id)) || null
+                                                }
+                                                onChange={(selected) =>
                                                     setEditData({
                                                         ...editData,
-                                                        customer_id: e.target.value
+                                                        customer_id: selected?.value || ""
                                                     })
                                                 }
-                                            >
-                                                <option value="">Select Customer</option>
-                                                {customerList.map((c) => (
-                                                    <option key={c.id} value={c.id}>
-                                                        {c.name}
-                                                    </option>
-                                                ))}
-                                            </Input>
+                                                placeholder="Search Customer..."
+                                                isClearable
+                                                styles={{
+                                                    control: (base) => ({
+                                                        ...base,
+                                                        backgroundColor: "#fff",   // 👈 FIX (white bg)
+                                                        borderColor: "#ced4da",
+                                                        minHeight: "38px",
+                                                    }),
+                                                    menu: (base) => ({
+                                                        ...base,
+                                                        zIndex: 9999,
+                                                    }),
+                                                }}
+                                            />
                                         ) : (
                                             <div className="fw-semibold" style={{ fontSize: "16px" }}>
                                                 {selectedItem?.customer_name || "-"}
@@ -687,23 +701,37 @@ const ViewDSR = () => {
                                                 <div className="text-muted mb-1">Invoice</div>
 
                                                 {editMode ? (
-                                                    <Input
-                                                        type="select"
-                                                        value={editData.invoice}
-                                                        onChange={(e) =>
+                                                    <Select
+                                                        options={invoiceList.map((inv) => ({
+                                                            value: inv.invoice,
+                                                            label: inv.invoice,
+                                                        }))}
+                                                        value={
+                                                            invoiceList
+                                                                .map((inv) => ({ value: inv.invoice, label: inv.invoice }))
+                                                                .find((opt) => opt.value === editData.invoice) || null
+                                                        }
+                                                        onChange={(selected) =>
                                                             setEditData({
                                                                 ...editData,
-                                                                invoice: e.target.value
+                                                                invoice: selected?.value || ""
                                                             })
                                                         }
-                                                    >
-                                                        <option value="">Select Invoice</option>
-                                                        {invoiceList.map((inv) => (
-                                                            <option key={inv.id} value={inv.invoice}>
-                                                                {inv.invoice}
-                                                            </option>
-                                                        ))}
-                                                    </Input>
+                                                        placeholder="Search Invoice..."
+                                                        isClearable
+                                                        styles={{
+                                                            control: (base) => ({
+                                                                ...base,
+                                                                backgroundColor: "#fff",   // 👈 FIX
+                                                                borderColor: "#ced4da",
+                                                                minHeight: "38px",
+                                                            }),
+                                                            menu: (base) => ({
+                                                                ...base,
+                                                                zIndex: 9999,
+                                                            }),
+                                                        }}
+                                                    />
                                                 ) : (
                                                     <div className="fw-semibold fs-5">
                                                         {selectedItem?.invoice_number || "-"}

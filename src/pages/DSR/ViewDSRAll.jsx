@@ -32,6 +32,10 @@ const ViewDSRAll = () => {
     const [allDistricts, setAllDistricts] = useState([]);
     const [districtList, setDistrictList] = useState([]);
     const [summary, setSummary] = useState(null);
+    const [family, setFamily] = useState("");
+    const [familyList, setFamilyList] = useState([]);
+    const [staff, setStaff] = useState("");
+    const [staffList, setStaffList] = useState([]);
 
     const stateOptions = stateList.map((s) => ({
         value: s.id,
@@ -41,6 +45,14 @@ const ViewDSRAll = () => {
     const districtOptions = districtList.map((d) => ({
         value: d.id,
         label: d.name,
+    }));
+    const familyOptions = familyList.map((f) => ({
+        value: f.id,
+        label: f.name,
+    }));
+    const staffOptions = staffList.map((s) => ({
+        value: s.id,
+        label: s.name,
     }));
 
     const token = localStorage.getItem("token");
@@ -55,6 +67,10 @@ const ViewDSRAll = () => {
 
             const selectedDistrictName =
                 districtList.find((d) => String(d.id) === String(district))?.name || "";
+            const selectedFamilyName =
+                familyList.find((f) => String(f.id) === String(family))?.name || "";
+            const selectedStaffName =
+                staffList.find((s) => String(s.id) === String(staff))?.name || "";
 
             const response = await axios.get(
                 `${baseUrl}sales/analysis/all/`,
@@ -68,6 +84,8 @@ const ViewDSRAll = () => {
                         status: statusFilter,
                         state: selectedStateName,
                         district: selectedDistrictName,
+                        family: selectedFamilyName,
+                        staff: selectedStaffName,
                         start_date: startDate,
                         end_date: endDate,
                     },
@@ -109,11 +127,35 @@ const ViewDSRAll = () => {
             toast.error("Failed to load districts");
         }
     };
+    const fetchFamilies = async () => {
+        try {
+            const res = await axios.get(`${baseUrl}familys/`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setFamilyList(res?.data?.data || res?.data || []);
+
+        } catch {
+            toast.error("Failed to load families");
+        }
+    };
+    const fetchStaffByFamily = async (familyId) => {
+        try {
+            const res = await axios.get(`${baseUrl}users/family/${familyId}/`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+
+            setStaffList(res?.data?.data || res?.data || []);
+        } catch (err) {
+            toast.error("Failed to load staff");
+        }
+    };
 
     useEffect(() => {
         fetchDSR();
         fetchStates();
         fetchDistricts();
+        fetchFamilies();
     }, []);
 
     const formatDate = (date) => {
@@ -121,10 +163,10 @@ const ViewDSRAll = () => {
     };
     const getRowStyle = (callStatus) => {
         if (callStatus === "active") {
-            return { backgroundColor: "#f5e6b3" }; // yellow
+            return { backgroundColor: "#f5e6b3" }; 
         }
         if (callStatus === "productive") {
-            return { backgroundColor: "#cfe6d3" }; // green
+            return { backgroundColor: "#cfe6d3" }; 
         }
         return {};
     };
@@ -136,19 +178,19 @@ const ViewDSRAll = () => {
         let color = "#374151";
 
         if (s === "dsr created") {
-            bg = "#dbeafe";   // brighter soft blue
+            bg = "#dbeafe";   
             color = "#1d4ed8";
         }
         else if (s === "dsr approved") {
-            bg = "#bbf7d0";   // brighter green
+            bg = "#bbf7d0";   
             color = "#166534";
         }
         else if (s === "dsr confirmed") {
-            bg = "#ddd6fe";   // brighter purple
+            bg = "#ddd6fe";   
             color = "#5b21b6";
         }
         else if (s === "dsr rejected") {
-            bg = "#fecaca";   // brighter red
+            bg = "#fecaca";   
             color = "#991b1b";
         }
 
@@ -271,6 +313,67 @@ const ViewDSRAll = () => {
                                             isDisabled={!stateFilter}
                                         />
                                     </Col>
+                                    <Col md={2}>
+                                        <Select
+                                            options={familyOptions}
+                                            value={familyOptions.find((f) => f.value === family) || null}
+                                            onChange={(selected) => {
+                                                const val = selected?.value || "";
+                                                setFamily(val);
+                                                setStaff("");        
+                                                setStaffList([]);    
+
+                                                if (val) {
+                                                    fetchStaffByFamily(val); 
+                                                }
+                                            }} placeholder="Search Family..."
+                                            isClearable
+                                        />
+                                    </Col>
+                                    <Col md={2}>
+                                        <Select
+                                            options={family ? staffOptions : []}
+                                            value={staffOptions.find((s) => s.value === staff) || null}
+                                            onChange={(selected) => setStaff(selected?.value || "")}
+                                            placeholder="Search Staff..."
+                                            noOptionsMessage={() =>
+                                                family ? (
+                                                    "No staff found"
+                                                ) : (
+                                                    <div
+                                                        style={{
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            gap: "8px",
+                                                            padding: "8px 10px",
+                                                            borderRadius: "6px",
+                                                            background: "#fff7ed",
+                                                        }}
+                                                    >
+                                                        <span
+                                                            style={{
+                                                                color: "#f59e0b",
+                                                                fontSize: "14px",
+                                                            }}
+                                                        >
+                                                            ⚠
+                                                        </span>
+
+                                                        <span
+                                                            style={{
+                                                                color: "#b91c1c",
+                                                                fontSize: "13px",
+                                                                fontWeight: "500",
+                                                            }}
+                                                        >
+                                                            Please select a family first
+                                                        </span>
+                                                    </div>
+                                                )
+                                            }
+                                            isClearable
+                                        />
+                                    </Col>
 
                                     <Col md={2}>
                                         <Input type="date" value={startDate}
@@ -297,6 +400,9 @@ const ViewDSRAll = () => {
                                             setDistrict("");
                                             setStartDate("");
                                             setEndDate("");
+                                            setFamily("");
+                                            setStaff("");
+                                            setStaffList([]);
                                             setTimeout(fetchDSR, 0);
                                         }}>
                                             Reset
@@ -493,6 +599,7 @@ const ViewDSRAll = () => {
                                                 <th>State</th>
                                                 <th>District</th>
                                                 <th>Invoice</th>
+                                                <th>Staff</th>
                                                 <th>Date</th>
                                             </tr>
                                         </thead>
@@ -510,6 +617,7 @@ const ViewDSRAll = () => {
                                                     <td style={getRowStyle(item.call_status)}>{item.state_name}</td>
                                                     <td style={getRowStyle(item.call_status)}>{item.district_name}</td>
                                                     <td style={getRowStyle(item.call_status)}>{item.invoice_number}</td>
+                                                    <td style={getRowStyle(item.call_status)}>{item.created_by_name}</td>
                                                     <td style={getRowStyle(item.call_status)}>{formatDate(item.created_at)}</td>
                                                 </tr>
                                             ))}

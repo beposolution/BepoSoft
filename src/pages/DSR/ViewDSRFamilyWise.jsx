@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import Select from "react-select";
+import * as XLSX from "xlsx-js-style";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
     Card,
     CardBody,
@@ -38,6 +41,7 @@ const ViewDailySalesReport = () => {
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [updatingStatus, setUpdatingStatus] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState("");
+
     const [search, setSearch] = useState("");
     const [callStatus, setCallStatus] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
@@ -51,25 +55,6 @@ const ViewDailySalesReport = () => {
     const [stateList, setStateList] = useState([]);
     const [allDistricts, setAllDistricts] = useState([]);
     const [districtList, setDistrictList] = useState([]);
-    const stateOptions = stateList.map((s) => ({
-        value: s.id,
-        label: s.name,
-    }));
-
-    const districtOptions = districtList.map((d) => ({
-        value: d.id,
-        label: d.name,
-    }));
-
-    const createdByOptions = familyUsers.map((user) => ({
-        value: user.id,
-        label:
-            user.full_name ||
-            user.name ||
-            user.username ||
-            user.email ||
-            `User ${user.id}`,
-    }));
 
     const token = localStorage.getItem("token");
     const baseUrl = import.meta.env.VITE_APP_KEY;
@@ -84,14 +69,11 @@ const ViewDailySalesReport = () => {
             try {
                 setLoadingUser(true);
 
-                const response = await axios.get(
-                    `${baseUrl}profile/`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
+                const response = await axios.get(`${baseUrl}profile/`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
 
                 const fetchedFamilyId = response?.data?.data?.family_id || null;
                 setFamilyId(fetchedFamilyId);
@@ -135,12 +117,9 @@ const ViewDailySalesReport = () => {
 
     const fetchFamilyUsers = async () => {
         try {
-            const res = await axios.get(
-                `${baseUrl}users/family/${familyId}/`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
+            const res = await axios.get(`${baseUrl}users/family/${familyId}/`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
 
             setFamilyUsers(res?.data?.data || res?.data || []);
         } catch {
@@ -160,24 +139,22 @@ const ViewDailySalesReport = () => {
             const selectedDistrictName =
                 districtList.find((d) => String(d.id) === String(district))?.name || "";
 
-            const response = await axios.get(
-                `${baseUrl}sales/analysis/family/${familyId}/`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                    params: {
-                        search,
-                        call_status: callStatus,
-                        status: statusFilter,
-                        state: selectedStateName,
-                        district: selectedDistrictName,
-                        created_by: createdBy,
-                        start_date: startDate,
-                        end_date: endDate,
-                    },
-                }
-            );
+            const response = await axios.get(`${baseUrl}sales/analysis/family/${familyId}/`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                params: {
+                    search,
+                    call_status: callStatus,
+                    status: statusFilter,
+                    state: selectedStateName,
+                    district: selectedDistrictName,
+                    created_by: createdBy,
+                    start_date: startDate,
+                    end_date: endDate,
+                },
+            });
+
             const summaryData = response?.data?.results || null;
             const reportData = response?.data?.results?.results || [];
 
@@ -194,12 +171,51 @@ const ViewDailySalesReport = () => {
 
     useEffect(() => {
         if (familyId) {
-            fetchReport();
             fetchStates();
             fetchDistricts();
             fetchFamilyUsers();
+            fetchReport();
         }
     }, [familyId]);
+
+    useEffect(() => {
+        if (!stateFilter) {
+            setDistrictList([]);
+            setDistrict("");
+            return;
+        }
+
+        const filtered = allDistricts.filter(
+            (d) => String(d.state) === String(stateFilter)
+        );
+        setDistrictList(filtered);
+    }, [stateFilter, allDistricts]);
+
+    const stateOptions = useMemo(() => {
+        return stateList.map((s) => ({
+            value: s.id,
+            label: s.name,
+        }));
+    }, [stateList]);
+
+    const districtOptions = useMemo(() => {
+        return districtList.map((d) => ({
+            value: d.id,
+            label: d.name,
+        }));
+    }, [districtList]);
+
+    const createdByOptions = useMemo(() => {
+        return familyUsers.map((user) => ({
+            value: user.id,
+            label:
+                user.full_name ||
+                user.name ||
+                user.username ||
+                user.email ||
+                `User ${user.id}`,
+        }));
+    }, [familyUsers]);
 
     const formatDateTime = (dateString) => {
         if (!dateString) return "-";
@@ -215,8 +231,8 @@ const ViewDailySalesReport = () => {
         });
     };
 
-    const getCellStyle = (callStatus) => {
-        const status = (callStatus || "").toLowerCase();
+    const getCellStyle = (callStatusValue) => {
+        const status = (callStatusValue || "").toLowerCase();
 
         if (status === "active") {
             return {
@@ -259,14 +275,11 @@ const ViewDailySalesReport = () => {
             setSelectedReport(null);
             setSelectedStatus("");
 
-            const response = await axios.get(
-                `${baseUrl}sales/analysis/edit/${id}/`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+            const response = await axios.get(`${baseUrl}sales/analysis/edit/${id}/`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
 
             const details = response?.data?.data || response?.data || null;
 
@@ -302,16 +315,12 @@ const ViewDailySalesReport = () => {
                 status: selectedStatus,
             };
 
-            const response = await axios.patch(
-                `${baseUrl}sales/analysis/edit/${selectedId}/`,
-                payload,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
+            await axios.patch(`${baseUrl}sales/analysis/edit/${selectedId}/`, payload, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
 
             toast.success("Status updated successfully");
 
@@ -416,18 +425,651 @@ const ViewDailySalesReport = () => {
         };
     };
 
+    const selectedStateLabel =
+        stateOptions.find((s) => String(s.value) === String(stateFilter))?.label || "All States";
+
+    const selectedDistrictLabel =
+        districtOptions.find((d) => String(d.value) === String(district))?.label ||
+        "All Districts";
+
+    const exportToExcel = () => {
+        try {
+            if (!data || data.length === 0) {
+                toast.error("No data to export");
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+            const wsData = [];
+
+            const createdByLabel =
+                createdByOptions.find((u) => String(u.value) === String(createdBy))?.label || "All";
+
+            // ================= TITLE =================
+            wsData.push(["DAILY SALES REPORT - FAMILY WISE"]);
+            wsData.push([]);
+
+            // ================= FILTER SECTION =================
+            wsData.push(["FILTERS", "", "", ""]);
+            wsData.push(["Search", search || "All", "Call Status", callStatus || "All"]);
+            wsData.push(["DSR Status", statusFilter || "All", "State", selectedStateLabel]);
+            wsData.push(["District", selectedDistrictLabel, "Created By", createdByLabel]);
+            wsData.push(["Start Date", startDate || "-", "End Date", endDate || "-"]);
+            wsData.push([]);
+
+            // ================= SUMMARY SECTION =================
+            wsData.push([
+                "SUMMARY",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+            ]);
+
+            wsData.push([
+                "Total",
+                "Active",
+                "Productive",
+                "DSR Created",
+                "DSR Approved",
+                "DSR Confirmed",
+                "DSR Rejected",
+                "Call Duration",
+            ]);
+
+            wsData.push([
+                summary?.count || 0,
+                summary?.active_count || 0,
+                summary?.productive_count || 0,
+                summary?.dsr_created_count || 0,
+                summary?.dsr_approved_count || 0,
+                summary?.dsr_confirmed_count || 0,
+                summary?.dsr_rejected_count || 0,
+                summary?.total_call_duration || 0,
+            ]);
+
+            wsData.push([]);
+
+            // ================= TABLE HEADER =================
+            wsData.push([
+                "#",
+                "Customer Name",
+                "Call Status",
+                "Call Duration",
+                "Invoice No",
+                "Invoice Amount",
+                "State",
+                "District",
+                "DSR Status",
+                "Created By",
+                "Created At",
+                "Note",
+            ]);
+
+            // ================= TABLE BODY =================
+            data.forEach((item, index) => {
+                wsData.push([
+                    index + 1,
+                    item.customer_name || item.customer || "-",
+                    item.call_status || "-",
+                    item.call_duration || "-",
+                    item.invoice_number || item.invoice || "-",
+                    item.invoice_amount || "-",
+                    item.state_name || "-",
+                    item.district_name || "-",
+                    item.status || "-",
+                    item.created_by_name || "-",
+                    formatDateTime(item.created_at),
+                    item.note || "-",
+                ]);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const range = XLSX.utils.decode_range(ws["!ref"]);
+
+            // ================= MERGES =================
+            ws["!merges"] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 11 } }, // title
+                { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },  // filters title
+                { s: { r: 8, c: 0 }, e: { r: 8, c: 7 } },  // summary title
+            ];
+
+            // ================= COLUMN WIDTHS =================
+            ws["!cols"] = [
+                { wch: 8 },   // #
+                { wch: 24 },  // customer
+                { wch: 16 },  // call status
+                { wch: 16 },  // duration
+                { wch: 18 },  // invoice no
+                { wch: 16 },  // invoice amount
+                { wch: 18 },  // state
+                { wch: 18 },  // district
+                { wch: 18 },  // dsr status
+                { wch: 22 },  // created by
+                { wch: 22 },  // created at
+                { wch: 30 },  // note
+            ];
+
+            // ================= DEFAULT STYLE =================
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+                for (let C = range.s.c; C <= range.e.c; ++C) {
+                    const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[cellAddress]) continue;
+
+                    ws[cellAddress].s = {
+                        font: { name: "Calibri", sz: 11 },
+                        alignment: {
+                            vertical: "center",
+                            horizontal: C === 11 ? "left" : "center",
+                            wrapText: true,
+                        },
+                        border: {
+                            top: { style: "thin", color: { rgb: "D9D9D9" } },
+                            bottom: { style: "thin", color: { rgb: "D9D9D9" } },
+                            left: { style: "thin", color: { rgb: "D9D9D9" } },
+                            right: { style: "thin", color: { rgb: "D9D9D9" } },
+                        },
+                    };
+                }
+            }
+
+            // ================= TITLE STYLE =================
+            for (let C = 0; C <= 11; C++) {
+                const cell = XLSX.utils.encode_cell({ r: 0, c: C });
+                if (ws[cell]) {
+                    ws[cell].s = {
+                        font: { bold: true, sz: 16, color: { rgb: "FFFFFF" } },
+                        alignment: { horizontal: "center", vertical: "center" },
+                        fill: { fgColor: { rgb: "1F4E79" } },
+                        border: {
+                            top: { style: "thin", color: { rgb: "1F4E79" } },
+                            bottom: { style: "thin", color: { rgb: "1F4E79" } },
+                            left: { style: "thin", color: { rgb: "1F4E79" } },
+                            right: { style: "thin", color: { rgb: "1F4E79" } },
+                        },
+                    };
+                }
+            }
+
+            // ================= SECTION TITLE STYLES =================
+            [2, 8].forEach((row) => {
+                for (let C = 0; C <= 11; C++) {
+                    const cell = XLSX.utils.encode_cell({ r: row, c: C });
+                    if (ws[cell]) {
+                        ws[cell].s = {
+                            font: { bold: true, sz: 12, color: { rgb: "FFFFFF" } },
+                            alignment: { horizontal: "left", vertical: "center" },
+                            fill: { fgColor: { rgb: "203A43" } },
+                            border: {
+                                top: { style: "thin", color: { rgb: "203A43" } },
+                                bottom: { style: "thin", color: { rgb: "203A43" } },
+                                left: { style: "thin", color: { rgb: "203A43" } },
+                                right: { style: "thin", color: { rgb: "203A43" } },
+                            },
+                        };
+                    }
+                }
+            });
+
+            // ================= FILTER LABEL STYLE =================
+            [3, 4, 5, 6].forEach((row) => {
+                [0, 2].forEach((col) => {
+                    const cell = XLSX.utils.encode_cell({ r: row, c: col });
+                    if (ws[cell]) {
+                        ws[cell].s = {
+                            ...ws[cell].s,
+                            font: { bold: true, color: { rgb: "000000" } },
+                            fill: { fgColor: { rgb: "EAF4F4" } },
+                        };
+                    }
+                });
+            });
+
+            // ================= SUMMARY HEADER STYLE =================
+            for (let C = 0; C <= 7; C++) {
+                const cell = XLSX.utils.encode_cell({ r: 9, c: C });
+                if (ws[cell]) {
+                    ws[cell].s = {
+                        font: { bold: true, color: { rgb: "FFFFFF" } },
+                        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+                        fill: { fgColor: { rgb: "28837A" } },
+                        border: {
+                            top: { style: "thin", color: { rgb: "000000" } },
+                            bottom: { style: "thin", color: { rgb: "000000" } },
+                            left: { style: "thin", color: { rgb: "000000" } },
+                            right: { style: "thin", color: { rgb: "000000" } },
+                        },
+                    };
+                }
+            }
+
+            // ================= SUMMARY VALUE STYLE =================
+            for (let C = 0; C <= 7; C++) {
+                const cell = XLSX.utils.encode_cell({ r: 10, c: C });
+                if (ws[cell]) {
+                    ws[cell].s = {
+                        font: { bold: true, sz: 12, color: { rgb: "000000" } },
+                        alignment: { horizontal: "center", vertical: "center" },
+                        fill: { fgColor: { rgb: "F8F9FA" } },
+                        border: {
+                            top: { style: "thin", color: { rgb: "D9D9D9" } },
+                            bottom: { style: "thin", color: { rgb: "D9D9D9" } },
+                            left: { style: "thin", color: { rgb: "D9D9D9" } },
+                            right: { style: "thin", color: { rgb: "D9D9D9" } },
+                        },
+                    };
+                }
+            }
+
+            // ================= TABLE HEADER STYLE =================
+            const tableHeaderRow = 12;
+            for (let C = 0; C <= 11; C++) {
+                const cell = XLSX.utils.encode_cell({ r: tableHeaderRow, c: C });
+                if (ws[cell]) {
+                    ws[cell].s = {
+                        font: { bold: true, color: { rgb: "FFFFFF" } },
+                        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+                        fill: { fgColor: { rgb: "28837A" } },
+                        border: {
+                            top: { style: "thin", color: { rgb: "000000" } },
+                            bottom: { style: "thin", color: { rgb: "000000" } },
+                            left: { style: "thin", color: { rgb: "000000" } },
+                            right: { style: "thin", color: { rgb: "000000" } },
+                        },
+                    };
+                }
+            }
+
+            // ================= DATA ROW COLORS =================
+            const dataStartRow = 13;
+            data.forEach((item, index) => {
+                const excelRow = dataStartRow + index;
+                const normalizedCallStatus = (item.call_status || "").toLowerCase();
+
+                let fillColor = null;
+                if (normalizedCallStatus === "active") {
+                    fillColor = "FFF3CD";
+                } else if (normalizedCallStatus === "productive") {
+                    fillColor = "D4EDDA";
+                }
+
+                if (fillColor) {
+                    for (let C = 0; C <= 11; C++) {
+                        const cell = XLSX.utils.encode_cell({ r: excelRow, c: C });
+                        if (ws[cell]) {
+                            ws[cell].s = {
+                                ...ws[cell].s,
+                                fill: { fgColor: { rgb: fillColor } },
+                            };
+                        }
+                    }
+                }
+            });
+
+            XLSX.utils.book_append_sheet(wb, ws, "Daily Sales Report");
+            XLSX.writeFile(wb, "Daily_Sales_Report_Family_Wise.xlsx");
+            toast.success("Excel exported successfully");
+        } catch (error) {
+            toast.error("Excel export failed");
+        }
+    };
+
+    const exportToPDF = () => {
+        try {
+            if (!data || data.length === 0) {
+                toast.error("No data to export");
+                return;
+            }
+
+            const doc = new jsPDF("landscape");
+
+            doc.setFontSize(18);
+            doc.setTextColor(31, 78, 121);
+            doc.text("DAILY SALES REPORT - FAMILY WISE", 14, 15);
+
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            doc.text(`Search: ${search || "All"}`, 14, 24);
+            doc.text(`Call Status: ${callStatus || "All"}`, 70, 24);
+            doc.text(`DSR Status: ${statusFilter || "All"}`, 125, 24);
+            doc.text(`State: ${selectedStateLabel}`, 180, 24);
+            doc.text(`District: ${selectedDistrictLabel}`, 240, 24);
+
+            doc.text(`Start Date: ${startDate || "-"}`, 14, 31);
+            doc.text(`End Date: ${endDate || "-"}`, 70, 31);
+            doc.text(
+                `Created By: ${createdByOptions.find((u) => String(u.value) === String(createdBy))?.label ||
+                "All"
+                }`,
+                125,
+                31
+            );
+
+            autoTable(doc, {
+                startY: 38,
+                head: [["Metric", "Value"]],
+                body: [
+                    ["Total", summary?.count || 0],
+                    ["Active", summary?.active_count || 0],
+                    ["Productive", summary?.productive_count || 0],
+                    ["DSR Created", summary?.dsr_created_count || 0],
+                    ["DSR Approved", summary?.dsr_approved_count || 0],
+                    ["DSR Confirmed", summary?.dsr_confirmed_count || 0],
+                    ["DSR Rejected", summary?.dsr_rejected_count || 0],
+                    ["Total Call Duration", summary?.total_call_duration || 0],
+                ],
+                theme: "grid",
+                styles: {
+                    fontSize: 9,
+                    halign: "left",
+                    valign: "middle",
+                },
+                headStyles: {
+                    fillColor: [32, 58, 67],
+                    textColor: [255, 255, 255],
+                    fontStyle: "bold",
+                },
+                margin: { left: 14, right: 14 },
+                tableWidth: 110,
+            });
+
+            const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 8 : 95;
+
+            const head = [[
+                "#",
+                "Customer Name",
+                "Call Status",
+                "Call Duration",
+                "Invoice No",
+                "Invoice Amount",
+                "State",
+                "District",
+                "DSR Status",
+                "Created By",
+                "Created At",
+            ]];
+
+            const body = data.map((item, index) => [
+                index + 1,
+                item.customer_name || item.customer || "-",
+                item.call_status || "-",
+                item.call_duration || "-",
+                item.invoice_number || item.invoice || "-",
+                item.invoice_amount || "-",
+                item.state_name || "-",
+                item.district_name || "-",
+                item.status || "-",
+                item.created_by_name || "-",
+                formatDateTime(item.created_at),
+            ]);
+
+            autoTable(doc, {
+                startY: finalY,
+                head,
+                body,
+                theme: "grid",
+                styles: {
+                    fontSize: 7.5,
+                    halign: "center",
+                    valign: "middle",
+                    cellPadding: 2,
+                },
+                headStyles: {
+                    fillColor: [40, 131, 122],
+                    textColor: [255, 255, 255],
+                    fontStyle: "bold",
+                },
+                didParseCell: function (hookData) {
+                    if (hookData.section === "body") {
+                        const row = data[hookData.row.index];
+                        const status = (row?.call_status || "").toLowerCase();
+
+                        if (status === "active") {
+                            hookData.cell.styles.fillColor = [255, 243, 205];
+                        }
+
+                        if (status === "productive") {
+                            hookData.cell.styles.fillColor = [212, 237, 218];
+                        }
+                    }
+                },
+            });
+
+            doc.save("Daily_Sales_Report_Family_Wise.pdf");
+            toast.success("PDF exported successfully");
+        } catch (error) {
+            toast.error("PDF export failed");
+        }
+    };
+
     return (
         <React.Fragment>
             <div className="page-content">
                 <ToastContainer />
-                <Breadcrumbs
+                {/* <Breadcrumbs
                     title="Daily Sales Report"
                     breadcrumbItem="View Daily Sales Report"
-                />
+                /> */}
+
+                {/* TOP HEADING SECTION */}
+                <Card
+                    style={{
+                        borderRadius: "15px",
+                        boxShadow: "0px 4px 12px rgba(0,0,0,0.15)",
+                        marginBottom: "20px",
+                        background: "linear-gradient(90deg, #0f2027, #203a43, #2c5364)",
+                        color: "white",
+                    }}
+                >
+                    <CardBody className="m-1">
+                        <Row className="align-items-center">
+                            <Col md="8">
+                                <h2 style={{ margin: 0, fontWeight: "bold" }}>
+                                    Daily Sales Report
+                                </h2>
+                                <p style={{ margin: 0, opacity: 0.85 }}>
+                                    View family wise daily sales report and export to Excel / PDF
+                                </p>
+                            </Col>
+
+                            <Col md="4" className="text-end">
+                                <Button
+                                    color="primary"
+                                    style={{ marginRight: "10px", fontWeight: "bold" }}
+                                    onClick={exportToExcel}
+                                    disabled={loadingReport || data.length === 0}
+                                >
+                                    Export Excel
+                                </Button>
+
+                                <Button
+                                    color="success"
+                                    style={{ fontWeight: "bold" }}
+                                    onClick={exportToPDF}
+                                    disabled={loadingReport || data.length === 0}
+                                >
+                                    Export PDF
+                                </Button>
+                            </Col>
+                        </Row>
+                    </CardBody>
+                </Card>
 
                 <Row>
                     <Col lg="12">
-                        <Card>
+                        {/* FILTER CARD */}
+                        <Card
+                            style={{
+                                borderRadius: "12px",
+                                boxShadow: "0px 3px 10px rgba(0,0,0,0.12)",
+                                marginBottom: "20px",
+                            }}
+                        >
+                            <CardBody>
+                                <CardTitle tag="h5" style={{ fontWeight: "bold", marginBottom: "15px" }}>
+                                    Search Filters
+                                </CardTitle>
+
+                                <Row className="g-3">
+                                    <Col md={3}>
+                                        <Label style={{ fontWeight: "bold" }}>Search</Label>
+                                        <Input
+                                            placeholder="Search..."
+                                            value={search}
+                                            onChange={(e) => setSearch(e.target.value)}
+                                        />
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <Label style={{ fontWeight: "bold" }}>Call Status</Label>
+                                        <Input
+                                            type="select"
+                                            value={callStatus}
+                                            onChange={(e) => setCallStatus(e.target.value)}
+                                        >
+                                            <option value="">Call Status</option>
+                                            <option value="productive">Productive</option>
+                                            <option value="active">Active</option>
+                                        </Input>
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <Label style={{ fontWeight: "bold" }}>DSR Status</Label>
+                                        <Input
+                                            type="select"
+                                            value={statusFilter}
+                                            onChange={(e) => setStatusFilter(e.target.value)}
+                                        >
+                                            <option value="">DSR Status</option>
+                                            <option value="dsr created">DSR Created</option>
+                                            <option value="dsr approved">DSR Approved</option>
+                                            <option value="dsr confirmed">DSR Confirmed</option>
+                                            <option value="dsr rejected">DSR Rejected</option>
+                                        </Input>
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <Label style={{ fontWeight: "bold", display: "block" }}>State</Label>
+                                        <Select
+                                            options={stateOptions}
+                                            value={
+                                                stateOptions.find(
+                                                    (s) => String(s.value) === String(stateFilter)
+                                                ) || null
+                                            }
+                                            onChange={(selected) => {
+                                                const val = selected?.value || "";
+                                                setStateFilter(val);
+                                                setDistrict("");
+                                            }}
+                                            placeholder="Search State..."
+                                            isClearable
+                                        />
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <Label style={{ fontWeight: "bold", display: "block" }}>District</Label>
+                                        <Select
+                                            options={districtOptions}
+                                            value={
+                                                districtOptions.find(
+                                                    (d) => String(d.value) === String(district)
+                                                ) || null
+                                            }
+                                            onChange={(selected) => setDistrict(selected?.value || "")}
+                                            placeholder="Search District..."
+                                            isClearable
+                                            isDisabled={!stateFilter}
+                                        />
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <Label style={{ fontWeight: "bold", display: "block" }}>Created By</Label>
+                                        <Select
+                                            options={createdByOptions}
+                                            value={
+                                                createdByOptions.find(
+                                                    (u) => String(u.value) === String(createdBy)
+                                                ) || null
+                                            }
+                                            onChange={(selected) =>
+                                                setCreatedBy(selected?.value || "")
+                                            }
+                                            placeholder="Created By..."
+                                            isClearable
+                                        />
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <Label style={{ fontWeight: "bold" }}>Start Date</Label>
+                                        <Input
+                                            type="date"
+                                            value={startDate}
+                                            onChange={(e) => setStartDate(e.target.value)}
+                                        />
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <Label style={{ fontWeight: "bold" }}>End Date</Label>
+                                        <Input
+                                            type="date"
+                                            value={endDate}
+                                            onChange={(e) => setEndDate(e.target.value)}
+                                        />
+                                    </Col>
+
+                                    <Col md={2} className="d-flex align-items-end">
+                                        <Button
+                                            color="info"
+                                            style={{
+                                                width: "100%",
+                                                fontWeight: "bold",
+                                                color: "white",
+                                            }}
+                                            onClick={fetchReport}
+                                            disabled={loadingReport}
+                                        >
+                                            {loadingReport ? "Searching..." : "Search"}
+                                        </Button>
+                                    </Col>
+
+                                    <Col md={2} className="d-flex align-items-end">
+                                        <Button
+                                            color="secondary"
+                                            style={{
+                                                width: "100%",
+                                                fontWeight: "bold",
+                                            }}
+                                            onClick={() => {
+                                                setSearch("");
+                                                setCallStatus("");
+                                                setStatusFilter("");
+                                                setStateFilter("");
+                                                setDistrict("");
+                                                setCreatedBy("");
+                                                setStartDate("");
+                                                setEndDate("");
+                                                setTimeout(fetchReport, 0);
+                                            }}
+                                        >
+                                            Reset
+                                        </Button>
+                                    </Col>
+                                </Row>
+                            </CardBody>
+                        </Card>
+
+                        {/* REPORT TABLE CARD */}
+                        <Card
+                            className="print-section"
+                            style={{
+                                borderRadius: "12px",
+                                boxShadow: "0px 3px 10px rgba(0,0,0,0.12)",
+                            }}
+                        >
                             <CardBody>
                                 <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
                                     <CardTitle className="h4 mb-0">
@@ -466,114 +1108,6 @@ const ViewDailySalesReport = () => {
                                         </div>
                                     </div>
                                 </div>
-
-                                <Row className="mb-3 g-2">
-
-                                    <Col md={3}>
-                                        <Input placeholder="Search..." value={search}
-                                            onChange={(e) => setSearch(e.target.value)} />
-                                    </Col>
-
-                                    <Col md={2}>
-                                        <Input type="select" value={callStatus}
-                                            onChange={(e) => setCallStatus(e.target.value)}>
-                                            <option value="">Call Status</option>
-                                            <option value="productive">Productive</option>
-                                            <option value="active">Active</option>
-                                        </Input>
-                                    </Col>
-
-                                    <Col md={2}>
-                                        <Input type="select" value={statusFilter}
-                                            onChange={(e) => setStatusFilter(e.target.value)}>
-                                            <option value="">DSR Status</option>
-                                            <option value="dsr created">DSR Created</option>
-                                            <option value="dsr approved">DSR Approved</option>
-                                            <option value="dsr confirmed">DSR Confirmed</option>
-                                            <option value="dsr rejected">DSR Rejected</option>
-                                        </Input>
-                                    </Col>
-
-                                    <Col md={2}>
-                                        <Select
-                                            options={stateOptions}
-                                            value={stateOptions.find((s) => s.value === stateFilter) || null}
-                                            onChange={(selected) => {
-                                                const val = selected?.value || "";
-                                                setStateFilter(val);
-                                                setDistrict("");
-
-                                                const filtered = allDistricts.filter(
-                                                    (d) => String(d.state) === String(val)
-                                                );
-                                                setDistrictList(filtered);
-                                            }}
-                                            placeholder="Search State..."
-                                            isClearable
-                                        />
-                                    </Col>
-
-                                    <Col md={2}>
-                                        <Select
-                                            options={districtOptions}
-                                            value={districtOptions.find((d) => d.value === district) || null}
-                                            onChange={(selected) => setDistrict(selected?.value || "")}
-                                            placeholder="Search District..."
-                                            isClearable
-                                            isDisabled={!stateFilter}
-                                        />
-                                    </Col>
-
-                                    <Col md={2}>
-                                        <Select
-                                            options={createdByOptions}
-                                            value={
-                                                createdByOptions.find(
-                                                    (u) => String(u.value) === String(createdBy)
-                                                ) || null
-                                            }
-                                            onChange={(selected) =>
-                                                setCreatedBy(selected?.value || "")
-                                            }
-                                            placeholder="Created By..."
-                                            isClearable
-                                        />
-                                    </Col>
-
-                                    <Col md={2}>
-                                        <Input type="date" value={startDate}
-                                            onChange={(e) => setStartDate(e.target.value)} />
-                                    </Col>
-
-                                    <Col md={2}>
-                                        <Input type="date" value={endDate}
-                                            onChange={(e) => setEndDate(e.target.value)} />
-                                    </Col>
-
-                                    <Col md={2}>
-                                        <Button color="success" onClick={fetchReport} block>
-                                            Apply
-                                        </Button>
-                                    </Col>
-
-                                    <Col md={2}>
-                                        <Button color="secondary" block onClick={() => {
-                                            setSearch("");
-                                            setCallStatus("");
-                                            setStatusFilter("");
-                                            setStateFilter("");
-                                            setDistrict("");
-                                            setCreatedBy("");
-                                            setStartDate("");
-                                            setEndDate("");
-                                            setTimeout(fetchReport, 0);
-                                        }}>
-                                            Reset
-                                        </Button>
-                                    </Col>
-
-                                </Row>
-
 
                                 {loadingUser || loadingReport ? (
                                     <div className="text-center my-5">

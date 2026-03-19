@@ -828,7 +828,7 @@ const SidebarContent = (props) => {
                     </>
                   )}
 
-                  {['BDM', 'ASD', 'SD', 'ADMIN', 'CEO', 'COO'].includes(role) && (
+                  {['BDM', 'ASD', 'SD'].includes(role) && (
                     <li>
                       <Link to="/daily/dsr/family/based/">
                         {props.t("Family Wise DSR Report")}

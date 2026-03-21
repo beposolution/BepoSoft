@@ -467,6 +467,9 @@ const ViewDailySalesReport = () => {
                 "",
                 "",
                 "",
+                "",
+                "",
+                "",
             ]);
 
             wsData.push([
@@ -478,6 +481,9 @@ const ViewDailySalesReport = () => {
                 "DSR Confirmed",
                 "DSR Rejected",
                 "Call Duration",
+                "Avg Call Duration",
+                "8hrs Productivity %",
+                "Total Invoice Amount",
             ]);
 
             wsData.push([
@@ -489,6 +495,9 @@ const ViewDailySalesReport = () => {
                 summary?.dsr_confirmed_count || 0,
                 summary?.dsr_rejected_count || 0,
                 summary?.total_call_duration || 0,
+                summary?.average_call_duration || 0,
+                summary?.call_duration_percentage_8hrs || 0,
+                summary?.total_invoice_amount || 0,
             ]);
 
             wsData.push([]);
@@ -629,7 +638,7 @@ const ViewDailySalesReport = () => {
             });
 
             // ================= SUMMARY HEADER STYLE =================
-            for (let C = 0; C <= 7; C++) {
+            for (let C = 0; C <= 10; C++) {
                 const cell = XLSX.utils.encode_cell({ r: 9, c: C });
                 if (ws[cell]) {
                     ws[cell].s = {
@@ -647,7 +656,7 @@ const ViewDailySalesReport = () => {
             }
 
             // ================= SUMMARY VALUE STYLE =================
-            for (let C = 0; C <= 7; C++) {
+            for (let C = 0; C <= 10; C++) {
                 const cell = XLSX.utils.encode_cell({ r: 10, c: C });
                 if (ws[cell]) {
                     ws[cell].s = {
@@ -760,6 +769,9 @@ const ViewDailySalesReport = () => {
                     ["DSR Confirmed", summary?.dsr_confirmed_count || 0],
                     ["DSR Rejected", summary?.dsr_rejected_count || 0],
                     ["Total Call Duration", summary?.total_call_duration || 0],
+                    ["Avg Call Duration", summary?.average_call_duration || 0],
+                    ["8hrs Productivity %", summary?.call_duration_percentage_8hrs || 0],
+                    ["Total Invoice Amount", summary?.total_invoice_amount || 0],
                 ],
                 theme: "grid",
                 styles: {

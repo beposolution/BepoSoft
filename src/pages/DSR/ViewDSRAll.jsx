@@ -298,6 +298,9 @@ const ViewDSRAll = () => {
                 "DSR Confirmed",
                 "DSR Rejected",
                 "Call Duration",
+                "Avg Call Duration (8hrs)",
+                "8hrs Productivity %",
+                "Total Invoice Amount",
             ]);
             wsData.push([
                 summary?.count || 0,
@@ -308,6 +311,9 @@ const ViewDSRAll = () => {
                 summary?.dsr_confirmed_count || 0,
                 summary?.dsr_rejected_count || 0,
                 summary?.total_call_duration || 0,
+                summary?.call_duration_average_8hrs || 0,
+                summary?.call_duration_percentage_8hrs || 0,
+                summary?.total_invoice_amount || 0,
             ]);
             wsData.push([]);
 
@@ -345,7 +351,7 @@ const ViewDSRAll = () => {
             ws["!merges"] = [
                 { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } },
                 { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
-                { s: { r: 9, c: 0 }, e: { r: 9, c: 7 } },
+                { s: { r: 9, c: 0 }, e: { r: 9, c: 10 } },
             ];
 
             ws["!cols"] = [
@@ -432,7 +438,7 @@ const ViewDSRAll = () => {
                 });
             });
 
-            for (let C = 0; C <= 7; C++) {
+            for (let C = 0; C <= 10; C++) {
                 const headerCell = XLSX.utils.encode_cell({ r: 10, c: C });
                 if (ws[headerCell]) {
                     ws[headerCell].s = {
@@ -553,6 +559,9 @@ const ViewDSRAll = () => {
                     ["DSR Confirmed", summary?.dsr_confirmed_count || 0],
                     ["DSR Rejected", summary?.dsr_rejected_count || 0],
                     ["Call Duration", summary?.total_call_duration || 0],
+                    ["Avg Call Duration (8hrs)", summary?.call_duration_average_8hrs || 0],
+                    ["8hrs Productivity %", summary?.call_duration_percentage_8hrs || 0],
+                    ["Total Invoice Amount", summary?.total_invoice_amount || 0],
                 ],
                 theme: "grid",
                 styles: {
@@ -1084,7 +1093,8 @@ const ViewDSRAll = () => {
                                                 </span>
                                             </div>
                                         </Col>
-                                        <Col md="2">
+
+                                        {/* <Col md="2">
                                             <div
                                                 style={{
                                                     background: "#f3e5f5",
@@ -1104,7 +1114,9 @@ const ViewDSRAll = () => {
                                                     {summary?.average_call_duration || 0}
                                                 </span>
                                             </div>
-                                        </Col>
+                                        </Col> */}
+
+
                                         <Col md="2">
                                             <div
                                                 style={{
@@ -1119,7 +1131,7 @@ const ViewDSRAll = () => {
                                                 }}
                                             >
                                                 <span style={{ fontSize: "13px", color: "#ff8f00" }}>
-                                                    Avg Duration (8hrs)
+                                                    Avg Call Duration (8hrs)
                                                 </span>
                                                 <span style={{ fontSize: "20px", color: "#ff8f00", fontWeight: "bold" }}>
                                                     {summary?.call_duration_average_8hrs || 0}

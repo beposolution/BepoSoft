@@ -387,7 +387,7 @@ const ViewDSR = () => {
             wsData.push(["End Date", endDate || "-", "", ""]);
             wsData.push([]);
 
-            wsData.push(["SUMMARY", "", "", "", "", "", ""]);
+            wsData.push(["SUMMARY", "", "", "", "", "", "","","",""]);
             wsData.push([
                 "Active",
                 "Productive",
@@ -396,6 +396,10 @@ const ViewDSR = () => {
                 "DSR Confirmed",
                 "DSR Rejected",
                 "Total",
+                "Total Call Duration",
+    "Avg Call Duration",
+    "8hrs Productivity %",
+    "Total Invoice Amount",
             ]);
             wsData.push([
                 summary?.active_count || 0,
@@ -405,6 +409,10 @@ const ViewDSR = () => {
                 summary?.dsr_confirmed_count || 0,
                 summary?.dsr_rejected_count || 0,
                 summary?.count || dsrList.length || 0,
+                 summary?.total_call_duration || 0,
+    summary?.average_call_duration || 0,
+    summary?.call_duration_percentage_8hrs || 0,
+    summary?.total_invoice_amount || 0,
             ]);
             wsData.push([]);
 
@@ -442,7 +450,7 @@ const ViewDSR = () => {
             ws["!merges"] = [
                 { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } },
                 { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
-                { s: { r: 8, c: 0 }, e: { r: 8, c: 6 } },
+                { s: { r: 8, c: 0 }, e: { r: 8, c: 10 } },
             ];
 
             ws["!cols"] = [
@@ -529,7 +537,7 @@ const ViewDSR = () => {
                 });
             });
 
-            for (let C = 0; C <= 6; C++) {
+            for (let C = 0; C <= 10; C++) {
                 const headerCell = XLSX.utils.encode_cell({ r: 9, c: C });
                 if (ws[headerCell]) {
                     ws[headerCell].s = {
@@ -647,6 +655,10 @@ const ViewDSR = () => {
                     ["DSR Confirmed", summary?.dsr_confirmed_count || 0],
                     ["DSR Rejected", summary?.dsr_rejected_count || 0],
                     ["Total", summary?.count || dsrList.length || 0],
+                    ["Total Call Duration", summary?.total_call_duration || 0],
+    ["Avg Call Duration", summary?.average_call_duration || 0],
+    ["8hrs Productivity %", summary?.call_duration_percentage_8hrs || 0],
+    ["Total Invoice Amount", summary?.total_invoice_amount || 0],
                 ],
                 theme: "grid",
                 styles: {
@@ -1136,7 +1148,7 @@ const ViewDSR = () => {
                                                 </span>
                                             </div>
                                         </Col>
-                                        <Col md="2">
+                                        {/* <Col md="2">
     <div
         style={{
             background: "#fff8e1",
@@ -1156,29 +1168,29 @@ const ViewDSR = () => {
             {summary?.call_duration_average_8hrs || 0}
         </span>
     </div>
-</Col>
+</Col> */}
 
-<Col md="2">
-    <div
-        style={{
-            background: "#e8eaf6",
-            borderRadius: "10px",
-            padding: "14px 16px",
-            border: "1px solid #c5cae9",
-            minHeight: "70px",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-        }}
-    >
-        <span style={{ fontSize: "13px", color: "#283593" }}>
-            8hrs Productivity %
-        </span>
-        <span style={{ fontSize: "20px", color: "#283593", fontWeight: "bold" }}>
-            {summary?.call_duration_percentage_8hrs || 0}%
-        </span>
-    </div>
-</Col>
+                                        <Col md="2">
+                                            <div
+                                                style={{
+                                                    background: "#e8eaf6",
+                                                    borderRadius: "10px",
+                                                    padding: "14px 16px",
+                                                    border: "1px solid #c5cae9",
+                                                    minHeight: "70px",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                <span style={{ fontSize: "13px", color: "#283593" }}>
+                                                    8hrs Productivity %
+                                                </span>
+                                                <span style={{ fontSize: "20px", color: "#283593", fontWeight: "bold" }}>
+                                                    {summary?.call_duration_percentage_8hrs || 0}%
+                                                </span>
+                                            </div>
+                                        </Col>
 
 
                                         <Col md="2">
@@ -1374,8 +1386,8 @@ const ViewDSR = () => {
                                                 <div>
                                                     <span
                                                         className={`badge px-3 py-2 fs-6 ${selectedItem?.call_status === "productive"
-                                                                ? "bg-success"
-                                                                : "bg-warning"
+                                                            ? "bg-success"
+                                                            : "bg-warning"
                                                             }`}
                                                     >
                                                         {selectedItem?.call_status}
@@ -1393,12 +1405,12 @@ const ViewDSR = () => {
 
                                             <span
                                                 className={`badge px-3 py-2 fs-6 ${selectedItem.status === "dsr confirmed"
-                                                        ? "bg-success"
-                                                        : selectedItem.status === "dsr rejected"
-                                                            ? "bg-danger"
-                                                            : selectedItem.status === "dsr created"
-                                                                ? "bg-primary"
-                                                                : "bg-warning"
+                                                    ? "bg-success"
+                                                    : selectedItem.status === "dsr rejected"
+                                                        ? "bg-danger"
+                                                        : selectedItem.status === "dsr created"
+                                                            ? "bg-primary"
+                                                            : "bg-warning"
                                                     }`}
                                             >
                                                 {selectedItem.status}

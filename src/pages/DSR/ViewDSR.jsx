@@ -97,6 +97,8 @@ const ViewDSR = () => {
                     end_date: endDate,
                 },
             });
+            console.log("DSR API Response:", response.data);
+
 
             const summaryData = response?.data?.results || null;
             const data = response?.data?.results?.results || [];
@@ -1090,6 +1092,119 @@ const ViewDSR = () => {
                                                 </span>
                                             </div>
                                         </Col>
+                                        <Col md="2">
+                                            <div
+                                                style={{
+                                                    background: "#ffe5ec",
+                                                    borderRadius: "10px",
+                                                    padding: "14px 16px",
+                                                    border: "1px solid #ffb3c6",
+                                                    minHeight: "70px",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                <span style={{ fontSize: "13px", color: "#b03060" }}>
+                                                    Total Call Duration
+                                                </span>
+                                                <span style={{ fontSize: "20px", color: "#b03060", fontWeight: "bold" }}>
+                                                    {summary?.total_call_duration || "00:00:00"}
+                                                </span>
+                                            </div>
+                                        </Col>
+
+
+                                        <Col md="2">
+                                            <div
+                                                style={{
+                                                    background: "#f3e5f5",
+                                                    borderRadius: "10px",
+                                                    padding: "14px 16px",
+                                                    border: "1px solid #ce93d8",
+                                                    minHeight: "70px",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                <span style={{ fontSize: "13px", color: "#6a1b9a" }}>
+                                                    Avg Call Duration
+                                                </span>
+                                                <span style={{ fontSize: "20px", color: "#6a1b9a", fontWeight: "bold" }}>
+                                                    {summary?.average_call_duration || 0}
+                                                </span>
+                                            </div>
+                                        </Col>
+                                        <Col md="2">
+    <div
+        style={{
+            background: "#fff8e1",
+            borderRadius: "10px",
+            padding: "14px 16px",
+            border: "1px solid #ffe082",
+            minHeight: "70px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+        }}
+    >
+        <span style={{ fontSize: "13px", color: "#ff8f00" }}>
+            Avg Duration (8hrs)
+        </span>
+        <span style={{ fontSize: "20px", color: "#ff8f00", fontWeight: "bold" }}>
+            {summary?.call_duration_average_8hrs || 0}
+        </span>
+    </div>
+</Col>
+
+<Col md="2">
+    <div
+        style={{
+            background: "#e8eaf6",
+            borderRadius: "10px",
+            padding: "14px 16px",
+            border: "1px solid #c5cae9",
+            minHeight: "70px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+        }}
+    >
+        <span style={{ fontSize: "13px", color: "#283593" }}>
+            8hrs Productivity %
+        </span>
+        <span style={{ fontSize: "20px", color: "#283593", fontWeight: "bold" }}>
+            {summary?.call_duration_percentage_8hrs || 0}%
+        </span>
+    </div>
+</Col>
+
+
+                                        <Col md="2">
+                                            <div
+                                                style={{
+                                                    background: "#e0f7fa",
+                                                    borderRadius: "10px",
+                                                    padding: "14px 16px",
+                                                    border: "1px solid #80deea",
+                                                    minHeight: "70px",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                <span style={{ fontSize: "13px", color: "#006064" }}>
+                                                    Total Invoice Amount
+                                                </span>
+                                                <span style={{ fontSize: "20px", color: "#006064", fontWeight: "bold" }}>
+                                                    {summary?.total_invoice_amount || 0}
+                                                </span>
+                                            </div>
+                                        </Col>
+
+
+
                                     </Row>
                                 )}
 
@@ -1258,11 +1373,10 @@ const ViewDSR = () => {
                                             ) : (
                                                 <div>
                                                     <span
-                                                        className={`badge px-3 py-2 fs-6 ${
-                                                            selectedItem?.call_status === "productive"
+                                                        className={`badge px-3 py-2 fs-6 ${selectedItem?.call_status === "productive"
                                                                 ? "bg-success"
                                                                 : "bg-warning"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {selectedItem?.call_status}
                                                     </span>
@@ -1278,15 +1392,14 @@ const ViewDSR = () => {
                                             </div>
 
                                             <span
-                                                className={`badge px-3 py-2 fs-6 ${
-                                                    selectedItem.status === "dsr confirmed"
+                                                className={`badge px-3 py-2 fs-6 ${selectedItem.status === "dsr confirmed"
                                                         ? "bg-success"
                                                         : selectedItem.status === "dsr rejected"
-                                                        ? "bg-danger"
-                                                        : selectedItem.status === "dsr created"
-                                                        ? "bg-primary"
-                                                        : "bg-warning"
-                                                }`}
+                                                            ? "bg-danger"
+                                                            : selectedItem.status === "dsr created"
+                                                                ? "bg-primary"
+                                                                : "bg-warning"
+                                                    }`}
                                             >
                                                 {selectedItem.status}
                                             </span>
@@ -1325,56 +1438,56 @@ const ViewDSR = () => {
                                     {(editMode
                                         ? editData.call_status === "productive"
                                         : selectedItem?.call_status === "productive") && (
-                                        <Col md={6}>
-                                            <div>
-                                                <div className="text-muted mb-1">Invoice</div>
+                                            <Col md={6}>
+                                                <div>
+                                                    <div className="text-muted mb-1">Invoice</div>
 
-                                                {editMode ? (
-                                                    <Select
-                                                        options={invoiceList.map((inv) => ({
-                                                            value: inv.invoice,
-                                                            label: inv.invoice,
-                                                        }))}
-                                                        value={
-                                                            invoiceList
-                                                                .map((inv) => ({
-                                                                    value: inv.invoice,
-                                                                    label: inv.invoice,
-                                                                }))
-                                                                .find(
-                                                                    (opt) =>
-                                                                        opt.value === editData.invoice
-                                                                ) || null
-                                                        }
-                                                        onChange={(selected) =>
-                                                            setEditData({
-                                                                ...editData,
-                                                                invoice: selected?.value || "",
-                                                            })
-                                                        }
-                                                        placeholder="Search Invoice..."
-                                                        isClearable
-                                                        styles={{
-                                                            control: (base) => ({
-                                                                ...base,
-                                                                backgroundColor: "#fff",
-                                                                borderColor: "#ced4da",
-                                                                minHeight: "38px",
-                                                            }),
-                                                            menu: (base) => ({
-                                                                ...base,
-                                                                zIndex: 9999,
-                                                            }),
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    <div className="fw-semibold fs-5">
-                                                        {selectedItem?.invoice_number || "-"}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </Col>
-                                    )}
+                                                    {editMode ? (
+                                                        <Select
+                                                            options={invoiceList.map((inv) => ({
+                                                                value: inv.invoice,
+                                                                label: inv.invoice,
+                                                            }))}
+                                                            value={
+                                                                invoiceList
+                                                                    .map((inv) => ({
+                                                                        value: inv.invoice,
+                                                                        label: inv.invoice,
+                                                                    }))
+                                                                    .find(
+                                                                        (opt) =>
+                                                                            opt.value === editData.invoice
+                                                                    ) || null
+                                                            }
+                                                            onChange={(selected) =>
+                                                                setEditData({
+                                                                    ...editData,
+                                                                    invoice: selected?.value || "",
+                                                                })
+                                                            }
+                                                            placeholder="Search Invoice..."
+                                                            isClearable
+                                                            styles={{
+                                                                control: (base) => ({
+                                                                    ...base,
+                                                                    backgroundColor: "#fff",
+                                                                    borderColor: "#ced4da",
+                                                                    minHeight: "38px",
+                                                                }),
+                                                                menu: (base) => ({
+                                                                    ...base,
+                                                                    zIndex: 9999,
+                                                                }),
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className="fw-semibold fs-5">
+                                                            {selectedItem?.invoice_number || "-"}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </Col>
+                                        )}
 
                                     <Col md={12}>
                                         <div>

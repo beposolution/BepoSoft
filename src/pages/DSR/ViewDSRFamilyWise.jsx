@@ -1288,6 +1288,93 @@ const ViewDailySalesReport = () => {
                                                     </span>
                                                 </div>
                                             </Col>
+                                            <Col md="2">
+                                                <div
+                                                    style={{
+                                                        background: "#f3e5f5",
+                                                        borderRadius: "10px",
+                                                        padding: "14px 16px",
+                                                        border: "1px solid #ce93d8",
+                                                        minHeight: "70px",
+                                                        display: "flex",
+                                                        flexDirection: "column",
+                                                        justifyContent: "center",
+                                                    }}
+                                                >
+                                                    <span style={{ fontSize: "13px", color: "#6a1b9a" }}>
+                                                        Avg Call Duration
+                                                    </span>
+                                                    <span style={{ fontSize: "20px", color: "#6a1b9a", fontWeight: "bold" }}>
+                                                        {summary?.average_call_duration || 0}
+                                                    </span>
+                                                </div>
+                                            </Col>
+                                            {/* <Col md="2">
+                                                <div
+                                                    style={{
+                                                        background: "#fff8e1",
+                                                        borderRadius: "10px",
+                                                        padding: "14px 16px",
+                                                        border: "1px solid #ffe082",
+                                                        minHeight: "70px",
+                                                        display: "flex",
+                                                        flexDirection: "column",
+                                                        justifyContent: "center",
+                                                    }}
+                                                >
+                                                    <span style={{ fontSize: "13px", color: "#ff8f00" }}>
+                                                        Avg Duration (8hrs)
+                                                    </span>
+                                                    <span style={{ fontSize: "20px", color: "#ff8f00", fontWeight: "bold" }}>
+                                                        {summary?.call_duration_average_8hrs || 0}
+                                                    </span>
+                                                </div>
+                                            </Col> */}
+
+                                            <Col md="2">
+                                                <div
+                                                    style={{
+                                                        background: "#e8eaf6",
+                                                        borderRadius: "10px",
+                                                        padding: "14px 16px",
+                                                        border: "1px solid #c5cae9",
+                                                        minHeight: "70px",
+                                                        display: "flex",
+                                                        flexDirection: "column",
+                                                        justifyContent: "center",
+                                                    }}
+                                                >
+                                                    <span style={{ fontSize: "13px", color: "#283593" }}>
+                                                        8hrs Productivity %
+                                                    </span>
+                                                    <span style={{ fontSize: "20px", color: "#283593", fontWeight: "bold" }}>
+                                                        {summary?.call_duration_percentage_8hrs || 0}%
+                                                    </span>
+                                                </div>
+                                            </Col>
+
+
+                                            <Col md="2">
+                                                <div
+                                                    style={{
+                                                        background: "#e0f7fa",
+                                                        borderRadius: "10px",
+                                                        padding: "14px 16px",
+                                                        border: "1px solid #80deea",
+                                                        minHeight: "70px",
+                                                        display: "flex",
+                                                        flexDirection: "column",
+                                                        justifyContent: "center",
+                                                    }}
+                                                >
+                                                    <span style={{ fontSize: "13px", color: "#006064" }}>
+                                                        Total Invoice Amount
+                                                    </span>
+                                                    <span style={{ fontSize: "20px", color: "#006064", fontWeight: "bold" }}>
+                                                        {summary?.total_invoice_amount || 0}
+                                                    </span>
+                                                </div>
+                                            </Col>
                                         </Row>
 
                                         <Table bordered responsive hover className="align-middle">

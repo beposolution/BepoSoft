@@ -382,6 +382,7 @@ const Movement = () => {
         <div style={{ padding: "20px", overflow: "auto", maxHeight: "90vh" }}>
             <style>
                 {`
+                td.cod-column, th.cod-column { background-color: #ffeb3b !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                     .volume-col {
                     width: 80px !important;
                     max-width: 80px;

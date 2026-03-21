@@ -74,7 +74,7 @@ const ViewDSRAll = () => {
     const staffOptions = useMemo(
         () =>
             staffList.map((s) => ({
-                value: s.id,
+                value: s.name,
                 label: s.name,
             })),
         [staffList]
@@ -84,17 +84,15 @@ const ViewDSRAll = () => {
         try {
             setLoading(true);
 
+            const selectedStaffName = staff || "";
+
             const selectedStateName =
                 stateList.find((s) => String(s.id) === String(stateFilter))?.name || "";
+
 
             const selectedDistrictName =
                 districtList.find((d) => String(d.id) === String(district))?.name || "";
 
-            const selectedFamilyName =
-                familyList.find((f) => String(f.id) === String(family))?.name || "";
-
-            const selectedStaffName =
-                staffList.find((s) => String(s.id) === String(staff))?.name || "";
 
             const response = await axios.get(`${baseUrl}sales/analysis/all/`, {
                 headers: {
@@ -106,8 +104,8 @@ const ViewDSRAll = () => {
                     status: statusFilter,
                     state: selectedStateName,
                     district: selectedDistrictName,
-                    family: selectedFamilyName,
-                    staff: selectedStaffName,
+                    family: family || "",
+                    created_by: selectedStaffName,
                     start_date: startDate,
                     end_date: endDate,
                 },
@@ -179,7 +177,7 @@ const ViewDSRAll = () => {
 
     useEffect(() => {
         fetchDSR();
-    }, [stateList, districtList, familyList, staffList]);
+    }, []);
 
     useEffect(() => {
         if (!stateFilter) {
@@ -300,6 +298,9 @@ const ViewDSRAll = () => {
                 "DSR Confirmed",
                 "DSR Rejected",
                 "Call Duration",
+                "Avg Call Duration (8hrs)",
+                "8hrs Productivity %",
+                "Total Invoice Amount",
             ]);
             wsData.push([
                 summary?.count || 0,
@@ -310,6 +311,9 @@ const ViewDSRAll = () => {
                 summary?.dsr_confirmed_count || 0,
                 summary?.dsr_rejected_count || 0,
                 summary?.total_call_duration || 0,
+                summary?.call_duration_average_8hrs || 0,
+                summary?.call_duration_percentage_8hrs || 0,
+                summary?.total_invoice_amount || 0,
             ]);
             wsData.push([]);
 
@@ -347,7 +351,7 @@ const ViewDSRAll = () => {
             ws["!merges"] = [
                 { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } },
                 { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
-                { s: { r: 9, c: 0 }, e: { r: 9, c: 7 } },
+                { s: { r: 9, c: 0 }, e: { r: 9, c: 10 } },
             ];
 
             ws["!cols"] = [
@@ -434,7 +438,7 @@ const ViewDSRAll = () => {
                 });
             });
 
-            for (let C = 0; C <= 7; C++) {
+            for (let C = 0; C <= 10; C++) {
                 const headerCell = XLSX.utils.encode_cell({ r: 10, c: C });
                 if (ws[headerCell]) {
                     ws[headerCell].s = {
@@ -555,6 +559,9 @@ const ViewDSRAll = () => {
                     ["DSR Confirmed", summary?.dsr_confirmed_count || 0],
                     ["DSR Rejected", summary?.dsr_rejected_count || 0],
                     ["Call Duration", summary?.total_call_duration || 0],
+                    ["Avg Call Duration (8hrs)", summary?.call_duration_average_8hrs || 0],
+                    ["8hrs Productivity %", summary?.call_duration_percentage_8hrs || 0],
+                    ["Total Invoice Amount", summary?.total_invoice_amount || 0],
                 ],
                 theme: "grid",
                 styles: {
@@ -812,8 +819,10 @@ const ViewDSRAll = () => {
                                                     (s) => String(s.value) === String(staff)
                                                 ) || null
                                             }
-                                            onChange={(selected) => setStaff(selected?.value || "")}
-                                            placeholder="Search Staff..."
+                                            onChange={(selected) => {
+                                                const val = selected?.value || "";
+                                                setStaff(val);
+                                            }} placeholder="Search Staff..."
                                             noOptionsMessage={() =>
                                                 family ? "No staff found" : "Please select a family first"
                                             }
@@ -1084,6 +1093,97 @@ const ViewDSRAll = () => {
                                                 </span>
                                             </div>
                                         </Col>
+
+                                        {/* <Col md="2">
+                                            <div
+                                                style={{
+                                                    background: "#f3e5f5",
+                                                    borderRadius: "10px",
+                                                    padding: "14px 16px",
+                                                    border: "1px solid #ce93d8",
+                                                    minHeight: "70px",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                <span style={{ fontSize: "13px", color: "#6a1b9a" }}>
+                                                    Avg Call Duration
+                                                </span>
+                                                <span style={{ fontSize: "20px", color: "#6a1b9a", fontWeight: "bold" }}>
+                                                    {summary?.average_call_duration || 0}
+                                                </span>
+                                            </div>
+                                        </Col> */}
+
+
+                                        <Col md="2">
+                                            <div
+                                                style={{
+                                                    background: "#fff8e1",
+                                                    borderRadius: "10px",
+                                                    padding: "14px 16px",
+                                                    border: "1px solid #ffe082",
+                                                    minHeight: "70px",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                <span style={{ fontSize: "13px", color: "#ff8f00" }}>
+                                                    Avg Call Duration (8hrs)
+                                                </span>
+                                                <span style={{ fontSize: "20px", color: "#ff8f00", fontWeight: "bold" }}>
+                                                    {summary?.call_duration_average_8hrs || 0}
+                                                </span>
+                                            </div>
+                                        </Col>
+
+                                        <Col md="2">
+                                            <div
+                                                style={{
+                                                    background: "#e8eaf6",
+                                                    borderRadius: "10px",
+                                                    padding: "14px 16px",
+                                                    border: "1px solid #c5cae9",
+                                                    minHeight: "70px",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                <span style={{ fontSize: "13px", color: "#283593" }}>
+                                                    8hrs Productivity %
+                                                </span>
+                                                <span style={{ fontSize: "20px", color: "#283593", fontWeight: "bold" }}>
+                                                    {summary?.call_duration_percentage_8hrs || 0}%
+                                                </span>
+                                            </div>
+                                        </Col>
+
+
+                                        <Col md="2">
+                                            <div
+                                                style={{
+                                                    background: "#e0f7fa",
+                                                    borderRadius: "10px",
+                                                    padding: "14px 16px",
+                                                    border: "1px solid #80deea",
+                                                    minHeight: "70px",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                <span style={{ fontSize: "13px", color: "#006064" }}>
+                                                    Total Invoice Amount
+                                                </span>
+                                                <span style={{ fontSize: "20px", color: "#006064", fontWeight: "bold" }}>
+                                                    {summary?.total_invoice_amount || 0}
+                                                </span>
+                                            </div>
+                                        </Col>
+
                                     </Row>
                                 )}
 

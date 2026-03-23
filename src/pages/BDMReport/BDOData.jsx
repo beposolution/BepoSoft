@@ -14,7 +14,7 @@ import {
 } from "reactstrap";
 import "react-toastify/dist/ReactToastify.css";
 
-const BDMData = () => {
+const BDOData = () => {
     const [activeBDO, setActiveBDO] = useState("");
     const [nonActiveBDO, setNonActiveBDO] = useState("");
     const [loading, setLoading] = useState(false);
@@ -140,4 +140,4 @@ const BDMData = () => {
     );
 };
 
-export default BDMData;
+export default BDOData;

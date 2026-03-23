@@ -850,6 +850,23 @@ const SidebarContent = (props) => {
             ) : null}
 
 
+            {role === 'ADMIN' || role === 'SD' || role === 'BDM' ? (
+
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaUserTie size={17} style={{ marginRight: '6px' }} />
+                  <span>{props.t("BDM Report")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li>
+                    <Link to="/bdm/daily/report/">{props.t("BDM Report Add")}</Link>
+                  </li>
+                </ul>
+              </li>
+
+            ) : null}
+
+
             {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'COO' || role === 'CEO' || role === 'SD' || role === 'BDM' ? (
 
               <li>

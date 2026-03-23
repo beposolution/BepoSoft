@@ -418,6 +418,7 @@ import AddDSR from "../pages/DSR/AddDSR";
 import ViewDSR from "../pages/DSR/ViewDSR";
 import ViewDSRFamilyWise from "../pages/DSR/ViewDSRFamilyWise";
 import ViewDSRAll from "../pages/DSR/ViewDSRAll";
+import BDOData from "../pages/BDMReport/BDOData";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -678,6 +679,7 @@ const authProtectedRoutes = [
   { path: "/daily/dsr/report/view/", component: <ViewDSR /> },
   { path: "/daily/dsr/family/based/", component: <ViewDSRFamilyWise /> },
   { path: "/daily/dsr/all/report/view/", component: <ViewDSRAll /> },
+  { path: "/bdm/daily/report/", component: <BDOData /> },
 
 
 

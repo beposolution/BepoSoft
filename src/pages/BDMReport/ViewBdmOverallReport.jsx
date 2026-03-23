@@ -26,10 +26,14 @@ const ViewBdmOverallReport = () => {
     const [endDate, setEndDate] = useState("");
     const [search, setSearch] = useState("");
 
+    const [nextPage, setNextPage] = useState(null);
+    const [previousPage, setPreviousPage] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+
     const token = localStorage.getItem("token");
     const baseUrl = import.meta.env.VITE_APP_KEY;
 
-    const fetchReport = async () => {
+    const fetchReport = async (page = 1) => {
         try {
             setLoading(true);
 
@@ -40,23 +44,31 @@ const ViewBdmOverallReport = () => {
                 params: {
                     start_date: startDate || "",
                     end_date: endDate || "",
+                    page: page,
                 },
             });
 
-            const payload = response?.data?.results;
+            const root = response?.data || {};
+            const payload = root?.results || {};
             const mainData = payload?.data || [];
+
             setReportData(Array.isArray(mainData) ? mainData : []);
+            setNextPage(root?.next || null);
+            setPreviousPage(root?.previous || null);
+            setCurrentPage(page);
         } catch (error) {
             console.error(error);
             toast.error("Failed to load BDM overall report");
             setReportData([]);
+            setNextPage(null);
+            setPreviousPage(null);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchReport();
+        fetchReport(1);
     }, []);
 
     const formatDate = (date) => {
@@ -662,11 +674,16 @@ const ViewBdmOverallReport = () => {
 
                                     <Col md={2} className="d-flex align-items-end">
                                         <Button
-                                            color="success"
+                                            color="secondary"
                                             style={{ width: "100%", fontWeight: "bold" }}
-                                            onClick={fetchReport}
+                                            onClick={() => {
+                                                setSearch("");
+                                                setStartDate("");
+                                                setEndDate("");
+                                                setTimeout(() => fetchReport(1), 0);
+                                            }}
                                         >
-                                            Apply
+                                            Reset
                                         </Button>
                                     </Col>
 
@@ -1012,6 +1029,30 @@ const ViewBdmOverallReport = () => {
                                             </Card>
                                         ))
                                     )}
+
+                                    <Row className="mt-3">
+                                        <Col className="d-flex justify-content-end gap-2">
+                                            <Button
+                                                color="secondary"
+                                                disabled={!previousPage || loading}
+                                                onClick={() => fetchReport(currentPage - 1)}
+                                            >
+                                                Previous
+                                            </Button>
+
+                                            <Button color="light" disabled>
+                                                Page {currentPage}
+                                            </Button>
+
+                                            <Button
+                                                color="primary"
+                                                disabled={!nextPage || loading}
+                                                onClick={() => fetchReport(currentPage + 1)}
+                                            >
+                                                Next
+                                            </Button>
+                                        </Col>
+                                    </Row>
                                 </CardBody>
                             </Card>
                         </Card>

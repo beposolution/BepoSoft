@@ -864,6 +864,9 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/bdm/order/daily/report">{props.t("BDM Order Report Add")}</Link>
                   </li>
+                  <li>
+                    <Link to="/bdm/daily/overall/report/">{props.t("BDM Order Report Summary")}</Link>
+                  </li>
                 </ul>
               </li>
 

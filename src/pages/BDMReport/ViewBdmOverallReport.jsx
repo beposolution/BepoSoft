@@ -117,10 +117,47 @@ const ViewBdmOverallReport = () => {
 
     const normalizeSearch = (value) => String(value || "").toLowerCase().trim();
 
+    const isWithinSelectedDateRange = (dateValue) => {
+        if (!dateValue) return false;
+
+        const itemDate = new Date(dateValue);
+        if (isNaN(itemDate.getTime())) return false;
+
+        const itemOnly = new Date(
+            itemDate.getFullYear(),
+            itemDate.getMonth(),
+            itemDate.getDate()
+        );
+
+        let startOnly = null;
+        let endOnly = null;
+
+        if (startDate) {
+            const s = new Date(startDate);
+            startOnly = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+        }
+
+        if (endDate) {
+            const e = new Date(endDate);
+            endOnly = new Date(e.getFullYear(), e.getMonth(), e.getDate());
+        }
+
+        if (startOnly && itemOnly < startOnly) return false;
+        if (endOnly && itemOnly > endOnly) return false;
+
+        return true;
+    };
+
+    const dateFilteredReportData = useMemo(() => {
+        return (reportData || []).filter((item) =>
+            isWithinSelectedDateRange(item.created_date)
+        );
+    }, [reportData, startDate, endDate]);
+
     const flattenedRows = useMemo(() => {
         const rows = [];
 
-        reportData.forEach((dayItem) => {
+        dateFilteredReportData.forEach((dayItem) => {
             (dayItem.family_data || []).forEach((familyItem) => {
                 (familyItem.bdm_data || []).forEach((bdmItem) => {
                     rows.push({
@@ -231,7 +268,7 @@ const ViewBdmOverallReport = () => {
     const dateWiseSections = useMemo(() => {
         const query = normalizeSearch(search);
 
-        const mapped = reportData
+        const mapped = dateFilteredReportData
             .map((dayItem) => {
                 const matchedFamilies = (dayItem.family_data || [])
                     .map((familyItem) => {

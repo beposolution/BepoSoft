@@ -18,7 +18,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import "react-toastify/dist/ReactToastify.css";
 
-const ViewBdmOverallReport = () => {
+const ViewBDMBDOsReport = () => {
     const [loading, setLoading] = useState(false);
     const [reportData, setReportData] = useState([]);
 
@@ -37,7 +37,7 @@ const ViewBdmOverallReport = () => {
         try {
             setLoading(true);
 
-            const response = await axios.get(`${baseUrl}bdm/daily/overall/report/`, {
+            const response = await axios.get(`${baseUrl}bdm/daily/created/report/`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -1100,4 +1100,4 @@ const ViewBdmOverallReport = () => {
     );
 };
 
-export default ViewBdmOverallReport;
+export default ViewBDMBDOsReport;

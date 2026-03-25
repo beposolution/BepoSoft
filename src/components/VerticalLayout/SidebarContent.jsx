@@ -207,10 +207,10 @@ const SidebarContent = (props) => {
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
                   <li>
-                    <Link to="/all/staff/customers/">{props.t("Customers")}</Link>
+                    <Link to="/all/staff/customers/">{props.t("View Customers")}</Link>
                   </li>
                   <li>
-                    <Link to="/add/staff/customer/">{props.t("Add Customers")}</Link>
+                    <Link to="/add/staff/customer/">{props.t("Add New Customers")}</Link>
                   </li>
                 </ul>
               </li>
@@ -224,10 +224,10 @@ const SidebarContent = (props) => {
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
                   <li>
-                    <Link to="/managed/staff/customer/">{props.t("Customers")}</Link>
+                    <Link to="/managed/staff/customer/">{props.t("View Customers")}</Link>
                   </li>
                   <li>
-                    <Link to="/add/staff/customer/">{props.t("Add Customers")}</Link>
+                    <Link to="/add/staff/customer/">{props.t("Add New Customers")}</Link>
                   </li>
                 </ul>
               </li>
@@ -241,10 +241,10 @@ const SidebarContent = (props) => {
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
                   <li>
-                    <Link to="/New/Order/">{props.t("new order")}</Link>
+                    <Link to="/New/Order/">{props.t("Create Order")}</Link>
                   </li>
                   <li>
-                    <Link to="/managed/family/order/">{props.t("order list")}</Link>
+                    <Link to="/managed/family/order/">{props.t("View Order List")}</Link>
                   </li>
                 </ul>
               </li>
@@ -258,10 +258,10 @@ const SidebarContent = (props) => {
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
                   <li>
-                    <Link to="/staff/new/order/">{props.t("new order")}</Link>
+                    <Link to="/staff/new/order/">{props.t("Create Order")}</Link>
                   </li>
                   <li>
-                    <Link to="/staff/order/list/">{props.t("order list")}</Link>
+                    <Link to="/staff/order/list/">{props.t("View Order List")}</Link>
                   </li>
                 </ul>
               </li>
@@ -276,10 +276,10 @@ const SidebarContent = (props) => {
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
                   <li>
-                    <Link to="/all-customers/">{props.t("Customers")}</Link>
+                    <Link to="/all-customers/">{props.t("View Customers")}</Link>
                   </li>
                   <li>
-                    <Link to="/add-customers/">{props.t("Add Customers")}</Link>
+                    <Link to="/add-customers/">{props.t("Add New Customers")}</Link>
                   </li>
                 </ul>
               </li>
@@ -310,37 +310,37 @@ const SidebarContent = (props) => {
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
                   <li>
-                    <Link to="/New/Order/">{props.t("new order")}</Link>
+                    <Link to="/New/Order/">{props.t("Create Order")}</Link>
                   </li>
                   <li>
-                    <Link to="/Orders/">{props.t("order list")}</Link>
+                    <Link to="/Orders/">{props.t("View Order List")}</Link>
                   </li>
                   <li>
-                    <Link to="/orders/invoicecreated">{props.t("Invoice Created")}</Link>
+                    <Link to="/orders/invoicecreated">{props.t("Invoice Created List")}</Link>
                   </li>
                   <li>
-                    <Link to="/orders/invoiceapproved">{props.t("Invoice Approved")}</Link>
+                    <Link to="/orders/invoiceapproved">{props.t("Invoice Approved List")}</Link>
                   </li>
                   <li>
-                    <Link to="/orders/waitingforconfirmation">{props.t("Waiting For Confirmation")}</Link>
+                    <Link to="/orders/waitingforconfirmation">{props.t("Waiting For Confirmation List")}</Link>
                   </li>
                   <li>
-                    <Link to="/orders/toprint">{props.t("To Print")}</Link>
+                    <Link to="/orders/toprint">{props.t("To Print List")}</Link>
                   </li>
                   <li>
-                    <Link to="/orders/packingunderprogress">{props.t("Packing Under Progress")}</Link>
+                    <Link to="/orders/packingunderprogress">{props.t("Packing Under Progress List")}</Link>
                   </li>
                   <li>
-                    <Link to="/orders/packed">{props.t("Packed")}</Link>
+                    <Link to="/orders/packed">{props.t("Packed List")}</Link>
                   </li>
                   <li>
-                    <Link to="/orders/readytoship">{props.t("Ready to Ship")}</Link>
+                    <Link to="/orders/readytoship">{props.t("Ready to Ship List")}</Link>
                   </li>
                   <li>
-                    <Link to="/orders/shipped">{props.t("Shipped")}</Link>
+                    <Link to="/orders/shipped">{props.t("Shipped List")}</Link>
                   </li>
                   <li>
-                    <Link to="/orders/invoicerejected">{props.t("Invoice Rejected")}</Link>
+                    <Link to="/orders/invoicerejected">{props.t("Invoice Rejected List")}</Link>
                   </li>
                 </ul>
               </li>
@@ -371,10 +371,10 @@ const SidebarContent = (props) => {
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
                   <li>
-                    <Link to="/create/perfoma/invoice/">{props.t("new Perfoma invoice")}</Link>
+                    <Link to="/create/perfoma/invoice/">{props.t("Create Perfoma invoice")}</Link>
                   </li>
                   <li>
-                    <Link to="/perfoma/invoices/">{props.t("Perfoma invoices")}</Link>
+                    <Link to="/perfoma/invoices/">{props.t("View Perfoma invoices")}</Link>
                   </li>
                 </ul>
               </li>
@@ -863,6 +863,12 @@ const SidebarContent = (props) => {
                   </li>
                   <li>
                     <Link to="/bdm/order/daily/report">{props.t("BDM Order Report Add")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/bdm/daily/overall/report/">{props.t("BDM Order Report Summary")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/bdm/view/bdo/overall/report/">{props.t("BDM BDO's Order Report Summary")}</Link>
                   </li>
                 </ul>
               </li>

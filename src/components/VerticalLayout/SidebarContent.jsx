@@ -850,30 +850,44 @@ const SidebarContent = (props) => {
             ) : null}
 
 
-            {role === 'ADMIN' || role === 'SD' || role === 'BDM' ? (
-
+            {(role === 'BDM' || role === 'ADMIN' || role === 'COO' || role === 'CEO') && (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUserTie size={17} style={{ marginRight: '6px' }} />
                   <span>{props.t("BDM Report")}</span>
                 </Link>
+
                 <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/bdm/daily/report/">{props.t("BDM Report Add")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/bdm/order/daily/report">{props.t("BDM Order Report Add")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/bdm/daily/overall/report/">{props.t("BDM Order Report Summary")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/bdm/view/bdo/overall/report/">{props.t("BDM BDO's Order Report Summary")}</Link>
-                  </li>
+                  {role === 'BDM' && (
+                    <>
+                      <li>
+                        <Link to="/bdm/daily/report/">
+                          {props.t("BDM Report Add")}
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/bdm/order/daily/report">
+                          {props.t("BDM Order Report Add")}
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/bdm/daily/overall/report/">
+                          {props.t("BDM Order Report Summary")}
+                        </Link>
+                      </li>
+                    </>
+                  )}
+
+                  {(role === 'ADMIN' || role === 'COO' || role === 'CEO') && (
+                    <li>
+                      <Link to="/bdm/view/bdo/overall/report/">
+                        {props.t("BDM BDO's Order Report Summary")}
+                      </Link>
+                    </li>
+                  )}
                 </ul>
               </li>
-
-            ) : null}
+            )}
 
 
             {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'COO' || role === 'CEO' || role === 'SD' || role === 'BDM' ? (

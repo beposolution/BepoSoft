@@ -871,8 +871,8 @@ const SidebarContent = (props) => {
                         </Link>
                       </li>
                       <li>
-                        <Link to="/bdm/daily/overall/report/">
-                          {props.t("BDM Order Report Summary")}
+                        <Link to="/bdm/view/bdo/overall/report/">
+                          {props.t("BDM BDO's Order Report Summary")}
                         </Link>
                       </li>
                     </>
@@ -880,8 +880,8 @@ const SidebarContent = (props) => {
 
                   {(role === 'ADMIN' || role === 'COO' || role === 'CEO') && (
                     <li>
-                      <Link to="/bdm/view/bdo/overall/report/">
-                        {props.t("BDM BDO's Order Report Summary")}
+                      <Link to="/bdm/daily/overall/report/">
+                        {props.t("BDM Order Report Summary")}
                       </Link>
                     </li>
                   )}

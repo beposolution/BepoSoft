@@ -40,6 +40,9 @@ const StatisticsApplications = () => {
     const [showMonth, setShowMonth] = useState(false);
     const [categoryCount, setCategoryCount] = useState([]);
     const [selectedDate, setSelectedDate] = useState("");
+    const [categoryData, setCategoryData] = useState([]);
+    const [categoryStartDate, setCategoryStartDate] = useState("");
+    const [categoryEndDate, setCategoryEndDate] = useState("");
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -298,7 +301,7 @@ const StatisticsApplications = () => {
         const fetchCategoryCountData = async () => {
             try {
                 const response = await axios.get(
-                    `${import.meta.env.VITE_APP_KEY}category/wise/product/count/${selectedDate}/`,
+                    `${import.meta.env.VITE_APP_KEY}category/wise/product/count/date/${selectedDate}/`,
                     {
                         headers: { Authorization: `Bearer ${token}` }
                     }
@@ -313,6 +316,34 @@ const StatisticsApplications = () => {
 
         fetchCategoryCountData();
     }, [selectedDate]);
+
+
+    useEffect(() => {
+        const fetchCategoryWiseCountData = async () => {
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}category/wise/product/count/`,
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                        params: {
+                            start_date: categoryStartDate || undefined,
+                            end_date: categoryEndDate || undefined,
+                        },
+                    }
+                );
+
+                setCategoryData(response?.data?.data || []);
+                console.log("category wise data", response.data);
+            } catch (error) {
+                toast.error("Error fetching category count data");
+            }
+        };
+
+        if (token) {
+            fetchCategoryWiseCountData();
+        }
+    }, [token, categoryStartDate, categoryEndDate]);
+
 
     useEffect(() => {
         const fetchWarehouseSummary = async () => {
@@ -750,7 +781,80 @@ const StatisticsApplications = () => {
                                         )}
                                     </div>
 
-                                    <div className='p-2 border rounded-4 shadow-sm bg-light'>
+                                    <div className="p-3 border rounded-4 shadow-sm bg-light">
+
+                                        <h5 className="text-center mb-3 text-primary">
+                                            📦 Category Wise Product Count
+                                        </h5>
+
+
+                                        <Row className="g-3 mb-3">
+                                            <Col md={5}>
+                                                <label className="form-label fw-semibold">Start Date</label>
+                                                <Input
+                                                    type="date"
+                                                    value={categoryStartDate}
+                                                    onChange={(e) => setCategoryStartDate(e.target.value)}
+                                                />
+                                            </Col>
+
+                                            <Col md={5}>
+                                                <label className="form-label fw-semibold">End Date</label>
+                                                <Input
+                                                    type="date"
+                                                    value={categoryEndDate}
+                                                    onChange={(e) => setCategoryEndDate(e.target.value)}
+                                                />
+                                            </Col>
+
+                                            <Col md={2} className="d-flex align-items-end">
+                                                <Button
+                                                    color="secondary"
+                                                    className="w-100"
+                                                    onClick={() => {
+                                                        setCategoryStartDate("");
+                                                        setCategoryEndDate("");
+                                                    }}
+                                                >
+                                                    🗑️
+                                                </Button>
+                                            </Col>
+                                        </Row>
+
+                                        <Table bordered responsive className="mb-0 text-center">
+                                            <thead>
+                                                <tr>
+                                                    {/* <th>#</th> */}
+                                                    <th>Category</th>
+                                                    <th>Count</th>
+                                                </tr>
+                                            </thead>
+
+                                            <tbody>
+                                                {Array.isArray(categoryData) && categoryData.length > 0 ? (
+                                                    categoryData.map((item, index) => (
+                                                        <tr key={item.id || index}>
+                                                            {/* <td>{index + 1}</td> */}
+                                                            <td>
+                                                                <strong>{item.category_name || item.category || "-"}</strong>
+                                                            </td>
+                                                            <td>
+                                                                <strong>{item.product_count || item.total_quantity || item.count || 0}</strong>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan="3" className="text-muted">
+                                                            No category data available
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </Table>
+                                    </div>
+
+                                    {/* <div className='p-2 border rounded-4 shadow-sm bg-light'>
 
                                         <div className="d-flex justify-content-between align-items-center mb-3">
                                             <h5 className="mb-0 text-primary">🛒 Shipped Products Category</h5>
@@ -801,7 +905,7 @@ const StatisticsApplications = () => {
                                                 )}
                                             </tbody>
                                         </Table>
-                                    </div>
+                                    </div> */}
 
                                     <div
                                         className="p-3 mt-3 border rounded-4 shadow-sm bg-white"
@@ -1111,6 +1215,8 @@ const StatisticsApplications = () => {
                                             </div>
                                         )}
                                     </div>
+
+
 
                                 </div>
 

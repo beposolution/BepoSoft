@@ -50,10 +50,11 @@ const ViewDSR = () => {
         customer_id: "",
         call_status: "",
         invoice: "",
+        phone: "",
     });
 
     const token = localStorage.getItem("token");
-    const BASE_URL = import.meta.env.VITE_APP_KEY || "/api/";
+    const BASE_URL = import.meta.env.VITE_APP_KEY;
 
     const stateOptions = useMemo(
         () =>
@@ -97,7 +98,6 @@ const ViewDSR = () => {
                     end_date: endDate,
                 },
             });
-            console.log("DSR API Response:", response.data);
 
 
             const summaryData = response?.data?.results || null;
@@ -202,6 +202,7 @@ const ViewDSR = () => {
                 customer_id: data.customer_id,
                 call_status: data.call_status || "",
                 invoice: data.invoice || "",
+                phone: data.phone || "",
             });
 
             setModalOpen(true);
@@ -239,6 +240,7 @@ const ViewDSR = () => {
                     customer: Number(editData.customer_id),
                     call_status: editData.call_status,
                     invoice: invoiceList.find((i) => i.invoice === editData.invoice)?.id,
+                    phone: editData.phone,
                 },
                 {
                     headers: {
@@ -254,6 +256,7 @@ const ViewDSR = () => {
                         ?.name || "-",
                 call_status: editData.call_status,
                 invoice_number: editData.invoice,
+                phone: editData.phone,
             }));
 
             toast.success("Updated successfully");
@@ -387,7 +390,7 @@ const ViewDSR = () => {
             wsData.push(["End Date", endDate || "-", "", ""]);
             wsData.push([]);
 
-            wsData.push(["SUMMARY", "", "", "", "", "", "","","",""]);
+            wsData.push(["SUMMARY", "", "", "", "", "", "", "", "", ""]);
             wsData.push([
                 "Active",
                 "Productive",
@@ -397,9 +400,9 @@ const ViewDSR = () => {
                 "DSR Rejected",
                 "Total",
                 "Total Call Duration",
-    "Avg Call Duration",
-    "8hrs Productivity %",
-    "Total Invoice Amount",
+                "Avg Call Duration",
+                "8hrs Productivity %",
+                "Total Invoice Amount",
             ]);
             wsData.push([
                 summary?.active_count || 0,
@@ -409,10 +412,10 @@ const ViewDSR = () => {
                 summary?.dsr_confirmed_count || 0,
                 summary?.dsr_rejected_count || 0,
                 summary?.count || dsrList.length || 0,
-                 summary?.total_call_duration || 0,
-    summary?.average_call_duration || 0,
-    summary?.call_duration_percentage_8hrs || 0,
-    summary?.total_invoice_amount || 0,
+                summary?.total_call_duration || 0,
+                summary?.average_call_duration || 0,
+                summary?.call_duration_percentage_8hrs || 0,
+                summary?.total_invoice_amount || 0,
             ]);
             wsData.push([]);
 
@@ -656,9 +659,9 @@ const ViewDSR = () => {
                     ["DSR Rejected", summary?.dsr_rejected_count || 0],
                     ["Total", summary?.count || dsrList.length || 0],
                     ["Total Call Duration", summary?.total_call_duration || 0],
-    ["Avg Call Duration", summary?.average_call_duration || 0],
-    ["8hrs Productivity %", summary?.call_duration_percentage_8hrs || 0],
-    ["Total Invoice Amount", summary?.total_invoice_amount || 0],
+                    ["Avg Call Duration", summary?.average_call_duration || 0],
+                    ["8hrs Productivity %", summary?.call_duration_percentage_8hrs || 0],
+                    ["Total Invoice Amount", summary?.total_invoice_amount || 0],
                 ],
                 theme: "grid",
                 styles: {
@@ -1235,6 +1238,7 @@ const ViewDSR = () => {
                                                 <tr>
                                                     <th>#</th>
                                                     <th>Customer</th>
+                                                    <th>Phone</th>
                                                     <th>Status</th>
                                                     <th>DSR Status</th>
                                                     <th>Duration</th>
@@ -1252,6 +1256,7 @@ const ViewDSR = () => {
                                                     <tr key={item.id}>
                                                         <td>{index + 1}</td>
                                                         <td>{item.customer_name || "-"}</td>
+                                                        <td>{item.phone || "NIL"}</td>
 
                                                         <td>
                                                             <span style={getCallStatusPillStyle(item.call_status)}>
@@ -1354,6 +1359,35 @@ const ViewDSR = () => {
                                                 </div>
                                             )}
                                         </div>
+                                    </Col>
+                                    <Col md={6}>
+                                        <Label className="form-label">Phone</Label>
+                                        {editMode ? (
+                                            <Input
+                                                type="text"
+                                                placeholder="Enter phone number"
+                                                value={editData.phone || ""}
+                                                onChange={(e) =>
+                                                    setEditData((prev) => ({
+                                                        ...prev,
+                                                        phone: e.target.value,
+                                                    }))
+                                                }
+                                            />
+                                        ) : (
+                                            <div
+                                                style={{
+                                                    fontSize: "16px",
+                                                    fontWeight: "600",
+                                                    color: "#495057",
+                                                    minHeight: "38px",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                }}
+                                            >
+                                                {selectedItem?.phone || "-"}
+                                            </div>
+                                        )}
                                     </Col>
 
                                     <Col md={6}>

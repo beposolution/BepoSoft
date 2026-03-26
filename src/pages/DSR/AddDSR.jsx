@@ -28,6 +28,7 @@ const AddDSR = () => {
 
     const [callDuration, setCallDuration] = useState("00:00:00");
     const [note, setNote] = useState("");
+    const [phone, setPhone] = useState("");
     const [customerNameManual, setCustomerNameManual] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -157,6 +158,7 @@ const AddDSR = () => {
                 call_duration: formattedDuration,
                 call_status: callStatus.value,
                 note,
+                phone,
                 state: selectedState.value,
                 district: selectedDistrict.value,
                 status: "dsr created",
@@ -187,6 +189,7 @@ const AddDSR = () => {
             setSelectedDistrict(null);
             setCallDuration("00:00:00");
             setNote("");
+            setPhone("");
             setCustomerNameManual("");
             setCallStatus({
                 value: "active",
@@ -310,6 +313,20 @@ const AddDSR = () => {
                                     <Row>
                                         <Col md={6}>
                                             <div className="mb-3">
+                                                <Label>Phone</Label>
+
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    value={phone}
+                                                    onChange={(e) => setPhone(e.target.value)}
+                                                    placeholder="Enter Phone Number"
+                                                />
+                                            </div>
+                                        </Col>
+
+                                        <Col md={6}>
+                                            <div className="mb-3">
                                                 <Label>State</Label>
                                                 <Select
                                                     options={stateOptions}
@@ -339,10 +356,8 @@ const AddDSR = () => {
                                                 />
                                             </div>
                                         </Col>
-                                    </Row>
-
-                                    <Row>
-                                        <Col md={12}>
+                                    
+                                        <Col md={6}>
                                             <div className="mb-3">
                                                 <Label>Note</Label>
                                                 <textarea

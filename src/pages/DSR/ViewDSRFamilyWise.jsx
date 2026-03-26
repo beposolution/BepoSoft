@@ -506,6 +506,7 @@ const ViewDailySalesReport = () => {
             wsData.push([
                 "#",
                 "Customer Name",
+                "Phone",
                 "Call Status",
                 "Call Duration",
                 "Invoice No",
@@ -523,6 +524,7 @@ const ViewDailySalesReport = () => {
                 wsData.push([
                     index + 1,
                     item.customer_name || item.customer || "-",
+                    item.phone || "-",
                     item.call_status || "-",
                     item.call_duration || "-",
                     item.invoice_number || item.invoice || "-",
@@ -541,7 +543,7 @@ const ViewDailySalesReport = () => {
 
             // ================= MERGES =================
             ws["!merges"] = [
-                { s: { r: 0, c: 0 }, e: { r: 0, c: 11 } }, // title
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 12 } }, // title
                 { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },  // filters title
                 { s: { r: 8, c: 0 }, e: { r: 8, c: 7 } },  // summary title
             ];
@@ -550,6 +552,7 @@ const ViewDailySalesReport = () => {
             ws["!cols"] = [
                 { wch: 8 },   // #
                 { wch: 24 },  // customer
+                { wch: 18 },  // phone
                 { wch: 16 },  // call status
                 { wch: 16 },  // duration
                 { wch: 18 },  // invoice no
@@ -586,7 +589,7 @@ const ViewDailySalesReport = () => {
             }
 
             // ================= TITLE STYLE =================
-            for (let C = 0; C <= 11; C++) {
+            for (let C = 0; C <= 12; C++) {
                 const cell = XLSX.utils.encode_cell({ r: 0, c: C });
                 if (ws[cell]) {
                     ws[cell].s = {
@@ -605,7 +608,7 @@ const ViewDailySalesReport = () => {
 
             // ================= SECTION TITLE STYLES =================
             [2, 8].forEach((row) => {
-                for (let C = 0; C <= 11; C++) {
+                for (let C = 0; C <= 12; C++) {
                     const cell = XLSX.utils.encode_cell({ r: row, c: C });
                     if (ws[cell]) {
                         ws[cell].s = {
@@ -675,7 +678,7 @@ const ViewDailySalesReport = () => {
 
             // ================= TABLE HEADER STYLE =================
             const tableHeaderRow = 12;
-            for (let C = 0; C <= 11; C++) {
+            for (let C = 0; C <= 12; C++) {
                 const cell = XLSX.utils.encode_cell({ r: tableHeaderRow, c: C });
                 if (ws[cell]) {
                     ws[cell].s = {
@@ -706,7 +709,7 @@ const ViewDailySalesReport = () => {
                 }
 
                 if (fillColor) {
-                    for (let C = 0; C <= 11; C++) {
+                    for (let C = 0; C <= 12; C++) {
                         const cell = XLSX.utils.encode_cell({ r: excelRow, c: C });
                         if (ws[cell]) {
                             ws[cell].s = {
@@ -793,6 +796,7 @@ const ViewDailySalesReport = () => {
             const head = [[
                 "#",
                 "Customer Name",
+                "Phone",
                 "Call Status",
                 "Call Duration",
                 "Invoice No",
@@ -807,6 +811,7 @@ const ViewDailySalesReport = () => {
             const body = data.map((item, index) => [
                 index + 1,
                 item.customer_name || item.customer || "-",
+                item.phone || "-",
                 item.call_status || "-",
                 item.call_duration || "-",
                 item.invoice_number || item.invoice || "-",
@@ -1394,6 +1399,7 @@ const ViewDailySalesReport = () => {
                                                 <tr>
                                                     <th>#</th>
                                                     <th>Customer Name</th>
+                                                    <th>Phone</th>
                                                     <th>Call Duration</th>
                                                     <th>Invoice No</th>
                                                     <th>Invoice Amount</th>
@@ -1414,6 +1420,9 @@ const ViewDailySalesReport = () => {
                                                             <td style={cellStyle}>{index + 1}</td>
                                                             <td style={cellStyle}>
                                                                 {item.customer_name || item.customer || "-"}
+                                                            </td>
+                                                            <td style={cellStyle}>
+                                                                {item.phone || "-"}
                                                             </td>
                                                             <td style={cellStyle}>
                                                                 {item.call_duration || "-"}
@@ -1488,6 +1497,11 @@ const ViewDailySalesReport = () => {
                                 </Col>
 
                                 <Col md="6" className="mb-3">
+                                    <strong>Phone:</strong>{" "}
+                                    {selectedReport.phone || "-"}
+                                </Col>
+
+                                <Col md="6" className="mb-3">
                                     <strong>Invoice No:</strong>{" "}
                                     {selectedReport.invoice_number ||
                                         selectedReport.invoice ||
@@ -1518,7 +1532,7 @@ const ViewDailySalesReport = () => {
                                     {formatDateTime(selectedReport.created_at)}
                                 </Col>
 
-                                <Col md="12" className="mb-3">
+                                <Col md="6" className="mb-3">
                                     <strong>Note:</strong> {selectedReport.note || "-"}
                                 </Col>
 

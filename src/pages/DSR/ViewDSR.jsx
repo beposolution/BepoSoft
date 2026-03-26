@@ -422,6 +422,7 @@ const ViewDSR = () => {
             wsData.push([
                 "#",
                 "Customer",
+                "Phone",
                 "Call Status",
                 "DSR Status",
                 "Duration",
@@ -436,6 +437,7 @@ const ViewDSR = () => {
                 wsData.push([
                     index + 1,
                     item.customer_name || "-",
+                    item.phone || "-",
                     item.call_status || "-",
                     item.status || "-",
                     item.call_duration || "-",
@@ -451,7 +453,7 @@ const ViewDSR = () => {
             const range = XLSX.utils.decode_range(ws["!ref"]);
 
             ws["!merges"] = [
-                { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } },
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } },
                 { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
                 { s: { r: 8, c: 0 }, e: { r: 8, c: 10 } },
             ];
@@ -467,6 +469,7 @@ const ViewDSR = () => {
                 { wch: 18 },
                 { wch: 28 },
                 { wch: 18 },
+                { wch: 16 },
             ];
 
             for (let R = range.s.r; R <= range.e.r; ++R) {
@@ -478,7 +481,7 @@ const ViewDSR = () => {
                         font: { name: "Calibri", sz: 11 },
                         alignment: {
                             vertical: "center",
-                            horizontal: C === 8 ? "left" : "center",
+                            horizontal: [1, 8, 9].includes(C) ? "left" : "center",
                             wrapText: true,
                         },
                         border: {
@@ -491,7 +494,7 @@ const ViewDSR = () => {
                 }
             }
 
-            for (let C = 0; C <= 9; C++) {
+            for (let C = 0; C <= 10; C++) {
                 const cell = XLSX.utils.encode_cell({ r: 0, c: C });
                 if (ws[cell]) {
                     ws[cell].s = {
@@ -509,7 +512,7 @@ const ViewDSR = () => {
             }
 
             [2, 8].forEach((row) => {
-                for (let C = 0; C <= 9; C++) {
+                for (let C = 0; C <= 10; C++) {
                     const cell = XLSX.utils.encode_cell({ r: row, c: C });
                     if (ws[cell]) {
                         ws[cell].s = {
@@ -573,7 +576,7 @@ const ViewDSR = () => {
             }
 
             const tableHeaderRow = 12;
-            for (let C = 0; C <= 9; C++) {
+            for (let C = 0; C <= 10; C++) {
                 const cell = XLSX.utils.encode_cell({ r: tableHeaderRow, c: C });
                 if (ws[cell]) {
                     ws[cell].s = {
@@ -603,7 +606,7 @@ const ViewDSR = () => {
                 }
 
                 if (fillColor) {
-                    for (let C = 0; C <= 9; C++) {
+                    for (let C = 0; C <= 10; C++) {
                         const cell = XLSX.utils.encode_cell({ r: excelRow, c: C });
                         if (ws[cell]) {
                             ws[cell].s = {
@@ -683,6 +686,7 @@ const ViewDSR = () => {
             const head = [[
                 "#",
                 "Customer",
+                "Phone",
                 "Call Status",
                 "DSR Status",
                 "Duration",
@@ -696,6 +700,7 @@ const ViewDSR = () => {
             const body = dsrList.map((item, index) => [
                 index + 1,
                 item.customer_name || "-",
+                item.phone || "-",
                 item.call_status || "-",
                 item.status || "-",
                 item.call_duration || "-",

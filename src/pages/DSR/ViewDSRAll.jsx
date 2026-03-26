@@ -320,6 +320,7 @@ const ViewDSRAll = () => {
             wsData.push([
                 "#",
                 "Customer",
+                "Phone",
                 "Call Status",
                 "DSR Status",
                 "Duration",
@@ -334,6 +335,7 @@ const ViewDSRAll = () => {
                 wsData.push([
                     index + 1,
                     item.customer_name || "-",
+                    item.phone || "-",
                     item.call_status || "-",
                     item.status || "-",
                     item.call_duration || "-",
@@ -349,7 +351,7 @@ const ViewDSRAll = () => {
             const range = XLSX.utils.decode_range(ws["!ref"]);
 
             ws["!merges"] = [
-                { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } },
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } },
                 { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
                 { s: { r: 9, c: 0 }, e: { r: 9, c: 10 } },
             ];
@@ -357,6 +359,7 @@ const ViewDSRAll = () => {
             ws["!cols"] = [
                 { wch: 8 },
                 { wch: 24 },
+                { wch: 18 },
                 { wch: 16 },
                 { wch: 18 },
                 { wch: 14 },
@@ -389,7 +392,7 @@ const ViewDSRAll = () => {
                 }
             }
 
-            for (let C = 0; C <= 9; C++) {
+            for (let C = 0; C <= 10; C++) {
                 const cell = XLSX.utils.encode_cell({ r: 0, c: C });
                 if (ws[cell]) {
                     ws[cell].s = {
@@ -407,7 +410,7 @@ const ViewDSRAll = () => {
             }
 
             [2, 9].forEach((row) => {
-                for (let C = 0; C <= 9; C++) {
+                for (let C = 0; C <= 10; C++) {
                     const cell = XLSX.utils.encode_cell({ r: row, c: C });
                     if (ws[cell]) {
                         ws[cell].s = {
@@ -471,7 +474,7 @@ const ViewDSRAll = () => {
             }
 
             const tableHeaderRow = 13;
-            for (let C = 0; C <= 9; C++) {
+            for (let C = 0; C <= 10; C++) {
                 const cell = XLSX.utils.encode_cell({ r: tableHeaderRow, c: C });
                 if (ws[cell]) {
                     ws[cell].s = {
@@ -501,7 +504,7 @@ const ViewDSRAll = () => {
                 }
 
                 if (fillColor) {
-                    for (let C = 0; C <= 9; C++) {
+                    for (let C = 0; C <= 10; C++) {
                         const cell = XLSX.utils.encode_cell({ r: excelRow, c: C });
                         if (ws[cell]) {
                             ws[cell].s = {
@@ -583,6 +586,7 @@ const ViewDSRAll = () => {
             const head = [[
                 "#",
                 "Customer",
+                "Phone",
                 "Call Status",
                 "DSR Status",
                 "Duration",
@@ -596,6 +600,7 @@ const ViewDSRAll = () => {
             const body = data.map((item, index) => [
                 index + 1,
                 item.customer_name || "-",
+                item.phone || "-",
                 item.call_status || "-",
                 item.status || "-",
                 item.call_duration || "-",
@@ -1201,6 +1206,7 @@ const ViewDSRAll = () => {
                                             <tr>
                                                 <th>#</th>
                                                 <th>Customer</th>
+                                                <th>Phone</th>
                                                 <th>DSR Status</th>
                                                 <th>Duration</th>
                                                 <th>State</th>
@@ -1215,6 +1221,7 @@ const ViewDSRAll = () => {
                                                 <tr key={item.id || index}>
                                                     <td style={getRowStyle(item.call_status)}>{index + 1}</td>
                                                     <td style={getRowStyle(item.call_status)}>{item.customer_name || "-"}</td>
+                                                    <td style={getRowStyle(item.call_status)}>{item.phone || "-"}</td>
                                                     <td style={getRowStyle(item.call_status)}>
                                                         <span style={getStatusStyle(item.status)}>
                                                             {item.status || "-"}

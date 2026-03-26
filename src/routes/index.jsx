@@ -422,6 +422,7 @@ import BDOData from "../pages/BDMReport/BDOData";
 import BDMOrderData from "../pages/BDMReport/BDMOrderData";
 import ViewBdmOverallReport from "../pages/BDMReport/ViewBdmOverallReport";
 import ViewBDMBDOsReport from "../pages/BDMReport/ViewBDMBDOsReport";
+import CategoryReport from "../pages/Category/CategoryReport";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -687,6 +688,9 @@ const authProtectedRoutes = [
   { path: "/bdm/daily/overall/report/", component: <ViewBdmOverallReport /> },
   { path: "/bdm/view/bdo/overall/report/", component: <ViewBDMBDOsReport /> },
 
+    { path: "/admin/category/report/view/", component:<CategoryReport/>  },
+
+
 
 
   // Seller details
@@ -829,10 +833,9 @@ const publicRoutes = [
   { path: "/auth-email-verification", component: <EmailVerification /> },
   { path: "/auth-email-verification-2", component: <EmailVerification2 /> },
   { path: "/auth-two-step-verification", component: <TwostepVerification /> },
-  {
-    path: "/auth-two-step-verification-2",
-    component: <TwostepVerification2 />,
-  },
+  {path: "/auth-two-step-verification-2",component: <TwostepVerification2 />,},
+
+
 ];
 
 // export { authProtectedRoutes, publicRoutes };

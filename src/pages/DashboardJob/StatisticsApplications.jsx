@@ -6,6 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
 import { FaCalendarAlt } from "react-icons/fa";
 
+
 const StatisticsApplications = () => {
     const token = localStorage.getItem("token")
     const [role, setRole] = useState(null)
@@ -836,7 +837,20 @@ const StatisticsApplications = () => {
                                                         <tr key={item.id || index}>
                                                             {/* <td>{index + 1}</td> */}
                                                             <td>
-                                                                <strong>{item.category_name || item.category || "-"}</strong>
+                                                                <strong
+                                                                    style={{ cursor: "pointer", color: "#2563eb" }}
+                                                                    onClick={() =>
+                                                                        navigate("/admin/category/report/view/", {
+                                                                            state: {
+                                                                                category_id: item.category_id || item.id,
+                                                                                start_date: categoryStartDate,
+                                                                                end_date: categoryEndDate,
+                                                                            },
+                                                                        })
+                                                                    }
+                                                                >
+                                                                    {item.category_name || item.category || "-"}
+                                                                </strong>
                                                             </td>
                                                             <td>
                                                                 <strong>{item.product_count || item.total_quantity || item.count || 0}</strong>

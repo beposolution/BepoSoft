@@ -44,6 +44,7 @@ const StatisticsApplications = () => {
     const [categoryData, setCategoryData] = useState([]);
     const [categoryStartDate, setCategoryStartDate] = useState("");
     const [categoryEndDate, setCategoryEndDate] = useState("");
+    const [callDuration, setCallDuration] = useState([]);
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -223,6 +224,30 @@ const StatisticsApplications = () => {
     const goToStateWiseBillingReport = () => {
         navigate("/state/wise/billing/wise/report/");
     };
+
+    useEffect(() => {
+        const fetchCallDurationData = async () => {
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}bdm/daily/overall/report/`,
+                    {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }
+                );
+
+                const apiData = response?.data?.results?.data || [];
+                setCallDuration(apiData);
+
+            } catch (error) {
+                console.error("BDO Call Data API error:", error);
+                toast.error("Error fetching BDO call data");
+            }
+        };
+
+        if (token) {
+            fetchCallDurationData();
+        }
+    }, [token]);
 
 
     const fetchOrdersData = async () => {
@@ -982,6 +1007,148 @@ const StatisticsApplications = () => {
 
                                 {/* Middle Column (optional content) */}
                                 <div className="col-md-5 d-flex flex-column gap-4">
+
+                                    <div className="p-3 border rounded-4 shadow-sm bg-light">
+                                        <h5 className="text-center mb-3 text-primary">
+                                            BDO Call Data
+                                        </h5>
+
+                                        {(() => {
+                                            const now = new Date();
+                                            const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+                                            const todayData = Array.isArray(callDuration)
+                                                ? callDuration.find((item) => item.created_date === today)
+                                                : null;
+
+                                            const filteredFamilyData = Array.isArray(todayData?.family_data)
+                                                ? todayData.family_data.filter(
+                                                    (family) =>
+                                                        family.family_name?.toLowerCase() === "skating" ||
+                                                        family.family_name?.toLowerCase() === "cycling"
+                                                )
+                                                : [];
+
+                                            return todayData ? (
+                                                filteredFamilyData.length > 0 ? (
+                                                    <div className="row g-3">
+                                                        {filteredFamilyData.map((family, familyIndex) => (
+                                                            <div className="col-md-6" key={familyIndex}>
+                                                                <div
+                                                                    className="p-3 border rounded-4 bg-white shadow-sm h-100"
+                                                                    style={{
+                                                                        cursor: "pointer",
+                                                                        transition: "all 0.3s ease",
+                                                                    }}
+                                                                    onClick={() =>
+                                                                        navigate("/admin/sales/cd/report/view/", {
+                                                                            state: {
+                                                                                familyData: family,
+                                                                                createdDate: todayData?.created_date,
+                                                                                overallData: todayData,
+                                                                            },
+                                                                        })
+                                                                    }
+                                                                >
+                                                                    <h6 className="text-primary fw-bold mb-3 text-capitalize">
+                                                                        {family.family_name || "No Family"}
+                                                                    </h6>
+
+                                                                    <div className="row g-2">
+                                                                        <div className="col-6">
+                                                                            <div className="p-2 border rounded-3 text-center bg-light h-100">
+                                                                                <small className="text-muted d-block">
+                                                                                    BDM Count
+                                                                                </small>
+                                                                                <strong>{family.bdm_count || 0}</strong>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="col-6">
+                                                                            <div className="p-2 border rounded-3 text-center bg-light h-100">
+                                                                                <small className="text-muted d-block">
+                                                                                    Total Bill
+                                                                                </small>
+                                                                                <strong>{family.total_bill || 0}</strong>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="col-6">
+                                                                            <div className="p-2 border rounded-3 text-center bg-light h-100">
+                                                                                <small className="text-muted d-block">
+                                                                                    Total Orders
+                                                                                </small>
+                                                                                <strong>{family.total_order_count || 0}</strong>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="col-6">
+                                                                            <div className="p-2 border rounded-3 text-center bg-light h-100">
+                                                                                <small className="text-muted d-block">
+                                                                                    Total Volume
+                                                                                </small>
+                                                                                <strong>
+                                                                                    ₹{" "}
+                                                                                    {Number(family.total_volume || 0).toLocaleString("en-IN", {
+                                                                                        minimumFractionDigits: 2,
+                                                                                        maximumFractionDigits: 2,
+                                                                                    })}
+                                                                                </strong>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="col-6">
+                                                                            <div className="p-2 border rounded-3 text-center bg-light h-100">
+                                                                                <small className="text-muted d-block">
+                                                                                    Call Duration
+                                                                                </small>
+                                                                                <strong>{family.total_call_duration || "00:00:00"}</strong>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="col-6">
+                                                                            <div className="p-2 border rounded-3 text-center bg-light h-100">
+                                                                                <small className="text-muted d-block">
+                                                                                    Call Avg %
+                                                                                </small>
+                                                                                <strong>{family.call_duration_average || 0}</strong>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="col-12">
+                                                                            <div className="p-2 border rounded-3 text-center bg-light h-100">
+                                                                                <small className="text-muted d-block">
+                                                                                    Avg Call Duration (Minutes)
+                                                                                </small>
+                                                                                <strong>
+                                                                                    {family.average_call_duration_minutes || 0}
+                                                                                </strong>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="col-12 text-center mt-2">
+                                                                            <small className="text-primary fw-semibold">
+                                                                                Click to view details
+                                                                            </small>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-center text-muted py-3">
+                                                        No skating or cycling data available for today
+                                                    </div>
+                                                )
+                                            ) : (
+                                                <div className="text-center text-muted py-3">
+                                                    No BDO call data available for today
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+
                                     <div className="p-3 border rounded-4 shadow-sm bg-white">
                                         <div className="d-flex flex-column gap-3">
                                             {/* First Row (was Column 1) */}

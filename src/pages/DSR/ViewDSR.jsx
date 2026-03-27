@@ -50,10 +50,11 @@ const ViewDSR = () => {
         customer_id: "",
         call_status: "",
         invoice: "",
+        phone: "",
     });
 
     const token = localStorage.getItem("token");
-    const BASE_URL = import.meta.env.VITE_APP_KEY || "/api/";
+    const BASE_URL = import.meta.env.VITE_APP_KEY;
 
     const stateOptions = useMemo(
         () =>
@@ -97,7 +98,6 @@ const ViewDSR = () => {
                     end_date: endDate,
                 },
             });
-            console.log("DSR API Response:", response.data);
 
 
             const summaryData = response?.data?.results || null;
@@ -202,6 +202,7 @@ const ViewDSR = () => {
                 customer_id: data.customer_id,
                 call_status: data.call_status || "",
                 invoice: data.invoice || "",
+                phone: data.phone || "",
             });
 
             setModalOpen(true);
@@ -239,6 +240,7 @@ const ViewDSR = () => {
                     customer: Number(editData.customer_id),
                     call_status: editData.call_status,
                     invoice: invoiceList.find((i) => i.invoice === editData.invoice)?.id,
+                    phone: editData.phone,
                 },
                 {
                     headers: {
@@ -254,6 +256,7 @@ const ViewDSR = () => {
                         ?.name || "-",
                 call_status: editData.call_status,
                 invoice_number: editData.invoice,
+                phone: editData.phone,
             }));
 
             toast.success("Updated successfully");
@@ -387,7 +390,7 @@ const ViewDSR = () => {
             wsData.push(["End Date", endDate || "-", "", ""]);
             wsData.push([]);
 
-            wsData.push(["SUMMARY", "", "", "", "", "", "","","",""]);
+            wsData.push(["SUMMARY", "", "", "", "", "", "", "", "", ""]);
             wsData.push([
                 "Active",
                 "Productive",
@@ -397,9 +400,9 @@ const ViewDSR = () => {
                 "DSR Rejected",
                 "Total",
                 "Total Call Duration",
-    "Avg Call Duration",
-    "8hrs Productivity %",
-    "Total Invoice Amount",
+                "Avg Call Duration",
+                "8hrs Productivity %",
+                "Total Invoice Amount",
             ]);
             wsData.push([
                 summary?.active_count || 0,
@@ -409,16 +412,17 @@ const ViewDSR = () => {
                 summary?.dsr_confirmed_count || 0,
                 summary?.dsr_rejected_count || 0,
                 summary?.count || dsrList.length || 0,
-                 summary?.total_call_duration || 0,
-    summary?.average_call_duration || 0,
-    summary?.call_duration_percentage_8hrs || 0,
-    summary?.total_invoice_amount || 0,
+                summary?.total_call_duration || 0,
+                summary?.average_call_duration || 0,
+                summary?.call_duration_percentage_8hrs || 0,
+                summary?.total_invoice_amount || 0,
             ]);
             wsData.push([]);
 
             wsData.push([
                 "#",
                 "Customer",
+                "Phone",
                 "Call Status",
                 "DSR Status",
                 "Duration",
@@ -433,6 +437,7 @@ const ViewDSR = () => {
                 wsData.push([
                     index + 1,
                     item.customer_name || "-",
+                    item.phone || "-",
                     item.call_status || "-",
                     item.status || "-",
                     item.call_duration || "-",
@@ -448,7 +453,7 @@ const ViewDSR = () => {
             const range = XLSX.utils.decode_range(ws["!ref"]);
 
             ws["!merges"] = [
-                { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } },
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } },
                 { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
                 { s: { r: 8, c: 0 }, e: { r: 8, c: 10 } },
             ];
@@ -464,6 +469,7 @@ const ViewDSR = () => {
                 { wch: 18 },
                 { wch: 28 },
                 { wch: 18 },
+                { wch: 16 },
             ];
 
             for (let R = range.s.r; R <= range.e.r; ++R) {
@@ -475,7 +481,7 @@ const ViewDSR = () => {
                         font: { name: "Calibri", sz: 11 },
                         alignment: {
                             vertical: "center",
-                            horizontal: C === 8 ? "left" : "center",
+                            horizontal: [1, 8, 9].includes(C) ? "left" : "center",
                             wrapText: true,
                         },
                         border: {
@@ -488,7 +494,7 @@ const ViewDSR = () => {
                 }
             }
 
-            for (let C = 0; C <= 9; C++) {
+            for (let C = 0; C <= 10; C++) {
                 const cell = XLSX.utils.encode_cell({ r: 0, c: C });
                 if (ws[cell]) {
                     ws[cell].s = {
@@ -506,7 +512,7 @@ const ViewDSR = () => {
             }
 
             [2, 8].forEach((row) => {
-                for (let C = 0; C <= 9; C++) {
+                for (let C = 0; C <= 10; C++) {
                     const cell = XLSX.utils.encode_cell({ r: row, c: C });
                     if (ws[cell]) {
                         ws[cell].s = {
@@ -570,7 +576,7 @@ const ViewDSR = () => {
             }
 
             const tableHeaderRow = 12;
-            for (let C = 0; C <= 9; C++) {
+            for (let C = 0; C <= 10; C++) {
                 const cell = XLSX.utils.encode_cell({ r: tableHeaderRow, c: C });
                 if (ws[cell]) {
                     ws[cell].s = {
@@ -600,7 +606,7 @@ const ViewDSR = () => {
                 }
 
                 if (fillColor) {
-                    for (let C = 0; C <= 9; C++) {
+                    for (let C = 0; C <= 10; C++) {
                         const cell = XLSX.utils.encode_cell({ r: excelRow, c: C });
                         if (ws[cell]) {
                             ws[cell].s = {
@@ -656,9 +662,9 @@ const ViewDSR = () => {
                     ["DSR Rejected", summary?.dsr_rejected_count || 0],
                     ["Total", summary?.count || dsrList.length || 0],
                     ["Total Call Duration", summary?.total_call_duration || 0],
-    ["Avg Call Duration", summary?.average_call_duration || 0],
-    ["8hrs Productivity %", summary?.call_duration_percentage_8hrs || 0],
-    ["Total Invoice Amount", summary?.total_invoice_amount || 0],
+                    ["Avg Call Duration", summary?.average_call_duration || 0],
+                    ["8hrs Productivity %", summary?.call_duration_percentage_8hrs || 0],
+                    ["Total Invoice Amount", summary?.total_invoice_amount || 0],
                 ],
                 theme: "grid",
                 styles: {
@@ -680,6 +686,7 @@ const ViewDSR = () => {
             const head = [[
                 "#",
                 "Customer",
+                "Phone",
                 "Call Status",
                 "DSR Status",
                 "Duration",
@@ -693,6 +700,7 @@ const ViewDSR = () => {
             const body = dsrList.map((item, index) => [
                 index + 1,
                 item.customer_name || "-",
+                item.phone || "-",
                 item.call_status || "-",
                 item.status || "-",
                 item.call_duration || "-",
@@ -1235,6 +1243,7 @@ const ViewDSR = () => {
                                                 <tr>
                                                     <th>#</th>
                                                     <th>Customer</th>
+                                                    <th>Phone</th>
                                                     <th>Status</th>
                                                     <th>DSR Status</th>
                                                     <th>Duration</th>
@@ -1252,6 +1261,7 @@ const ViewDSR = () => {
                                                     <tr key={item.id}>
                                                         <td>{index + 1}</td>
                                                         <td>{item.customer_name || "-"}</td>
+                                                        <td>{item.phone || "NIL"}</td>
 
                                                         <td>
                                                             <span style={getCallStatusPillStyle(item.call_status)}>
@@ -1354,6 +1364,35 @@ const ViewDSR = () => {
                                                 </div>
                                             )}
                                         </div>
+                                    </Col>
+                                    <Col md={6}>
+                                        <Label className="form-label">Phone</Label>
+                                        {editMode ? (
+                                            <Input
+                                                type="text"
+                                                placeholder="Enter phone number"
+                                                value={editData.phone || ""}
+                                                onChange={(e) =>
+                                                    setEditData((prev) => ({
+                                                        ...prev,
+                                                        phone: e.target.value,
+                                                    }))
+                                                }
+                                            />
+                                        ) : (
+                                            <div
+                                                style={{
+                                                    fontSize: "16px",
+                                                    fontWeight: "600",
+                                                    color: "#495057",
+                                                    minHeight: "38px",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                }}
+                                            >
+                                                {selectedItem?.phone || "-"}
+                                            </div>
+                                        )}
                                     </Col>
 
                                     <Col md={6}>

@@ -955,17 +955,7 @@ const SidebarContent = (props) => {
 
             {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' || role === 'SD' ? (
               <>
-                <li>
-                  <Link to="/#" className="has-arrow">
-                    <FaUsers size={20} style={{ marginRight: '8px' }} />
-                    <span>{props.t("District")}</span>
-                  </Link>
-                  <ul className="sub-menu" aria-expanded="false">
-                    <li>
-                      <Link to="/district/view/">{props.t("District")}</Link>
-                    </li>
-                  </ul>
-                </li>
+
                 <li>
                   <Link to="/#" className="has-arrow">
                     <FaUsers size={20} style={{ marginRight: '8px' }} />
@@ -1001,6 +991,20 @@ const SidebarContent = (props) => {
                   </ul>
                 </li>
               </>
+            ) : null}
+            {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' || role === 'SD' || role === 'BDO' || role === 'BDM' ? (
+
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("District")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li>
+                    <Link to="/district/view/">{props.t("District")}</Link>
+                  </li>
+                </ul>
+              </li>
             ) : null}
 
             {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (

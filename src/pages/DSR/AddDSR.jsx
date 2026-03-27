@@ -66,17 +66,41 @@ const AddDSR = () => {
             toast.error("Failed to load Invoices");
         }
     };
+const fetchStates = async () => {
+    try {
+        const profileRes = await axios.get(`${BASE_URL}profile/`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
 
-    const fetchStates = async () => {
-        try {
-            const response = await axios.get(`${BASE_URL}states/`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setStateList(response?.data?.data || response?.data || []);
-        } catch (error) {
-            toast.error("Failed to load States");
-        }
-    };
+
+        const allocatedStateIds =
+            profileRes?.data?.data?.allocated_states || [];
+
+
+        const stateRes = await axios.get(`${BASE_URL}states/`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const allStates =
+            stateRes?.data?.data || stateRes?.data || [];
+
+
+        const normalizedIds = allocatedStateIds.map((id) =>
+            Number(id)
+        );
+
+        const filteredStates = allStates.filter((state) =>
+            normalizedIds.includes(Number(state.id))
+        );
+
+
+        setStateList(filteredStates);
+
+    } catch (error) {
+        toast.error("Failed to load States");
+    }
+};
+
 
     const fetchDistricts = async () => {
         try {

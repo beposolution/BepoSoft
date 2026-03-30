@@ -91,8 +91,8 @@ const BasicTable = () => {
         if (startDate) params.append("start_date", startDate);
         if (endDate) params.append("end_date", endDate);
 
-        if (role === "BDM" || role === "BDO") {
-            return `${baseUrl}family/department/orders/?${params.toString()}`;
+        if (role === "BDM" || role === "BDO" || role === "SD") {
+            return `${baseUrl}family/bdm/bdo/orders/?${params.toString()}`;
         }
 
         return `${baseUrl}orders/?${params.toString()}`;

@@ -424,6 +424,9 @@ import ViewBdmOverallReport from "../pages/BDMReport/ViewBdmOverallReport";
 import ViewBDMBDOsReport from "../pages/BDMReport/ViewBDMBDOsReport";
 import CategoryReport from "../pages/Category/CategoryReport";
 import SalesCDReport from "../pages/Category/SalesCDReport";
+import StaffExitForm from "../pages/Staff/StaffExitForm";
+import StaffExitList from "../pages/Staff/StaffExitList";
+import StaffExitView from "../pages/Staff/StaffExitView";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -470,6 +473,9 @@ const authProtectedRoutes = [
   { path: "/all-staffs", component: <StaffTable /> },
   { path: "/add-staffs", component: <StaffForm /> },
   { path: "/edit/staffs/:id/", component: <StaffEdit /> },
+  { path: "/staff/exit/form/", component: <StaffExitForm /> },
+  { path: "/staff/exit/list/", component: <StaffExitList /> },
+  { path: "/staff/exit/view/:id/", component: <StaffExitView /> },
 
 
   // customers

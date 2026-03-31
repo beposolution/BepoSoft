@@ -18,7 +18,7 @@ const DatatableTables = () => {
         () => [
             {
                 header: 'EID',
-                accessorKey: 'eid',
+                accessorKey: 'staff_id',
                 enableColumnFilter: false,
                 enableSorting: true,
             },
@@ -111,7 +111,7 @@ const DatatableTables = () => {
                     }
                 }); // Fetch department data
                 if (response.status === 200) {
-                    setData(response.data.data); // Set the data
+                    setData(response.data.data);
                 } else {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }

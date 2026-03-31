@@ -931,9 +931,21 @@ const SidebarContent = (props) => {
                     <Link to="/add-staffs">{props.t("Add Staff")}</Link>
                   </li>
 
+                  {role === 'ADMIN' ||
+                    role === 'CEO' ||
+                    role === 'COO' ||
+                    role === 'HR' ? (
+                    <>
+                      <li>
+                        <Link to="/staff/exit/form/">{props.t("Staff Exit Form")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/staff/exit/list/">{props.t("Staff Exit List")}</Link>
+                      </li>
+                    </>
+                  ) : null}
                 </ul>
               </li>
-
             ) : null}
 
             {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (

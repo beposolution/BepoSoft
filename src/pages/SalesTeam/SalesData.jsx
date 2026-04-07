@@ -165,8 +165,6 @@ const SalesData = () => {
                 }
             );
 
-            console.log("Fetch Reports Response:", response);
-
             const parsed = parsePaginatedResponse(response);
 
             setReports(parsed.rows);

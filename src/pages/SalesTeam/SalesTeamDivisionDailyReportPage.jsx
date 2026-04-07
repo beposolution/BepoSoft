@@ -306,7 +306,6 @@ const SalesTeamDivisionDailyReportPage = () => {
             const response = await axios.get(url, {
                 headers: getAuthHeaders(),
             });
-            console.log("API Response:", response);
 
             const parsed = parsePaginatedResponse(response);
 
@@ -599,8 +598,6 @@ const SalesTeamDivisionDailyReportPage = () => {
                     headers: getAuthHeaders(),
                 }
             );
-
-            console.log("STATUS UPDATE RESPONSE:", response?.data);
 
             setReports((prevReports) =>
                 prevReports.map((item) =>

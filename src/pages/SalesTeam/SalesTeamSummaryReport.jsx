@@ -223,7 +223,6 @@ const SalesTeamSummaryReport = () => {
                     end_date: endDate || "",
                 },
             });
-            console.log("API Response:", response);
 
             const apiData = response?.data?.results?.data || [];
             const apiTotals = response?.data?.results?.totals || null;
@@ -1472,6 +1471,12 @@ const SalesTeamSummaryReport = () => {
                                                 ))}
                                             </tr>
                                         ))}
+
+                                        
+                                        {/* space b/w table data and total */}
+                                        <tr>
+                                            <td></td>
+                                        </tr>
 
                                         <tr style={{ background: "#FFECEC" }}>
                                             <td

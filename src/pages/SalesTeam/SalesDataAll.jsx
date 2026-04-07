@@ -82,8 +82,6 @@ const SalesDataAll = () => {
                 }
             );
 
-            console.log("API Response:", response);
-
             const parsed = parsePaginatedResponse(response);
 
             setReports(parsed.rows);

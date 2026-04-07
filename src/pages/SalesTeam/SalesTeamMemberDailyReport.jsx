@@ -82,7 +82,6 @@ const SalesTeamMemberDailyReportPage = () => {
 
     useEffect(() => {
         const activeRole = localStorage.getItem("active");
-        console.log("Active Role:", activeRole);
     }, []);
 
     const getAuthHeaders = () => ({
@@ -204,8 +203,6 @@ const SalesTeamMemberDailyReportPage = () => {
                     headers: getAuthHeaders(),
                 }
             );
-
-            console.log("Fetch Reports Response:", response);
 
             const parsed = parsePaginatedResponse(response);
 

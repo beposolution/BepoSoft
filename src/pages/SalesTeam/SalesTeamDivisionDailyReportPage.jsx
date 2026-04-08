@@ -1171,7 +1171,6 @@ const SalesTeamDivisionDailyReportPage = () => {
                                                     <tr>
                                                         <th style={{ minWidth: "80px" }}>Image</th>
                                                         <th style={{ minWidth: "180px" }}>Product Name</th>
-                                                        <th style={{ minWidth: "120px" }}>Product ID</th>
                                                         <th style={{ minWidth: "100px" }}>Quantity</th>
                                                     </tr>
                                                 </thead>
@@ -1196,7 +1195,6 @@ const SalesTeamDivisionDailyReportPage = () => {
                                                                 )}
                                                             </td>
                                                             <td>{product?.name || "-"}</td>
-                                                            <td>{product?.product_id || "-"}</td>
                                                             <td>{product?.quantity || "-"}</td>
                                                         </tr>
                                                     ))}

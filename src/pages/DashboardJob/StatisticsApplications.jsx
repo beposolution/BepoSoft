@@ -17,7 +17,6 @@ const StatisticsApplications = () => {
     const [bankmodule, setBankModule] = useState([]);
     const todayDate = new Date().toISOString().split('T')[0];
     const [warehouseData, setWarehouseData] = useState([]);
-    const [expense, setExpense] = useState([])
     const [filteredData, setFilteredData] = useState([]);
     const navigate = useNavigate();
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -34,6 +33,7 @@ const StatisticsApplications = () => {
     const [expenseSummaryApi, setExpenseSummaryApi] = useState([]);
     const [expenseRange, setExpenseRange] = useState({ from: null, to: null });
     const [expenseMonthTotal, setExpenseMonthTotal] = useState(0);
+    const [expenseTotal, setExpenseTotal] = useState(0);
     const [expenseModalLoading, setExpenseModalLoading] = useState(false);
     const [OD, setOD] = useState([]);
     const [todayReport, setTodayReport] = useState([]);
@@ -239,7 +239,6 @@ const StatisticsApplications = () => {
                 setCallDuration(apiData);
 
             } catch (error) {
-                console.error("BDO Call Data API error:", error);
                 toast.error("Error fetching BDO call data");
             }
         };
@@ -359,7 +358,6 @@ const StatisticsApplications = () => {
                 );
 
                 setCategoryData(response?.data?.data || []);
-                console.log("category wise data", response.data);
             } catch (error) {
                 toast.error("Error fetching category count data");
             }
@@ -420,25 +418,12 @@ const StatisticsApplications = () => {
                 setExpenseSummaryApi(res.data?.summary || []);
                 setExpenseRange(res.data?.range || {});
                 setExpenseMonthTotal(res.data?.month_total || 0);
+                setExpenseTotal(res.data?.all_time_total || 0);
             })
             .catch(() => {
                 toast.error("Failed to load expense summary");
             });
     }, [token]);
-
-    useEffect(() => {
-        axios.get(`${import.meta.env.VITE_APP_KEY}expense/add/`, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        })
-            .then((response) => {
-                setExpense(response.data.data);
-            })
-            .catch((error) => {
-                toast.error("There was an error fetching the data!");
-            });
-    }, []);
 
 
     useEffect(() => {
@@ -531,47 +516,34 @@ const StatisticsApplications = () => {
     const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
     const monthStartStr = `${todayStr.slice(0, 7)}-01`;
 
-    // Month-to-date expenses
-    const expensesThisMonth = React.useMemo(() => {
-        if (!Array.isArray(expense)) return [];
-        return expense.filter(e => {
-            const d = (e?.expense_date || '').slice(0, 10); // 'YYYY-MM-DD'
-            return d && d >= monthStartStr && d <= todayStr;
-        });
-    }, [expense]);
-
     const summaryFrom = expenseRange?.from;
     const summaryTo = expenseRange?.to;
 
     // Open modal with filtered rows for this type (month-to-date)
-    const openExpenseModal = (type) => {
+    const openExpenseModal = async (type) => {
         setExpenseModalLoading(true);
         setSelectedExpenseType(type);
-        setSelectedExpenseRows([]);
         setIsExpenseModalOpen(true);
 
-        const normalizedType = type.toString().trim().toLowerCase();
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}expense/get/data/filter/`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                    params: {
+                        expense_type: type,
+                        start_date: expenseRange.from,
+                        end_date: expenseRange.to,
+                    },
+                }
+            );
 
-        setTimeout(() => {
-            const rows = (expense || []).filter((e) => {
-                const rowType = (e?.expense_type || "")
-                    .toString()
-                    .trim()
-                    .toLowerCase();
-
-                const rowDate = (e?.expense_date || "").slice(0, 10);
-
-                const isTypeMatch = rowType === normalizedType;
-                const isInRange =
-                    (!expenseRange?.from || rowDate >= expenseRange.from) &&
-                    (!expenseRange?.to || rowDate <= expenseRange.to);
-
-                return isTypeMatch && isInRange;
-            });
-
-            setSelectedExpenseRows(rows);
+            setSelectedExpenseRows(response?.data?.results || []);
+        } catch (err) {
+            toast.error("Failed to load expenses");
+        } finally {
             setExpenseModalLoading(false);
-        }, 400);
+        }
     };
 
     const closeExpenseModal = () => {
@@ -602,13 +574,6 @@ const StatisticsApplications = () => {
             ? `${fmtRangeDate(expenseRange.from)} - ${fmtRangeDate(expenseRange.to)}`
             : "";
 
-    const totalExpenseMTD = React.useMemo(() => {
-        if (!expensesThisMonth?.length) return 0;
-        return expensesThisMonth.reduce(
-            (sum, e) => sum + (parseFloat(e?.amount) || 0),
-            0
-        );
-    }, [expensesThisMonth]);
 
     useEffect(() => {
         axios
@@ -723,7 +688,7 @@ const StatisticsApplications = () => {
     // const todayBills = chartsData?.find(item => item?.title === "Today Bills");
     const todayBills = ordersCount;
     const totalVolume = orders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
-    const totalexpense = expense.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
+    const totalexpense = expenseTotal;
 
     const codOrdersThisMonth = ordersThisMonth.filter(order => order.payment_status === "COD");
     const codOrdersCount = codOrdersThisMonth.length;
@@ -1201,7 +1166,7 @@ const StatisticsApplications = () => {
                                                 <div className="flex-grow-1 d-flex flex-column gap-3">
                                                     {/* Row 1: Total Expense */}
                                                     <div className="p-4 border rounded-4 shadow-sm bg-light text-center">
-                                                        <p className="text-muted fw-medium mb-1">Total Expense: <span>₹<strong>{totalexpense.toFixed(2)}</strong></span></p>
+                                                        <p className="text-muted fw-medium mb-1">Total Expense: <span>₹<strong>{totalexpense}</strong></span></p>
                                                     </div>
 
                                                     {/* Row 2: Total Volume */}

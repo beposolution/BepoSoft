@@ -303,6 +303,10 @@ const SellerInvoiceDetails = () => {
 
         window.open(url, "_blank");
     };
+    const totalQuantity = editableItems.reduce(
+        (sum, item) => sum + Number(item.quantity || 0),
+        0
+    );
 
     if (loading) return <div className="page-content p-4">Loading...</div>;
 
@@ -675,6 +679,10 @@ const SellerInvoiceDetails = () => {
                                             </div>
 
                                             <div className="text-end mt-4">
+                                                <h4 className="fw-bold text-primary">
+                                                    Total Quantity: {totalQuantity}
+                                                </h4>
+
                                                 <h4 className="fw-bold text-success">
                                                     Total: {currencySymbol} {invoiceData.total_amount}
                                                 </h4>

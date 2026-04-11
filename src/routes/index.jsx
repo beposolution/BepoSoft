@@ -434,6 +434,7 @@ import SalesDataAll from "../pages/SalesTeam/SalesDataAll";
 import SalesTeamMemberDailyReportPage from "../pages/SalesTeam/SalesTeamMemberDailyReport";
 import SalesTeamSummaryReport from "../pages/SalesTeam/SalesTeamSummaryReport";
 import SalesTeamDivisionDailyReportPage from "../pages/SalesTeam/SalesTeamDivisionDailyReportPage";
+import TeamLeaderSalesDetailedSummary from "../pages/SalesTeam/TeamLeaderSalesDetailedSummary";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -493,6 +494,7 @@ const authProtectedRoutes = [
   { path: "/sales/user/call/duration/data/", component: <SalesTeamMemberDailyReportPage /> },
   { path: "/sales/team/summary/cd/report/", component: <SalesTeamSummaryReport /> },
   { path: "/sales/team/division/cd/report/", component: <SalesTeamDivisionDailyReportPage /> },
+  { path: "/sales/team/leader/report/view/", component: <TeamLeaderSalesDetailedSummary /> },
 
 
   // customers

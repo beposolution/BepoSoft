@@ -46,6 +46,7 @@ const ViewDSR = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [editMode, setEditMode] = useState(false);
+
     const [editData, setEditData] = useState({
         customer_id: "",
         call_status: "",
@@ -214,13 +215,34 @@ const ViewDSR = () => {
     };
 
     const handleDelete = async () => {
-        if (!selectedItem) return;
+        if (!selectedItem || selectedItem.status !== "dsr created") return;
 
         try {
-            await axios.delete(`${BASE_URL}sales/analysis/edit/${selectedItem.id}/`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
+            const beforeData = { ...selectedItem };
+
+            await axios.delete(
+                `${BASE_URL}sales/analysis/edit/${selectedItem.id}/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            const afterData = {
+                status: "DSR DELETED",
+            };
+
+            await writeFullDataLog({
+                report: {
+                    ...selectedItem,
+                    invoice:
+                        selectedItem?.invoice_id ||
+                        selectedItem?.invoice?.id ||
+                        null,
                 },
+                beforeData,
+                afterData,
             });
 
             toast.success("Deleted successfully");
@@ -232,15 +254,14 @@ const ViewDSR = () => {
         }
     };
 
-    const handleUpdate = async () => {
+    const writeFullDataLog = async ({ report, beforeData, afterData }) => {
         try {
-            await axios.put(
-                `${BASE_URL}sales/analysis/edit/${selectedItem.id}/`,
+            await axios.post(
+                `${BASE_URL}datalog/create/`,
                 {
-                    customer: Number(editData.customer_id),
-                    call_status: editData.call_status,
-                    invoice: invoiceList.find((i) => i.invoice === editData.invoice)?.id,
-                    phone: editData.phone,
+                    order: report?.invoice,
+                    before_data: beforeData,
+                    after_data: afterData,
                 },
                 {
                     headers: {
@@ -248,7 +269,46 @@ const ViewDSR = () => {
                     },
                 }
             );
+        } catch (err) {
+            console.error("Full DataLog failed:", err?.response?.data || err.message);
+        }
+    };
 
+    const handleUpdate = async () => {
+        try {
+            const beforeData = { ...selectedItem };
+
+            const selectedInvoiceObj = invoiceList.find(
+                (i) => i.invoice === editData.invoice
+            );
+
+            await axios.put(
+                `${BASE_URL}sales/analysis/edit/${selectedItem.id}/`,
+                payload,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            const afterData = {
+                ...selectedItem,
+                customer: editData.customer_id,
+                call_status: editData.call_status,
+                invoice: selectedInvoiceObj?.id,
+                invoice_number: editData.invoice,
+                phone: editData.phone,
+            };
+
+            await writeFullDataLog({
+                report: {
+                    ...selectedItem,
+                    invoice: selectedInvoiceObj?.id
+                },
+                beforeData,
+                afterData,
+            });
             setSelectedItem((prev) => ({
                 ...prev,
                 customer_name:
@@ -1372,13 +1432,14 @@ const ViewDSR = () => {
                                                 type="text"
                                                 placeholder="Enter phone number"
                                                 value={editData.phone || ""}
-                                                onChange={(e) =>
+                                                onChange={(e) => {
                                                     setEditData((prev) => ({
                                                         ...prev,
                                                         phone: e.target.value,
-                                                    }))
-                                                }
+                                                    }));
+                                                }}
                                             />
+
                                         ) : (
                                             <div
                                                 style={{
@@ -1553,7 +1614,7 @@ const ViewDSR = () => {
                         </ModalBody>
 
                         <ModalFooter className="d-flex justify-content-between">
-                            {!editMode && (
+                            {!editMode && selectedItem?.status === "dsr created" && (
                                 <div>
                                     <Button color="danger" onClick={handleDelete}>
                                         Delete

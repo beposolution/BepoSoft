@@ -58,6 +58,7 @@ const ViewDailySalesReport = () => {
 
     const token = localStorage.getItem("token");
     const baseUrl = import.meta.env.VITE_APP_KEY;
+    const imageBaseUrl = import.meta.env.VITE_APP_IMAGE;
 
     useEffect(() => {
         const roleValue = localStorage.getItem("active");
@@ -281,7 +282,10 @@ const ViewDailySalesReport = () => {
                 },
             });
 
+
+
             const details = response?.data?.data || response?.data || null;
+
 
             setSelectedReport(details);
             setSelectedStatus(details?.status || "");
@@ -297,6 +301,8 @@ const ViewDailySalesReport = () => {
         }
     };
 
+
+
     const handleStatusUpdate = async () => {
         if (!selectedId) {
             toast.error("Invalid report id");
@@ -311,6 +317,19 @@ const ViewDailySalesReport = () => {
         try {
             setUpdatingStatus(true);
 
+            const invoice =
+                Number(selectedReport?.invoice_id) ||
+                Number(selectedReport?.invoice?.id) ||
+                null;
+
+            const beforeData = {
+                ...selectedReport,
+            };
+            const afterData = {
+                ...selectedReport,
+                status: selectedStatus,
+            };
+
             const payload = {
                 status: selectedStatus,
             };
@@ -320,6 +339,13 @@ const ViewDailySalesReport = () => {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json",
                 },
+            });
+
+            await writeFullDataLog({
+                report: selectedReport,
+                invoice,
+                beforeData,
+                afterData,
             });
 
             toast.success("Status updated successfully");
@@ -346,11 +372,33 @@ const ViewDailySalesReport = () => {
         }
     };
 
+
+
+    const writeFullDataLog = async ({ report, beforeData, afterData }) => {
+        try {
+            await axios.post(
+                `${baseUrl}datalog/create/`,
+                {
+                    order: report?.invoice,
+
+                    before_data: beforeData,
+                    after_data: afterData,
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+        } catch (err) {
+            console.warn("Full DataLog failed:", err?.response?.data || err.message);
+        }
+    };
+
     const getAllowedStatusOptions = () => {
         const normalizedRole = (role || "").toUpperCase();
 
         const allOptions = [
-            { value: "dsr created", label: "DSR Created" },
             { value: "dsr approved", label: "DSR Approved" },
             { value: "dsr confirmed", label: "DSR Confirmed" },
             { value: "dsr rejected", label: "DSR Rejected" },
@@ -1536,24 +1584,100 @@ const ViewDailySalesReport = () => {
                                     <strong>Note:</strong> {selectedReport.note || "-"}
                                 </Col>
 
+                                {/* ✅ ADD THIS BLOCK HERE */}
+                                <Col md="12" className="mb-3">
+                                    <strong>Product Details:</strong>
+
+                                    {selectedReport?.product_details?.length > 0 ? (
+                                        <Table bordered responsive className="mt-2">
+                                            <thead className="table-light">
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Image</th>
+                                                    <th>Name</th>
+                                                    <th>Qty</th>
+                                                    <th>Rate</th>
+                                                    <th>Discount</th>
+                                                    <th>Tax (%)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {selectedReport.product_details.map((product, index) => (
+                                                    <tr key={index}>
+                                                        <td>{index + 1}</td>
+
+                                                        <td>
+                                                            {product.image ? (
+                                                                <img
+                                                                    src={`${imageBaseUrl}${product.image}`}
+                                                                    alt="product"
+                                                                    style={{
+                                                                        width: "50px",
+                                                                        height: "50px",
+                                                                        objectFit: "cover",
+                                                                        borderRadius: "6px",
+                                                                    }}
+                                                                />
+                                                            ) : (
+                                                                "-"
+                                                            )}
+                                                        </td>
+
+                                                        <td>{product.name || "-"}</td>
+                                                        <td>{product.quantity || 0}</td>
+                                                        <td>{product.rate || 0}</td>
+                                                        <td>{product.discount || 0}</td>
+                                                        <td>{product.tax || 0}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </Table>
+                                    ) : (
+                                        <p className="mt-2">No product details available</p>
+                                    )}
+                                </Col>
+
                                 <Col md="12" className="mb-3">
                                     <FormGroup>
-                                        <Label for="statusSelect">
+                                        <Label>
                                             <strong>Status</strong>
                                         </Label>
-                                        <Input
-                                            id="statusSelect"
-                                            type="select"
-                                            value={selectedStatus}
-                                            onChange={(e) => setSelectedStatus(e.target.value)}
-                                        >
-                                            <option value="">Select status</option>
-                                            {statusOptions.map((option) => (
-                                                <option key={option.value} value={option.value}>
-                                                    {option.label}
-                                                </option>
-                                            ))}
-                                        </Input>
+
+                                        {["dsr confirmed", "dsr rejected"].includes(
+                                            (selectedReport?.status || "").toLowerCase()
+                                        ) ? (
+                                            <div
+                                                style={{
+                                                    padding: "8px 12px",
+                                                    border: "1px solid #ced4da",
+                                                    borderRadius: "6px",
+                                                    background: "#e9ecef",
+                                                    fontWeight: "500",
+                                                    textTransform: "lowercase"
+                                                }}
+                                            >
+                                                {selectedReport.status}
+                                            </div>
+                                        ) : (
+                                            <Input
+                                                type="select"
+                                                value={selectedStatus}
+                                                onChange={(e) => setSelectedStatus(e.target.value)}
+                                            >
+                                                <option value="">Select status</option>
+
+                                                {selectedStatus === "dsr created" && (
+                                                    <option value="dsr created" disabled>
+                                                        DSR Created
+                                                    </option>
+                                                )}
+                                                {statusOptions.map((option) => (
+                                                    <option key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </option>
+                                                ))}
+                                            </Input>
+                                        )}
                                     </FormGroup>
                                 </Col>
                             </Row>
@@ -1569,20 +1693,24 @@ const ViewDailySalesReport = () => {
                             Close
                         </Button>
 
-                        <Button
-                            color="success"
-                            onClick={handleStatusUpdate}
-                            disabled={updatingStatus || loadingDetails || !selectedReport}
-                        >
-                            {updatingStatus ? (
-                                <>
-                                    <Spinner size="sm" className="me-2" />
-                                    Updating...
-                                </>
-                            ) : (
-                                "Update Status"
+                        {!["dsr confirmed", "dsr rejected"].includes(
+                            (selectedReport?.status || "").toLowerCase()
+                        ) && (
+                                <Button
+                                    color="success"
+                                    onClick={handleStatusUpdate}
+                                    disabled={updatingStatus || loadingDetails || !selectedReport}
+                                >
+                                    {updatingStatus ? (
+                                        <>
+                                            <Spinner size="sm" className="me-2" />
+                                            Updating...
+                                        </>
+                                    ) : (
+                                        "Update Status"
+                                    )}
+                                </Button>
                             )}
-                        </Button>
                     </ModalFooter>
                 </Modal>
             </div>

@@ -435,7 +435,6 @@ import SalesTeamMemberDailyReportPage from "../pages/SalesTeam/SalesTeamMemberDa
 import SalesTeamSummaryReport from "../pages/SalesTeam/SalesTeamSummaryReport";
 import SalesTeamDivisionDailyReportPage from "../pages/SalesTeam/SalesTeamDivisionDailyReportPage";
 
-
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
 
 const authProtectedRoutes = [
@@ -493,6 +492,7 @@ const authProtectedRoutes = [
   { path: "/sales/user/call/duration/data/", component: <SalesTeamMemberDailyReportPage /> },
   { path: "/sales/team/summary/cd/report/", component: <SalesTeamSummaryReport /> },
   { path: "/sales/team/division/cd/report/", component: <SalesTeamDivisionDailyReportPage /> },
+
 
 
   // customers

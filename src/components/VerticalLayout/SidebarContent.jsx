@@ -917,6 +917,71 @@ const SidebarContent = (props) => {
             ) : null}
 
 
+            {[
+              'ADMIN',
+              'SD',
+              'IT',
+              'BDM',
+              'BDO',
+              'CEO',
+              'COO',
+            ].includes(role) ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("Sales Team")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  {(role === 'SD' || role === 'BDM' || role === 'ADMIN') && (
+                    <li>
+                      <Link to="/sales/team/add/">{props.t("Add Team")}</Link>
+                    </li>
+                  )}
+
+                  {(role === 'SD' || role === 'BDM') && (
+                    <li>
+                      <Link to="/sales/team/members/add/">{props.t("Add Team Members")}</Link>
+                    </li>
+                  )}
+
+                  {(role === 'BDM' || role === 'BDO') && (
+                    <li>
+                      <Link to="/sales/user/data/">{props.t("Sales Data")}</Link>
+                    </li>
+                  )}
+
+                  {(role === 'BDO' || role === 'BDM' || role === 'SD') && (
+                    <li>
+                      <Link to="/sales/user/call/duration/data/">
+                        {props.t("Sales Call Duration Data")}
+                      </Link>
+                    </li>
+                  )}
+
+                  {(role === 'BDM' || role === 'SD' || role === 'ADMIN') && (
+                    <li>
+                      <Link to="/sales/all/user/data/">{props.t("All Sales Data")}</Link>
+                    </li>
+                  )}
+
+                  {(role === 'COO' || role === 'CEO' || role === 'ADMIN') && (
+                    <li>
+                      <Link to="/sales/team/summary/cd/report/">{props.t("Summary")}</Link>
+                    </li>
+                  )}
+
+                  {(role === 'BDM' || role === 'SD') && (
+                    <li>
+                      <Link to="/sales/team/division/cd/report/">
+                        {props.t("Division Daily Report")}
+                      </Link>
+                    </li>
+                  )}
+                </ul>
+              </li>
+            ) : null}
+
+
             {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'CSO' || role === 'COO' || role === 'HR' ? (
               <li>
                 <Link to="/#" className="has-arrow">
@@ -931,9 +996,21 @@ const SidebarContent = (props) => {
                     <Link to="/add-staffs">{props.t("Add Staff")}</Link>
                   </li>
 
+                  {role === 'ADMIN' ||
+                    role === 'CEO' ||
+                    role === 'COO' ||
+                    role === 'HR' ? (
+                    <>
+                      <li>
+                        <Link to="/staff/exit/form/">{props.t("Staff Exit Form")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/staff/exit/list/">{props.t("Staff Exit List")}</Link>
+                      </li>
+                    </>
+                  ) : null}
                 </ul>
               </li>
-
             ) : null}
 
             {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (

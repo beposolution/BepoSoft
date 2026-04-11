@@ -424,6 +424,16 @@ import ViewBdmOverallReport from "../pages/BDMReport/ViewBdmOverallReport";
 import ViewBDMBDOsReport from "../pages/BDMReport/ViewBDMBDOsReport";
 import CategoryReport from "../pages/Category/CategoryReport";
 import SalesCDReport from "../pages/Category/SalesCDReport";
+import StaffExitForm from "../pages/Staff/StaffExitForm";
+import StaffExitList from "../pages/Staff/StaffExitList";
+import StaffExitView from "../pages/Staff/StaffExitView";
+import AddTeam from "../pages/SalesTeam/AddTeam";
+import AddTeamMembers from "../pages/SalesTeam/AddTeamMembers";
+import SalesData from "../pages/SalesTeam/SalesData";
+import SalesDataAll from "../pages/SalesTeam/SalesDataAll";
+import SalesTeamMemberDailyReportPage from "../pages/SalesTeam/SalesTeamMemberDailyReport";
+import SalesTeamSummaryReport from "../pages/SalesTeam/SalesTeamSummaryReport";
+import SalesTeamDivisionDailyReportPage from "../pages/SalesTeam/SalesTeamDivisionDailyReportPage";
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -470,6 +480,19 @@ const authProtectedRoutes = [
   { path: "/all-staffs", component: <StaffTable /> },
   { path: "/add-staffs", component: <StaffForm /> },
   { path: "/edit/staffs/:id/", component: <StaffEdit /> },
+  { path: "/staff/exit/form/", component: <StaffExitForm /> },
+  { path: "/staff/exit/list/", component: <StaffExitList /> },
+  { path: "/staff/exit/view/:id/", component: <StaffExitView /> },
+
+
+  // Team
+  { path: "/sales/team/add/", component: <AddTeam /> },
+  { path: "/sales/team/members/add/", component: <AddTeamMembers /> },
+  { path: "/sales/user/data/", component: <SalesData /> },
+  { path: "/sales/all/user/data/", component: <SalesDataAll /> },
+  { path: "/sales/user/call/duration/data/", component: <SalesTeamMemberDailyReportPage /> },
+  { path: "/sales/team/summary/cd/report/", component: <SalesTeamSummaryReport /> },
+  { path: "/sales/team/division/cd/report/", component: <SalesTeamDivisionDailyReportPage /> },
 
 
   // customers

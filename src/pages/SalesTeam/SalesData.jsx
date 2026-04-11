@@ -199,15 +199,11 @@ const SalesData = () => {
         try {
             setTeamsLoading(true);
 
-            const response = await axios.get(`${baseUrl}sales/teams/add/`, {
+            const response = await axios.get(`${baseUrl}my/sales/team/memberships/`, {
                 headers: getAuthHeaders(),
             });
 
-            const data =
-                response?.data?.data ||
-                response?.data?.results?.data ||
-                response?.data?.results ||
-                [];
+            const data = response?.data?.data || [];
 
             setTeams(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -309,8 +305,8 @@ const SalesData = () => {
 
     const teamOptions = useMemo(() => {
         return teams.map((item) => ({
-            value: String(item.id),
-            label: item.name || `Team ${item.id}`,
+            value: String(item.team_id),
+            label: item.team_name || `Team ${item.team_id}`,
         }));
     }, [teams]);
 
@@ -700,8 +696,8 @@ const SalesData = () => {
                                                                                 "team",
                                                                                 selectedOption
                                                                                     ? String(
-                                                                                          selectedOption.value
-                                                                                      )
+                                                                                        selectedOption.value
+                                                                                    )
                                                                                     : ""
                                                                             );
                                                                         }}
@@ -717,7 +713,7 @@ const SalesData = () => {
                                                                         classNamePrefix="react-select"
                                                                         className={
                                                                             formik.touched.team &&
-                                                                            formik.errors.team
+                                                                                formik.errors.team
                                                                                 ? "is-invalid"
                                                                                 : ""
                                                                         }
@@ -726,7 +722,7 @@ const SalesData = () => {
                                                                         }
                                                                     />
                                                                     {formik.touched.team &&
-                                                                    formik.errors.team ? (
+                                                                        formik.errors.team ? (
                                                                         <div className="invalid-feedback d-block">
                                                                             {formik.errors.team}
                                                                         </div>
@@ -745,7 +741,7 @@ const SalesData = () => {
                                                                         options={stateOptions}
                                                                         placeholder={
                                                                             statesLoading ||
-                                                                            profileLoading
+                                                                                profileLoading
                                                                                 ? "Loading states..."
                                                                                 : "Search and select state"
                                                                         }
@@ -761,8 +757,8 @@ const SalesData = () => {
                                                                                 "state",
                                                                                 selectedOption
                                                                                     ? String(
-                                                                                          selectedOption.value
-                                                                                      )
+                                                                                        selectedOption.value
+                                                                                    )
                                                                                     : ""
                                                                             );
                                                                             formik.setFieldValue(
@@ -785,7 +781,7 @@ const SalesData = () => {
                                                                         classNamePrefix="react-select"
                                                                         className={
                                                                             formik.touched.state &&
-                                                                            formik.errors.state
+                                                                                formik.errors.state
                                                                                 ? "is-invalid"
                                                                                 : ""
                                                                         }
@@ -796,7 +792,7 @@ const SalesData = () => {
                                                                         }
                                                                     />
                                                                     {formik.touched.state &&
-                                                                    formik.errors.state ? (
+                                                                        formik.errors.state ? (
                                                                         <div className="invalid-feedback d-block">
                                                                             {formik.errors.state}
                                                                         </div>
@@ -817,8 +813,8 @@ const SalesData = () => {
                                                                             !formik.values.state
                                                                                 ? "Select state first"
                                                                                 : districtsLoading
-                                                                                ? "Loading districts..."
-                                                                                : "Search and select district"
+                                                                                    ? "Loading districts..."
+                                                                                    : "Search and select district"
                                                                         }
                                                                         value={
                                                                             filteredDistrictOptions.find(
@@ -832,8 +828,8 @@ const SalesData = () => {
                                                                                 "district",
                                                                                 selectedOption
                                                                                     ? String(
-                                                                                          selectedOption.value
-                                                                                      )
+                                                                                        selectedOption.value
+                                                                                    )
                                                                                     : ""
                                                                             );
                                                                         }}
@@ -852,7 +848,7 @@ const SalesData = () => {
                                                                         classNamePrefix="react-select"
                                                                         className={
                                                                             formik.touched.district &&
-                                                                            formik.errors.district
+                                                                                formik.errors.district
                                                                                 ? "is-invalid"
                                                                                 : ""
                                                                         }
@@ -863,7 +859,7 @@ const SalesData = () => {
                                                                         }
                                                                     />
                                                                     {formik.touched.district &&
-                                                                    formik.errors.district ? (
+                                                                        formik.errors.district ? (
                                                                         <div className="invalid-feedback d-block">
                                                                             {formik.errors.district}
                                                                         </div>
@@ -892,7 +888,7 @@ const SalesData = () => {
                                                                         }
                                                                     />
                                                                     {formik.touched.unbilled &&
-                                                                    formik.errors.unbilled ? (
+                                                                        formik.errors.unbilled ? (
                                                                         <FormFeedback>
                                                                             {formik.errors.unbilled}
                                                                         </FormFeedback>
@@ -919,7 +915,7 @@ const SalesData = () => {
                                                                         }
                                                                     />
                                                                     {formik.touched.billed &&
-                                                                    formik.errors.billed ? (
+                                                                        formik.errors.billed ? (
                                                                         <FormFeedback>
                                                                             {formik.errors.billed}
                                                                         </FormFeedback>
@@ -946,7 +942,7 @@ const SalesData = () => {
                                                                         }
                                                                     />
                                                                     {formik.touched.new_customers &&
-                                                                    formik.errors.new_customers ? (
+                                                                        formik.errors.new_customers ? (
                                                                         <FormFeedback>
                                                                             {formik.errors.new_customers}
                                                                         </FormFeedback>
@@ -978,8 +974,8 @@ const SalesData = () => {
                                                                     />
                                                                     {formik.touched
                                                                         .new_conversions &&
-                                                                    formik.errors
-                                                                        .new_conversions ? (
+                                                                        formik.errors
+                                                                            .new_conversions ? (
                                                                         <FormFeedback>
                                                                             {
                                                                                 formik.errors
@@ -1002,8 +998,8 @@ const SalesData = () => {
                                                                         ? "Updating..."
                                                                         : "Saving..."
                                                                     : isEditMode
-                                                                    ? "Update Report"
-                                                                    : "Create Report"}
+                                                                        ? "Update Report"
+                                                                        : "Create Report"}
                                                             </Button>
 
                                                             <Button

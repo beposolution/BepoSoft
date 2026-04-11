@@ -66,40 +66,40 @@ const AddDSR = () => {
             toast.error("Failed to load Invoices");
         }
     };
-const fetchStates = async () => {
-    try {
-        const profileRes = await axios.get(`${BASE_URL}profile/`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+    const fetchStates = async () => {
+        try {
+            const profileRes = await axios.get(`${BASE_URL}profile/`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
 
 
-        const allocatedStateIds =
-            profileRes?.data?.data?.allocated_states || [];
+            const allocatedStateIds =
+                profileRes?.data?.data?.allocated_states || [];
 
 
-        const stateRes = await axios.get(`${BASE_URL}states/`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+            const stateRes = await axios.get(`${BASE_URL}states/`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
 
-        const allStates =
-            stateRes?.data?.data || stateRes?.data || [];
-
-
-        const normalizedIds = allocatedStateIds.map((id) =>
-            Number(id)
-        );
-
-        const filteredStates = allStates.filter((state) =>
-            normalizedIds.includes(Number(state.id))
-        );
+            const allStates =
+                stateRes?.data?.data || stateRes?.data || [];
 
 
-        setStateList(filteredStates);
+            const normalizedIds = allocatedStateIds.map((id) =>
+                Number(id)
+            );
 
-    } catch (error) {
-        toast.error("Failed to load States");
-    }
-};
+            const filteredStates = allStates.filter((state) =>
+                normalizedIds.includes(Number(state.id))
+            );
+
+
+            setStateList(filteredStates);
+
+        } catch (error) {
+            toast.error("Failed to load States");
+        }
+    };
 
 
     const fetchDistricts = async () => {
@@ -144,6 +144,25 @@ const fetchStates = async () => {
         label: item?.name,
     }));
 
+    const writeDSRCreateLog = async (beforeData, afterData, invoice) => {
+        try {
+            await axios.post(
+                `${BASE_URL}datalog/create/`,
+                {
+
+                    order: invoice || null,
+
+                    before_data: beforeData,
+                    after_data: afterData,
+                },
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+        } catch (err) {
+            console.warn("DSR datalog failed:", err?.response?.data || err.message);
+        }
+    };
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -154,6 +173,11 @@ const fetchStates = async () => {
 
         if (!selectedDistrict) {
             toast.error("Please select a District");
+            return;
+        }
+        // Phone validation (exactly 10 digits)
+        if (!/^\d{10}$/.test(phone)) {
+            toast.error("Phone number must be exactly 10 digits");
             return;
         }
 
@@ -198,13 +222,38 @@ const fetchStates = async () => {
                 }),
             };
 
-            await axios.post(`${BASE_URL}sales/analysis/add/`, payload, {
+
+
+            const response = await axios.post(`${BASE_URL}sales/analysis/add/`, payload, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json",
                 },
             });
 
+            const createdId = response?.data?.data?.id || response?.data?.id;
+
+            await writeDSRCreateLog(
+                { status: "dsr created" },   // before
+                {
+                    status: "dsr created",
+                    call_duration: formattedDuration,
+                    call_status: callStatus.value,
+                    note,
+                    phone,
+                    state: selectedState.value,
+                    district: selectedDistrict.value,
+                    ...(callStatus.value === "active" && {
+                        customer_name: customerNameManual,
+                    }),
+                    ...(callStatus.value === "productive" && {
+                        customer: selectedCustomer?.value,
+                        customer_name: selectedCustomer?.label,
+                        invoice: selectedInvoice?.value || null,
+                    }),
+                },
+                selectedInvoice?.value   // ✅ THIS IS ORDER
+            );
             toast.success("Sales Analysis Added Successfully");
 
             setSelectedCustomer(null);
@@ -343,7 +392,8 @@ const fetchStates = async () => {
                                                     type="text"
                                                     className="form-control"
                                                     value={phone}
-                                                    onChange={(e) => setPhone(e.target.value)}
+                                                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                                                    maxLength={10}
                                                     placeholder="Enter Phone Number"
                                                 />
                                             </div>
@@ -380,7 +430,7 @@ const fetchStates = async () => {
                                                 />
                                             </div>
                                         </Col>
-                                    
+
                                         <Col md={6}>
                                             <div className="mb-3">
                                                 <Label>Note</Label>

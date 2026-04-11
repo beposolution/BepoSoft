@@ -977,6 +977,11 @@ const SidebarContent = (props) => {
                       </Link>
                     </li>
                   )}
+                  <li>
+                    <Link to="/sales/team/leader/report/view/">
+                      {props.t("Team Leader Sales Detailed Summary Report")}
+                    </Link>
+                  </li>
                 </ul>
               </li>
             ) : null}

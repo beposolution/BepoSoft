@@ -251,7 +251,7 @@ const SalesTeamMemberDailyReportPage = () => {
         try {
             setTeamsLoading(true);
 
-            const response = await axios.get(`${baseUrl}my/sales/team/`, {
+            const response = await axios.get(`${baseUrl}my/sales/team/memberships/`, {
                 headers: getAuthHeaders(),
             });
 
@@ -383,8 +383,12 @@ const SalesTeamMemberDailyReportPage = () => {
 
     const teamOptions = useMemo(() => {
         return teams.map((item) => ({
-            value: String(item.id),
-            label: item.name || item.team_name || `Team ${item.id}`,
+            value: String(item.team?.id ?? item.team_id ?? item.id),
+            label:
+                item.team?.name ||
+                item.team_name ||
+                item.name ||
+                `Team ${item.team?.id ?? item.team_id ?? item.id}`,
         }));
     }, [teams]);
 
@@ -977,7 +981,7 @@ const SalesTeamMemberDailyReportPage = () => {
                                                                         menuPortalTarget={document.body}
                                                                         className={
                                                                             formik.touched.team &&
-                                                                            formik.errors.team
+                                                                                formik.errors.team
                                                                                 ? "is-invalid"
                                                                                 : ""
                                                                         }
@@ -986,7 +990,7 @@ const SalesTeamMemberDailyReportPage = () => {
                                                                         }
                                                                     />
                                                                     {formik.touched.team &&
-                                                                    formik.errors.team ? (
+                                                                        formik.errors.team ? (
                                                                         <div className="invalid-feedback d-block">
                                                                             {formik.errors.team}
                                                                         </div>
@@ -1036,7 +1040,7 @@ const SalesTeamMemberDailyReportPage = () => {
                                                                         menuPortalTarget={document.body}
                                                                         className={
                                                                             formik.touched.state &&
-                                                                            formik.errors.state
+                                                                                formik.errors.state
                                                                                 ? "is-invalid"
                                                                                 : ""
                                                                         }
@@ -1047,7 +1051,7 @@ const SalesTeamMemberDailyReportPage = () => {
                                                                         }
                                                                     />
                                                                     {formik.touched.state &&
-                                                                    formik.errors.state ? (
+                                                                        formik.errors.state ? (
                                                                         <div className="invalid-feedback d-block">
                                                                             {formik.errors.state}
                                                                         </div>
@@ -1068,8 +1072,8 @@ const SalesTeamMemberDailyReportPage = () => {
                                                                             !formik.values.state
                                                                                 ? "Select state first"
                                                                                 : districtsLoading
-                                                                                ? "Loading districts..."
-                                                                                : "Search and select district"
+                                                                                    ? "Loading districts..."
+                                                                                    : "Search and select district"
                                                                         }
                                                                         value={
                                                                             filteredDistrictOptions.find(
@@ -1103,7 +1107,7 @@ const SalesTeamMemberDailyReportPage = () => {
                                                                         menuPortalTarget={document.body}
                                                                         className={
                                                                             formik.touched.district &&
-                                                                            formik.errors.district
+                                                                                formik.errors.district
                                                                                 ? "is-invalid"
                                                                                 : ""
                                                                         }
@@ -1114,7 +1118,7 @@ const SalesTeamMemberDailyReportPage = () => {
                                                                         }
                                                                     />
                                                                     {formik.touched.district &&
-                                                                    formik.errors.district ? (
+                                                                        formik.errors.district ? (
                                                                         <div className="invalid-feedback d-block">
                                                                             {formik.errors.district}
                                                                         </div>
@@ -1158,7 +1162,7 @@ const SalesTeamMemberDailyReportPage = () => {
                                                                         menuPortalTarget={document.body}
                                                                     />
                                                                     {formik.touched.call_status &&
-                                                                    formik.errors.call_status ? (
+                                                                        formik.errors.call_status ? (
                                                                         <div className="invalid-feedback d-block">
                                                                             {formik.errors.call_status}
                                                                         </div>
@@ -1212,7 +1216,7 @@ const SalesTeamMemberDailyReportPage = () => {
                                                                             menuPortalTarget={document.body}
                                                                             className={
                                                                                 formik.touched.invoice &&
-                                                                                formik.errors.invoice
+                                                                                    formik.errors.invoice
                                                                                     ? "is-invalid"
                                                                                     : ""
                                                                             }
@@ -1221,7 +1225,7 @@ const SalesTeamMemberDailyReportPage = () => {
                                                                             }
                                                                         />
                                                                         {formik.touched.invoice &&
-                                                                        formik.errors.invoice ? (
+                                                                            formik.errors.invoice ? (
                                                                             <div className="invalid-feedback d-block">
                                                                                 {formik.errors.invoice}
                                                                             </div>
@@ -1249,7 +1253,7 @@ const SalesTeamMemberDailyReportPage = () => {
                                                                             }
                                                                         />
                                                                         {formik.touched.customer_name &&
-                                                                        formik.errors.customer_name ? (
+                                                                            formik.errors.customer_name ? (
                                                                             <FormFeedback>
                                                                                 {formik.errors.customer_name}
                                                                             </FormFeedback>
@@ -1284,7 +1288,7 @@ const SalesTeamMemberDailyReportPage = () => {
                                                                         }
                                                                     />
                                                                     {formik.touched.phone &&
-                                                                    formik.errors.phone ? (
+                                                                        formik.errors.phone ? (
                                                                         <FormFeedback>
                                                                             {formik.errors.phone}
                                                                         </FormFeedback>
@@ -1323,7 +1327,7 @@ const SalesTeamMemberDailyReportPage = () => {
                                                                         menuPortalTarget={document.body}
                                                                     />
                                                                     {formik.touched.status &&
-                                                                    formik.errors.status ? (
+                                                                        formik.errors.status ? (
                                                                         <div className="invalid-feedback d-block">
                                                                             {formik.errors.status}
                                                                         </div>
@@ -1355,7 +1359,7 @@ const SalesTeamMemberDailyReportPage = () => {
                                                                         }
                                                                     />
                                                                     {formik.touched.call_duration &&
-                                                                    formik.errors.call_duration ? (
+                                                                        formik.errors.call_duration ? (
                                                                         <FormFeedback>
                                                                             {formik.errors.call_duration}
                                                                         </FormFeedback>
@@ -1382,7 +1386,7 @@ const SalesTeamMemberDailyReportPage = () => {
                                                                         }
                                                                     />
                                                                     {formik.touched.note &&
-                                                                    formik.errors.note ? (
+                                                                        formik.errors.note ? (
                                                                         <FormFeedback>
                                                                             {formik.errors.note}
                                                                         </FormFeedback>
@@ -1402,8 +1406,8 @@ const SalesTeamMemberDailyReportPage = () => {
                                                                         ? "Updating..."
                                                                         : "Saving..."
                                                                     : isEditMode
-                                                                    ? "Update Report"
-                                                                    : "Create Report"}
+                                                                        ? "Update Report"
+                                                                        : "Create Report"}
                                                             </Button>
 
                                                             <Button
@@ -1721,7 +1725,7 @@ const SalesTeamMemberDailyReportPage = () => {
                                                                     <td>{item?.call_duration || "-"}</td>
                                                                     <td>
                                                                         {item?.call_duration_percentage_8hrs !== null &&
-                                                                        item?.call_duration_percentage_8hrs !== undefined
+                                                                            item?.call_duration_percentage_8hrs !== undefined
                                                                             ? `${Number(item.call_duration_percentage_8hrs).toFixed(2)}%`
                                                                             : "-"}
                                                                     </td>

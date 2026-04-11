@@ -67,11 +67,8 @@ const TeamLeaderSalesDetailedSummary = () => {
     const [districtOptions, setDistrictOptions] = useState([]);
 
     useEffect(() => {
-        const storedRole =
-            localStorage.getItem("active") ||
-            localStorage.getItem("department") ||
-            localStorage.getItem("role") || "";
-        setRole(String(storedRole).trim().toUpperCase());
+        const role = localStorage.getItem("active");
+        setRole(role);
     }, []);
 
     const getAuthHeaders = () => ({

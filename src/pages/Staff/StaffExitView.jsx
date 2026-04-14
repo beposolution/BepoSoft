@@ -225,7 +225,7 @@ const StaffExitView = () => {
         it_clearance_by: "",
         it_clearance_note: "",
         exit_form_date: "",
-        logistics_clearence_signature: null,
+        logistics_clearance_signature: null,
         finance_clearance_signature: null,
         hr_clearance_signature: null,
         sales_clearance_signature: null,
@@ -253,6 +253,14 @@ const StaffExitView = () => {
             : filePath;
 
         return `${cleanedBase}${cleanedPath}`;
+    };
+
+    const getLogisticsSignature = (data) => {
+        return (
+            data?.logistics_clearance_signature ||
+            data?.logistics_clearence_signature ||
+            ""
+        );
     };
 
     const formatDate = (dateString) => {
@@ -460,7 +468,7 @@ const StaffExitView = () => {
 
             exit_form_date: formatInputDate(data?.exit_form_date),
 
-            logistics_clearence_signature: null,
+            logistics_clearance_signature: null,
             finance_clearance_signature: null,
             hr_clearance_signature: null,
             sales_clearance_signature: null,
@@ -521,6 +529,7 @@ const StaffExitView = () => {
                     },
                 }
             );
+            console.log("Exit details response:", response);
 
             if (response.status === 200) {
                 const responseData = response?.data || {};
@@ -614,12 +623,23 @@ const StaffExitView = () => {
             Object.keys(formData).forEach((key) => {
                 const value = formData[key];
 
+                if (key === "logistics_clearance_signature") {
+                    return;
+                }
+
                 if (typeof value === "boolean") {
                     payload.append(key, value ? "true" : "false");
                 } else if (value !== null && value !== undefined && value !== "") {
                     payload.append(key, value);
                 }
             });
+
+            if (formData.logistics_clearance_signature) {
+                payload.append(
+                    "logistics_clearence_signature",
+                    formData.logistics_clearance_signature
+                );
+            }
 
             const response = await axios.put(
                 `${import.meta.env.VITE_APP_KEY}employee/exit/edit/${id}/`,
@@ -1553,7 +1573,7 @@ const StaffExitView = () => {
                                                         <Label>Logistics Signature</Label>
                                                         <Input
                                                             type="file"
-                                                            name="logistics_clearence_signature"
+                                                            name="logistics_clearance_signature"
                                                             onChange={handleChange}
                                                             accept="image/*"
                                                         />
@@ -1801,9 +1821,7 @@ const StaffExitView = () => {
                                                             note={
                                                                 details.logistics_clearance_note
                                                             }
-                                                            signature={
-                                                                details.logistics_clearance_signature
-                                                            }
+                                                            signature={getLogisticsSignature(details)}
                                                             getYesNoBadge={getYesNoBadge}
                                                             getValue={getValue}
                                                             formatDate={formatDate}
@@ -1876,4 +1894,4 @@ const StaffExitView = () => {
     );
 };
 
-export default StaffExitView;   
+export default StaffExitView;

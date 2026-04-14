@@ -225,7 +225,7 @@ const StaffExitView = () => {
         it_clearance_by: "",
         it_clearance_note: "",
         exit_form_date: "",
-        logistics_clearence_signature: null,
+        logistics_clearance_signature: null,
         finance_clearance_signature: null,
         hr_clearance_signature: null,
         sales_clearance_signature: null,
@@ -253,6 +253,14 @@ const StaffExitView = () => {
             : filePath;
 
         return `${cleanedBase}${cleanedPath}`;
+    };
+
+    const getLogisticsSignature = (data) => {
+        return (
+            data?.logistics_clearance_signature ||
+            data?.logistics_clearence_signature ||
+            ""
+        );
     };
 
     const formatDate = (dateString) => {
@@ -370,6 +378,57 @@ const StaffExitView = () => {
         );
     };
 
+    const renderEditSignaturePreview = (existingFilePath, selectedFile, label) => {
+        if (selectedFile) {
+            return (
+                <div className="mb-2">
+                    <div
+                        style={{
+                            width: "100%",
+                            minHeight: "160px",
+                            border: "1px solid #eef1f7",
+                            borderRadius: "12px",
+                            background: "#fff",
+                            padding: "10px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            overflow: "hidden",
+                        }}
+                    >
+                        <img
+                            src={URL.createObjectURL(selectedFile)}
+                            alt={`${label} Preview`}
+                            style={{
+                                maxWidth: "100%",
+                                maxHeight: "140px",
+                                objectFit: "contain",
+                                display: "block",
+                            }}
+                        />
+                    </div>
+                    <small className="text-success d-block mt-2">
+                        New image selected
+                    </small>
+                </div>
+            );
+        }
+
+        if (existingFilePath) {
+            return (
+                <div className="mb-2">
+                    {renderSignatureImage(existingFilePath, label)}
+                </div>
+            );
+        }
+
+        return (
+            <div className="mb-2 text-muted" style={{ fontSize: "13px" }}>
+                No image uploaded
+            </div>
+        );
+    };
+
     const getStaffId = (staff) => {
         if (!staff) return "";
         const id =
@@ -460,7 +519,7 @@ const StaffExitView = () => {
 
             exit_form_date: formatInputDate(data?.exit_form_date),
 
-            logistics_clearence_signature: null,
+            logistics_clearance_signature: null,
             finance_clearance_signature: null,
             hr_clearance_signature: null,
             sales_clearance_signature: null,
@@ -614,12 +673,68 @@ const StaffExitView = () => {
             Object.keys(formData).forEach((key) => {
                 const value = formData[key];
 
+                if (
+                    [
+                        "logistics_clearance_signature",
+                        "finance_clearance_signature",
+                        "hr_clearance_signature",
+                        "sales_clearance_signature",
+                        "it_clearance_signature",
+                        "employee_signature",
+                    ].includes(key)
+                ) {
+                    return;
+                }
+
                 if (typeof value === "boolean") {
                     payload.append(key, value ? "true" : "false");
                 } else if (value !== null && value !== undefined && value !== "") {
                     payload.append(key, value);
                 }
             });
+
+            if (formData.logistics_clearance_signature) {
+                payload.append(
+                    "logistics_clearance_signature",
+                    formData.logistics_clearance_signature
+                );
+                payload.append(
+                    "logistics_clearence_signature",
+                    formData.logistics_clearance_signature
+                );
+            }
+
+            if (formData.finance_clearance_signature) {
+                payload.append(
+                    "finance_clearance_signature",
+                    formData.finance_clearance_signature
+                );
+            }
+
+            if (formData.hr_clearance_signature) {
+                payload.append(
+                    "hr_clearance_signature",
+                    formData.hr_clearance_signature
+                );
+            }
+
+            if (formData.sales_clearance_signature) {
+                payload.append(
+                    "sales_clearance_signature",
+                    formData.sales_clearance_signature
+                );
+            }
+
+            if (formData.it_clearance_signature) {
+                payload.append(
+                    "it_clearance_signature",
+                    formData.it_clearance_signature
+                );
+            }
+
+            if (formData.employee_signature) {
+                payload.append("employee_signature", formData.employee_signature);
+            }
 
             const response = await axios.put(
                 `${import.meta.env.VITE_APP_KEY}employee/exit/edit/${id}/`,
@@ -1227,6 +1342,13 @@ const StaffExitView = () => {
 
                                                     <Col md={12} className="mb-3">
                                                         <Label>HR Signature</Label>
+
+                                                        {renderEditSignaturePreview(
+                                                            details.hr_clearance_signature,
+                                                            formData.hr_clearance_signature,
+                                                            "HR Signature"
+                                                        )}
+
                                                         <Input
                                                             type="file"
                                                             name="hr_clearance_signature"
@@ -1308,6 +1430,13 @@ const StaffExitView = () => {
 
                                                     <Col md={12} className="mb-3">
                                                         <Label>Finance Signature</Label>
+
+                                                        {renderEditSignaturePreview(
+                                                            details.finance_clearance_signature,
+                                                            formData.finance_clearance_signature,
+                                                            "Finance Signature"
+                                                        )}
+
                                                         <Input
                                                             type="file"
                                                             name="finance_clearance_signature"
@@ -1389,6 +1518,13 @@ const StaffExitView = () => {
 
                                                     <Col md={12} className="mb-3">
                                                         <Label>Sales Signature</Label>
+
+                                                        {renderEditSignaturePreview(
+                                                            details.sales_clearance_signature,
+                                                            formData.sales_clearance_signature,
+                                                            "Sales Signature"
+                                                        )}
+
                                                         <Input
                                                             type="file"
                                                             name="sales_clearance_signature"
@@ -1470,6 +1606,13 @@ const StaffExitView = () => {
 
                                                     <Col md={12} className="mb-3">
                                                         <Label>IT Signature</Label>
+
+                                                        {renderEditSignaturePreview(
+                                                            details.it_clearance_signature,
+                                                            formData.it_clearance_signature,
+                                                            "IT Signature"
+                                                        )}
+
                                                         <Input
                                                             type="file"
                                                             name="it_clearance_signature"
@@ -1551,9 +1694,16 @@ const StaffExitView = () => {
 
                                                     <Col md={12} className="mb-3">
                                                         <Label>Logistics Signature</Label>
+
+                                                        {renderEditSignaturePreview(
+                                                            getLogisticsSignature(details),
+                                                            formData.logistics_clearance_signature,
+                                                            "Logistics Signature"
+                                                        )}
+
                                                         <Input
                                                             type="file"
-                                                            name="logistics_clearence_signature"
+                                                            name="logistics_clearance_signature"
                                                             onChange={handleChange}
                                                             accept="image/*"
                                                         />
@@ -1570,6 +1720,13 @@ const StaffExitView = () => {
                                                 <Row>
                                                     <Col md={12} className="mb-3">
                                                         <Label>Employee Signature</Label>
+
+                                                        {renderEditSignaturePreview(
+                                                            details.employee_signature,
+                                                            formData.employee_signature,
+                                                            "Employee Signature"
+                                                        )}
+
                                                         <Input
                                                             type="file"
                                                             name="employee_signature"
@@ -1801,9 +1958,7 @@ const StaffExitView = () => {
                                                             note={
                                                                 details.logistics_clearance_note
                                                             }
-                                                            signature={
-                                                                details.logistics_clearance_signature
-                                                            }
+                                                            signature={getLogisticsSignature(details)}
                                                             getYesNoBadge={getYesNoBadge}
                                                             getValue={getValue}
                                                             formatDate={formatDate}
@@ -1876,4 +2031,4 @@ const StaffExitView = () => {
     );
 };
 
-export default StaffExitView;   
+export default StaffExitView;

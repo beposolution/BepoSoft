@@ -11,7 +11,10 @@ import {
     Button,
     Input,
     FormGroup,
-    Label
+    Label,
+    Modal,
+    ModalHeader,
+    ModalBody
 } from "reactstrap";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Link } from "react-router-dom";
@@ -31,6 +34,8 @@ const BasicTable = () => {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [pageNumber, setPageNumber] = useState(1);
+    const [imageModal, setImageModal] = useState(false);
+    const [selectedImages, setSelectedImages] = useState([]);
 
     const token = localStorage.getItem("token");
     const debounceRef = useRef(null);
@@ -176,6 +181,32 @@ const BasicTable = () => {
         }
 
         return {};
+    };
+
+    const getFullImageUrl = (imagePath) => {
+        // if no image path, return empty
+        if (!imagePath) return "";
+
+        // if backend already sends full url, use directly
+        if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+            return imagePath;
+        }
+
+        // otherwise add base image domain from env
+        const imageBase = import.meta.env.VITE_APP_IMAGE || "";
+        return `${imageBase}${imagePath}`;
+    };
+
+    const openImageModal = (images) => {
+        // store clicked order images and open modal
+        setSelectedImages(images || []);
+        setImageModal(true);
+    };
+
+    const closeImageModal = () => {
+        // close modal and clear old images
+        setImageModal(false);
+        setSelectedImages([]);
     };
 
     const exportToExcel = () => {
@@ -331,6 +362,9 @@ const BasicTable = () => {
                                                             <th>INVOICE NO</th>
                                                             <th>STAFF</th>
                                                             <th>CUSTOMER</th>
+                                                            {(role === "BDM" || role === "BDO" || role === "SD") && (
+                                                                <th>IMAGE</th>
+                                                            )}
                                                             <th>STATUS</th>
                                                             <th>BILL AMOUNT</th>
                                                             <th>CREATED AT</th>
@@ -339,6 +373,9 @@ const BasicTable = () => {
                                                     <tbody>
                                                         {orders?.map((order, index) => {
                                                             const rowStyle = getRowStyleByPayment(order?.payment_status);
+                                                            const hasPaymentImages =
+                                                                Array.isArray(order?.payment_images) &&
+                                                                order.payment_images.length > 0;
 
                                                             return (
                                                                 <tr key={order?.id}>
@@ -364,6 +401,27 @@ const BasicTable = () => {
                                                                             {order?.customer?.name}
                                                                         </Link>
                                                                     </td>
+
+                                                                    {(role === "BDM" || role === "BDO" || role === "SD") && (
+                                                                        <td style={rowStyle}>
+                                                                            {hasPaymentImages ? (
+                                                                                <Button
+                                                                                    color="link"
+                                                                                    style={{
+                                                                                        padding: 0,
+                                                                                        fontSize: "20px",
+                                                                                        textDecoration: "none"
+                                                                                    }}
+                                                                                    onClick={() => openImageModal(order.payment_images)}
+                                                                                    title="View Payment Image"
+                                                                                >
+                                                                                    🖼️
+                                                                                </Button>
+                                                                            ) : (
+                                                                                "-"
+                                                                            )}
+                                                                        </td>
+                                                                    )}
 
                                                                     <td
                                                                         style={{
@@ -422,6 +480,7 @@ const BasicTable = () => {
                                                             );
                                                         })}
                                                     </tbody>
+
                                                 </Table>
 
                                                 <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
@@ -446,6 +505,41 @@ const BasicTable = () => {
                             </Card>
                         </Col>
                     </Row>
+                    {(role === "BDM" || role === "BDO" || role === "SD") && (
+                        <Modal isOpen={imageModal} toggle={closeImageModal} size="lg" centered>
+                            <ModalHeader toggle={closeImageModal}>Payment Images</ModalHeader>
+                            <ModalBody>
+                                {selectedImages?.length > 0 ? (
+                                    <div
+                                        style={{
+                                            display: "grid",
+                                            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                                            gap: "15px"
+                                        }}
+                                    >
+                                        {selectedImages.map((img) => (
+                                            <div key={img.id} style={{ textAlign: "center" }}>
+                                                <img
+                                                    src={getFullImageUrl(img.image)}
+                                                    alt="Payment"
+                                                    style={{
+                                                        width: "100%",
+                                                        maxHeight: "400px",
+                                                        objectFit: "contain",
+                                                        border: "1px solid #ddd",
+                                                        borderRadius: "8px",
+                                                        padding: "5px"
+                                                    }}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div>No image available</div>
+                                )}
+                            </ModalBody>
+                        </Modal>
+                    )}
                 </div>
             </div>
         </React.Fragment>

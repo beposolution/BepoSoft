@@ -763,7 +763,7 @@ const SidebarContent = (props) => {
               </li>
             )}
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'COO' || role === 'CEO' || role === 'SD' || role === 'BDM' || role === 'BDO' ? (
+            {/* {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'COO' || role === 'CEO' || role === 'SD' || role === 'BDM' || role === 'BDO' ? (
 
               <li>
                 <Link to="/#" className="has-arrow">
@@ -797,9 +797,9 @@ const SidebarContent = (props) => {
                 </ul>
               </li>
 
-            ) : null}
+            ) : null} */}
 
-            {[
+            {/* {[
               'ADMIN',
               'COO',
               'CEO',
@@ -847,10 +847,10 @@ const SidebarContent = (props) => {
 
                 </ul>
               </li>
-            ) : null}
+            ) : null} */}
 
 
-            {(role === 'BDM' || role === 'ADMIN' || role === 'COO' || role === 'CEO') && (
+            {/* {(role === 'BDM' || role === 'ADMIN' || role === 'COO' || role === 'CEO') && (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUserTie size={17} style={{ marginRight: '6px' }} />
@@ -887,10 +887,10 @@ const SidebarContent = (props) => {
                   )}
                 </ul>
               </li>
-            )}
+            )} */}
 
 
-            {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'COO' || role === 'CEO' || role === 'SD' || role === 'BDM' ? (
+            {/* {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'COO' || role === 'CEO' || role === 'SD' || role === 'BDM' ? (
 
               <li>
                 <Link to="/#" className="has-arrow">
@@ -914,7 +914,7 @@ const SidebarContent = (props) => {
                 </ul>
               </li>
 
-            ) : null}
+            ) : null} */}
 
 
             {[
@@ -929,7 +929,7 @@ const SidebarContent = (props) => {
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUsers size={20} style={{ marginRight: '8px' }} />
-                  <span>{props.t("Sales Team")}</span>
+                  <span>{props.t("Daily DSR (new)")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
                   {(role === 'SD' || role === 'BDM' || role === 'ADMIN') && (

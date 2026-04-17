@@ -27,6 +27,7 @@ const StaffExitForm = () => {
 
     const [staffList, setStaffList] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [staffLoading, setStaffLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
@@ -207,35 +208,17 @@ const StaffExitForm = () => {
                 const formData = new FormData();
 
                 for (let key in values) {
-                    if (
-                        key === "logistics_clearence_signature" &&
-                        values[key]
-                    ) {
+                    if (key === "logistics_clearence_signature" && values[key]) {
                         formData.append(key, values[key]);
-                    } else if (
-                        key === "finance_clearance_signature" &&
-                        values[key]
-                    ) {
+                    } else if (key === "finance_clearance_signature" && values[key]) {
                         formData.append(key, values[key]);
-                    } else if (
-                        key === "hr_clearance_signature" &&
-                        values[key]
-                    ) {
+                    } else if (key === "hr_clearance_signature" && values[key]) {
                         formData.append(key, values[key]);
-                    } else if (
-                        key === "sales_clearance_signature" &&
-                        values[key]
-                    ) {
+                    } else if (key === "sales_clearance_signature" && values[key]) {
                         formData.append(key, values[key]);
-                    } else if (
-                        key === "it_clearance_signature" &&
-                        values[key]
-                    ) {
+                    } else if (key === "it_clearance_signature" && values[key]) {
                         formData.append(key, values[key]);
-                    } else if (
-                        key === "employee_signature" &&
-                        values[key]
-                    ) {
+                    } else if (key === "employee_signature" && values[key]) {
                         formData.append(key, values[key]);
                     } else if (
                         values[key] !== "" &&
@@ -244,10 +227,6 @@ const StaffExitForm = () => {
                     ) {
                         formData.append(key, values[key]);
                     }
-                }
-
-                for (let pair of formData.entries()) {
-                    console.log(pair[0], pair[1]);
                 }
 
                 const response = await axios.post(
@@ -333,23 +312,47 @@ const StaffExitForm = () => {
 
     const fetchStaffUsers = async () => {
         try {
-            const response = await axios.get(
-                `${import.meta.env.VITE_APP_KEY}staffs/`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+            setStaffLoading(true);
 
-            if (response.status === 200) {
-                setStaffList(response.data.data || []);
-            } else {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+            let allStaff = [];
+            let page = 1;
+            let hasNext = true;
+
+            while (hasNext) {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}get/staffs/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        params: {
+                            page,
+                        },
+                    }
+                );
+
+                if (response.status === 200) {
+                    const pageData =
+                        response?.data?.results?.data || response?.data?.data || [];
+
+                    allStaff = [...allStaff, ...pageData];
+
+                    if (response?.data?.next) {
+                        page += 1;
+                    } else {
+                        hasNext = false;
+                    }
+                } else {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
             }
+
+            setStaffList(allStaff);
         } catch (error) {
             setError(error.message || "Failed to fetch staff users");
             toast.error("Failed to fetch staff users");
+        } finally {
+            setStaffLoading(false);
         }
     };
 
@@ -370,6 +373,15 @@ const StaffExitForm = () => {
             setLoading(false);
         }
     }, [token]);
+
+    const commonSelectProps = {
+        options: staffOptions,
+        isClearable: true,
+        isSearchable: true,
+        isLoading: staffLoading,
+        classNamePrefix: "react-select",
+        noOptionsMessage: () => (staffLoading ? "Loading..." : "No staff found"),
+    };
 
     return (
         <React.Fragment>
@@ -394,25 +406,31 @@ const StaffExitForm = () => {
                                                     <Select
                                                         inputId="employee"
                                                         name="employee"
-                                                        options={staffOptions}
+                                                        {...commonSelectProps}
                                                         placeholder="Select Employee"
-                                                        value={staffOptions.find(
-                                                            (option) => String(option.value) === String(formik.values.employee)
-                                                        ) || null}
+                                                        value={
+                                                            staffOptions.find(
+                                                                (option) =>
+                                                                    String(option.value) === String(formik.values.employee)
+                                                            ) || null
+                                                        }
                                                         onChange={(selectedOption) => {
-                                                            formik.setFieldValue("employee", selectedOption ? selectedOption.value : "");
+                                                            formik.setFieldValue(
+                                                                "employee",
+                                                                selectedOption ? selectedOption.value : ""
+                                                            );
                                                         }}
                                                         onBlur={() => formik.setFieldTouched("employee", true)}
-                                                        isClearable
-                                                        isSearchable
-                                                        classNamePrefix="react-select"
                                                         className={
-                                                            formik.touched.employee && formik.errors.employee ? "is-invalid" : ""
+                                                            formik.touched.employee && formik.errors.employee
+                                                                ? "is-invalid"
+                                                                : ""
                                                         }
-                                                        noOptionsMessage={() => "No employees found"}
                                                     />
                                                     {formik.errors.employee && formik.touched.employee ? (
-                                                        <div className="invalid-feedback d-block">{formik.errors.employee}</div>
+                                                        <div className="invalid-feedback d-block">
+                                                            {formik.errors.employee}
+                                                        </div>
                                                     ) : null}
                                                 </div>
                                             </Col>
@@ -441,10 +459,11 @@ const StaffExitForm = () => {
                                                     <select
                                                         name="reason_type"
                                                         id="reason_type"
-                                                        className={`form-control ${formik.touched.reason_type && formik.errors.reason_type
-                                                            ? "is-invalid"
-                                                            : ""
-                                                            }`}
+                                                        className={`form-control ${
+                                                            formik.touched.reason_type && formik.errors.reason_type
+                                                                ? "is-invalid"
+                                                                : ""
+                                                        }`}
                                                         value={formik.values.reason_type}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
@@ -454,7 +473,9 @@ const StaffExitForm = () => {
                                                         <option value="absconding">Absconding</option>
                                                     </select>
                                                     {formik.errors.reason_type && formik.touched.reason_type ? (
-                                                        <FormFeedback type="invalid">{formik.errors.reason_type}</FormFeedback>
+                                                        <FormFeedback type="invalid">
+                                                            {formik.errors.reason_type}
+                                                        </FormFeedback>
                                                     ) : null}
                                                 </div>
                                             </Col>
@@ -492,7 +513,8 @@ const StaffExitForm = () => {
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
                                                         invalid={
-                                                            formik.touched.exit_reason_note && !!formik.errors.exit_reason_note
+                                                            formik.touched.exit_reason_note &&
+                                                            !!formik.errors.exit_reason_note
                                                         }
                                                     />
                                                     {formik.errors.exit_reason_note && formik.touched.exit_reason_note ? (
@@ -520,8 +542,10 @@ const StaffExitForm = () => {
                                                         }
                                                     />
                                                     {formik.errors.asset_responsibility &&
-                                                        formik.touched.asset_responsibility ? (
-                                                        <FormFeedback>{formik.errors.asset_responsibility}</FormFeedback>
+                                                    formik.touched.asset_responsibility ? (
+                                                        <FormFeedback>
+                                                            {formik.errors.asset_responsibility}
+                                                        </FormFeedback>
                                                     ) : null}
                                                 </div>
                                             </Col>
@@ -532,25 +556,32 @@ const StaffExitForm = () => {
                                                     <Select
                                                         inputId="handover_to"
                                                         name="handover_to"
-                                                        options={staffOptions}
+                                                        {...commonSelectProps}
                                                         placeholder="Select Handover Staff"
-                                                        value={staffOptions.find(
-                                                            (option) => String(option.value) === String(formik.values.handover_to)
-                                                        ) || null}
+                                                        value={
+                                                            staffOptions.find(
+                                                                (option) =>
+                                                                    String(option.value) ===
+                                                                    String(formik.values.handover_to)
+                                                            ) || null
+                                                        }
                                                         onChange={(selectedOption) => {
-                                                            formik.setFieldValue("handover_to", selectedOption ? selectedOption.value : "");
+                                                            formik.setFieldValue(
+                                                                "handover_to",
+                                                                selectedOption ? selectedOption.value : ""
+                                                            );
                                                         }}
                                                         onBlur={() => formik.setFieldTouched("handover_to", true)}
-                                                        isClearable
-                                                        isSearchable
-                                                        classNamePrefix="react-select"
                                                         className={
-                                                            formik.touched.handover_to && formik.errors.handover_to ? "is-invalid" : ""
+                                                            formik.touched.handover_to && formik.errors.handover_to
+                                                                ? "is-invalid"
+                                                                : ""
                                                         }
-                                                        noOptionsMessage={() => "No staff found"}
                                                     />
                                                     {formik.errors.handover_to && formik.touched.handover_to ? (
-                                                        <div className="invalid-feedback d-block">{formik.errors.handover_to}</div>
+                                                        <div className="invalid-feedback d-block">
+                                                            {formik.errors.handover_to}
+                                                        </div>
                                                     ) : null}
                                                 </div>
                                             </Col>
@@ -591,10 +622,7 @@ const StaffExitForm = () => {
                                                                         formik.setFieldValue("logistics_clearance", e.target.checked)
                                                                     }
                                                                 />
-                                                                <Label
-                                                                    className="form-check-label"
-                                                                    htmlFor="logistics_clearance"
-                                                                >
+                                                                <Label className="form-check-label" htmlFor="logistics_clearance">
                                                                     Clearance Approved
                                                                 </Label>
                                                             </div>
@@ -621,7 +649,7 @@ const StaffExitForm = () => {
                                                             <Select
                                                                 inputId="logistics_clearance_by"
                                                                 name="logistics_clearance_by"
-                                                                options={staffOptions}
+                                                                {...commonSelectProps}
                                                                 placeholder="Select Staff"
                                                                 value={
                                                                     staffOptions.find(
@@ -636,11 +664,9 @@ const StaffExitForm = () => {
                                                                         selectedOption ? selectedOption.value : ""
                                                                     );
                                                                 }}
-                                                                onBlur={() => formik.setFieldTouched("logistics_clearance_by", true)}
-                                                                isClearable
-                                                                isSearchable
-                                                                classNamePrefix="react-select"
-                                                                noOptionsMessage={() => "No staff found"}
+                                                                onBlur={() =>
+                                                                    formik.setFieldTouched("logistics_clearance_by", true)
+                                                                }
                                                             />
                                                         </div>
                                                     </Col>
@@ -726,7 +752,7 @@ const StaffExitForm = () => {
                                                             <Select
                                                                 inputId="finance_clearance_by"
                                                                 name="finance_clearance_by"
-                                                                options={staffOptions}
+                                                                {...commonSelectProps}
                                                                 placeholder="Select Staff"
                                                                 value={
                                                                     staffOptions.find(
@@ -741,11 +767,9 @@ const StaffExitForm = () => {
                                                                         selectedOption ? selectedOption.value : ""
                                                                     );
                                                                 }}
-                                                                onBlur={() => formik.setFieldTouched("finance_clearance_by", true)}
-                                                                isClearable
-                                                                isSearchable
-                                                                classNamePrefix="react-select"
-                                                                noOptionsMessage={() => "No staff found"}
+                                                                onBlur={() =>
+                                                                    formik.setFieldTouched("finance_clearance_by", true)
+                                                                }
                                                             />
                                                         </div>
                                                     </Col>
@@ -831,12 +855,13 @@ const StaffExitForm = () => {
                                                             <Select
                                                                 inputId="hr_clearance_by"
                                                                 name="hr_clearance_by"
-                                                                options={staffOptions}
+                                                                {...commonSelectProps}
                                                                 placeholder="Select Staff"
                                                                 value={
                                                                     staffOptions.find(
                                                                         (option) =>
-                                                                            String(option.value) === String(formik.values.hr_clearance_by)
+                                                                            String(option.value) ===
+                                                                            String(formik.values.hr_clearance_by)
                                                                     ) || null
                                                                 }
                                                                 onChange={(selectedOption) => {
@@ -845,11 +870,9 @@ const StaffExitForm = () => {
                                                                         selectedOption ? selectedOption.value : ""
                                                                     );
                                                                 }}
-                                                                onBlur={() => formik.setFieldTouched("hr_clearance_by", true)}
-                                                                isClearable
-                                                                isSearchable
-                                                                classNamePrefix="react-select"
-                                                                noOptionsMessage={() => "No staff found"}
+                                                                onBlur={() =>
+                                                                    formik.setFieldTouched("hr_clearance_by", true)
+                                                                }
                                                             />
                                                         </div>
                                                     </Col>
@@ -935,7 +958,7 @@ const StaffExitForm = () => {
                                                             <Select
                                                                 inputId="sales_clearance_by"
                                                                 name="sales_clearance_by"
-                                                                options={staffOptions}
+                                                                {...commonSelectProps}
                                                                 placeholder="Select Staff"
                                                                 value={
                                                                     staffOptions.find(
@@ -950,11 +973,9 @@ const StaffExitForm = () => {
                                                                         selectedOption ? selectedOption.value : ""
                                                                     );
                                                                 }}
-                                                                onBlur={() => formik.setFieldTouched("sales_clearance_by", true)}
-                                                                isClearable
-                                                                isSearchable
-                                                                classNamePrefix="react-select"
-                                                                noOptionsMessage={() => "No staff found"}
+                                                                onBlur={() =>
+                                                                    formik.setFieldTouched("sales_clearance_by", true)
+                                                                }
                                                             />
                                                         </div>
                                                     </Col>
@@ -1040,12 +1061,13 @@ const StaffExitForm = () => {
                                                             <Select
                                                                 inputId="it_clearance_by"
                                                                 name="it_clearance_by"
-                                                                options={staffOptions}
+                                                                {...commonSelectProps}
                                                                 placeholder="Select Staff"
                                                                 value={
                                                                     staffOptions.find(
                                                                         (option) =>
-                                                                            String(option.value) === String(formik.values.it_clearance_by)
+                                                                            String(option.value) ===
+                                                                            String(formik.values.it_clearance_by)
                                                                     ) || null
                                                                 }
                                                                 onChange={(selectedOption) => {
@@ -1054,11 +1076,9 @@ const StaffExitForm = () => {
                                                                         selectedOption ? selectedOption.value : ""
                                                                     );
                                                                 }}
-                                                                onBlur={() => formik.setFieldTouched("it_clearance_by", true)}
-                                                                isClearable
-                                                                isSearchable
-                                                                classNamePrefix="react-select"
-                                                                noOptionsMessage={() => "No staff found"}
+                                                                onBlur={() =>
+                                                                    formik.setFieldTouched("it_clearance_by", true)
+                                                                }
                                                             />
                                                         </div>
                                                     </Col>
@@ -1106,7 +1126,9 @@ const StaffExitForm = () => {
                                                 <Row>
                                                     <Col lg={6}>
                                                         <div className="mb-3">
-                                                            <Label htmlFor="employee_signature">Employee Signature</Label>
+                                                            <Label htmlFor="employee_signature">
+                                                                Employee Signature
+                                                            </Label>
                                                             <Input
                                                                 type="file"
                                                                 name="employee_signature"
@@ -1131,10 +1153,16 @@ const StaffExitForm = () => {
                                                                 value={formik.values.exit_form_date}
                                                                 onChange={formik.handleChange}
                                                                 onBlur={formik.handleBlur}
-                                                                invalid={formik.touched.exit_form_date && !!formik.errors.exit_form_date}
+                                                                invalid={
+                                                                    formik.touched.exit_form_date &&
+                                                                    !!formik.errors.exit_form_date
+                                                                }
                                                             />
-                                                            {formik.errors.exit_form_date && formik.touched.exit_form_date ? (
-                                                                <FormFeedback>{formik.errors.exit_form_date}</FormFeedback>
+                                                            {formik.errors.exit_form_date &&
+                                                            formik.touched.exit_form_date ? (
+                                                                <FormFeedback>
+                                                                    {formik.errors.exit_form_date}
+                                                                </FormFeedback>
                                                             ) : null}
                                                         </div>
                                                     </Col>
@@ -1143,8 +1171,14 @@ const StaffExitForm = () => {
                                         </Card>
 
                                         <div className="mb-3 mt-4">
-                                            <Button type="submit" color="primary" disabled={submitting || formik.isSubmitting}>
-                                                {submitting || formik.isSubmitting ? "Submitting..." : "Submit"}
+                                            <Button
+                                                type="submit"
+                                                color="primary"
+                                                disabled={submitting || formik.isSubmitting}
+                                            >
+                                                {submitting || formik.isSubmitting
+                                                    ? "Submitting..."
+                                                    : "Submit"}
                                             </Button>
                                         </div>
                                     </Form>

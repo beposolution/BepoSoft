@@ -21,6 +21,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useParams } from "react-router-dom";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import * as XLSX from "xlsx-js-style";
 
 const initialFilters = {
     search: "",
@@ -58,6 +59,7 @@ const TeamDetailsPage = () => {
     const [staffSearch, setStaffSearch] = useState("");
     const [invoiceSearch, setInvoiceSearch] = useState("");
     const [customerSearch, setCustomerSearch] = useState("");
+
     const sectionHeader = {
         textAlign: "center",
         fontWeight: "700",
@@ -83,7 +85,7 @@ const TeamDetailsPage = () => {
 
             const formattedStaffs = staffs.map(item => ({
                 value: String(item?.id || ""),
-                label: `${item?.name || ""} - ${item?.designation || ""}`, // ✅ name + designation
+                label: `${item?.name || ""} - ${item?.designation || ""}`, 
             }));
 
             setStaffOptions(formattedStaffs);
@@ -187,6 +189,7 @@ const TeamDetailsPage = () => {
                     },
                 }
             );
+            console.log("API Response:", response?.data);
 
             const result = response?.data?.results || {};
 
@@ -247,12 +250,12 @@ const TeamDetailsPage = () => {
     }, [customerSearch]);
 
     const staffSelectOptions = useMemo(
-        () => staffOptions, 
+        () => staffOptions,
         [staffOptions]
     );
 
     const invoiceSelectOptions = useMemo(
-        () => invoiceOptions, 
+        () => invoiceOptions,
         [invoiceOptions]
     );
 
@@ -377,6 +380,13 @@ const TeamDetailsPage = () => {
         setCustomerSearch("");
         fetchData(cleared);
     };
+    const COLORS = {
+        primary: "2F5597",   // main blue
+        accent: "34A853",    // green highlight
+        headerBg: "EAF4FF",  // header light
+        cardBg: "F9FAFB",    // soft background
+        border: "D9E1EC"     // borders
+    };
 
     const { totalInvoiceAmount, memberRows } = useMemo(() => {
         const rows = members.map((member) => {
@@ -430,82 +440,640 @@ const TeamDetailsPage = () => {
         padding: "6px 0",
         borderBottom: "1px solid #f3f4f6",
     };
+    const format2 = (val) => {
+        const num = Number(val);
+        return Number.isFinite(num) ? num.toFixed(2) : "0.00";
+    };
+    const HourlyDurationsTable = ({ hourlyDurations }) => {
+        if (!hourlyDurations || Object.keys(hourlyDurations).length === 0) return null;
 
-   const HourlyDurationsTable = ({ hourlyDurations }) => {
-    if (!hourlyDurations || Object.keys(hourlyDurations).length === 0) return null;
+        const slots = Object.keys(hourlyDurations);
+        const values = Object.values(hourlyDurations);
 
-    const slots = Object.keys(hourlyDurations);
-    const values = Object.values(hourlyDurations);
+        return (
+            <div className="mt-3">
+                <div className="fw-semibold text-muted mb-2 text-center">
+                    Hourly Durations (mins)
+                </div>
 
-    return (
-        <div className="mt-3">
-            <div className="fw-semibold text-muted mb-2 text-center">
-                Hourly Durations (mins)
-            </div>
-
-            <div
-                style={{
-                    overflowX: "auto",
-                    WebkitOverflowScrolling: "touch",
-                    borderRadius: "10px",
-                    border: "1px solid #e5e7eb"
-                }}
-            >
-                <Table
-                    bordered
-                    size="sm"
-                    className="mb-0"
+                <div
                     style={{
-                        minWidth: "600px", 
-                        fontSize: "13px"
+                        overflowX: "auto",
+                        WebkitOverflowScrolling: "touch",
+                        borderRadius: "10px",
+                        border: "1px solid #e5e7eb"
                     }}
                 >
-                    <thead className="table-light">
-                        <tr>
-                            {slots.map((slot) => (
-                                <th
-                                    key={slot}
-                                    className="text-center"
-                                    style={{
-                                        whiteSpace: "nowrap",
-                                        padding: "8px"
-                                    }}
-                                >
-                                    {slot}
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
+                    <Table
+                        bordered
+                        size="sm"
+                        className="mb-0"
+                        style={{
+                            minWidth: "600px",
+                            fontSize: "13px"
+                        }}
+                    >
+                        <thead className="table-light">
+                            <tr>
+                                {slots.map((slot) => (
+                                    <th
+                                        key={slot}
+                                        className="text-center"
+                                        style={{
+                                            whiteSpace: "nowrap",
+                                            padding: "8px"
+                                        }}
+                                    >
+                                        {slot}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
 
-                    <tbody>
-                        <tr>
-                            {values.map((val, i) => (
-                                <td
-                                    key={i}
-                                    className="text-center"
-                                    style={{
-                                        padding: "8px",
-                                        fontWeight: "500"
-                                    }}
-                                >
-                                    {Number(val).toFixed(1)}
-                                </td>
-                            ))}
-                        </tr>
-                    </tbody>
-                </Table>
+                        <tbody>
+                            <tr>
+                                {values.map((val, i) => (
+                                    <td
+                                        key={i}
+                                        className="text-center"
+                                        style={{
+                                            padding: "8px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        {format2(val)}
+                                    </td>
+                                ))}
+                            </tr>
+                        </tbody>
+                    </Table>
+                </div>
             </div>
-        </div>
-    );
-};
+        );
+    };
 
+    const exportTeamDetailsExcel = () => {
+        try {
+            if ((!summary || Object.keys(summary).length === 0) && (!members || members.length === 0)) {
+                toast.error("No data to export");
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+            const ws = {};
+            const merges = [];
+
+            const safe = (v) => (v === null || v === undefined || v === "" ? "-" : v);
+            const safeNum = (v) => {
+                return v === null || v === undefined || v === "" ? 0 : Number(v);
+            };
+
+            const format2 = (val) => {
+                const num = Number(val);
+                return Number.isFinite(num) ? Number(num.toFixed(2)) : 0;
+            };
+
+            const col = (c) => XLSX.utils.encode_col(c);
+            const addr = (r, c) => `${col(c)}${r + 1}`;
+
+            const thinBorder = {
+                top: { style: "thin", color: { rgb: "B7C9D9" } },
+                bottom: { style: "thin", color: { rgb: "B7C9D9" } },
+                left: { style: "thin", color: { rgb: "B7C9D9" } },
+                right: { style: "thin", color: { rgb: "B7C9D9" } },
+            };
+
+            const baseStyle = {
+                font: { name: "Calibri", sz: 10, color: { rgb: "1F1F1F" } },
+                alignment: { horizontal: "left", vertical: "center", wrapText: true },
+                border: thinBorder,
+            };
+
+            const setCell = (r, c, value, style = {}, type = "s") => {
+                ws[addr(r, c)] = {
+                    v: value,
+                    t: type,
+                    s: {
+                        ...baseStyle,
+                        ...style,
+                        fill: style.fill || baseStyle.fill, 
+                    },
+                };
+            };
+
+            const mergeRange = (r1, c1, r2, c2) => {
+                merges.push({ s: { r: r1, c: c1 }, e: { r: r2, c: c2 } });
+            };
+
+            const applyBorderToRange = (r1, c1, r2, c2) => {
+                for (let r = r1; r <= r2; r++) {
+                    for (let c = c1; c <= c2; c++) {
+                        const key = addr(r, c);
+                        if (!ws[key]) {
+                            ws[key] = { v: "", t: "s", s: { ...baseStyle } };
+                        }
+                        ws[key].s = { ...ws[key].s, border: thinBorder };
+                    }
+                }
+            };
+
+            const writeSectionTitle = (row, text, totalCols, color = "556EE6") => {
+                const endCol = totalCols - 1;
+
+                setCell(row, 0, text, {
+                    font: { name: "Calibri", sz: 13, bold: true, color: { rgb: "FFFFFF" } },
+                    fill: { fgColor: { rgb: color } },
+                    alignment: { horizontal: "center", vertical: "center" },
+                });
+                mergeRange(row, 0, row, endCol);
+                applyBorderToRange(row, 0, row, endCol);
+            };
+
+            // 5-column boxed table:
+            // - title merged across 5 cols
+            // - label merged across 3 cols
+            // - value merged across 2 cols
+            const writeBoxTable = (startRow, startCol, title, rows, titleColor = "2F5597") => {
+                const endCol = startCol + 4;
+
+                // 🔹 TITLE
+                setCell(startRow, startCol, title, {
+                    font: { name: "Calibri", sz: 11, bold: true, color: { rgb: "FFFFFF" } },
+                    fill: { patternType: "solid", fgColor: { rgb: titleColor } },
+                    alignment: { horizontal: "center", vertical: "center" },
+                });
+                mergeRange(startRow, startCol, startRow, endCol);
+                applyBorderToRange(startRow, startCol, startRow, endCol);
+
+                rows.forEach((item, idx) => {
+                    const r = startRow + 1 + idx;
+
+                    const bgColor = "D9EAF7"; 
+
+                    setCell(r, startCol, item.label, {
+                        font: { name: "Calibri", sz: 10, bold: true },
+                        fill: { patternType: "solid", fgColor: { rgb: bgColor } },
+                        alignment: { horizontal: "left", vertical: "center" },
+                    });
+                    mergeRange(r, startCol, r, startCol + 2);
+
+                    setCell(
+                        r,
+                        startCol + 3,
+                        item.value,
+                        {
+                            font: { name: "Calibri", sz: 10, bold: true },
+                            fill: { patternType: "solid", fgColor: { rgb: bgColor } }, // 🔥 FIX
+                            alignment: { horizontal: "left", vertical: "center" },
+                        },
+                        item.type || (typeof item.value === "number" ? "n" : "s")
+                    );
+                    mergeRange(r, startCol + 3, r, endCol);
+
+                    applyBorderToRange(r, startCol, r, endCol);
+                });
+
+                return startRow + 1 + rows.length;
+            };
+
+            const hourlyKeys = [
+                "09:00-10:00",
+                "10:00-11:00",
+                "11:00-12:00",
+                "12:00-01:00",
+                "01:00-02:00",
+                "02:00-03:00",
+                "03:00-04:00",
+                "04:00-05:00",
+                "05:00-06:00",
+                "06:00-07:00",
+            ];
+
+            setCell(
+                0,
+                0,
+                `${team?.team_name || "TEAM DETAILS"} - EXCEL EXPORT`,
+                {
+                    font: { name: "Calibri", sz: 14, bold: true, color: { rgb: "FFFFFF" } },
+                    fill: { fgColor: { rgb: "7F00FF" } },
+                    alignment: { horizontal: "center", vertical: "center" },
+                }
+            );
+            mergeRange(0, 0, 0, 10);
+            applyBorderToRange(0, 0, 0, 10);
+
+          
+            // =========================
+            // TEAM SUMMARY
+            // =========================
+            let currentRow = 2;
+
+            writeSectionTitle(currentRow, "TEAM SUMMARY", 11, "556EE6");
+            currentRow += 2;
+
+            const totalInvoiceAmount = (members || []).reduce((sum, m) => {
+                const invoiceAmount =
+                    m?.reports?.reduce((s, r) => s + Number(r?.invoice?.invoice_total || 0), 0) || 0;
+                return sum + invoiceAmount;
+            }, 0);
+
+            const teamSummaryRows = [
+                { label: "Total Invoices", value: safeNum(summary?.billing), type: "n" },
+                { label: "Invoice Amount", value: Number(totalInvoiceAmount), type: "n" },
+                { label: "Total Billed", value: safeNum(summary?.total_bill), type: "n" },
+                { label: "Total Unbilled", value: safeNum(summary?.total_unbilled), type: "n" },
+                { label: "Total Calls", value: safeNum(summary?.total_call_count), type: "n" },
+                { label: "Duration", value: format2(summary?.total_call_duration), type: "n" },
+                { label: "Avg", value: format2(summary?.call_duration_average), type: "n" },
+                { label: "8Hr%", value: `${safeNum(summary?.call_duration_percentage_8hrs)}%`, type: "s" },
+                { label: "BDO", value: safeNum(summary?.total_bdo_count), type: "n" },
+                { label: "Active", value: safeNum(summary?.active_count), type: "n" },
+                { label: "Productive", value: safeNum(summary?.productive_count), type: "n" },
+                { label: "New Customers", value: safeNum(summary?.new_customers), type: "n" },
+                { label: "New Conversions", value: safeNum(summary?.new_conversions), type: "n" },
+            ];
+
+            const teamHourlyRows = hourlyKeys.map((slot) => ({
+                label: slot,
+                value: format2(summary?.hourly_durations?.[slot]),
+                type: "n",
+            }));
+
+            const teamLeftEnd = writeBoxTable(currentRow, 0, "TEAM SUMMARY", teamSummaryRows, "7A1F5C");
+
+            const teamRightEnd = writeBoxTable(currentRow, 6, "HOURLY DURATION (MIN)", teamHourlyRows, "7A1F5C");
+
+            currentRow = Math.max(teamLeftEnd, teamRightEnd) + 2;
+
+           
+            // =========================
+            // STAFF SUMMARY (UPDATED TABLE FORMAT)
+            // =========================
+            writeSectionTitle(currentRow, "STAFF SUMMARY", 24, "34A853");
+            currentRow += 2;
+
+            const staffHeader = [
+                "Staff",
+                "Total Invoices",
+                "Invoice Amount",
+                "Total Billed",
+                "Total Unbilled",
+                "Total Calls",
+                "Duration",
+                "Avg",
+                "8Hr%",
+                "BDO",
+                "Active",
+                "Productive",
+                "New Customers",
+                "New Conversions",
+                ...hourlyKeys,
+            ];
+            // ===== GROUP HEADER ROW =====
+            const summaryColCount = 14; // till "New Conversions"
+            const hourlyColStart = summaryColCount;
+            const hourlyColEnd = summaryColCount + hourlyKeys.length - 1;
+
+            // Empty cells for summary section
+            for (let c = 0; c <= hourlyColEnd; c++) {
+                setCell(currentRow, c, "", {
+                    fill: { fgColor: { rgb: "D9EAF7" } }, 
+                });
+            }
+
+            // HOURLY TITLE (merged like your UI)
+            setCell(currentRow, hourlyColStart, "HOURLY DURATION (MIN)", {
+                font: { bold: true, color: { rgb: "000000" } },
+                fill: { fgColor: { rgb: "D9EAF7" } },
+                alignment: { horizontal: "center", vertical: "center" },
+            });
+
+            mergeRange(currentRow, hourlyColStart, currentRow, hourlyColEnd);
+            applyBorderToRange(currentRow, hourlyColStart, currentRow, hourlyColEnd);
+
+            currentRow += 1;
+            staffHeader.forEach((h, c) => {
+                const isHourly = c >= 14;
+
+                setCell(
+                    currentRow,
+                    c,
+                    h,
+                    {
+                        font: { name: "Calibri", sz: 10, bold: true },
+                        fill: {
+                            fgColor: { rgb: isHourly ? "FFD966" : "D9EAF7" },
+                        },
+                        alignment: { horizontal: "center", vertical: "center" },
+                    }
+                );
+                applyBorderToRange(currentRow, c, currentRow, c);
+            });
+            currentRow += 1;
+
+            // Data Rows
+            (members || []).forEach((m) => {
+                const invoiceAmount =
+                    m?.reports?.reduce((sum, r) => sum + Number(r?.invoice?.invoice_total || 0), 0) || 0;
+
+                const rowData = [
+                    m?.staff_name || "-",
+                    safeNum(m?.summary?.billing),
+                    Number(invoiceAmount),
+                    safeNum(m?.summary?.total_bill),
+                    safeNum(m?.summary?.total_unbilled),
+                    safeNum(m?.summary?.total_call_count),
+                    format2(m?.summary?.total_call_duration),
+                    format2(m?.summary?.call_duration_average),
+                    `${safeNum(m?.summary?.call_duration_percentage_8hrs)}%`,
+                    safeNum(m?.summary?.total_bdo_count),
+                    safeNum(m?.summary?.active_count),
+                    safeNum(m?.summary?.productive_count),
+                    safeNum(m?.summary?.new_customers),
+                    safeNum(m?.summary?.new_conversions),
+                    ...hourlyKeys.map((slot) =>
+                        format2(m?.summary?.hourly_durations?.[slot])),
+                ];
+
+                rowData.forEach((value, c) => {
+                    setCell(
+                        currentRow,
+                        c,
+                        value,
+                        {
+                            alignment: {
+                                horizontal: c === 0 ? "left" : "center",
+                                vertical: "center",
+                            },
+                        },
+                        typeof value === "number" ? "n" : "s"
+                    );
+                    applyBorderToRange(currentRow, c, currentRow, c);
+                });
+
+                currentRow += 1;
+            });
+            // ================= TOTAL ROW =================
+            const totalRowIndex = currentRow;
+
+            // Label
+            setCell(totalRowIndex, 0, "TOTAL", {
+                font: { bold: true, color: { rgb: "FFFFFF" } },
+                fill: { fgColor: { rgb: "FF0000" } },
+                alignment: { horizontal: "center", vertical: "center" },
+            });
+
+            // Loop all numeric columns (skip staff name col = 0)
+            for (let c = 1; c < staffHeader.length; c++) {
+                let sum = 0;
+
+                // sum all staff rows
+                for (let i = 0; i < members.length; i++) {
+                    const rowNum = totalRowIndex - members.length + i;
+                    const cellRef = addr(rowNum, c);
+                    const cell = ws[cellRef];
+
+                    if (cell && typeof cell.v === "number") {
+                        sum += Number(cell.v || 0);
+                    }
+                }
+
+                setCell(
+                    totalRowIndex,
+                    c,
+                    Number(sum),
+                    {
+                        font: { bold: true, color: { rgb: "FFFFFF" } },
+                        fill: { fgColor: { rgb: "FF0000" } },
+                        alignment: { horizontal: "center", vertical: "center" },
+                    },
+                    "n"
+                );
+
+                applyBorderToRange(totalRowIndex, c, totalRowIndex, c);
+            }
+
+            // style first cell border
+            applyBorderToRange(totalRowIndex, 0, totalRowIndex, 0);
+
+            currentRow += 1;
+
+            currentRow += 2;
+
+            // =========================
+            // STAFF DETAILS (UNCHANGED)
+            // =========================
+            // writeSectionTitle(currentRow, "STAFF DETAILS", 7, "F46A6A");
+            // currentRow += 2;
+
+            // const staffDetailHeaderRow = currentRow;
+            // const staffDetailHeaders = ["#", "Staff", "Calls", "Duration", "Invoices", "Invoice Amount", "Customers"];
+            // staffDetailHeaders.forEach((h, idx) => {
+            //     setCell(
+            //         staffDetailHeaderRow,
+            //         idx,
+            //         h,
+            //         {
+            //             font: { name: "Calibri", sz: 10, bold: true },
+            //             fill: { fgColor: { rgb: "EAF4FF" } },
+            //             alignment: { horizontal: "center", vertical: "center" },
+            //         }
+            //     );
+            //     applyBorderToRange(staffDetailHeaderRow, idx, staffDetailHeaderRow, idx);
+            // });
+
+            // currentRow += 1;
+
+            // (members || []).forEach((m, idx) => {
+            //     const invoiceAmount =
+            //         m?.reports?.reduce((sum, r) => sum + Number(r?.invoice?.invoice_total || 0), 0) || 0;
+
+            //     const row = [
+            //         idx + 1,
+            //         m?.staff_name || "-",
+            //         safeNum(m?.summary?.total_call_count),
+            //         safeNum(m?.summary?.total_call_duration),
+            //         safeNum(m?.summary?.billing),
+            //         Number(invoiceAmount || 0),
+            //         safeNum(m?.summary?.new_customers),
+            //     ];
+
+            //     row.forEach((value, c) => {
+            //         setCell(
+            //             currentRow,
+            //             c,
+            //             value,
+            //             {
+            //                 alignment: { horizontal: c === 1 ? "left" : "center", vertical: "center" },
+            //             },
+            //             [0, 2, 3, 4, 6].includes(c) ? "n" : "s"
+            //         );
+            //         applyBorderToRange(currentRow, c, currentRow, c);
+            //     });
+            //     currentRow += 1;
+            // });
+
+            // =========================
+            // DETAILED STAFF SUMMARY (UPDATED FORMAT)
+            // =========================
+            currentRow += 2;
+
+            // total columns = 9 (Staff + 8 fields)
+            const detailTotalCols = 8;
+
+            // FULL WIDTH HEADING
+            writeSectionTitle(currentRow, "DETAILED STAFF SUMMARY", detailTotalCols, "556EE6");
+            currentRow += 2;
+
+            // TABLE HEADER
+            const detailHeaders = [
+                "Staff",
+
+                "Customer",
+                "Phone",
+                "Status",
+                "Duration",
+                "Invoice",
+                "Amount",
+                "Note",
+            ];
+
+            detailHeaders.forEach((h, c) => {
+                setCell(
+                    currentRow,
+                    c,
+                    h,
+                    {
+                        font: { bold: true },
+                        fill: { patternType: "solid", fgColor: { rgb: "E8F5E9" } },
+                        alignment: { horizontal: "center", vertical: "center" },
+                    }
+                );
+                applyBorderToRange(currentRow, c, currentRow, c);
+            });
+            currentRow += 1;
+
+            const staffColors = [
+                "E8F5E9", // light green
+                "FFF3E0", // light orange
+              
+            ];
+
+            // DATA ROWS WITH STAFF COLOR BLOCK
+            (members || []).forEach((m, staffIndex) => {
+                const reports = Array.isArray(m?.reports) ? m.reports : [];
+                const bgColor = staffColors[staffIndex % staffColors.length];
+
+                if (reports.length === 0) {
+                    setCell(
+                        currentRow,
+                        0,
+                        m?.staff_name || "-",
+                        {
+                            fill: { patternType: "solid", fgColor: { rgb: bgColor } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            font: { bold: true },
+                        }
+                    );
+
+                    mergeRange(currentRow, 0, currentRow, detailTotalCols - 1);
+                    applyBorderToRange(currentRow, 0, currentRow, detailTotalCols - 1);
+                    currentRow += 1;
+                    return;
+                }
+
+                const startRow = currentRow;
+
+                reports.forEach((report) => {
+                    const rowStyle = {
+                        fill: { patternType: "solid", fgColor: { rgb: bgColor } },
+                    };
+
+                    const values = [
+                        "", // staff column merged later
+                        report?.customer?.name || report?.customer_name || "-",
+                        report?.customer?.phone || report?.phone || "-",
+                        report?.status || "-",
+                        format2(report?.duration),
+                        report?.invoice?.invoice || report?.invoice_no || "-",
+                        Number(report?.invoice?.invoice_total || 0),
+                        report?.note || "-",
+                    ];
+
+                    values.forEach((value, c) => {
+                        setCell(
+                            currentRow,
+                            c,
+                            value,
+                            {
+                                ...rowStyle,
+                                alignment: {
+                                    horizontal: c === 2 ? "left" : "center",
+                                    vertical: "center",
+                                },
+                            },
+                            c === 6 ? "n" : "s"
+                        );
+                        applyBorderToRange(currentRow, c, currentRow, c);
+                    });
+
+                    currentRow += 1;
+                });
+
+                const endRow = currentRow - 1;
+
+                setCell(
+                    startRow,
+                    0,
+                    m?.staff_name || "Staff",
+                    {
+                        font: { bold: true },
+                        fill: { patternType: "solid", fgColor: { rgb: bgColor } },
+                        alignment: { horizontal: "center", vertical: "center" },
+                    }
+                );
+
+                mergeRange(startRow, 0, endRow, 0);
+                applyBorderToRange(startRow, 0, endRow, 0);
+            });
+            const maxRow = currentRow + 2;
+
+            const lastCol = XLSX.utils.encode_col(staffHeader.length - 1);
+            ws["!ref"] = `A1:${lastCol}${maxRow}`;
+            ws["!merges"] = merges;
+
+            ws["!cols"] = staffHeader.map((header, colIndex) => {
+                let maxLength = header.length;
+
+                for (let r = 0; r <= maxRow; r++) {
+                    const cell = ws[addr(r, colIndex)];
+                    if (cell && cell.v) {
+                        maxLength = Math.max(maxLength, String(cell.v).length);
+                    }
+                }
+
+                return { wch: maxLength + 2 };
+            });
+            ws["!rows"] = [];
+            ws["!rows"][0] = { hpt: 24 };
+
+            const sheetName = "Team Details";
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
+            XLSX.writeFile(wb, `${team?.team_name || "Team_Details"}_Export.xlsx`);
+
+            toast.success("Excel exported successfully");
+        } catch (error) {
+            console.error(error);
+            toast.error("Excel export failed");
+        }
+    };
     return (
         <React.Fragment>
             <div className="page-content">
                 <Container fluid>
                     <Breadcrumbs title="Sales" breadcrumbItem="Team Details" />
 
-                
+
 
                     {error ? (
                         <Alert color="danger" className="mb-4">
@@ -521,10 +1089,19 @@ const TeamDetailsPage = () => {
                                         <CardTitle className="mb-0">
                                             {team?.team_name || "Team Details"}
                                         </CardTitle>
-                                        <div className="d-flex align-items-center gap-3">
+                                        <div className="d-flex align-items-center gap-2">
                                             <div className="text-muted small">
                                                 Active Filters: <strong>{activeFilterCount}</strong>
                                             </div>
+
+                                            <Button
+                                                color="success"
+                                                onClick={exportTeamDetailsExcel}
+                                                disabled={loading || dropdownLoading || (!summary && !members.length)}
+                                            >
+                                                Export Excel
+                                            </Button>
+
                                             <Button
                                                 color="primary"
                                                 outline
@@ -742,7 +1319,7 @@ const TeamDetailsPage = () => {
                                     margin: "8px auto 0",
                                     borderRadius: "2px"
                                 }} />
-                            </div>                      
+                            </div>
                             <Row className="g-3 mb-2">
                                 <Col md={3}>
                                     <div style={statBox}>
@@ -752,7 +1329,7 @@ const TeamDetailsPage = () => {
                                         </div>
                                         <div style={rowItem}>
                                             <span>Invoice Amount</span>
-                                            <strong>{totalInvoiceAmount.toFixed(2)}</strong>
+                                            <strong>{Number(totalInvoiceAmount || 0)}</strong>
                                         </div>
                                         <div style={rowItem}>
                                             <span>Total Billed</span>
@@ -773,11 +1350,11 @@ const TeamDetailsPage = () => {
                                         </div>
                                         <div style={rowItem}>
                                             <span>Duration</span>
-                                            <strong>{summary.total_call_duration ?? 0}</strong>
+                                            <strong>{format2(summary.total_call_duration)}</strong>
                                         </div>
                                         <div style={rowItem}>
                                             <span>Avg</span>
-                                            <strong>{summary.call_duration_average ?? 0}</strong>
+                                            <strong>{format2(summary.call_duration_average)}</strong>
                                         </div>
                                         <div style={{ ...rowItem, borderBottom: "none" }}>
                                             <span>8Hr%</span>
@@ -849,7 +1426,7 @@ const TeamDetailsPage = () => {
                                                 </div>
                                                 <div style={rowItem}>
                                                     <span>Invoice Amount</span>
-                                                    <strong>{Number(m.invoiceAmount || 0).toFixed(2)}</strong>
+                                                    <strong>{Number(m.invoiceAmount || 0)}</strong>
                                                 </div>
                                                 <div style={rowItem}>
                                                     <span>Total Billed</span>
@@ -870,11 +1447,11 @@ const TeamDetailsPage = () => {
                                                 </div>
                                                 <div style={rowItem}>
                                                     <span>Duration</span>
-                                                    <strong>{m.summary?.total_call_duration ?? 0}</strong>
+                                                    <strong>{format2(m.summary?.total_call_duration)}</strong>
                                                 </div>
                                                 <div style={rowItem}>
                                                     <span>Avg</span>
-                                                    <strong>{m.summary?.call_duration_average ?? 0}</strong>
+                                                    <strong>{format2(m.summary?.call_duration_average)}</strong>
                                                 </div>
                                                 <div style={{ ...rowItem, borderBottom: "none" }}>
                                                     <span>8Hr%</span>
@@ -957,7 +1534,7 @@ const TeamDetailsPage = () => {
                                                     <td>{m.summary?.total_call_count ?? 0}</td>
                                                     <td>{m.summary?.total_call_duration ?? 0}</td>
                                                     <td>{m.summary?.billing ?? 0}</td>
-                                                    <td>{Number(m.invoiceAmount || 0).toFixed(2)}</td>
+                                                    <td>{Number(m.invoiceAmount || 0)}</td>
                                                     <td>{m.summary?.new_customers ?? 0}</td>
                                                 </tr>
                                             ))
@@ -1012,6 +1589,7 @@ const TeamDetailsPage = () => {
                                                 <th>Duration</th>
                                                 <th>Invoice</th>
                                                 <th>Amount</th>
+                                                <th>Note</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1022,14 +1600,15 @@ const TeamDetailsPage = () => {
                                                         <td>{r.customer_name || "-"}</td>
                                                         <td>{r.phone || "-"}</td>
                                                         <td>{r.call_status || "-"}</td>
-                                                        <td>{r.call_duration || "-"}</td>
+                                                        <td>{format2(r.call_duration)}</td>
                                                         <td>{r.invoice?.invoice || "-"}</td>
-                                                        <td>{Number(r?.invoice?.invoice_total || 0).toFixed(2)}</td>
+                                                        <td>{Number(r?.invoice?.invoice_total || 0)}</td>
+                                                        <td>{r.note || "-"}</td>
                                                     </tr>
                                                 ))
                                             ) : (
                                                 <tr>
-                                                    <td colSpan="7" className="text-center py-4">
+                                                    <td colSpan="8" className="text-center py-4">
                                                         No reports found
                                                     </td>
                                                 </tr>

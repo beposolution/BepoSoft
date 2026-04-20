@@ -83,7 +83,7 @@ const TeamDetailsPage = () => {
 
             const formattedStaffs = staffs.map(item => ({
                 value: String(item?.id || ""),
-                label: `${item?.name || ""} - ${item?.designation || ""}`, // ✅ name + designation
+                label: `${item?.name || ""} - ${item?.designation || ""}`,
             }));
 
             setStaffOptions(formattedStaffs);
@@ -247,12 +247,12 @@ const TeamDetailsPage = () => {
     }, [customerSearch]);
 
     const staffSelectOptions = useMemo(
-        () => staffOptions, 
+        () => staffOptions,
         [staffOptions]
     );
 
     const invoiceSelectOptions = useMemo(
-        () => invoiceOptions, 
+        () => invoiceOptions,
         [invoiceOptions]
     );
 
@@ -431,73 +431,73 @@ const TeamDetailsPage = () => {
         borderBottom: "1px solid #f3f4f6",
     };
 
-   const HourlyDurationsTable = ({ hourlyDurations }) => {
-    if (!hourlyDurations || Object.keys(hourlyDurations).length === 0) return null;
+    const HourlyDurationsTable = ({ hourlyDurations }) => {
+        if (!hourlyDurations || Object.keys(hourlyDurations).length === 0) return null;
 
-    const slots = Object.keys(hourlyDurations);
-    const values = Object.values(hourlyDurations);
+        const slots = Object.keys(hourlyDurations);
+        const values = Object.values(hourlyDurations);
 
-    return (
-        <div className="mt-3">
-            <div className="fw-semibold text-muted mb-2 text-center">
-                Hourly Durations (mins)
-            </div>
+        return (
+            <div className="mt-3">
+                <div className="fw-semibold text-muted mb-2 text-center">
+                    Hourly Durations (mins)
+                </div>
 
-            <div
-                style={{
-                    overflowX: "auto",
-                    WebkitOverflowScrolling: "touch",
-                    borderRadius: "10px",
-                    border: "1px solid #e5e7eb"
-                }}
-            >
-                <Table
-                    bordered
-                    size="sm"
-                    className="mb-0"
+                <div
                     style={{
-                        minWidth: "600px", 
-                        fontSize: "13px"
+                        overflowX: "auto",
+                        WebkitOverflowScrolling: "touch",
+                        borderRadius: "10px",
+                        border: "1px solid #e5e7eb"
                     }}
                 >
-                    <thead className="table-light">
-                        <tr>
-                            {slots.map((slot) => (
-                                <th
-                                    key={slot}
-                                    className="text-center"
-                                    style={{
-                                        whiteSpace: "nowrap",
-                                        padding: "8px"
-                                    }}
-                                >
-                                    {slot}
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
+                    <Table
+                        bordered
+                        size="sm"
+                        className="mb-0"
+                        style={{
+                            minWidth: "600px",
+                            fontSize: "13px"
+                        }}
+                    >
+                        <thead className="table-light">
+                            <tr>
+                                {slots.map((slot) => (
+                                    <th
+                                        key={slot}
+                                        className="text-center"
+                                        style={{
+                                            whiteSpace: "nowrap",
+                                            padding: "8px"
+                                        }}
+                                    >
+                                        {slot}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
 
-                    <tbody>
-                        <tr>
-                            {values.map((val, i) => (
-                                <td
-                                    key={i}
-                                    className="text-center"
-                                    style={{
-                                        padding: "8px",
-                                        fontWeight: "500"
-                                    }}
-                                >
-                                    {Number(val).toFixed(1)}
-                                </td>
-                            ))}
-                        </tr>
-                    </tbody>
-                </Table>
+                        <tbody>
+                            <tr>
+                                {values.map((val, i) => (
+                                    <td
+                                        key={i}
+                                        className="text-center"
+                                        style={{
+                                            padding: "8px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        {Number(val).toFixed(1)}
+                                    </td>
+                                ))}
+                            </tr>
+                        </tbody>
+                    </Table>
+                </div>
             </div>
-        </div>
-    );
-};
+        );
+    };
 
     return (
         <React.Fragment>
@@ -505,7 +505,7 @@ const TeamDetailsPage = () => {
                 <Container fluid>
                     <Breadcrumbs title="Sales" breadcrumbItem="Team Details" />
 
-                
+
 
                     {error ? (
                         <Alert color="danger" className="mb-4">
@@ -742,7 +742,7 @@ const TeamDetailsPage = () => {
                                     margin: "8px auto 0",
                                     borderRadius: "2px"
                                 }} />
-                            </div>                      
+                            </div>
                             <Row className="g-3 mb-2">
                                 <Col md={3}>
                                     <div style={statBox}>
@@ -945,7 +945,7 @@ const TeamDetailsPage = () => {
                                             <th>Duration</th>
                                             <th>Invoices</th>
                                             <th>Invoice Amount</th>
-                                            <th>Customers</th>
+                                            <th>New Customers</th>
                                         </tr>
                                     </thead>
                                     <tbody>

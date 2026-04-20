@@ -1107,7 +1107,6 @@ const StatisticsApplications = () => {
                                                                         </div>
                                                                     </Col>
 
-                                                                    {/* ✅ FIXED: RAW DURATION (NO CONVERSION) */}
                                                                     <Col xs={6}>
                                                                         <div className="bg-light rounded p-2 text-center">
                                                                             <small className="text-muted">Duration</small>

@@ -618,8 +618,6 @@ const StatisticsApplications = () => {
                     }
                 );
 
-                console.log("FAMILY SUMMARY API:", response.data); // 👈 DEBUG
-
                 setFamilyData(response?.data?.families || []);
             } catch (error) {
                 toast.error("Failed to fetch family summary");

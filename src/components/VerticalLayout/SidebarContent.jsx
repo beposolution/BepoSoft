@@ -850,11 +850,11 @@ const SidebarContent = (props) => {
             ) : null} */}
 
 
-            {/* {(role === 'BDM' || role === 'ADMIN' || role === 'COO' || role === 'CEO') && (
+            {(role === 'BDM' || role === 'ADMIN' || role === 'COO' || role === 'CEO') && (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUserTie size={17} style={{ marginRight: '6px' }} />
-                  <span>{props.t("BDM Report")}</span>
+                  <span>{props.t("BDM Report (Attendance)")}</span>
                 </Link>
 
                 <ul className="sub-menu" aria-expanded="false">
@@ -887,7 +887,7 @@ const SidebarContent = (props) => {
                   )}
                 </ul>
               </li>
-            )} */}
+            )}
 
 
             {/* {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'COO' || role === 'CEO' || role === 'SD' || role === 'BDM' ? (

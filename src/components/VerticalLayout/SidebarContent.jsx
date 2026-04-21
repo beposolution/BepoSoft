@@ -850,7 +850,8 @@ const SidebarContent = (props) => {
             ) : null} */}
 
 
-            {(role === 'BDM' || role === 'ADMIN' || role === 'COO' || role === 'CEO') && (
+            {/* {(role === 'BDM' || role === 'ADMIN' || role === 'COO' || role === 'CEO') && ( */}
+            {(role === 'BDM') && (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUserTie size={17} style={{ marginRight: '6px' }} />
@@ -870,21 +871,21 @@ const SidebarContent = (props) => {
                           {props.t("BDM Order Report Add")}
                         </Link>
                       </li>
-                      <li>
+                      {/* <li>
                         <Link to="/bdm/view/bdo/overall/report/">
                           {props.t("BDM BDO's Order Report Summary")}
                         </Link>
-                      </li>
+                      </li> */}
                     </>
                   )}
 
-                  {(role === 'ADMIN' || role === 'COO' || role === 'CEO') && (
+                  {/* {(role === 'ADMIN' || role === 'COO' || role === 'CEO') && (
                     <li>
                       <Link to="/bdm/daily/overall/report/">
                         {props.t("BDM Order Report Summary")}
                       </Link>
                     </li>
-                  )}
+                  )} */}
                 </ul>
               </li>
             )}

@@ -386,7 +386,9 @@ const StatisticsApplications = () => {
                 const todayRows = Object.entries(summary.data || {}).map(
                     ([service, values]) => ({
                         parcel_service: service,
-                        averageAmount: Number(values.today?.average || 0).toFixed(2),
+                        total_actual_weight_kg: values.today?.total_actual_weight_kg || 0,
+                        total_parcel_amount: values.today?.total_parcel_amount || 0,
+                        average: Number(values.today?.average || 0).toFixed(2),
                     })
                 );
 
@@ -1530,12 +1532,15 @@ const StatisticsApplications = () => {
                                         <div className="text-center text-muted mb-1">
                                             {fmtRangeDate(todayDate)}
                                         </div>
+
                                         <Table className="table table-bordered table-sm text-center mb-0">
                                             <thead>
                                                 <tr>
                                                     <th>#</th>
                                                     <th>Parcel Service</th>
-                                                    <th>Average</th>
+                                                    <th>Parcel Amount (₹)</th>
+                                                    <th>Actual Weight (kg)</th>
+                                                    <th>Average (₹/kg)</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -1544,26 +1549,47 @@ const StatisticsApplications = () => {
                                                         <tr key={index}>
                                                             <td>{index + 1}</td>
                                                             <td>{item.parcel_service}</td>
-                                                            <td>₹ {item.averageAmount}</td>
+                                                            <td>
+                                                                ₹ {Number(item.total_parcel_amount || 0).toLocaleString("en-IN", {
+                                                                    minimumFractionDigits: 2,
+                                                                    maximumFractionDigits: 2,
+                                                                })}
+                                                            </td>
+                                                            <td>
+                                                                {Number(item.total_actual_weight_kg || 0).toLocaleString("en-IN", {
+                                                                    minimumFractionDigits: 2,
+                                                                    maximumFractionDigits: 3,
+                                                                })}
+                                                            </td>
+                                                            <td>{item.average}</td>
                                                         </tr>
                                                     ))
                                                 ) : (
                                                     <tr>
-                                                        <td colSpan="3" className="text-center text-muted">
+                                                        <td colSpan="9" className="text-center text-muted">
                                                             No data available
                                                         </td>
                                                     </tr>
                                                 )}
                                             </tbody>
+
                                             {warehouseSummary?.today_summary && (
                                                 <tfoot>
                                                     <tr className="table-primary fw-bold">
                                                         <td colSpan="2">TOTAL</td>
                                                         <td>
-                                                            ₹ {Number(
-                                                                warehouseSummary.today_summary.average || 0
-                                                            ).toFixed(2)}
+                                                            {Number(warehouseSummary.today_summary.total_actual_weight_kg || 0).toLocaleString("en-IN", {
+                                                                minimumFractionDigits: 2,
+                                                                maximumFractionDigits: 3,
+                                                            })}
                                                         </td>
+                                                        <td>
+                                                            ₹ {Number(warehouseSummary.today_summary.total_parcel_amount || 0).toLocaleString("en-IN", {
+                                                                minimumFractionDigits: 2,
+                                                                maximumFractionDigits: 2,
+                                                            })}
+                                                        </td>
+                                                        <td>{Number(warehouseSummary.today_summary.average || 0).toFixed(2)}</td>
                                                     </tr>
                                                 </tfoot>
                                             )}

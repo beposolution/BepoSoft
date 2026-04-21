@@ -33,6 +33,10 @@ const initialFilters = {
     invoice_id: "",
     customer_id: "",
 };
+ const format2 = (val) => {
+                const num = Number(val);
+                return Number.isFinite(num) ? Number(num.toFixed(2)) : 0;
+            };
 const TeamDetailsPage = () => {
     document.title = "Team Details | Beposoft";
 
@@ -189,7 +193,6 @@ const TeamDetailsPage = () => {
                     },
                 }
             );
-            console.log("API Response:", response?.data);
 
             const result = response?.data?.results || {};
 
@@ -525,10 +528,7 @@ const TeamDetailsPage = () => {
                 return v === null || v === undefined || v === "" ? 0 : Number(v);
             };
 
-            const format2 = (val) => {
-                const num = Number(val);
-                return Number.isFinite(num) ? Number(num.toFixed(2)) : 0;
-            };
+           
 
             const col = (c) => XLSX.utils.encode_col(c);
             const addr = (r, c) => `${col(c)}${r + 1}`;
@@ -1064,6 +1064,7 @@ const TeamDetailsPage = () => {
             toast.error("Excel export failed");
         }
     };
+   
     return (
         <React.Fragment>
             <div className="page-content">

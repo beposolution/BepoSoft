@@ -85,7 +85,7 @@ const TeamDetailsPage = () => {
 
             const formattedStaffs = staffs.map(item => ({
                 value: String(item?.id || ""),
-                label: `${item?.name || ""} - ${item?.designation || ""}`, 
+                label: `${item?.name || ""} - ${item?.designation || ""}`,
             }));
 
             setStaffOptions(formattedStaffs);
@@ -440,10 +440,7 @@ const TeamDetailsPage = () => {
         padding: "6px 0",
         borderBottom: "1px solid #f3f4f6",
     };
-    const format2 = (val) => {
-        const num = Number(val);
-        return Number.isFinite(num) ? num.toFixed(2) : "0.00";
-    };
+
     const HourlyDurationsTable = ({ hourlyDurations }) => {
         if (!hourlyDurations || Object.keys(hourlyDurations).length === 0) return null;
 
@@ -501,7 +498,7 @@ const TeamDetailsPage = () => {
                                             fontWeight: "500"
                                         }}
                                     >
-                                        {format2(val)}
+                                        {Number(val).toFixed(1)}
                                     </td>
                                 ))}
                             </tr>
@@ -1522,7 +1519,7 @@ const TeamDetailsPage = () => {
                                             <th>Duration</th>
                                             <th>Invoices</th>
                                             <th>Invoice Amount</th>
-                                            <th>Customers</th>
+                                            <th>New Customers</th>
                                         </tr>
                                     </thead>
                                     <tbody>

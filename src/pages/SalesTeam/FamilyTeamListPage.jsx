@@ -277,7 +277,7 @@ const FamilyTeamListPage = () => {
                             <div style={card}>
                                 <Title text="Customers" />
                                 <Item label="New Customers" value={summary.new_customers} />
-                                <Item label="Conversions" value={summary.new_conversions} last />
+                                <Item label="New Conversions" value={summary.new_conversions} last />
                             </div>
                         </Col>
 
@@ -293,8 +293,7 @@ const FamilyTeamListPage = () => {
                             </div>
                         </Col>
 
-
-                        {/*  HOURLY TABLE */}
+                        {/* TIME DURATION TABLE */}
                         <Col xl={8} lg={7} md={12}>
                             <div style={card}>
                                 <Title text="Hourly Durations" />
@@ -409,8 +408,8 @@ const FamilyTeamListPage = () => {
                                         <th>Amount</th>
                                         <th>Billed</th>
                                         <th>Unbilled</th>
-                                        <th>Customers</th>
-                                        <th>Conversions</th>
+                                        <th>New Customers</th>
+                                        <th>New Conversions</th>
                                         <th>Hourly Durations</th>
                                     </tr>
                                 </thead>
@@ -442,6 +441,7 @@ const FamilyTeamListPage = () => {
                                             <td>{team.summary?.new_customers ?? 0}</td>
                                             <td>{team.summary?.new_conversions ?? 0}</td>
 
+                                            {/* DETAILED TIME DURATION TABLE */}
                                             <td>
                                                 <div style={{ overflowX: "auto" }}>
                                                     <Table

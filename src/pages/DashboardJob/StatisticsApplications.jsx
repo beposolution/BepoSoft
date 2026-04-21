@@ -47,6 +47,7 @@ const StatisticsApplications = () => {
     const [callDuration, setCallDuration] = useState([]);
     const [familyData, setFamilyData] = useState([]);
     const [familyLoading, setFamilyLoading] = useState(false);
+    const [orderSummary, setOrderSummary] = useState([]);
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -247,6 +248,29 @@ const StatisticsApplications = () => {
 
         if (token) {
             fetchCallDurationData();
+        }
+    }, [token]);
+
+
+    useEffect(() => {
+        const fetchOrderSummaryData = async () => {
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}order/dashboard/summary/`,
+                    {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }
+                );
+
+                setOrderSummary(response.data);
+
+            } catch (error) {
+                toast.error("Error fetching BDO order data");
+            }
+        };
+
+        if (token) {
+            fetchOrderSummaryData();
         }
     }, [token]);
 
@@ -752,6 +776,9 @@ const StatisticsApplications = () => {
     }, 0);
 
 
+    const totalBills = orderSummary.total_bills || 0;
+    const totalAmount = orderSummary.total_amount || 0;
+
 
 
 
@@ -1195,7 +1222,7 @@ const StatisticsApplications = () => {
                                                 {/* Left Column - 1/3 width */}
                                                 <div className="w-33 flex-shrink-0 p-4 border rounded-4 shadow-sm bg-light d-flex flex-column justify-content-center align-items-center text-center">
                                                     <p className="text-muted fw-medium mb-1">Total Bill</p>
-                                                    <h4 className="mb-0">{todayBills}</h4>
+                                                    <h4 className="mb-0">{totalBills}</h4>
                                                 </div>
 
                                                 {/* Right Column - 2/3 width with two rows */}
@@ -1207,7 +1234,7 @@ const StatisticsApplications = () => {
 
                                                     {/* Row 2: Total Volume */}
                                                     <div className="p-4 border rounded-4 shadow-sm bg-light text-center">
-                                                        <p className="text-muted fw-medium mb-1">Total Volume: <span>₹<strong>{totalVolume.toFixed(2)}</strong></span></p>
+                                                        <p className="text-muted fw-medium mb-1">Total Volume: <span>₹<strong>{totalAmount.toFixed(2)}</strong></span></p>
                                                     </div>
                                                 </div>
                                             </div>

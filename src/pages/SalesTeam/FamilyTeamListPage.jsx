@@ -285,9 +285,11 @@ const FamilyTeamListPage = () => {
                         <Col xl={4} lg={5} md={6} sm={12}>
                             <div style={card}>
                                 <Title text="Attendance" />
-                                <Item label="Present" value={summary.present_count} />
-                                <Item label="Absent" value={summary.absent_count} />
-                                <Item label="Half Day" value={summary.half_day_count} last />
+
+                                <Item label="Present" value={attendanceDetails.present.length} />
+                                <Item label="Absent" value={attendanceDetails.absent.length} />
+                                <Item label="Half Day" value={attendanceDetails.half_day.length} />
+
                             </div>
                         </Col>
 
@@ -317,6 +319,66 @@ const FamilyTeamListPage = () => {
                                     </Table>
                                 </div>
 
+                            </div>
+                        </Col>
+                        <Col xl={12}>
+                            <div style={card}>
+                                <Title text="Attendance Details (Staff Wise)" />
+
+                                <Row className="g-3">
+
+                                    <Col md={4}>
+                                        <div style={card}>
+                                            <h6 className="fw-bold text-success mb-3">Present</h6>
+
+                                            {attendanceDetails.present.length > 0 ? (
+                                                attendanceDetails.present.map((item, i) => (
+                                                    <div key={i} style={rowItemStyle}>
+                                                        <span>{item.staff_name}</span>
+
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="text-muted">No Data</div>
+                                            )}
+                                        </div>
+                                    </Col>
+
+                                    <Col md={4}>
+                                        <div style={card}>
+                                            <h6 className="fw-bold text-danger mb-3">Absent</h6>
+
+                                            {attendanceDetails.absent.length > 0 ? (
+                                                attendanceDetails.absent.map((item, i) => (
+                                                    <div key={i} style={rowItemStyle}>
+                                                        <span>{item.staff_name}</span>
+
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="text-muted">No Data</div>
+                                            )}
+                                        </div>
+                                    </Col>
+
+                                    <Col md={4}>
+                                        <div style={card}>
+                                            <h6 className="fw-bold text-warning mb-3">Half Day</h6>
+
+                                            {attendanceDetails.half_day.length > 0 ? (
+                                                attendanceDetails.half_day.map((item, i) => (
+                                                    <div key={i} style={rowItemStyle}>
+                                                        <span>{item.staff_name}</span>
+
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="text-muted">No Data</div>
+                                            )}
+                                        </div>
+                                    </Col>
+
+                                </Row>
                             </div>
                         </Col>
 

@@ -368,6 +368,8 @@ const StatisticsApplications = () => {
         fetchCategoryCountData();
     }, [selectedDate]);
 
+    const todaysDate = new Date().toLocaleDateString('en-CA'); // "YYYY-MM-DD" format
+
 
     useEffect(() => {
         const fetchCategoryWiseCountData = async () => {
@@ -377,8 +379,8 @@ const StatisticsApplications = () => {
                     {
                         headers: { Authorization: `Bearer ${token}` },
                         params: {
-                            start_date: categoryStartDate || undefined,
-                            end_date: categoryEndDate || undefined,
+                            start_date: categoryStartDate || todaysDate,
+                            end_date: categoryEndDate || todaysDate,
                         },
                     }
                 );
@@ -392,7 +394,7 @@ const StatisticsApplications = () => {
         if (token) {
             fetchCategoryWiseCountData();
         }
-    }, [token, categoryStartDate, categoryEndDate]);
+    }, [token, categoryStartDate, categoryEndDate, todaysDate]);
 
 
     useEffect(() => {

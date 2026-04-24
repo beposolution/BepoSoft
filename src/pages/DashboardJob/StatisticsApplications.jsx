@@ -783,6 +783,8 @@ const StatisticsApplications = () => {
 
 
 
+    if (role !== "CEO" && role !== "COO") return null;
+
 
     return (
         <React.Fragment>

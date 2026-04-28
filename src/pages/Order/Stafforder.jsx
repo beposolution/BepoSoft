@@ -32,7 +32,7 @@ const FormLayouts = () => {
     const [TaxAmount, setTaxAmount] = useState(0);
     const [shippingCharge, setShippingCharge] = useState(0);
     const [paymentReceipts, setpaymentReceipts] = useState("");
-
+    const token = localStorage.getItem("token");
     const [modal, setModal] = useState(false);
     const toggleReciptModal = () => setIsOpen(!isOpen);
     const [isOpen, setIsOpen] = useState(false);
@@ -40,6 +40,9 @@ const FormLayouts = () => {
     const [banks, setBanks] = useState([]);
     const [selectedBank, setSelectedBank] = useState('');
     const [role, setRole] = useState(null);
+    const [parcelService, setParcelService] = useState([]);
+    const [orderParcelServiceId, setOrderParcelServiceId] = useState("");
+    const [orderParcelServiceNote, setOrderParcelServiceNote] = useState("");
 
     // Toggle modal visibility
 
@@ -147,6 +150,23 @@ const FormLayouts = () => {
     }, []);
 
     useEffect(() => {
+        const fetchParcelServiceData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}parcal/service/`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                setParcelService(response?.data?.data)
+            } catch (error) {
+                toast.error("Error fetching family data.")
+            }
+        };
+        fetchParcelServiceData();
+    }, [])
+
+
+    useEffect(() => {
         const fetchBanks = async () => {
             try {
                 const response = await fetch(`${import.meta.env.VITE_APP_KEY}banks/`, {
@@ -246,6 +266,9 @@ const FormLayouts = () => {
                 calculateTotalNetPrice(data.items || []);
                 calculateNetAmountBeforTax(data.items || []);
                 calculateTaxAmount(data.items || []);
+
+                setOrderParcelServiceId(data.order.parcel_service || "");
+                setOrderParcelServiceNote(data.order.parcel_service_note || "");
 
             }
         } catch (error) {
@@ -429,11 +452,131 @@ const FormLayouts = () => {
         window.open(pdfUrl, "_blank");
 
     }
+
+
+    const handleParcelServiceUpdate = async () => {
+        try {
+            const payload = {
+                parcel_service: orderParcelServiceId ? Number(orderParcelServiceId) : null,
+                parcel_service_note: orderParcelServiceNote || "",
+            };
+
+            const response = await axios.put(
+                `${import.meta.env.VITE_APP_KEY}shipping/${id}/order/`,
+                payload,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            toast.success("Parcel service details updated successfully");
+            fetchOrderData();
+
+        } catch (error) {
+            console.error("Parcel service update failed:", error?.response?.data || error);
+            toast.error("Failed to update parcel service details");
+        }
+    };
+
+    const getParcelServiceName = () => {
+        const selectedService = parcelService.find(
+            service => Number(service.id) === Number(orderParcelServiceId)
+        );
+
+        return selectedService
+            ? `${selectedService.name} (${selectedService.label})`
+            : "";
+    };
+
+
+    const allowedStaffDetailsRoles = [
+        "ADMIN",
+        "Accounts / Accounting",
+        "BDM",
+        "BDO",
+    ];
+
+    const allowedStaffDetailsStatusesForOthers = [
+        "Invoice Created",
+        "Invoice Approved",
+        "Waiting For Confirmation",
+    ];
+
+    const showStaffAddedDetails =
+        allowedStaffDetailsRoles.includes(role) &&
+        (
+            role === "BDO"
+                ? formik.values.status === "Invoice Created"
+                : role === "BDM"
+                    ? ["Invoice Created", "Invoice Approved"].includes(formik.values.status)
+                    : allowedStaffDetailsStatusesForOthers.includes(formik.values.status)
+        );
+
+
     return (
         <React.Fragment>
             <div className="page-content">
                 <Container fluid={true}>
                     <Breadcrumbs title="Forms" breadcrumbItem="Form Layouts" />
+
+                    <Row>
+                        {showStaffAddedDetails && (
+                            <Row>
+                                <Col xl={12}>
+                                    <Card>
+                                        <CardBody>
+                                            <CardTitle>Staff Added Details (Sales Persons)</CardTitle>
+
+                                            <Row>
+                                                <Col md={6}>
+                                                    <Label>Parcel Service</Label>
+                                                    <Input
+                                                        type="select"
+                                                        value={orderParcelServiceId}
+                                                        onChange={(e) => setOrderParcelServiceId(e.target.value)}
+                                                    >
+                                                        <option value="">Select Parcel Service</option>
+
+                                                        {parcelService.map((service) => (
+                                                            <option key={service.id} value={service.id}>
+                                                                {service.name} ({service.label})
+                                                            </option>
+                                                        ))}
+                                                    </Input>
+                                                </Col>
+
+                                                <Col md={6}>
+                                                    <Label>Parcel Service Note</Label>
+                                                    <Input
+                                                        type="textarea"
+                                                        value={orderParcelServiceNote}
+                                                        onChange={(e) => setOrderParcelServiceNote(e.target.value)}
+                                                        rows="2"
+                                                        placeholder="Enter parcel service note"
+                                                    />
+                                                </Col>
+                                            </Row>
+
+                                            <Row>
+                                                <Col md={2} className="d-flex align-items-end mt-3">
+                                                    <Button
+                                                        color="primary"
+                                                        onClick={handleParcelServiceUpdate}
+                                                    >
+                                                        Save
+                                                    </Button>
+                                                </Col>
+                                            </Row>
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+                            </Row>
+                        )}
+                    </Row>
+
                     <Row>
 
                         <Col xl={12}>
@@ -991,7 +1134,7 @@ const FormLayouts = () => {
 
 
 
-                            {(role === "ADMIN" || role === "BDM"|| role === "BDO") && (
+                            {(role === "ADMIN" || role === "BDM" || role === "BDO") && (
                                 <Information />
                             )}
                             {(role === "ADMIN" || role === "BDM") && (

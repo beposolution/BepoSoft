@@ -710,7 +710,7 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                                                                 <tr key={packedItems.id || index}>
                                                                     <th scope="row">{index + 1}</th>
                                                                     <td>{packedItems.box}</td>
-                                                                    <td>{packedItems.parcel_service || 'N/A'}</td>
+                                                                    <td>{packedItems.parcel_service_name || 'N/A'}</td>
                                                                     <td>{packedItems.tracking_id || 'N/A'}</td>
                                                                     {/* <td>{packedItems.status || 'N/A'}</td> */}
                                                                     {packedItems.parcel_amount ? (

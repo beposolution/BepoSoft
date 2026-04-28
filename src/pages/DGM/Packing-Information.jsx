@@ -27,6 +27,37 @@ const FormRepeater = () => {
     const { id } = useParams();
     const [parcelServiceData, setParcelServiceData] = useState();
     const [userData, setUserData] = useState();
+    const [orderParcelService, setOrderParcelService] = useState("");
+
+    useEffect(() => {
+        const fetchOrderData = async () => {
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}order/${id}/items/`,
+                    {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }
+                );
+
+                const parcelServiceId = response?.data?.order?.parcel_service || "";
+
+                setOrderParcelService(parcelServiceId);
+
+                setFormRows((prevRows) =>
+                    prevRows.map((row) => ({
+                        ...row,
+                        parcel_service: parcelServiceId,
+                    }))
+                );
+            } catch (error) {
+                toast.error("Error fetching order parcel service");
+            }
+        };
+
+        if (id && token) {
+            fetchOrderData();
+        }
+    }, [id, token]);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -89,7 +120,6 @@ const FormRepeater = () => {
     }, [token]);
 
     const onAddFormRow = () => {
-        const firstServiceId = parcelServiceData?.data?.[0]?.id || "";
         setFormRows([
             ...formRows,
             {
@@ -97,7 +127,7 @@ const FormRepeater = () => {
                 box: `Box ${formRows.length + 1}`,
                 tracking_id: "",
                 packed_by: userData,
-                parcel_service: firstServiceId,
+                parcel_service: orderParcelService,
             },
         ]);
     };
@@ -114,7 +144,7 @@ const FormRepeater = () => {
         setFormRows(formRows.map(row => row.id === rowId ? { ...row, image: file } : row));
     };
 
-    // ✅ Handle form submission with success toggle
+    //Handle form submission with success toggle
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {

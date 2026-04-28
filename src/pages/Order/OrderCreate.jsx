@@ -10,6 +10,7 @@ import html2canvas from "html2canvas";
 import { Link } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Select from "react-select";
 
 const FormLayouts = () => {
     document.title = "New Order | Beposoft";
@@ -39,6 +40,7 @@ const FormLayouts = () => {
     const [cartTotalAmount, setCartTotalAmount] = useState(0);
     const [cartTotalDiscount, setCartTotalDiscount] = useState(0);
     const [finalAmount, setFinalAmount] = useState(0);
+    const [parcelServices, setParcelServices] = useState([]);
 
     const isMarketing = role === "Marketing";
 
@@ -83,6 +85,8 @@ const FormLayouts = () => {
             cod_status: "",
             cod_amount: "",
             adv_cod_amount: "",
+            parcel_service: "",
+            parcel_service_note: "",
         },
         validationSchema: Yup.object({
             state: Yup.string().required("This field is required"),
@@ -229,7 +233,7 @@ const FormLayouts = () => {
             const fetchData = async () => {
                 setLoading(true);
                 try {
-                    const [statesResponse, ManagedResponse, familyResponse, StaffResponse, staffcustomersResponse, bankResponse, companyResponse, warehouseResponse] = await Promise.all([
+                    const [statesResponse, ManagedResponse, familyResponse, StaffResponse, staffcustomersResponse, bankResponse, companyResponse, warehouseResponse, parcelServiceResponse] = await Promise.all([
                         axios.get(`${import.meta.env.VITE_APP_KEY}states/`, { headers: { Authorization: `Bearer ${token}` } }),
                         axios.get(`${import.meta.env.VITE_APP_KEY}staffs/`, { headers: { Authorization: `Bearer ${token}` } }),
                         axios.get(`${import.meta.env.VITE_APP_KEY}familys/`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -237,7 +241,8 @@ const FormLayouts = () => {
                         axios.get(`${import.meta.env.VITE_APP_KEY}customers/`, { headers: { Authorization: `Bearer ${token}` } }),
                         axios.get(`${import.meta.env.VITE_APP_KEY}banks/`, { headers: { Authorization: `Bearer ${token}` } }),
                         axios.get(`${import.meta.env.VITE_APP_KEY}company/data/`, { headers: { Authorization: `Bearer ${token}` } }),
-                        axios.get(`${import.meta.env.VITE_APP_KEY}warehouse/add/`, { headers: { Authorization: `Bearer ${token}` } })
+                        axios.get(`${import.meta.env.VITE_APP_KEY}warehouse/add/`, { headers: { Authorization: `Bearer ${token}` } }),
+                        axios.get(`${import.meta.env.VITE_APP_KEY}parcal/service/`, { headers: { Authorization: `Bearer ${token}` } })
                     ]);
 
                     if (statesResponse.status === 200) {
@@ -277,6 +282,10 @@ const FormLayouts = () => {
                     }
                     if (warehouseResponse.status === 200) {
                         setWarehouseDetails(warehouseResponse.data);
+                    }
+
+                    if (parcelServiceResponse.status === 200) {
+                        setParcelServices(parcelServiceResponse.data.data);
                     }
 
                 } catch (error) {
@@ -518,6 +527,13 @@ const FormLayouts = () => {
         }
     }, [cartProducts]); // Runs whenever cartProducts changes
 
+
+    const parcelServiceOptions = parcelServices.map((service) => ({
+        value: service.id,
+        label: `${service.label} - ${service.name}`,
+    }));
+
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -531,7 +547,7 @@ const FormLayouts = () => {
 
                                     <Form onSubmit={formik.handleSubmit}>
                                         <Row>
-                                            <Col md={6}>
+                                            <Col md={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="company">Company</Label>
                                                     <Input
@@ -557,7 +573,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col md={6}>
+                                            <Col md={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="family">Division</Label>
                                                     <Input
@@ -582,6 +598,59 @@ const FormLayouts = () => {
                                                     ) : null}
                                                 </div>
                                             </Col>
+
+                                            <Col md={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="manage_staff">Order Mode</Label>
+                                                    <Input
+                                                        type="select"
+                                                        name="status"
+                                                        className="form-control"
+                                                        id="manage_staff"
+                                                        value={formik.values.status}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.manage_staff && formik.errors.manage_staff ? true : false}
+                                                    >
+                                                        <option value="">Select order mode...</option>
+                                                        {orderMode.map((mode) => (
+                                                            <option key={mode.name} value={mode.name}>
+                                                                {mode.name}
+                                                            </option>
+                                                        ))}
+                                                    </Input>
+                                                    {formik.errors.manage_staff && formik.touched.manage_staff ? (
+                                                        <FormFeedback type="invalid">{formik.errors.manage_staff}</FormFeedback>
+                                                    ) : null}
+                                                </div>
+                                            </Col>
+
+                                            <Col md={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="manage_staff">Manage Staff</Label>
+                                                    <Input
+                                                        type="select"
+                                                        name="manage_staff"
+                                                        className="form-control"
+                                                        id="manage_staff"
+                                                        value={formik.values.manage_staff}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.manage_staff && formik.errors.manage_staff ? true : false}
+                                                    >
+                                                        <option value="">Select a manage_staff...</option>
+                                                        {staffs.map((staf) => (
+                                                            <option key={staf.id} value={staf.id}>
+                                                                {staf.name}
+                                                            </option>
+                                                        ))}
+                                                    </Input>
+                                                    {formik.errors.manage_staff && formik.touched.manage_staff ? (
+                                                        <FormFeedback type="invalid">{formik.errors.manage_staff}</FormFeedback>
+                                                    ) : null}
+                                                </div>
+                                            </Col>
+
                                         </Row>
 
                                         <Row>
@@ -643,55 +712,46 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col md={4}>
+                                            <Col md={3}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="manage_staff">order mode</Label>
-                                                    <Input
-                                                        type="select"
-                                                        name="status"
-                                                        className="form-control"
-                                                        id="manage_staff"
-                                                        value={formik.values.status}
-                                                        onChange={formik.handleChange}
-                                                        onBlur={formik.handleBlur}
-                                                        invalid={formik.touched.manage_staff && formik.errors.manage_staff ? true : false}
-                                                    >
-                                                        <option value="">Select order mode...</option>
-                                                        {orderMode.map((mode) => (
-                                                            <option key={mode.name} value={mode.name}>
-                                                                {mode.name}
-                                                            </option>
-                                                        ))}
-                                                    </Input>
-                                                    {formik.errors.manage_staff && formik.touched.manage_staff ? (
-                                                        <FormFeedback type="invalid">{formik.errors.manage_staff}</FormFeedback>
-                                                    ) : null}
+                                                    <Label htmlFor="parcel_service">Parcel Service</Label>
+
+                                                    <Select
+                                                        id="parcel_service"
+                                                        name="parcel_service"
+                                                        options={parcelServiceOptions}
+                                                        placeholder="Search or select parcel service..."
+                                                        isSearchable
+                                                        value={
+                                                            parcelServiceOptions.find(
+                                                                (option) => option.value === formik.values.parcel_service
+                                                            ) || null
+                                                        }
+                                                        onChange={(selectedOption) => {
+                                                            formik.setFieldValue(
+                                                                "parcel_service",
+                                                                selectedOption ? selectedOption.value : ""
+                                                            );
+                                                        }}
+                                                        onBlur={() => formik.setFieldTouched("parcel_service", true)}
+                                                    />
                                                 </div>
                                             </Col>
 
-                                            <Col md={4}>
+                                            <Col md={5}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="manage_staff">manage_staff</Label>
+                                                    <Label htmlFor="parcel_service_note">Parcel Service Note</Label>
                                                     <Input
-                                                        type="select"
-                                                        name="manage_staff"
+                                                        type="textarea"
+                                                        name="parcel_service_note"
                                                         className="form-control"
-                                                        id="manage_staff"
-                                                        value={formik.values.manage_staff}
+                                                        id="parcel_service_note"
+                                                        placeholder="Enter parcel service note"
+                                                        rows="5"
+                                                        value={formik.values.parcel_service_note}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
-                                                        invalid={formik.touched.manage_staff && formik.errors.manage_staff ? true : false}
-                                                    >
-                                                        <option value="">Select a manage_staff...</option>
-                                                        {staffs.map((staf) => (
-                                                            <option key={staf.id} value={staf.id}>
-                                                                {staf.name}
-                                                            </option>
-                                                        ))}
-                                                    </Input>
-                                                    {formik.errors.manage_staff && formik.touched.manage_staff ? (
-                                                        <FormFeedback type="invalid">{formik.errors.manage_staff}</FormFeedback>
-                                                    ) : null}
+                                                    />
                                                 </div>
                                             </Col>
                                         </Row>

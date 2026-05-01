@@ -10,6 +10,7 @@ import {
   Form,
   Label,
   Input,
+  Badge,
 } from "reactstrap";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
@@ -23,6 +24,8 @@ const AddParcelService = () => {
   const [editId, setEditId] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
+
+  document.title = "Parcel Services | Beposoft";
 
   const token = localStorage.getItem("token");
   const apiBase = import.meta.env.VITE_APP_KEY;
@@ -137,55 +140,182 @@ const AddParcelService = () => {
 
   return (
     <React.Fragment>
-      <div className="page-content">
+      <div className="page-content" style={{ backgroundColor: "#f3f6fb" }}>
         <ToastContainer />
 
         <div className="container-fluid">
-          <Breadcrumbs title="Tables" breadcrumbItem="ADD PARCEL SERVICE" />
+          {/* <Breadcrumbs title="CRM Settings" breadcrumbItem="Parcel Services" /> */}
 
           <Row>
-            <Col>
-              <Card>
-                <CardBody>
+            <Col xl={12}>
+              <Card
+                className="border-0"
+                style={{
+                  borderRadius: "18px",
+                  boxShadow: "0 8px 25px rgba(15, 23, 42, 0.10)",
+                }}
+              >
+                <CardBody className="p-4">
+                  <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+                    <div>
+                      <h4
+                        className="mb-1"
+                        style={{
+                          fontWeight: "800",
+                          color: "#111827",
+                          fontSize: "22px",
+                        }}
+                      >
+                        {editId
+                          ? "Update Parcel Service"
+                          : "Add New Parcel Service"}
+                      </h4>
+
+                      <p
+                        className="mb-0"
+                        style={{
+                          color: "#475569",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        {editId
+                          ? "Modify the selected parcel service details."
+                          : "Create parcel services used for order and courier management."}
+                      </p>
+                    </div>
+
+                    <div className="d-flex gap-2 flex-wrap">
+                      <Badge
+                        color="primary"
+                        pill
+                        className="px-3 py-2"
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: "700",
+                        }}
+                      >
+                        Total Services: {parcelServices.length}
+                      </Badge>
+
+                      {editId && (
+                        <Badge
+                          color="warning"
+                          pill
+                          className="px-3 py-2"
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "700",
+                            color: "#111827",
+                          }}
+                        >
+                          Edit Mode
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
                   <Form onSubmit={handleSubmit}>
-                    <Row>
-                      <Col md={6}>
-                        <Label htmlFor="name">Parcel Service Name</Label>
+                    <Row className="g-3 align-items-end">
+                      <Col md={5}>
+                        <Label
+                          htmlFor="name"
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: "800",
+                            color: "#111827",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          Parcel Service Name
+                        </Label>
+
                         <Input
                           id="name"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           required
+                          placeholder="Example: Speed Post"
+                          style={{
+                            height: "48px",
+                            borderRadius: "10px",
+                            border: "1.5px solid #b8c2d6",
+                            color: "#111827",
+                            fontSize: "14px",
+                            fontWeight: "600",
+                            backgroundColor: "#ffffff",
+                          }}
                         />
                       </Col>
 
-                      <Col md={6}>
-                        <Label htmlFor="label">Label</Label>
+                      <Col md={5}>
+                        <Label
+                          htmlFor="label"
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: "800",
+                            color: "#111827",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          Label
+                        </Label>
+
                         <Input
                           id="label"
                           value={label}
                           onChange={(e) => setLabel(e.target.value)}
                           required
+                          placeholder="Example: SPEED"
+                          style={{
+                            height: "48px",
+                            borderRadius: "10px",
+                            border: "1.5px solid #b8c2d6",
+                            color: "#111827",
+                            fontSize: "14px",
+                            fontWeight: "600",
+                            backgroundColor: "#ffffff",
+                          }}
                         />
+                      </Col>
+
+                      <Col md={2}>
+                        <Button
+                          color="primary"
+                          type="submit"
+                          className="w-100"
+                          style={{
+                            height: "48px",
+                            borderRadius: "10px",
+                            fontSize: "14px",
+                            fontWeight: "800",
+                            backgroundColor: "#1d4ed8",
+                            borderColor: "#1d4ed8",
+                            boxShadow: "0 8px 18px rgba(29, 78, 216, 0.30)",
+                          }}
+                        >
+                          {editId ? "Update" : "Add"}
+                        </Button>
                       </Col>
                     </Row>
 
-                    <Button className="mt-2" color="primary" type="submit">
-                      {editId ? "Update Parcel Service" : "Add Parcel Service"}
-                    </Button>
-
                     {editId && (
                       <Button
-                        className="mt-2 ms-2"
+                        className="mt-3"
                         color="secondary"
                         type="button"
+                        style={{
+                          borderRadius: "10px",
+                          fontWeight: "700",
+                          padding: "10px 24px",
+                        }}
                         onClick={() => {
                           setEditId(null);
                           setName("");
                           setLabel("");
                         }}
                       >
-                        Cancel
+                        Cancel Edit
                       </Button>
                     )}
                   </Form>
@@ -196,46 +326,230 @@ const AddParcelService = () => {
 
           <Row>
             <Col xl={12}>
-              <Card>
-                <CardBody>
-                  <Row className="mb-3 align-items-center">
+              <Card
+                className="border-0 mt-0"
+                style={{
+                  borderRadius: "18px",
+                  boxShadow: "0 8px 25px rgba(15, 23, 42, 0.10)",
+                }}
+              >
+                <CardBody className="p-4">
+                  <Row className="mb-4 align-items-center g-3">
                     <Col md={6}>
-                      <h5 className="mb-0">Parcel Services</h5>
+                      <h4
+                        className="mb-1"
+                        style={{
+                          fontWeight: "800",
+                          color: "#111827",
+                          fontSize: "22px",
+                        }}
+                      >
+                        Parcel Services
+                      </h4>
+
+                      <p
+                        className="mb-0"
+                        style={{
+                          color: "#475569",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        Manage all parcel service records from one place.
+                      </p>
                     </Col>
 
                     <Col md={6}>
                       <Input
                         type="text"
-                        placeholder="Search by name or label..."
+                        placeholder="Search by service name or label..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{
+                          height: "48px",
+                          borderRadius: "10px",
+                          border: "1.5px solid #b8c2d6",
+                          color: "#111827",
+                          fontSize: "14px",
+                          fontWeight: "600",
+                          backgroundColor: "#ffffff",
+                        }}
                       />
                     </Col>
                   </Row>
 
-                  <div className="table-responsive">
-                    <Table className="table mb-0">
+                  <div
+                    className="table-responsive"
+                    style={{
+                      border: "1.5px solid #d7deea",
+                      borderRadius: "14px",
+                      overflow: "hidden",
+                      backgroundColor: "#ffffff",
+                    }}
+                  >
+                    <Table className="table mb-0 align-middle">
                       <thead>
-                        <tr>
-                          <th>#</th>
-                          <th>Name</th>
-                          <th>Label</th>
-                          <th>Action</th>
+                        <tr style={{ backgroundColor: "#eaf0fb" }}>
+                          <th
+                            style={{
+                              width: "80px",
+                              padding: "16px 14px",
+                              color: "#1e293b",
+                              fontSize: "13px",
+                              fontWeight: "800",
+                              borderBottom: "1.5px solid #cbd5e1",
+                            }}
+                          >
+                            #
+                          </th>
+
+                          <th
+                            style={{
+                              padding: "16px 14px",
+                              color: "#1e293b",
+                              fontSize: "13px",
+                              fontWeight: "800",
+                              borderBottom: "1.5px solid #cbd5e1",
+                            }}
+                          >
+                            Service Name
+                          </th>
+
+                          <th
+                            style={{
+                              padding: "16px 14px",
+                              color: "#1e293b",
+                              fontSize: "13px",
+                              fontWeight: "800",
+                              borderBottom: "1.5px solid #cbd5e1",
+                            }}
+                          >
+                            Label
+                          </th>
+
+                          <th
+                            className="text-end"
+                            style={{
+                              width: "160px",
+                              padding: "16px 14px",
+                              color: "#1e293b",
+                              fontSize: "13px",
+                              fontWeight: "800",
+                              borderBottom: "1.5px solid #cbd5e1",
+                            }}
+                          >
+                            Action
+                          </th>
                         </tr>
                       </thead>
 
                       <tbody>
                         {currentItems.length > 0 ? (
                           currentItems.map((service, index) => (
-                            <tr key={service.id}>
-                              <td>{indexOfFirstItem + index + 1}</td>
-                              <td>{service.name}</td>
-                              <td>{service.label}</td>
-                              <td>
+                            <tr
+                              key={service.id}
+                              style={{
+                                borderBottom: "1px solid #dfe6f1",
+                              }}
+                            >
+                              <td
+                                style={{
+                                  padding: "16px 14px",
+                                  color: "#334155",
+                                  fontSize: "14px",
+                                  fontWeight: "700",
+                                }}
+                              >
+                                {indexOfFirstItem + index + 1}
+                              </td>
+
+                              <td style={{ padding: "16px 14px" }}>
+                                <div className="d-flex align-items-center gap-3">
+                                  <div
+                                    className="rounded-circle d-flex align-items-center justify-content-center"
+                                    style={{
+                                      width: "42px",
+                                      height: "42px",
+                                      backgroundColor: "#dbeafe",
+                                      color: "#1d4ed8",
+                                      fontWeight: "900",
+                                      fontSize: "14px",
+                                      border: "1px solid #bfdbfe",
+                                    }}
+                                  >
+                                    {service?.name
+                                      ? service.name
+                                          .substring(0, 2)
+                                          .toUpperCase()
+                                      : "PS"}
+                                  </div>
+
+                                  <div>
+                                    <h6
+                                      className="mb-1"
+                                      style={{
+                                        fontSize: "14px",
+                                        fontWeight: "900",
+                                        color: "#0f172a",
+                                        letterSpacing: "0.2px",
+                                      }}
+                                    >
+                                      {service.name}
+                                    </h6>
+
+                                    <small
+                                      style={{
+                                        color: "#64748b",
+                                        fontSize: "12px",
+                                        fontWeight: "600",
+                                      }}
+                                    >
+                                      Parcel service
+                                    </small>
+                                  </div>
+                                </div>
+                              </td>
+
+                              <td style={{ padding: "16px 14px" }}>
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    minWidth: "82px",
+                                    padding: "8px 16px",
+                                    backgroundColor: "#2563eb",
+                                    color: "#ffffff",
+                                    border: "1.5px solid #1d4ed8",
+                                    borderRadius: "10px",
+                                    fontSize: "13px",
+                                    fontWeight: "900",
+                                    letterSpacing: "0.2px",
+                                    boxShadow:
+                                      "0 4px 10px rgba(37, 99, 235, 0.28)",
+                                    textTransform: "uppercase",
+                                  }}
+                                >
+                                  {service.label}
+                                </span>
+                              </td>
+
+                              <td
+                                className="text-end"
+                                style={{ padding: "16px 14px" }}
+                              >
                                 <Button
-                                  color="warning"
                                   size="sm"
                                   onClick={() => handleEdit(service)}
+                                  style={{
+                                    backgroundColor: "#f59e0b",
+                                    borderColor: "#f59e0b",
+                                    color: "#111827",
+                                    borderRadius: "8px",
+                                    fontSize: "12px",
+                                    fontWeight: "900",
+                                    padding: "8px 18px",
+                                  }}
                                 >
                                   Edit
                                 </Button>
@@ -244,14 +558,36 @@ const AddParcelService = () => {
                           ))
                         ) : (
                           <tr>
-                            <td colSpan="4" className="text-center">
-                              No parcel services found
+                            <td colSpan="4">
+                              <div className="text-center py-5">
+                                <h5
+                                  style={{
+                                    fontWeight: "800",
+                                    color: "#111827",
+                                  }}
+                                >
+                                  No parcel services found
+                                </h5>
+
+                                <p
+                                  className="mb-0"
+                                  style={{
+                                    color: "#475569",
+                                    fontWeight: "500",
+                                  }}
+                                >
+                                  Try another search keyword or add a new parcel
+                                  service.
+                                </p>
+                              </div>
                             </td>
                           </tr>
                         )}
                       </tbody>
                     </Table>
+                  </div>
 
+                  <div className="mt-3">
                     <Pagination
                       perPageData={perPageData}
                       data={filteredParcelServices}

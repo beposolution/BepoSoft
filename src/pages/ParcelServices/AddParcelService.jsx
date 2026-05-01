@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from "react";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
-import { Card, CardBody, Col, Row, Table, Button, Form, Label, Input } from "reactstrap";
+import {
+  Card,
+  CardBody,
+  Col,
+  Row,
+  Table,
+  Button,
+  Form,
+  Label,
+  Input,
+} from "reactstrap";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -12,15 +22,13 @@ const AddParcelService = () => {
   const [label, setLabel] = useState("");
   const [editId, setEditId] = useState(null);
 
+  const [searchTerm, setSearchTerm] = useState("");
+
   const token = localStorage.getItem("token");
   const apiBase = import.meta.env.VITE_APP_KEY;
 
   const [currentPage, setCurrentPage] = useState(1);
-  const perPageData = 5;
-
-  const indexOfLastItem = currentPage * perPageData;
-  const indexOfFirstItem = indexOfLastItem - perPageData;
-  const currentItems = parcelServices.slice(indexOfFirstItem, indexOfLastItem);
+  const perPageData = 25;
 
   const axiosCfg = {
     headers: {
@@ -28,6 +36,22 @@ const AddParcelService = () => {
       "Content-Type": "application/json",
     },
   };
+
+  const filteredParcelServices = parcelServices.filter((service) => {
+    const search = searchTerm.toLowerCase();
+
+    return (
+      service?.name?.toLowerCase().includes(search) ||
+      service?.label?.toLowerCase().includes(search)
+    );
+  });
+
+  const indexOfLastItem = currentPage * perPageData;
+  const indexOfFirstItem = indexOfLastItem - perPageData;
+  const currentItems = filteredParcelServices.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
 
   const fetchParcelServices = async () => {
     try {
@@ -60,6 +84,7 @@ const AddParcelService = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
       if (editId) {
         await axios.put(
@@ -67,14 +92,15 @@ const AddParcelService = () => {
           { name, label },
           axiosCfg
         );
+
         toast.success("Parcel service updated successfully!");
       } else {
-        // Create
         const createRes = await axios.post(
           `${apiBase}parcal/service/`,
           { name, label },
           axiosCfg
         );
+
         toast.success("Parcel service added successfully!");
 
         const created = createRes?.data?.data ?? createRes?.data ?? null;
@@ -94,16 +120,26 @@ const AddParcelService = () => {
     setName(service.name);
     setLabel(service.label);
     setEditId(service.id);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   };
 
   useEffect(() => {
     fetchParcelServices();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   return (
     <React.Fragment>
       <div className="page-content">
         <ToastContainer />
+
         <div className="container-fluid">
           <Breadcrumbs title="Tables" breadcrumbItem="ADD PARCEL SERVICE" />
 
@@ -122,6 +158,7 @@ const AddParcelService = () => {
                           required
                         />
                       </Col>
+
                       <Col md={6}>
                         <Label htmlFor="label">Label</Label>
                         <Input
@@ -132,9 +169,11 @@ const AddParcelService = () => {
                         />
                       </Col>
                     </Row>
+
                     <Button className="mt-2" color="primary" type="submit">
                       {editId ? "Update Parcel Service" : "Add Parcel Service"}
                     </Button>
+
                     {editId && (
                       <Button
                         className="mt-2 ms-2"
@@ -159,6 +198,21 @@ const AddParcelService = () => {
             <Col xl={12}>
               <Card>
                 <CardBody>
+                  <Row className="mb-3 align-items-center">
+                    <Col md={6}>
+                      <h5 className="mb-0">Parcel Services</h5>
+                    </Col>
+
+                    <Col md={6}>
+                      <Input
+                        type="text"
+                        placeholder="Search by name or label..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </Col>
+                  </Row>
+
                   <div className="table-responsive">
                     <Table className="table mb-0">
                       <thead>
@@ -169,28 +223,38 @@ const AddParcelService = () => {
                           <th>Action</th>
                         </tr>
                       </thead>
+
                       <tbody>
-                        {currentItems.map((service, index) => (
-                          <tr key={service.id}>
-                            <td>{indexOfFirstItem + index + 1}</td>
-                            <td>{service.name}</td>
-                            <td>{service.label}</td>
-                            <td>
-                              <Button
-                                color="warning"
-                                size="sm"
-                                onClick={() => handleEdit(service)}
-                              >
-                                Edit
-                              </Button>
+                        {currentItems.length > 0 ? (
+                          currentItems.map((service, index) => (
+                            <tr key={service.id}>
+                              <td>{indexOfFirstItem + index + 1}</td>
+                              <td>{service.name}</td>
+                              <td>{service.label}</td>
+                              <td>
+                                <Button
+                                  color="warning"
+                                  size="sm"
+                                  onClick={() => handleEdit(service)}
+                                >
+                                  Edit
+                                </Button>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="4" className="text-center">
+                              No parcel services found
                             </td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                     </Table>
+
                     <Pagination
                       perPageData={perPageData}
-                      data={parcelServices}
+                      data={filteredParcelServices}
                       currentPage={currentPage}
                       setCurrentPage={setCurrentPage}
                       isShowingPageLength={true}

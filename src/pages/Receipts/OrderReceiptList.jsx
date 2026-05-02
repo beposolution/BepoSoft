@@ -37,7 +37,6 @@ const OrderReceiptList = () => {
     const [modalLoading, setModalLoading] = useState(false);
 
     const [banks, setBanks] = useState([]);
-    const [users, setUsers] = useState([]);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -51,7 +50,7 @@ const OrderReceiptList = () => {
     const [filterOrder, setFilterOrder] = useState(null);
     const [filterCustomer, setFilterCustomer] = useState(null);
     const [filterBank, setFilterBank] = useState('');
-    const [filterCreatedBy, setFilterCreatedBy] = useState('');
+    const [filterCreatedBy, setFilterCreatedBy] = useState(null);
 
     const rsStyles = {
         menuPortal: base => ({ ...base, zIndex: 9999 }),
@@ -82,12 +81,11 @@ const OrderReceiptList = () => {
     };
 
     const loadCustomers = async (inputValue) => {
-        if (!inputValue) return [];
-
         try {
             const response = await axios.get(
-                `${import.meta.env.VITE_APP_KEY}customers/?search=${inputValue}`,
+                `${import.meta.env.VITE_APP_KEY}customers/`,
                 {
+                    params: inputValue ? { search: inputValue } : {},
                     headers: { Authorization: `Bearer ${token}` }
                 }
             );
@@ -103,12 +101,11 @@ const OrderReceiptList = () => {
     };
 
     const loadOrders = async (inputValue) => {
-        if (!inputValue) return [];
-
         try {
             const response = await axios.get(
-                `${import.meta.env.VITE_APP_KEY}orders/?search=${inputValue}`,
+                `${import.meta.env.VITE_APP_KEY}orders/`,
                 {
+                    params: inputValue ? { search: inputValue } : {},
                     headers: { Authorization: `Bearer ${token}` }
                 }
             );
@@ -122,6 +119,29 @@ const OrderReceiptList = () => {
 
         } catch (error) {
             console.error("Order search error:", error);
+            return [];
+        }
+    };
+
+    const loadStaffs = async (inputValue) => {
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}get/staffs/`,
+                {
+                    params: inputValue ? { search: inputValue } : {},
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            const staffsData = response?.data?.results?.data || [];
+
+            return staffsData.map(staff => ({
+                value: String(staff.id),
+                label: `${staff.name}${staff.department_name ? ` - ${staff.department_name}` : ""}${staff.phone ? ` - ${staff.phone}` : ""}`
+            }));
+
+        } catch (error) {
+            console.error("Staff search error:", error);
             return [];
         }
     };
@@ -146,28 +166,6 @@ const OrderReceiptList = () => {
         };
 
         fetchBanks();
-    }, []);
-
-    useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const response = await axios.get(
-                    `${import.meta.env.VITE_APP_KEY}users/`,
-                    {
-                        headers: { Authorization: `Bearer ${token}` }
-                    }
-                );
-
-                if (response?.status === 200) {
-                    setUsers(response.data.data || []);
-                }
-
-            } catch (error) {
-                toast.error("Error fetching users");
-            }
-        };
-
-        fetchUsers();
     }, []);
 
     const fetchReceiptData = async (
@@ -205,8 +203,8 @@ const OrderReceiptList = () => {
                 params.append("bank", activeBank);
             }
 
-            if (activeCreatedBy) {
-                params.append("created_by", activeCreatedBy);
+            if (activeCreatedBy?.value) {
+                params.append("created_by", activeCreatedBy.value);
             }
 
             if (activeStartDate) {
@@ -252,7 +250,7 @@ const OrderReceiptList = () => {
             filterOrder: null,
             filterCustomer: null,
             filterBank: '',
-            filterCreatedBy: '',
+            filterCreatedBy: null,
             startDate: '',
             endDate: '',
         };
@@ -261,7 +259,7 @@ const OrderReceiptList = () => {
         setFilterOrder(null);
         setFilterCustomer(null);
         setFilterBank('');
-        setFilterCreatedBy('');
+        setFilterCreatedBy(null);
         setStartDate('');
         setEndDate('');
 
@@ -469,19 +467,18 @@ const OrderReceiptList = () => {
                                         </Col>
 
                                         <Col md={3}>
-                                            <Label>Created By</Label>
-                                            <Input
-                                                type="select"
+                                            <Label>Created Staff</Label>
+                                            <AsyncSelect
+                                                cacheOptions
+                                                defaultOptions
+                                                loadOptions={loadStaffs}
                                                 value={filterCreatedBy}
-                                                onChange={(e) => setFilterCreatedBy(e.target.value)}
-                                            >
-                                                <option value="">All Users</option>
-                                                {users.map((user) => (
-                                                    <option key={user.id} value={user.id}>
-                                                        {user.name || user.username}
-                                                    </option>
-                                                ))}
-                                            </Input>
+                                                onChange={(opt) => setFilterCreatedBy(opt)}
+                                                placeholder="Search Staff Name"
+                                                isClearable
+                                                menuPortalTarget={document.body}
+                                                styles={rsStyles}
+                                            />
                                         </Col>
 
                                         <Col md={2}>

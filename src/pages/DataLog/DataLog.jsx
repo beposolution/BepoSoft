@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardBody,
@@ -12,12 +12,13 @@ import {
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Paginations from "../../components/Common/Pagination";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 
 const DataLog = () => {
   const [logs, setLogs] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
@@ -25,7 +26,8 @@ const DataLog = () => {
   const role = localStorage.getItem("active");
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [perPageData] = useState(25);
+  const [perPageData] = useState(50);
+  const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   document.title = "Data Log Details | Beposoft";
@@ -88,37 +90,53 @@ const DataLog = () => {
 
   const fetchLogs = async () => {
     try {
-      setLogs([]);
-      const allLogs = [];
-      let page = 1;
-      let totalPages = 1;
+      setLoading(true);
 
-      toast.info("Fetching logs, please wait...");
+      const params = new URLSearchParams();
+      params.append("page", currentPage);
+      params.append("page_size", perPageData);
 
-      while (page <= totalPages) {
-        const { data } = await axios.get(
-          `${import.meta.env.VITE_APP_KEY}datalog/?page=${page}&page_size=500`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        const logsArray = Array.isArray(data) ? data : data.results || [];
-        const normalized = logsArray.map((log) => {
-          const before = unwrapDataIfLoose(normalizeAny(log.before_data));
-          const after = unwrapDataIfLoose(normalizeAny(log.after_data));
-          return { ...log, before_data: before, after_data: after };
-        });
-
-        allLogs.push(...normalized);
-        setLogs([...allLogs]);
-
-        const total = data.count || 0;
-        const pageSize = data.page_size || 500;
-        totalPages = Math.ceil(total / pageSize);
-        page++;
+      if (searchQuery.trim()) {
+        params.append("search", searchQuery.trim());
       }
-      toast.success(`Loaded ${allLogs.length} logs successfully`);
+
+      if (startDate) {
+        params.append("start_date", startDate);
+      }
+
+      if (endDate) {
+        params.append("end_date", endDate);
+      }
+
+      const { data } = await axios.get(
+        `${import.meta.env.VITE_APP_KEY}datalog/?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const logsArray = Array.isArray(data) ? data : data.results || [];
+
+      const normalized = logsArray.map((log) => {
+        const before = unwrapDataIfLoose(normalizeAny(log.before_data));
+        const after = unwrapDataIfLoose(normalizeAny(log.after_data));
+
+        return {
+          ...log,
+          before_data: before,
+          after_data: after,
+        };
+      });
+
+      setLogs(normalized);
+      setTotalCount(data.count || normalized.length);
     } catch (error) {
+      console.error(error);
       toast.error("Error fetching logs");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -126,7 +144,11 @@ const DataLog = () => {
     if (token) {
       fetchLogs();
     }
-  }, [token]);
+  }, [token, currentPage, searchQuery, startDate, endDate]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, startDate, endDate]);
 
   const formatDateTime = (iso) => {
     try {
@@ -146,71 +168,6 @@ const DataLog = () => {
     }
   };
 
-  const inDateRange = (createdAt) => {
-    if (!startDate && !endDate) return true;
-
-    const ts = new Date(createdAt).getTime();
-
-    const startTs = startDate
-      ? new Date(`${startDate}T00:00:00`).getTime()
-      : Number.NEGATIVE_INFINITY;
-
-    const endTs = endDate
-      ? new Date(`${endDate}T23:59:59.999`).getTime()
-      : Number.POSITIVE_INFINITY;
-
-    return ts >= startTs && ts <= endTs;
-  };
-
-  const deepSearch = (value, query) => {
-    if (!query) return true;
-    if (value == null) return false;
-
-    const q = query.toLowerCase();
-
-    if (typeof value === "string" || typeof value === "number") {
-      return String(value).toLowerCase().includes(q);
-    }
-
-    if (Array.isArray(value)) {
-      return value.some((item) => deepSearch(item, q));
-    }
-
-    if (typeof value === "object") {
-      return Object.values(value).some((item) => deepSearch(item, q));
-    }
-
-    return false;
-  };
-
-  const filteredLogs = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-
-    return logs.filter((log) => {
-      const dateOk = inDateRange(log.created_at);
-
-      if (!query) return dateOk;
-
-      const match =
-        deepSearch(log.user_name, query) ||
-        deepSearch(log.order_name, query) ||
-        deepSearch(log.before_data, query) ||
-        deepSearch(log.after_data, query) ||
-        deepSearch(log.created_at, query);
-
-      return match && dateOk;
-    });
-  }, [logs, searchQuery, startDate, endDate]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, startDate, endDate]);
-
-  const indexOfLastItem = currentPage * perPageData;
-  const indexOfFirstItem = indexOfLastItem - perPageData;
-
-  const currentRows = filteredLogs.slice(indexOfFirstItem, indexOfLastItem);
-
   const safeObj = (maybe) => unwrapDataIfLoose(normalizeAny(maybe));
 
   const stringifyCell = (value) => {
@@ -229,6 +186,7 @@ const DataLog = () => {
 
   const buildDetailsRows = (rows) => {
     const details = [];
+
     rows.forEach((log) => {
       const before = safeObj(log.before_data);
       const after = safeObj(log.after_data);
@@ -249,6 +207,7 @@ const DataLog = () => {
           "Data (After)": "-",
           "Date & Time": formatDateTime(log.created_at),
         });
+
         return;
       }
 
@@ -273,21 +232,25 @@ const DataLog = () => {
         });
       });
     });
+
     return details;
   };
 
   const buildSummarySheets = (rows) => {
     const byStaffMap = new Map();
+
     rows.forEach((log) => {
       const staff = log.user_name || "Unknown";
       byStaffMap.set(staff, (byStaffMap.get(staff) || 0) + 1);
     });
+
     const byStaff = Array.from(byStaffMap.entries()).map(([staff, count]) => ({
       Staff: staff,
       "Log Count": count,
     }));
 
     const byDateMap = new Map();
+
     rows.forEach((log) => {
       const dateObj = new Date(log.created_at);
 
@@ -315,75 +278,461 @@ const DataLog = () => {
   };
 
   const exportToExcel = () => {
-    const rows = filteredLogs;
+    const rows = logs;
 
-    const detailsRows = buildDetailsRows(rows);
-    const { byStaff, byDate } = buildSummarySheets(rows);
+    if (!rows || rows.length === 0) {
+      toast.warning("No data available to export");
+      return;
+    }
+
+    toast.info("Exporting current page data only");
 
     const wb = XLSX.utils.book_new();
 
-    const detailsSheet = XLSX.utils.json_to_sheet(detailsRows, {
-      header: [
-        "Staff",
-        "Invoice",
-        "Field",
-        "Data (Before)",
-        "Data (After)",
-        "Date & Time",
-      ],
-    });
-
-    XLSX.utils.book_append_sheet(wb, detailsSheet, "Details");
-
-    const staffSheet = XLSX.utils.json_to_sheet(byStaff, {
-      header: ["Staff", "Log Count"],
-    });
-
-    XLSX.utils.book_append_sheet(wb, staffSheet, "Summary by Staff");
-
-    const dateSheet = XLSX.utils.json_to_sheet(byDate, {
-      header: ["Date", "Log Count"],
-    });
-
-    XLSX.utils.book_append_sheet(wb, dateSheet, "Summary by Date");
-
-    const autosize = (sheet) => {
-      const range = XLSX.utils.decode_range(sheet["!ref"] || "A1:A1");
-      const colWidths = [];
-
-      for (let col = range.s.c; col <= range.e.c; col++) {
-        let max = 10;
-
-        for (let row = range.s.r; row <= range.e.r; row++) {
-          const cell = sheet[XLSX.utils.encode_cell({ r: row, c: col })];
-
-          if (!cell || !cell.v) continue;
-
-          const len = String(cell.v).length;
-
-          if (len > max) {
-            max = len;
-          }
-        }
-
-        colWidths.push({
-          wch: Math.min(max + 2, 60),
-        });
-      }
-
-      sheet["!cols"] = colWidths;
+    const borderThin = {
+      top: { style: "thin", color: { rgb: "CBD5E1" } },
+      bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+      left: { style: "thin", color: { rgb: "CBD5E1" } },
+      right: { style: "thin", color: { rgb: "CBD5E1" } },
     };
 
-    autosize(detailsSheet);
-    autosize(staffSheet);
-    autosize(dateSheet);
+    const mainTitleStyle = {
+      font: {
+        bold: true,
+        sz: 18,
+        color: { rgb: "111827" },
+      },
+      alignment: {
+        horizontal: "center",
+        vertical: "center",
+      },
+      fill: {
+        fgColor: { rgb: "EAF0FB" },
+      },
+      border: borderThin,
+    };
+
+    const subTitleStyle = {
+      font: {
+        bold: true,
+        sz: 11,
+        color: { rgb: "475569" },
+      },
+      alignment: {
+        horizontal: "center",
+        vertical: "center",
+      },
+      fill: {
+        fgColor: { rgb: "F3F6FB" },
+      },
+      border: borderThin,
+    };
+
+    const headerStyle = {
+      font: {
+        bold: true,
+        sz: 11,
+        color: { rgb: "1E293B" },
+      },
+      alignment: {
+        horizontal: "center",
+        vertical: "center",
+        wrapText: true,
+      },
+      fill: {
+        fgColor: { rgb: "EAF0FB" },
+      },
+      border: borderThin,
+    };
+
+    const oldHeaderStyle = {
+      font: {
+        bold: true,
+        sz: 11,
+        color: { rgb: "991B1B" },
+      },
+      alignment: {
+        horizontal: "center",
+        vertical: "center",
+        wrapText: true,
+      },
+      fill: {
+        fgColor: { rgb: "FEE2E2" },
+      },
+      border: borderThin,
+    };
+
+    const newHeaderStyle = {
+      font: {
+        bold: true,
+        sz: 11,
+        color: { rgb: "166534" },
+      },
+      alignment: {
+        horizontal: "center",
+        vertical: "center",
+        wrapText: true,
+      },
+      fill: {
+        fgColor: { rgb: "DCFCE7" },
+      },
+      border: borderThin,
+    };
+
+    const normalCellStyle = {
+      font: {
+        bold: true,
+        sz: 10,
+        color: { rgb: "0F172A" },
+      },
+      alignment: {
+        vertical: "top",
+        wrapText: true,
+      },
+      border: borderThin,
+    };
+
+    const numberCellStyle = {
+      font: {
+        bold: true,
+        sz: 10,
+        color: { rgb: "334155" },
+      },
+      alignment: {
+        horizontal: "center",
+        vertical: "top",
+        wrapText: true,
+      },
+      border: borderThin,
+    };
+
+    const staffCellStyle = {
+      font: {
+        bold: true,
+        sz: 10,
+        color: { rgb: "1D4ED8" },
+      },
+      alignment: {
+        vertical: "top",
+        wrapText: true,
+      },
+      fill: {
+        fgColor: { rgb: "DBEAFE" },
+      },
+      border: borderThin,
+    };
+
+    const invoiceCellStyle = {
+      font: {
+        bold: true,
+        sz: 10,
+        color: { rgb: "0F172A" },
+      },
+      alignment: {
+        horizontal: "center",
+        vertical: "top",
+        wrapText: true,
+      },
+      fill: {
+        fgColor: { rgb: "F1F5F9" },
+      },
+      border: borderThin,
+    };
+
+    const oldDataStyle = {
+      font: {
+        bold: true,
+        sz: 10,
+        color: { rgb: "991B1B" },
+      },
+      alignment: {
+        vertical: "top",
+        wrapText: true,
+      },
+      fill: {
+        fgColor: { rgb: "FFF7F7" },
+      },
+      border: borderThin,
+    };
+
+    const newDataStyle = {
+      font: {
+        bold: true,
+        sz: 10,
+        color: { rgb: "166534" },
+      },
+      alignment: {
+        vertical: "top",
+        wrapText: true,
+      },
+      fill: {
+        fgColor: { rgb: "F0FDF4" },
+      },
+      border: borderThin,
+    };
+
+    const dateCellStyle = {
+      font: {
+        bold: true,
+        sz: 10,
+        color: { rgb: "334155" },
+      },
+      alignment: {
+        horizontal: "center",
+        vertical: "top",
+        wrapText: true,
+      },
+      fill: {
+        fgColor: { rgb: "F8FAFC" },
+      },
+      border: borderThin,
+    };
+
+    const sectionStyle = {
+      font: {
+        bold: true,
+        sz: 12,
+        color: { rgb: "FFFFFF" },
+      },
+      alignment: {
+        horizontal: "center",
+        vertical: "center",
+      },
+      fill: {
+        fgColor: { rgb: "1D4ED8" },
+      },
+      border: borderThin,
+    };
+
+    const formatExcelValue = (value) => {
+      if (value == null) return "-";
+
+      if (Array.isArray(value)) {
+        return value.map((item) => formatExcelValue(item)).join(", ");
+      }
+
+      if (typeof value === "object") {
+        return Object.entries(value)
+          .map(([key, val]) => `${key}: ${formatExcelValue(val)}`)
+          .join("\n");
+      }
+
+      return String(value);
+    };
+
+    const formatDataBlock = (data) => {
+      const safeData = safeObj(data);
+
+      if (!safeData || typeof safeData !== "object" || Array.isArray(safeData)) {
+        return formatExcelValue(safeData);
+      }
+
+      const entries = Object.entries(safeData);
+
+      if (entries.length === 0) {
+        return "-";
+      }
+
+      return entries
+        .map(([key, value]) => `${key}: ${formatExcelValue(value)}`)
+        .join("\n");
+    };
+
+    const excelData = [];
+
+    excelData.push(["Data Log Details", "", "", "", "", ""]);
+    excelData.push([
+      "Compact audit table with before and after values",
+      "",
+      "",
+      "",
+      "",
+      "",
+    ]);
+    excelData.push([
+      `Total Logs: ${totalCount}`,
+      "",
+      `Current Page Showing: ${logs.length}`,
+      "",
+      `Exported: ${formatDateTime(new Date().toISOString())}`,
+      "",
+    ]);
+    excelData.push([]);
+    excelData.push(["#", "Staff", "Invoice", "Old Data", "Changed To", "Date & Time"]);
+
+    rows.forEach((log, index) => {
+      excelData.push([
+        (currentPage - 1) * perPageData + index + 1,
+        log.user_name || "-",
+        log.order_name || "-",
+        formatDataBlock(log.before_data),
+        formatDataBlock(log.after_data),
+        formatDateTime(log.created_at),
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+    ws["!merges"] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 1 } },
+      { s: { r: 2, c: 2 }, e: { r: 2, c: 3 } },
+      { s: { r: 2, c: 4 }, e: { r: 2, c: 5 } },
+    ];
+
+    ws["!cols"] = [
+      { wch: 8 },
+      { wch: 26 },
+      { wch: 18 },
+      { wch: 55 },
+      { wch: 55 },
+      { wch: 24 },
+    ];
+
+    ws["!rows"] = [
+      { hpt: 30 },
+      { hpt: 24 },
+      { hpt: 26 },
+      { hpt: 8 },
+      { hpt: 30 },
+      ...rows.map((log) => {
+        const beforeText = formatDataBlock(log.before_data);
+        const afterText = formatDataBlock(log.after_data);
+
+        const beforeLines = beforeText.split("\n").length;
+        const afterLines = afterText.split("\n").length;
+
+        const maxLines = Math.max(beforeLines, afterLines, 2);
+
+        return {
+          hpt: Math.min(Math.max(maxLines * 18, 48), 220),
+        };
+      }),
+    ];
+
+    const range = XLSX.utils.decode_range(ws["!ref"]);
+
+    for (let row = range.s.r; row <= range.e.r; row++) {
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+
+        if (!ws[cellAddress]) {
+          ws[cellAddress] = { t: "s", v: "" };
+        }
+
+        if (row === 0) {
+          ws[cellAddress].s = mainTitleStyle;
+        } else if (row === 1) {
+          ws[cellAddress].s = subTitleStyle;
+        } else if (row === 2) {
+          ws[cellAddress].s = sectionStyle;
+        } else if (row === 4) {
+          if (col === 3) {
+            ws[cellAddress].s = oldHeaderStyle;
+          } else if (col === 4) {
+            ws[cellAddress].s = newHeaderStyle;
+          } else {
+            ws[cellAddress].s = headerStyle;
+          }
+        } else if (row >= 5) {
+          if (col === 0) {
+            ws[cellAddress].s = numberCellStyle;
+          } else if (col === 1) {
+            ws[cellAddress].s = staffCellStyle;
+          } else if (col === 2) {
+            ws[cellAddress].s = invoiceCellStyle;
+          } else if (col === 3) {
+            ws[cellAddress].s = oldDataStyle;
+          } else if (col === 4) {
+            ws[cellAddress].s = newDataStyle;
+          } else if (col === 5) {
+            ws[cellAddress].s = dateCellStyle;
+          } else {
+            ws[cellAddress].s = normalCellStyle;
+          }
+        }
+      }
+    }
+
+    ws["!freeze"] = {
+      xSplit: 0,
+      ySplit: 5,
+    };
+
+    XLSX.utils.book_append_sheet(wb, ws, "Data Log Details");
+
+    const { byStaff, byDate } = buildSummarySheets(rows);
+
+    const createSummarySheet = (title, subtitle, data, headers) => {
+      const sheetData = [];
+
+      sheetData.push([title, ""]);
+      sheetData.push([subtitle, ""]);
+      sheetData.push([]);
+      sheetData.push(headers);
+
+      data.forEach((item) => {
+        sheetData.push(headers.map((header) => item[header] ?? "-"));
+      });
+
+      const sheet = XLSX.utils.aoa_to_sheet(sheetData);
+
+      sheet["!merges"] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: headers.length - 1 } },
+      ];
+
+      sheet["!cols"] = headers.map(() => ({ wch: 28 }));
+
+      const summaryRange = XLSX.utils.decode_range(sheet["!ref"]);
+
+      for (let row = summaryRange.s.r; row <= summaryRange.e.r; row++) {
+        for (let col = summaryRange.s.c; col <= summaryRange.e.c; col++) {
+          const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+
+          if (!sheet[cellAddress]) {
+            sheet[cellAddress] = { t: "s", v: "" };
+          }
+
+          if (row === 0) {
+            sheet[cellAddress].s = mainTitleStyle;
+          } else if (row === 1) {
+            sheet[cellAddress].s = subTitleStyle;
+          } else if (row === 3) {
+            sheet[cellAddress].s = headerStyle;
+          } else if (row >= 4) {
+            sheet[cellAddress].s = normalCellStyle;
+          }
+        }
+      }
+
+      return sheet;
+    };
+
+    const staffSheet = createSummarySheet(
+      "Summary by Staff",
+      "Log count grouped by staff for current page only",
+      byStaff,
+      ["Staff", "Log Count"]
+    );
+
+    const dateSheet = createSummarySheet(
+      "Summary by Date",
+      "Log count grouped by date for current page only",
+      byDate,
+      ["Date", "Log Count"]
+    );
+
+    XLSX.utils.book_append_sheet(wb, staffSheet, "Summary by Staff");
+    XLSX.utils.book_append_sheet(wb, dateSheet, "Summary by Date");
 
     const datePart =
       startDate || endDate
         ? `${startDate || "start"}_to_${endDate || "end"}`
         : "All";
 
-    XLSX.writeFile(wb, `DataLog_${datePart}.xlsx`);
+    XLSX.writeFile(wb, `DataLog_Page_${currentPage}_${datePart}.xlsx`);
   };
 
   const handleDeleteOldLogs = async () => {
@@ -411,6 +760,7 @@ const DataLog = () => {
       );
 
       toast.success(res.data.message || "Deleted successfully");
+      setCurrentPage(1);
       await fetchLogs();
     } catch (err) {
       console.error(err);
@@ -421,9 +771,22 @@ const DataLog = () => {
   };
 
   const clearFilters = () => {
+    setSearchInput("");
     setSearchQuery("");
     setStartDate("");
     setEndDate("");
+    setCurrentPage(1);
+  };
+
+  const handleSearch = () => {
+    setCurrentPage(1);
+    setSearchQuery(searchInput);
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
   };
 
   const formatValue = (value) => {
@@ -488,7 +851,7 @@ const DataLog = () => {
             borderBottom: isBefore ? "1px solid #fecaca" : "1px solid #bbf7d0",
           }}
         >
-          <span>{isBefore ? "Before Data" : "After Data"}</span>
+          <span>{isBefore ? "Old Data" : "Changed To"}</span>
 
           <span
             style={{
@@ -561,6 +924,10 @@ const DataLog = () => {
     );
   };
 
+  const totalPages = Math.ceil(totalCount / perPageData) || 1;
+  const indexOfFirstItem = (currentPage - 1) * perPageData;
+  const indexOfLastItem = Math.min(currentPage * perPageData, totalCount);
+
   return (
     <React.Fragment>
       <div className="page-content" style={{ backgroundColor: "#f3f6fb" }}>
@@ -598,7 +965,7 @@ const DataLog = () => {
                           fontWeight: "500",
                         }}
                       >
-                        Compact audit table with before and after values.
+                        Backend paginated audit table with before and after values.
                       </p>
                     </div>
 
@@ -612,7 +979,7 @@ const DataLog = () => {
                           fontWeight: "700",
                         }}
                       >
-                        Total Logs: {logs.length}
+                        Total Logs: {totalCount}
                       </Badge>
 
                       <Badge
@@ -624,7 +991,7 @@ const DataLog = () => {
                           fontWeight: "700",
                         }}
                       >
-                        Showing: {filteredLogs.length}
+                        Showing: {logs.length}
                       </Badge>
                     </div>
                   </div>
@@ -645,9 +1012,10 @@ const DataLog = () => {
 
                       <Input
                         type="text"
-                        value={searchQuery}
+                        value={searchInput}
                         placeholder="Search staff, invoice, data..."
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                        onKeyDown={handleSearchKeyDown}
                         style={{
                           height: "48px",
                           borderRadius: "10px",
@@ -658,6 +1026,22 @@ const DataLog = () => {
                           backgroundColor: "#ffffff",
                         }}
                       />
+                    </Col>
+
+                    <Col xl={1} md={6}>
+                      <Button
+                        color="primary"
+                        className="w-100"
+                        onClick={handleSearch}
+                        style={{
+                          height: "48px",
+                          borderRadius: "10px",
+                          fontSize: "14px",
+                          fontWeight: "800",
+                        }}
+                      >
+                        Search
+                      </Button>
                     </Col>
 
                     <Col xl={2} md={6}>
@@ -676,7 +1060,10 @@ const DataLog = () => {
                       <Input
                         type="date"
                         value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
+                        onChange={(e) => {
+                          setCurrentPage(1);
+                          setStartDate(e.target.value);
+                        }}
                         max={endDate || undefined}
                         style={{
                           height: "48px",
@@ -706,7 +1093,10 @@ const DataLog = () => {
                       <Input
                         type="date"
                         value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
+                        onChange={(e) => {
+                          setCurrentPage(1);
+                          setEndDate(e.target.value);
+                        }}
                         min={startDate || undefined}
                         style={{
                           height: "48px",
@@ -720,7 +1110,7 @@ const DataLog = () => {
                       />
                     </Col>
 
-                    <Col xl={2} md={6}>
+                    <Col xl={1} md={6}>
                       <Button
                         color="secondary"
                         className="w-100"
@@ -732,7 +1122,7 @@ const DataLog = () => {
                           fontWeight: "800",
                         }}
                       >
-                        Clear All
+                        Clear
                       </Button>
                     </Col>
 
@@ -809,7 +1199,7 @@ const DataLog = () => {
                           fontWeight: "500",
                         }}
                       >
-                        Values are displayed in compact rows without inner scroll.
+                        Only current page data is loaded from backend.
                       </p>
                     </Col>
 
@@ -825,7 +1215,7 @@ const DataLog = () => {
                           border: "1px solid #cbd5e1",
                         }}
                       >
-                        Page {currentPage}
+                        Page {currentPage} of {totalPages}
                       </Badge>
                     </Col>
                   </Row>
@@ -895,7 +1285,7 @@ const DataLog = () => {
                               whiteSpace: "nowrap",
                             }}
                           >
-                            Before
+                            Old Data
                           </th>
 
                           <th
@@ -909,7 +1299,7 @@ const DataLog = () => {
                               whiteSpace: "nowrap",
                             }}
                           >
-                            After
+                            Changed To
                           </th>
 
                           <th
@@ -929,7 +1319,32 @@ const DataLog = () => {
                       </thead>
 
                       <tbody>
-                        {currentRows.length === 0 ? (
+                        {loading ? (
+                          <tr>
+                            <td colSpan="6">
+                              <div className="text-center py-5">
+                                <h5
+                                  style={{
+                                    fontWeight: "800",
+                                    color: "#111827",
+                                  }}
+                                >
+                                  Loading logs...
+                                </h5>
+
+                                <p
+                                  className="mb-0"
+                                  style={{
+                                    color: "#475569",
+                                    fontWeight: "500",
+                                  }}
+                                >
+                                  Please wait while data is loading.
+                                </p>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : logs.length === 0 ? (
                           <tr>
                             <td colSpan="6">
                               <div className="text-center py-5">
@@ -955,7 +1370,7 @@ const DataLog = () => {
                             </td>
                           </tr>
                         ) : (
-                          currentRows.map((log, index) => (
+                          logs.map((log, index) => (
                             <tr
                               key={log.id}
                               style={{
@@ -971,7 +1386,7 @@ const DataLog = () => {
                                   verticalAlign: "top",
                                 }}
                               >
-                                {indexOfFirstItem + index + 1}
+                                {(currentPage - 1) * perPageData + index + 1}
                               </td>
 
                               <td
@@ -995,9 +1410,7 @@ const DataLog = () => {
                                     }}
                                   >
                                     {log.user_name
-                                      ? log.user_name
-                                          .substring(0, 2)
-                                          .toUpperCase()
+                                      ? log.user_name.substring(0, 2).toUpperCase()
                                       : "US"}
                                   </div>
 
@@ -1058,10 +1471,7 @@ const DataLog = () => {
                                   verticalAlign: "top",
                                 }}
                               >
-                                {renderCompactDataTable(
-                                  log.before_data,
-                                  "before"
-                                )}
+                                {renderCompactDataTable(log.before_data, "before")}
                               </td>
 
                               <td
@@ -1103,18 +1513,85 @@ const DataLog = () => {
                     </Table>
                   </div>
 
-                  <div className="mt-3">
-                    <Paginations
-                      perPageData={perPageData}
-                      data={filteredLogs}
-                      currentPage={currentPage}
-                      setCurrentPage={setCurrentPage}
-                      isShowingPageLength={true}
-                      paginationDiv="col-auto ms-auto"
-                      paginationClass="pagination-rounded"
-                      indexOfFirstItem={indexOfFirstItem}
-                      indexOfLastItem={indexOfLastItem}
-                    />
+                  <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mt-3">
+                    <div
+                      style={{
+                        color: "#64748b",
+                        fontSize: "13px",
+                        fontWeight: "700",
+                      }}
+                    >
+                      Showing {totalCount === 0 ? 0 : indexOfFirstItem + 1} to{" "}
+                      {indexOfLastItem} of {totalCount} entries
+                    </div>
+
+                    <div className="d-flex align-items-center gap-2">
+                      <Button
+                        color="light"
+                        disabled={loading || currentPage === 1}
+                        onClick={() => setCurrentPage(1)}
+                        style={{
+                          borderRadius: "8px",
+                          fontWeight: "800",
+                          border: "1px solid #cbd5e1",
+                        }}
+                      >
+                        First
+                      </Button>
+
+                      <Button
+                        color="light"
+                        disabled={loading || currentPage === 1}
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                        style={{
+                          borderRadius: "8px",
+                          fontWeight: "800",
+                          border: "1px solid #cbd5e1",
+                        }}
+                      >
+                        Prev
+                      </Button>
+
+                      <span
+                        style={{
+                          minWidth: "110px",
+                          textAlign: "center",
+                          color: "#1e293b",
+                          fontSize: "13px",
+                          fontWeight: "900",
+                        }}
+                      >
+                        {currentPage} / {totalPages}
+                      </span>
+
+                      <Button
+                        color="light"
+                        disabled={loading || currentPage >= totalPages}
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                        }
+                        style={{
+                          borderRadius: "8px",
+                          fontWeight: "800",
+                          border: "1px solid #cbd5e1",
+                        }}
+                      >
+                        Next
+                      </Button>
+
+                      <Button
+                        color="light"
+                        disabled={loading || currentPage >= totalPages}
+                        onClick={() => setCurrentPage(totalPages)}
+                        style={{
+                          borderRadius: "8px",
+                          fontWeight: "800",
+                          border: "1px solid #cbd5e1",
+                        }}
+                      >
+                        Last
+                      </Button>
+                    </div>
                   </div>
                 </CardBody>
               </Card>

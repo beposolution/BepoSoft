@@ -1051,26 +1051,61 @@ const FormLayouts = () => {
         ["Invoice Approved", "Waiting For Confirmation", "To Print", "Packed", "Packing under progress", "Ready to ship",].includes(formik.values.status);
 
     // ADD ONLY: cap per-rack input so total never exceeds the order line quantity
+    // const setRackQtyCapped = (item, rackIdx, val, rackStock) => {
+    //     const q = Math.max(0, Number(val || 0));
+    //     const current = rackSelections[item.id] || {};
+
+    //     // sum of all other racks for this item (excluding the one being edited)
+    //     const otherSum = Object.entries(current).reduce(
+    //         (s, [k, v]) => s + (Number(k) === rackIdx ? 0 : (Number(v) || 0)),
+    //         0
+    //     );
+
+    //     // how much is still allowed for this order line
+    //     const allowedLeft = Math.max(0, Number(item.quantity) - otherSum);
+
+    //     // final capped value by remaining allowable and this rack's stock
+    //     const finalVal = Math.min(q, allowedLeft, Number(rackStock) || 0);
+
+    //     setRackSelections(prev => ({
+    //         ...prev,
+    //         [item.id]: { ...(prev[item.id] || {}), [rackIdx]: finalVal }
+    //     }));
+    // };
     const setRackQtyCapped = (item, rackIdx, val, rackStock) => {
-        const q = Math.max(0, Number(val || 0));
-        const current = rackSelections[item.id] || {};
+        const enteredValue = val === "" ? 0 : Math.max(0, Number(val));
 
-        // sum of all other racks for this item (excluding the one being edited)
-        const otherSum = Object.entries(current).reduce(
-            (s, [k, v]) => s + (Number(k) === rackIdx ? 0 : (Number(v) || 0)),
-            0
-        );
+        setRackSelections(prev => {
+            const current = prev[item.id] || {};
 
-        // how much is still allowed for this order line
-        const allowedLeft = Math.max(0, Number(item.quantity) - otherSum);
+            const otherSum = Object.entries(current).reduce(
+                (sum, [key, value]) => {
+                    return sum + (Number(key) === rackIdx ? 0 : Number(value || 0));
+                },
+                0
+            );
 
-        // final capped value by remaining allowable and this rack's stock
-        const finalVal = Math.min(q, allowedLeft, Number(rackStock) || 0);
+            const maxAllowedForThisRack = Math.max(
+                0,
+                Number(item.quantity || 0) - otherSum
+            );
 
-        setRackSelections(prev => ({
-            ...prev,
-            [item.id]: { ...(prev[item.id] || {}), [rackIdx]: finalVal }
-        }));
+            const availableRackStock = Math.max(0, Number(rackStock || 0));
+
+            const finalValue = Math.min(
+                enteredValue,
+                maxAllowedForThisRack,
+                availableRackStock
+            );
+
+            return {
+                ...prev,
+                [item.id]: {
+                    ...current,
+                    [rackIdx]: finalValue,
+                },
+            };
+        });
     };
 
     // true if any order item still has unallocated racks
@@ -2063,13 +2098,27 @@ const FormLayouts = () => {
                                                                                             <td>{rackStock}</td>
                                                                                             <td>{rackLock}</td>
                                                                                             <td style={{ width: 120 }}>
-                                                                                                <Input
+                                                                                                {/* <Input
                                                                                                     type="number"
                                                                                                     min={0}
                                                                                                     value={currentForRack}
                                                                                                     disabled={isFullyLocked}              // disable input
                                                                                                     onChange={e =>
                                                                                                         setRackQtyCapped(item, rackIdx, e.target.value, rackStock - rackLock)
+                                                                                                    }
+                                                                                                /> */}
+                                                                                                <Input
+                                                                                                    type="number"
+                                                                                                    min={0}
+                                                                                                    value={currentForRack}
+                                                                                                    disabled={isFullyLocked && currentForRack === 0}
+                                                                                                    onChange={(e) =>
+                                                                                                        setRackQtyCapped(
+                                                                                                            item,
+                                                                                                            rackIdx,
+                                                                                                            e.target.value,
+                                                                                                            rackStock - rackLock + currentForRack
+                                                                                                        )
                                                                                                     }
                                                                                                 />
                                                                                             </td>

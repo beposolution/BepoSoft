@@ -22,28 +22,44 @@ const BasicTable = () => {
 
     useEffect(() => {
         const fetchOrders = async () => {
+            setLoading(true);
+            setError(null);
+
             try {
-                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}orders/`, {
+                const baseUrl = import.meta.env.VITE_APP_KEY;
+
+                const response = await axios.get(`${baseUrl}orders/`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
                 });
 
-                const filteredOrders = response.data.results?.filter(
-                    (order) =>
-                        order.staffID === id && order.order_date === date
-                );
-                
+                const allOrders =
+                    response.data?.results?.results || [];
+
+                const filteredOrders = allOrders.filter((order) => {
+                    return (
+                        String(order.staffID) === String(id) &&
+                        String(order.order_date) === String(date)
+                    );
+                });
+
+
                 setOrders(filteredOrders);
             } catch (error) {
-                setError("Error fetching orders data. Please try again later.");
+
+                setError(
+                    error.response?.data?.message ||
+                    error.response?.data?.detail ||
+                    "Error fetching orders data. Please try again later."
+                );
             } finally {
                 setLoading(false);
             }
         };
 
         fetchOrders();
-    }, [id, date, token]); // Add `id` and `date` to dependencies so the effect runs when they change
+    }, [id, date, token]);
 
     // Status color based on status type
     const getStatusColor = (status) => {

@@ -1609,15 +1609,15 @@ const StatisticsApplications = () => {
                                                     <tr className="table-primary fw-bold">
                                                         <td colSpan="2">TOTAL</td>
                                                         <td>
-                                                            {Number(warehouseSummary.today_summary.total_actual_weight_kg || 0).toLocaleString("en-IN", {
-                                                                minimumFractionDigits: 2,
-                                                                maximumFractionDigits: 3,
-                                                            })}
-                                                        </td>
-                                                        <td>
                                                             ₹ {Number(warehouseSummary.today_summary.total_parcel_amount || 0).toLocaleString("en-IN", {
                                                                 minimumFractionDigits: 2,
                                                                 maximumFractionDigits: 2,
+                                                            })}
+                                                        </td>
+                                                        <td>
+                                                            {Number(warehouseSummary.today_summary.total_actual_weight_kg || 0).toLocaleString("en-IN", {
+                                                                minimumFractionDigits: 2,
+                                                                maximumFractionDigits: 3,
                                                             })}
                                                         </td>
                                                         <td>{Number(warehouseSummary.today_summary.average || 0).toFixed(2)}</td>

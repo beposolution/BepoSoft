@@ -1,126 +1,215 @@
 import React, { useEffect, useState } from "react";
-import axios from 'axios';
-import { Table, Row, Col, Card, CardBody, CardTitle, UncontrolledDropdown, DropdownToggle, DropdownMenu, DropdownItem, UncontrolledTooltip, Input, Button } from "reactstrap";
-import { FaSearch } from 'react-icons/fa';
+import axios from "axios";
+import {
+    Table,
+    Row,
+    Col,
+    Card,
+    CardBody,
+    CardTitle,
+    UncontrolledDropdown,
+    DropdownToggle,
+    DropdownMenu,
+    DropdownItem,
+    UncontrolledTooltip,
+    Input,
+    Button,
+} from "reactstrap";
+import { FaSearch } from "react-icons/fa";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
-import { useNavigate } from 'react-router-dom';
-import Paginations from "../../components/Common/Pagination";
+import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as XLSX from "xlsx";
 
 const truncateText = (text, length) => {
+    if (!text) return "";
     return text.length > length ? `${text.substring(0, length)}...` : text;
 };
 
 const BasicTable = () => {
     const [products, setProducts] = useState([]);
-    const [filteredProducts, setFilteredProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
     const [searchTerm, setSearchTerm] = useState("");
-    const [warehouseID, setWarehouseID] = useState(null)
-    const token = localStorage.getItem('token');
-    const navigate = useNavigate();
-    const [currentPage, setCurrentPage] = useState(1);
-    const perPageData = 10;
     const [selectedCategory, setSelectedCategory] = useState("ALL");
     const [categories, setCategories] = useState([]);
+
+    const [warehouseID, setWarehouseID] = useState(null);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const [nextPageUrl, setNextPageUrl] = useState(null);
+    const [previousPageUrl, setPreviousPageUrl] = useState(null);
+
+    const pageSize = 50;
+
+    const token = localStorage.getItem("token");
+    const navigate = useNavigate();
+
+    document.title = "Product Tables | Beposoft";
 
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}profile/`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                if (!token) {
+                    navigate("/login");
+                    return;
+                }
+
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}profile/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
                 setWarehouseID(response?.data?.data?.warehouse_id);
             } catch (error) {
-                toast.error('Error fetching user data:');
+                toast.error("Error fetching user data");
             }
         };
+
         fetchUserData();
-    }, []);
+    }, [token, navigate]);
 
-    useEffect(() => {
-        if (!token || !warehouseID) return; // wait until both exist
+    const buildProductsUrl = (page = 1, search = searchTerm, category = selectedCategory) => {
+        let url = `${import.meta.env.VITE_APP_KEY}warehouse/products/gets/${warehouseID}/?page=${page}`;
 
-        const fetchProducts = async () => {
-            try {
-                const response = await fetch(`${import.meta.env.VITE_APP_KEY}warehouse/products/${warehouseID}/`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
+        if (search && search.trim() !== "") {
+            url += `&search=${encodeURIComponent(search.trim())}`;
+        }
+
+        if (category && category !== "ALL") {
+            url += `&category_id=${category}`;
+        }
+
+        return url;
+    };
+
+    const fetchProducts = async (
+        page = currentPage,
+        search = searchTerm,
+        category = selectedCategory
+    ) => {
+        try {
+            if (!token || !warehouseID) return;
+
+            setLoading(true);
+            setError(null);
+
+            const response = await fetch(buildProductsUrl(page, search, category), {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                const backendMessage =
+                    data?.message ||
+                    data?.detail ||
+                    `HTTP error! Status: ${response.status}`;
+
+                setProducts([]);
+                setTotalCount(0);
+                setNextPageUrl(null);
+                setPreviousPageUrl(null);
+                setCurrentPage(page);
+
+                throw new Error(backendMessage);
+            }
+
+            const productList = data?.results?.data || [];
+
+            setProducts(productList);
+            setTotalCount(data?.count || 0);
+            setNextPageUrl(data?.next || null);
+            setPreviousPageUrl(data?.previous || null);
+            setCurrentPage(page);
+
+            const categoryMap = new Map();
+
+            productList.forEach((product) => {
+                if (product?.product_category && product?.product_category_name) {
+                    categoryMap.set(product.product_category, product.product_category_name);
+                }
+            });
+
+            setCategories((prevCategories) => {
+                const oldMap = new Map();
+
+                prevCategories.forEach((cat) => {
+                    if (cat.id && cat.name) {
+                        oldMap.set(cat.id, cat.name);
                     }
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
+                categoryMap.forEach((name, id) => {
+                    oldMap.set(id, name);
+                });
 
-                const data = await response.json();
-                setProducts(data.data);
-                setFilteredProducts(data.data);
-
-                // extract unique categories
-                const uniqueCategories = [
-                    "ALL",
-                    ...new Set(
-                        data.data
-                            .map(p => p.product_category_name)
-                            .filter(Boolean)
-                    )
+                return [
+                    { id: "ALL", name: "ALL" },
+                    ...Array.from(oldMap.entries()).map(([id, name]) => ({
+                        id,
+                        name,
+                    })),
                 ];
-
-                setCategories(uniqueCategories);
-            } catch (err) {
-                setError(err.message || "Unknown error occurred");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchProducts();
-    }, [token, warehouseID]);
-
-
-    const applyFilters = (category, search) => {
-        let filtered = [...products];
-
-        if (category !== "ALL") {
-            filtered = filtered.filter(
-                p => p.product_category_name === category
-            );
+            });
+        } catch (err) {
+            setError(err.message || "Unknown error occurred");
+        } finally {
+            setLoading(false);
         }
-
-        if (search.trim()) {
-            const q = search.toLowerCase();
-            filtered = filtered.filter(p =>
-                (p.name || "").toLowerCase().includes(q) ||
-                String(p.hsn_code || "").includes(q)
-            );
-        }
-
-        setFilteredProducts(filtered);
-        setCurrentPage(1);
     };
+
+
+    useEffect(() => {
+        if (!token || !warehouseID) return;
+        fetchProducts(1, "", "ALL");
+    }, [token, warehouseID]);
 
     const handleCategoryChange = (e) => {
         const value = e.target.value;
         setSelectedCategory(value);
-        applyFilters(value, searchTerm);
+        fetchProducts(1, searchTerm, value);
     };
 
     const handleSearchChange = (e) => {
-        const value = e.target.value;
-        setSearchTerm(value);
-        applyFilters(selectedCategory, value);
+        setSearchTerm(e.target.value);
     };
 
     const handleSearchSubmit = (e) => {
         e.preventDefault();
-        applyFilters(selectedCategory, searchTerm);
+        fetchProducts(1, searchTerm, selectedCategory);
     };
+
+    const handleClearFilters = () => {
+        setSearchTerm("");
+        setSelectedCategory("ALL");
+        fetchProducts(1, "", "ALL");
+    };
+
+    const handleNextPage = () => {
+        if (nextPageUrl) {
+            fetchProducts(currentPage + 1, searchTerm, selectedCategory);
+        }
+    };
+
+    const handlePreviousPage = () => {
+        if (previousPageUrl && currentPage > 1) {
+            fetchProducts(currentPage - 1, searchTerm, selectedCategory);
+        }
+    };
+
+    const totalPages = Math.ceil(totalCount / pageSize);
 
     const handleEditVie = (productId) => {
         navigate(`/ecommerce-product-edit/${productId}/`);
@@ -143,20 +232,23 @@ const BasicTable = () => {
     const onClickDelete = async (productId) => {
         try {
             if (!token) {
-                navigate('/login');
+                navigate("/login");
                 return;
             }
 
-            const response = await axios.delete(`${import.meta.env.VITE_APP_KEY}product/update/${productId}/`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+            const response = await axios.delete(
+                `${import.meta.env.VITE_APP_KEY}product/update/${productId}/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
                 }
-            });
+            );
 
             if (response.status === 200) {
-                setProducts(products.filter(product => product.id !== productId));
-                setFilteredProducts(filteredProducts.filter(product => product.id !== productId));
+                setProducts((prev) => prev.filter((product) => product.id !== productId));
+                toast.success("Product deleted successfully");
             } else {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
@@ -165,35 +257,92 @@ const BasicTable = () => {
         }
     };
 
-    const indexOfLastItem = currentPage * perPageData;
-    const indexOfFirstItem = indexOfLastItem - perPageData;
-    const currentProducts = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
+    const getProductImage = (product) => {
+        if (product?.image) {
+            if (product.image.startsWith("http")) {
+                return product.image;
+            }
+            return `${import.meta.env.VITE_APP_IMAGE}${product.image}`;
+        }
 
-    document.title = "Product Tables | Beposoft";
+        if (Array.isArray(product?.images) && product.images.length > 0) {
+            const firstImage = product.images[0];
+
+            if (typeof firstImage === "string") {
+                return firstImage.startsWith("http")
+                    ? firstImage
+                    : `${import.meta.env.VITE_APP_IMAGE}${firstImage}`;
+            }
+
+            if (firstImage?.image) {
+                return firstImage.image.startsWith("http")
+                    ? firstImage.image
+                    : `${import.meta.env.VITE_APP_IMAGE}${firstImage.image}`;
+            }
+        }
+
+        return "fallback-image-url";
+    };
+
+    const toNumber = (value) => {
+        const numberValue = Number(value);
+        return Number.isFinite(numberValue) ? numberValue : 0;
+    };
+
+    const getCalculatedStock = (product) => {
+        if (
+            product?.type === "variant" &&
+            Array.isArray(product?.variantIDs) &&
+            product.variantIDs.length > 0
+        ) {
+            return product.variantIDs.reduce(
+                (total, variant) => total + toNumber(variant?.stock),
+                0
+            );
+        }
+
+        return toNumber(product?.stock);
+    };
+
+    const getCalculatedLockedStock = (product) => {
+        if (
+            product?.type === "variant" &&
+            Array.isArray(product?.variantIDs) &&
+            product.variantIDs.length > 0
+        ) {
+            return product.variantIDs.reduce(
+                (total, variant) => total + toNumber(variant?.locked_stock),
+                0
+            );
+        }
+
+        return toNumber(product?.locked_stock);
+    };
 
     const exportToExcel = () => {
         const exportData = [];
 
-        filteredProducts.forEach((product, index) => {
+        products.forEach((product, index) => {
             exportData.push({
-                "#": index + 1,
+                "#": (currentPage - 1) * pageSize + index + 1,
                 ID: product.id,
                 Name: product.name,
                 Type: product.type,
                 HSN_Code: product.hsn_code,
+                Category: product.product_category_name,
                 Unit: product.unit,
                 Purchase_Rate: product.purchase_rate,
                 Tax_Percent: product.tax,
                 Landing_Cost: product.landing_cost,
-                Excluded_Price: Math.floor(product.exclude_price),
+                Excluded_Price: Math.floor(product.exclude_price || 0),
                 Wholesale_Price: product.selling_price,
                 Retail_Price: product.retail_price,
                 Purchase_Type: product.purchase_type === "International" ? "IN" : "Local",
-                Variant: "Single",
+                Variant: "Main Product",
                 Size: product.size || "",
                 Color: product.color || "",
                 Stock: product.stock,
-                Locked_Stock: product.locked_stock
+                Locked_Stock: product.locked_stock,
             });
 
             if (Array.isArray(product.variantIDs) && product.variantIDs.length > 0) {
@@ -212,12 +361,13 @@ const BasicTable = () => {
                         Excluded_Price: "",
                         Wholesale_Price: variant.selling_price,
                         Retail_Price: variant.retail_price,
-                        Purchase_Type: product.purchase_type === "International" ? "IN" : "Local",
+                        Purchase_Type:
+                            product.purchase_type === "International" ? "IN" : "Local",
                         Variant: "Variant",
                         Size: variant.size || "",
                         Color: variant.color || "",
                         Stock: variant.stock,
-                        Locked_Stock: variant.locked_stock
+                        Locked_Stock: variant.locked_stock,
                     });
                 });
             }
@@ -225,13 +375,14 @@ const BasicTable = () => {
 
         const worksheet = XLSX.utils.json_to_sheet(exportData);
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Warehouse_Products");
 
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Warehouse_Products");
         XLSX.writeFile(workbook, "Product_Details.xlsx");
     };
 
     return (
         <React.Fragment>
+            <ToastContainer />
             <div className="page-content">
                 <div className="container-fluid">
                     <Breadcrumbs title="Tables" breadcrumbItem="Product Tables" />
@@ -239,23 +390,24 @@ const BasicTable = () => {
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
-                                    <Row className="mb-3">
-                                        <Col md={8}>
-                                            <div className="hstack gap-3">
-                                                <Input
-                                                    className="form-control me-auto"
-                                                    type="text"
-                                                    placeholder="Search products or HSN code..."
-                                                    aria-label="Search products or HSN code"
-                                                    value={searchTerm}
-                                                    onChange={handleSearchChange}
-                                                    onKeyDown={(e) => { if (e.key === 'Enter') handleSearchSubmit(e); }}
-                                                />
-                                                <Button color="secondary" onClick={handleSearchSubmit}>
-                                                    <FaSearch />
-                                                </Button>
-                                                <div className="vr"></div>
-                                            </div>
+                                    <Row className="mb-3 align-items-center">
+                                        <Col md={7}>
+                                            <form onSubmit={handleSearchSubmit}>
+                                                <div className="hstack gap-3">
+                                                    <Input
+                                                        className="form-control me-auto"
+                                                        type="text"
+                                                        placeholder="Search with Product Name, HSN code..."
+                                                        aria-label="Search products"
+                                                        value={searchTerm}
+                                                        onChange={handleSearchChange}
+                                                    />
+
+                                                    <Button color="secondary" type="submit">
+                                                        <FaSearch />
+                                                    </Button>
+                                                </div>
+                                            </form>
                                         </Col>
                                         <Col md={3}>
                                             <Input
@@ -263,114 +415,214 @@ const BasicTable = () => {
                                                 value={selectedCategory}
                                                 onChange={handleCategoryChange}
                                             >
-                                                {categories.map((cat, idx) => (
-                                                    <option key={idx} value={cat}>
-                                                        {cat}
+                                                {categories.map((cat) => (
+                                                    <option key={cat.id} value={cat.id}>
+                                                        {cat.name}
                                                     </option>
                                                 ))}
                                             </Input>
                                         </Col>
+                                        <Col md={2}>
+                                            <Button
+                                                color="light"
+                                                className="w-100"
+                                                onClick={handleClearFilters}
+                                            >
+                                                Clear
+                                            </Button>
+                                        </Col>
                                     </Row>
-                                    <CardTitle className="h4 text-center">Product Table</CardTitle>
+                                    <CardTitle className="h4 text-center">
+                                        Product Table
+                                    </CardTitle>
+
                                     {loading ? (
                                         <p>Loading...</p>
                                     ) : error ? (
-                                        <p className="text-danger">Error: {error}</p>
-                                    ) : (<>
-                                        <div className="text-end align-items-right mb-3">
-                                            <Button color="success" onClick={exportToExcel}>
-                                                Export to Excel
-                                            </Button>
-                                        </div>
-                                        <div className="table-responsive">
-                                            <Table className="table mb-0">
-                                                <thead>
-                                                    <tr className="text-center">
-                                                        <th>#</th>
-                                                        <th>Image</th>
-                                                        <th>Name</th>
-                                                        <th>HSN CODE</th>
-                                                        <th>Category</th>
-                                                        <th>TYPE</th>
-                                                        <th>UNIT</th>
-                                                        <th>STOCK</th>
-                                                        <th>PURCHASE RATE</th>
-                                                        <th>TAX %</th>
-                                                        <th>LANDING COST</th>
-                                                        <th>EXCLUDED PRICE</th>
-                                                        <th>WHOLESALE PRICE</th>
-                                                        <th>RETAIL PRICE</th>
-                                                        <th>TYPE</th>
-                                                        <th>Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {filteredProducts.length > 0 ? (
-                                                        currentProducts.map((product, index) => (
-                                                            <tr key={product.id} className="text-center">
-                                                                <th scope="row">{(currentPage - 1) * perPageData + index + 1}</th>
-                                                                <td>
-                                                                    <img
-                                                                        src={`${import.meta.env.VITE_APP_IMAGE}${product.image || (product.images && `${import.meta.env.VITE_APP_IMAGE}/${product.images[0]?.image}`) || 'fallback-image-url'}`}
-                                                                        alt={product.name}
-                                                                        style={{ width: "60px", height: "60px", objectFit: "cover", borderRadius: "5px" }}
-                                                                    />
-                                                                </td>
+                                        <p className="text-danger">{error}</p>
+                                    ) : (
+                                        <>
+                                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                                <div>
+                                                    <strong>Total Products:</strong> {totalCount}
+                                                    <span className="ms-3">
+                                                        Page {currentPage} of {totalPages || 1}
+                                                    </span>
+                                                </div>
 
-                                                                <td style={{ cursor: 'pointer' }} onClick={() => handleProductClick(product.id, product.type)}>
-                                                                    {truncateText(product.name, 30)}
-                                                                </td>
-                                                                <td>{product?.hsn_code}</td>
-                                                                <td>{product?.product_category_name}</td>
-                                                                <td>{product?.type}</td>
-                                                                <td>{product?.unit}</td>
-                                                                <td>{product.stock}</td>
-                                                                <td>{product.purchase_rate}</td>
-                                                                <td>{product.tax}%</td>
-                                                                <td>{product.landing_cost}</td>
-                                                                <td>{Math.floor(product.exclude_price)}</td>
-                                                                <td>{product.selling_price}</td>
-                                                                <td>{product.retail_price}</td>
-                                                                <td>{product.purchase_type === "International" ? "IN" : "Local"}</td>
-                                                                <td>
-                                                                    <UncontrolledDropdown>
-                                                                        <DropdownToggle tag="a" className="card-drop">
-                                                                            <i className="mdi mdi-dots-horizontal font-size-18"></i>
-                                                                        </DropdownToggle>
-                                                                        <DropdownMenu className="dropdown-menu-end">
-                                                                            <DropdownItem onClick={() => handleEditVie(product.id)}>
-                                                                                <i className="mdi mdi-pencil font-size-16 text-success me-1" id={`edittooltip-${product.id}`}></i>
-                                                                                Edit
-                                                                                <UncontrolledTooltip placement="top" target={`edittooltip-${product.id}`}>
+                                                <Button color="success" onClick={exportToExcel}>
+                                                    Export to Excel
+                                                </Button>
+                                            </div>
+
+                                            <div className="table-responsive">
+                                                <Table className="table mb-0">
+                                                    <thead>
+                                                        <tr className="text-center">
+                                                            <th>#</th>
+                                                            <th>Image</th>
+                                                            <th>Name</th>
+                                                            <th>HSN CODE</th>
+                                                            <th>Category</th>
+                                                            <th>TYPE</th>
+                                                            <th>UNIT</th>
+                                                            <th>STOCK</th>
+                                                            <th>PURCHASE RATE</th>
+                                                            <th>TAX %</th>
+                                                            <th>LANDING COST</th>
+                                                            <th>EXCLUDED PRICE</th>
+                                                            <th>WHOLESALE PRICE</th>
+                                                            <th>RETAIL PRICE</th>
+                                                            <th>PURCHASE TYPE</th>
+                                                            <th>Actions</th>
+                                                        </tr>
+                                                    </thead>
+
+                                                    <tbody>
+                                                        {products.length > 0 ? (
+                                                            products.map((product, index) => (
+                                                                <tr
+                                                                    key={product.id}
+                                                                    className="text-center"
+                                                                >
+                                                                    <th scope="row">
+                                                                        {(currentPage - 1) * pageSize +
+                                                                            index +
+                                                                            1}
+                                                                    </th>
+
+                                                                    <td>
+                                                                        <img
+                                                                            src={getProductImage(product)}
+                                                                            alt={product.name}
+                                                                            style={{
+                                                                                width: "60px",
+                                                                                height: "60px",
+                                                                                objectFit: "cover",
+                                                                                borderRadius: "5px",
+                                                                            }}
+                                                                        />
+                                                                    </td>
+
+                                                                    <td
+                                                                        style={{ cursor: "pointer" }}
+                                                                        onClick={() =>
+                                                                            handleProductClick(
+                                                                                product.id,
+                                                                                product.type
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        {truncateText(product.name, 30)}
+                                                                    </td>
+
+                                                                    <td>{product?.hsn_code}</td>
+                                                                    <td>{product?.product_category_name}</td>
+                                                                    <td>{product?.type}</td>
+                                                                    <td>{product?.unit}</td>
+                                                                    <td>
+                                                                        <div className="fw-semibold">
+                                                                            {getCalculatedStock(product)}
+                                                                        </div>
+
+                                                                        {product?.type === "variant" && (
+                                                                            <small className="text-muted">
+                                                                                Including all variants
+                                                                            </small>
+                                                                        )}
+                                                                    </td>
+                                                                    <td>{product?.purchase_rate}</td>
+                                                                    <td>{product?.tax}%</td>
+                                                                    <td>{product?.landing_cost}</td>
+                                                                    <td>
+                                                                        {Math.floor(
+                                                                            product?.exclude_price || 0
+                                                                        )}
+                                                                    </td>
+                                                                    <td>{product?.selling_price}</td>
+                                                                    <td>{product?.retail_price}</td>
+                                                                    <td>
+                                                                        {product?.purchase_type ===
+                                                                            "International"
+                                                                            ? "IN"
+                                                                            : "Local"}
+                                                                    </td>
+
+                                                                    <td>
+                                                                        <UncontrolledDropdown>
+                                                                            <DropdownToggle
+                                                                                tag="a"
+                                                                                className="card-drop"
+                                                                            >
+                                                                                <i className="mdi mdi-dots-horizontal font-size-18"></i>
+                                                                            </DropdownToggle>
+
+                                                                            <DropdownMenu className="dropdown-menu-end">
+                                                                                <DropdownItem
+                                                                                    onClick={() =>
+                                                                                        handleEditVie(product.id)
+                                                                                    }
+                                                                                >
+                                                                                    <i
+                                                                                        className="mdi mdi-pencil font-size-16 text-success me-1"
+                                                                                        id={`edittooltip-${product.id}`}
+                                                                                    ></i>
                                                                                     Edit
-                                                                                </UncontrolledTooltip>
-                                                                            </DropdownItem>
-                                                                        </DropdownMenu>
-                                                                    </UncontrolledDropdown>
+                                                                                    <UncontrolledTooltip
+                                                                                        placement="top"
+                                                                                        target={`edittooltip-${product.id}`}
+                                                                                    >
+                                                                                        Edit
+                                                                                    </UncontrolledTooltip>
+                                                                                </DropdownItem>
+                                                                            </DropdownMenu>
+                                                                        </UncontrolledDropdown>
+                                                                    </td>
+                                                                </tr>
+                                                            ))
+                                                        ) : (
+                                                            <tr>
+                                                                <td
+                                                                    colSpan="16"
+                                                                    className="text-center"
+                                                                >
+                                                                    No products available
                                                                 </td>
                                                             </tr>
-                                                        ))
-                                                    ) : (
-                                                        <tr>
-                                                            <td colSpan="16">No products available</td>
-                                                        </tr>
-                                                    )}
-                                                </tbody>
-                                            </Table>
-                                        </div>
-                                    </>
+                                                        )}
+                                                    </tbody>
+                                                </Table>
+                                            </div>
+
+                                            <div className="d-flex justify-content-between align-items-center mt-3">
+                                                <div>
+                                                    Showing {products.length} products on this page
+                                                </div>
+
+                                                <div className="d-flex gap-2">
+                                                    <Button
+                                                        color="secondary"
+                                                        disabled={!previousPageUrl || loading}
+                                                        onClick={handlePreviousPage}
+                                                    >
+                                                        Previous
+                                                    </Button>
+
+                                                    <Button color="light" disabled>
+                                                        Page {currentPage}
+                                                    </Button>
+
+                                                    <Button
+                                                        color="secondary"
+                                                        disabled={!nextPageUrl || loading}
+                                                        onClick={handleNextPage}
+                                                    >
+                                                        Next
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </>
                                     )}
-                                    <Paginations
-                                        perPageData={perPageData}
-                                        data={filteredProducts}
-                                        currentPage={currentPage}
-                                        setCurrentPage={setCurrentPage}
-                                        isShowingPageLength={true}
-                                        paginationDiv="col-sm"
-                                        paginationClass="pagination pagination-rounded justify-content-end mt-3"
-                                        indexOfFirstItem={indexOfFirstItem}
-                                        indexOfLastItem={indexOfLastItem}
-                                    />
                                 </CardBody>
                             </Card>
                         </Col>

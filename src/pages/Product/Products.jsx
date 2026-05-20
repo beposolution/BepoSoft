@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+// import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import {
     Table,
@@ -11,7 +12,7 @@ import {
     DropdownToggle,
     DropdownMenu,
     DropdownItem,
-    UncontrolledTooltip,
+    // UncontrolledTooltip,
     Input,
     Button,
 } from "reactstrap";
@@ -42,6 +43,8 @@ const BasicTable = () => {
     const [totalCount, setTotalCount] = useState(0);
     const [nextPageUrl, setNextPageUrl] = useState(null);
     const [previousPageUrl, setPreviousPageUrl] = useState(null);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const isFetchingRef = useRef(false);
 
     const pageSize = 50;
 
@@ -90,15 +93,105 @@ const BasicTable = () => {
         return url;
     };
 
+    // const fetchProducts = async (
+    //     page = currentPage,
+    //     search = searchTerm,
+    //     category = selectedCategory
+    // ) => {
+    //     try {
+    //         if (!token || !warehouseID) return;
+
+    //         setLoading(true);
+    //         setError(null);
+
+    //         const response = await fetch(buildProductsUrl(page, search, category), {
+    //             method: "GET",
+    //             headers: {
+    //                 Authorization: `Bearer ${token}`,
+    //                 "Content-Type": "application/json",
+    //             },
+    //         });
+
+    //         const data = await response.json();
+
+    //         if (!response.ok) {
+    //             const backendMessage =
+    //                 data?.message ||
+    //                 data?.detail ||
+    //                 `HTTP error! Status: ${response.status}`;
+
+    //             setProducts([]);
+    //             setTotalCount(0);
+    //             setNextPageUrl(null);
+    //             setPreviousPageUrl(null);
+    //             setCurrentPage(page);
+
+    //             throw new Error(backendMessage);
+    //         }
+
+    //         const productList = data?.results?.data || [];
+
+    //         setProducts(productList);
+    //         setTotalCount(data?.count || 0);
+    //         setNextPageUrl(data?.next || null);
+    //         setPreviousPageUrl(data?.previous || null);
+    //         setCurrentPage(page);
+
+    //         const categoryMap = new Map();
+
+    //         productList.forEach((product) => {
+    //             if (product?.product_category && product?.product_category_name) {
+    //                 categoryMap.set(product.product_category, product.product_category_name);
+    //             }
+    //         });
+
+    //         setCategories((prevCategories) => {
+    //             const oldMap = new Map();
+
+    //             prevCategories.forEach((cat) => {
+    //                 if (cat.id && cat.name) {
+    //                     oldMap.set(cat.id, cat.name);
+    //                 }
+    //             });
+
+    //             categoryMap.forEach((name, id) => {
+    //                 oldMap.set(id, name);
+    //             });
+
+    //             return [
+    //                 { id: "ALL", name: "ALL" },
+    //                 ...Array.from(oldMap.entries()).map(([id, name]) => ({
+    //                     id,
+    //                     name,
+    //                 })),
+    //             ];
+    //         });
+    //     } catch (err) {
+    //         setError(err.message || "Unknown error occurred");
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
+
+
     const fetchProducts = async (
         page = currentPage,
         search = searchTerm,
-        category = selectedCategory
+        category = selectedCategory,
+        append = false
     ) => {
         try {
             if (!token || !warehouseID) return;
 
-            setLoading(true);
+            if (isFetchingRef.current) return;
+            isFetchingRef.current = true;
+
+            if (append) {
+                setLoadingMore(true);
+            } else {
+                setLoading(true);
+            }
+
             setError(null);
 
             const response = await fetch(buildProductsUrl(page, search, category), {
@@ -117,69 +210,142 @@ const BasicTable = () => {
                     data?.detail ||
                     `HTTP error! Status: ${response.status}`;
 
-                setProducts([]);
-                setTotalCount(0);
-                setNextPageUrl(null);
-                setPreviousPageUrl(null);
-                setCurrentPage(page);
+                if (!append) {
+                    setProducts([]);
+                    setTotalCount(0);
+                    setNextPageUrl(null);
+                    setPreviousPageUrl(null);
+                    setCurrentPage(page);
+                }
 
                 throw new Error(backendMessage);
             }
 
             const productList = data?.results?.data || [];
 
-            setProducts(productList);
+            setProducts((prevProducts) => {
+                if (append) {
+                    return [...prevProducts, ...productList];
+                }
+
+                return productList;
+            });
+
             setTotalCount(data?.count || 0);
             setNextPageUrl(data?.next || null);
             setPreviousPageUrl(data?.previous || null);
             setCurrentPage(page);
 
-            const categoryMap = new Map();
-
-            productList.forEach((product) => {
-                if (product?.product_category && product?.product_category_name) {
-                    categoryMap.set(product.product_category, product.product_category_name);
-                }
-            });
-
             setCategories((prevCategories) => {
-                const oldMap = new Map();
+                const categoryMap = new Map();
+
+                categoryMap.set("ALL", "ALL");
 
                 prevCategories.forEach((cat) => {
-                    if (cat.id && cat.name) {
-                        oldMap.set(cat.id, cat.name);
+                    const id = String(cat.id);
+
+                    if (id !== "ALL" && cat.name) {
+                        categoryMap.set(id, cat.name);
                     }
                 });
 
-                categoryMap.forEach((name, id) => {
-                    oldMap.set(id, name);
+                productList.forEach((product) => {
+                    const id = String(product?.product_category || "");
+                    const name = product?.product_category_name;
+
+                    if (id && name) {
+                        categoryMap.set(id, name);
+                    }
                 });
 
-                return [
-                    { id: "ALL", name: "ALL" },
-                    ...Array.from(oldMap.entries()).map(([id, name]) => ({
-                        id,
-                        name,
-                    })),
-                ];
+                return Array.from(categoryMap.entries()).map(([id, name]) => ({
+                    id,
+                    name,
+                }));
             });
         } catch (err) {
             setError(err.message || "Unknown error occurred");
         } finally {
             setLoading(false);
+            setLoadingMore(false);
+            isFetchingRef.current = false;
         }
     };
-
+    // useEffect(() => {
+    //     if (!token || !warehouseID) return;
+    //     fetchProducts(1, "", "ALL");
+    // }, [token, warehouseID]);
 
     useEffect(() => {
         if (!token || !warehouseID) return;
-        fetchProducts(1, "", "ALL");
+
+        setProducts([]);
+        setCurrentPage(1);
+        setSearchTerm("");
+        setSelectedCategory("ALL");
+
+        fetchProducts(1, "", "ALL", false);
     }, [token, warehouseID]);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            if (loading || loadingMore || !nextPageUrl) return;
+
+            const scrollTop = window.scrollY;
+            const windowHeight = window.innerHeight;
+            const fullHeight = document.documentElement.scrollHeight;
+
+            const isNearBottom = scrollTop + windowHeight >= fullHeight - 300;
+
+            if (isNearBottom) {
+                fetchProducts(currentPage + 1, searchTerm, selectedCategory, true);
+            }
+        };
+
+        window.addEventListener("scroll", handleScroll);
+
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+        };
+    }, [
+        loading,
+        loadingMore,
+        nextPageUrl,
+        currentPage,
+        searchTerm,
+        selectedCategory,
+        token,
+        warehouseID,
+    ]);
+
+    // const handleCategoryChange = (e) => {
+    //     const value = e.target.value;
+    //     setSelectedCategory(value);
+    //     fetchProducts(1, searchTerm, value);
+    // };
+
+    // const handleSearchChange = (e) => {
+    //     setSearchTerm(e.target.value);
+    // };
+
+    // const handleSearchSubmit = (e) => {
+    //     e.preventDefault();
+    //     fetchProducts(1, searchTerm, selectedCategory);
+    // };
+
+    // const handleClearFilters = () => {
+    //     setSearchTerm("");
+    //     setSelectedCategory("ALL");
+    //     fetchProducts(1, "", "ALL");
+    // };
 
     const handleCategoryChange = (e) => {
         const value = e.target.value;
+
         setSelectedCategory(value);
-        fetchProducts(1, searchTerm, value);
+        setCurrentPage(1);
+
+        fetchProducts(1, searchTerm, value, false);
     };
 
     const handleSearchChange = (e) => {
@@ -188,26 +354,31 @@ const BasicTable = () => {
 
     const handleSearchSubmit = (e) => {
         e.preventDefault();
-        fetchProducts(1, searchTerm, selectedCategory);
+
+        setCurrentPage(1);
+
+        fetchProducts(1, searchTerm, selectedCategory, false);
     };
 
     const handleClearFilters = () => {
         setSearchTerm("");
         setSelectedCategory("ALL");
-        fetchProducts(1, "", "ALL");
+        setCurrentPage(1);
+
+        fetchProducts(1, "", "ALL", false);
     };
 
-    const handleNextPage = () => {
-        if (nextPageUrl) {
-            fetchProducts(currentPage + 1, searchTerm, selectedCategory);
-        }
-    };
+    // const handleNextPage = () => {
+    //     if (nextPageUrl) {
+    //         fetchProducts(currentPage + 1, searchTerm, selectedCategory);
+    //     }
+    // };
 
-    const handlePreviousPage = () => {
-        if (previousPageUrl && currentPage > 1) {
-            fetchProducts(currentPage - 1, searchTerm, selectedCategory);
-        }
-    };
+    // const handlePreviousPage = () => {
+    //     if (previousPageUrl && currentPage > 1) {
+    //         fetchProducts(currentPage - 1, searchTerm, selectedCategory);
+    //     }
+    // };
 
     const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -324,7 +495,8 @@ const BasicTable = () => {
 
         products.forEach((product, index) => {
             exportData.push({
-                "#": (currentPage - 1) * pageSize + index + 1,
+                // "#": (currentPage - 1) * pageSize + index + 1,
+                "#": index + 1,
                 ID: product.id,
                 Name: product.name,
                 Type: product.type,
@@ -443,10 +615,17 @@ const BasicTable = () => {
                                     ) : (
                                         <>
                                             <div className="d-flex justify-content-between align-items-center mb-3">
-                                                <div>
+                                                {/* <div>
                                                     <strong>Total Products:</strong> {totalCount}
                                                     <span className="ms-3">
                                                         Page {currentPage} of {totalPages || 1}
+                                                    </span>
+                                                </div> */}
+
+                                                <div>
+                                                    <strong>Total Products:</strong> {totalCount}
+                                                    <span className="ms-3">
+                                                        Loaded {products.length} of {totalCount}
                                                     </span>
                                                 </div>
 
@@ -485,10 +664,13 @@ const BasicTable = () => {
                                                                     key={product.id}
                                                                     className="text-center"
                                                                 >
-                                                                    <th scope="row">
+                                                                    {/* <th scope="row">
                                                                         {(currentPage - 1) * pageSize +
                                                                             index +
                                                                             1}
+                                                                    </th> */}
+                                                                    <th scope="row">
+                                                                        {index + 1}
                                                                     </th>
 
                                                                     <td>
@@ -558,7 +740,7 @@ const BasicTable = () => {
                                                                             </DropdownToggle>
 
                                                                             <DropdownMenu className="dropdown-menu-end">
-                                                                                <DropdownItem
+                                                                                {/* <DropdownItem
                                                                                     onClick={() =>
                                                                                         handleEditVie(product.id)
                                                                                     }
@@ -574,6 +756,12 @@ const BasicTable = () => {
                                                                                     >
                                                                                         Edit
                                                                                     </UncontrolledTooltip>
+                                                                                </DropdownItem> */}
+                                                                                <DropdownItem
+                                                                                    onClick={() => handleEditVie(product.id)}
+                                                                                >
+                                                                                    <i className="mdi mdi-pencil font-size-16 text-success me-1"></i>
+                                                                                    Edit
                                                                                 </DropdownItem>
                                                                             </DropdownMenu>
                                                                         </UncontrolledDropdown>
@@ -594,7 +782,7 @@ const BasicTable = () => {
                                                 </Table>
                                             </div>
 
-                                            <div className="d-flex justify-content-between align-items-center mt-3">
+                                            {/* <div className="d-flex justify-content-between align-items-center mt-3">
                                                 <div>
                                                     Showing {products.length} products on this page
                                                 </div>
@@ -620,6 +808,16 @@ const BasicTable = () => {
                                                         Next
                                                     </Button>
                                                 </div>
+                                            </div> */}
+
+                                            <div className="text-center mt-3">
+                                                {loadingMore ? (
+                                                    <p className="text-muted mb-0">Loading more products...</p>
+                                                ) : nextPageUrl ? (
+                                                    <p className="text-muted mb-0">Scroll down to load more products</p>
+                                                ) : (
+                                                    <p className="text-muted mb-0">All products loaded</p>
+                                                )}
                                             </div>
                                         </>
                                     )}

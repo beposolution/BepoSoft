@@ -82,6 +82,7 @@ const TableContainer = ({
   isCustomPageSize,
   handleUserClick,
   isJobListGlobalFilter,
+  getRowStyle,
 }) => {
 
   const [columnFilters, setColumnFilters] = useState([]);
@@ -171,7 +172,7 @@ const TableContainer = ({
       </Row>
 
       <div className={divClassName ? divClassName : "table-responsive"}>
-        <Table hover className={tableClass} bordered={isBordered}>
+        <Table className={tableClass} bordered={isBordered}>
           <thead className={theadClass}>
             {getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}>
@@ -213,7 +214,7 @@ const TableContainer = ({
             ))}
           </thead>
 
-          <tbody>
+          {/* <tbody>
             {getRowModel().rows.map(row => {
               return (
                 <tr key={row.id}>
@@ -230,7 +231,29 @@ const TableContainer = ({
                 </tr>
               );
             })}
+          </tbody> */}
+
+          <tbody>
+            {getRowModel().rows.map(row => {
+              const rowStyle = getRowStyle ? getRowStyle(row) : {};
+
+              return (
+                <tr key={row.id}>
+                  {row.getVisibleCells().map(cell => {
+                    return (
+                      <td key={cell.id} style={rowStyle}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
+
         </Table>
       </div>
 

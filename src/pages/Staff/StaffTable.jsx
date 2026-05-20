@@ -18,6 +18,8 @@ const DatatableTables = () => {
 
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
+    const [activeStaffCount, setActiveStaffCount] = useState(0);
+    const [inactiveStaffCount, setInactiveStaffCount] = useState(0);
     const [nextPage, setNextPage] = useState(null);
     const [previousPage, setPreviousPage] = useState(null);
 
@@ -179,55 +181,168 @@ const DatatableTables = () => {
         }
     };
 
+    const getStaffStatus = (staff) => {
+        const status = String(staff?.approval_status || "").toLowerCase();
+
+        if (status === "approved" || status === "active") {
+            return "active";
+        }
+
+        return "inactive";
+    };
+
+    // const fetchStaffs = async (page = 1, searchValue = "", filterValues = filters) => {
+    //     try {
+    //         setLoading(true);
+    //         setError(null);
+
+    //         const params = {
+    //             page: page,
+    //             search: searchValue,
+    //             ...filterValues,
+    //         };
+
+    //         Object.keys(params).forEach((key) => {
+    //             if (
+    //                 params[key] === "" ||
+    //                 params[key] === null ||
+    //                 params[key] === undefined
+    //             ) {
+    //                 delete params[key];
+    //             }
+    //         });
+
+    //         const response = await axios.get(
+    //             `${import.meta.env.VITE_APP_KEY}get/staffs/`,
+    //             {
+    //                 headers: {
+    //                     Authorization: `Bearer ${token}`,
+    //                 },
+    //                 params,
+    //             }
+    //         );
+
+    //         // if (response.status === 200) {
+    //         //     setData(response?.data?.results?.data || []);
+    //         //     setTotalCount(response?.data?.count || 0);
+    //         //     setNextPage(response?.data?.next || null);
+    //         //     setPreviousPage(response?.data?.previous || null);
+    //         // } 
+    //         if (response.status === 200) {
+    //             const staffList = response?.data?.results?.data || [];
+
+    //             setData(staffList);
+    //             setTotalCount(response?.data?.count || 0);
+    //             setNextPage(response?.data?.next || null);
+    //             setPreviousPage(response?.data?.previous || null);
+
+    //             const activeCount = staffList.filter(
+    //                 (staff) => getStaffStatus(staff) === "active"
+    //             ).length;
+
+    //             const inactiveCount = staffList.filter(
+    //                 (staff) => getStaffStatus(staff) === "inactive"
+    //             ).length;
+
+    //             setActiveStaffCount(activeCount);
+    //             setInactiveStaffCount(inactiveCount);
+    //         }
+
+    //         else {
+    //             throw new Error(`HTTP error! Status: ${response.status}`);
+    //         }
+    //     } catch (err) {
+    //         setError(err.response?.data?.message || err.message || "Failed to fetch staff data");
+    //         setData([]);
+    //         setTotalCount(0);
+    //         setNextPage(null);
+    //         setPreviousPage(null);
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
+
+
     const fetchStaffs = async (page = 1, searchValue = "", filterValues = filters) => {
-        try {
-            setLoading(true);
-            setError(null);
+    try {
+        setLoading(true);
+        setError(null);
 
-            const params = {
-                page: page,
-                search: searchValue,
-                ...filterValues,
-            };
+        const params = {
+            page: page,
+            search: searchValue,
+            ...filterValues,
+        };
 
-            Object.keys(params).forEach((key) => {
-                if (
-                    params[key] === "" ||
-                    params[key] === null ||
-                    params[key] === undefined
-                ) {
-                    delete params[key];
-                }
-            });
+        Object.keys(params).forEach((key) => {
+            if (
+                params[key] === "" ||
+                params[key] === null ||
+                params[key] === undefined
+            ) {
+                delete params[key];
+            }
+        });
 
-            const response = await axios.get(
-                `${import.meta.env.VITE_APP_KEY}get/staffs/`,
-                {
+        const response = await axios.get(
+            `${import.meta.env.VITE_APP_KEY}get/staffs/`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                params,
+            }
+        );
+
+        if (response.status === 200) {
+            const staffList = response?.data?.results?.data || [];
+
+            setData(staffList);
+            setTotalCount(response?.data?.count || 0);
+            setNextPage(response?.data?.next || null);
+            setPreviousPage(response?.data?.previous || null);
+
+            let allStaffs = [...staffList];
+            let nextUrl = response?.data?.next || null;
+
+            while (nextUrl) {
+                const nextResponse = await axios.get(nextUrl, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
-                    params,
-                }
-            );
+                });
 
-            if (response.status === 200) {
-                setData(response?.data?.results?.data || []);
-                setTotalCount(response?.data?.count || 0);
-                setNextPage(response?.data?.next || null);
-                setPreviousPage(response?.data?.previous || null);
-            } else {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+                const nextStaffList = nextResponse?.data?.results?.data || [];
+                allStaffs = [...allStaffs, ...nextStaffList];
+                nextUrl = nextResponse?.data?.next || null;
             }
-        } catch (err) {
-            setError(err.response?.data?.message || err.message || "Failed to fetch staff data");
-            setData([]);
-            setTotalCount(0);
-            setNextPage(null);
-            setPreviousPage(null);
-        } finally {
-            setLoading(false);
+
+            const activeCount = allStaffs.filter(
+                (staff) => getStaffStatus(staff) === "active"
+            ).length;
+
+            const inactiveCount = allStaffs.filter(
+                (staff) => getStaffStatus(staff) === "inactive"
+            ).length;
+
+            setActiveStaffCount(activeCount);
+            setInactiveStaffCount(inactiveCount);
+        } else {
+            throw new Error(`HTTP error! Status: ${response.status}`);
         }
-    };
+    } catch (err) {
+        setError(err.response?.data?.message || err.message || "Failed to fetch staff data");
+        setData([]);
+        setTotalCount(0);
+        setActiveStaffCount(0);
+        setInactiveStaffCount(0);
+        setNextPage(null);
+        setPreviousPage(null);
+    } finally {
+        setLoading(false);
+    }
+};
+
 
     useEffect(() => {
         fetchFilterData();
@@ -455,8 +570,40 @@ const DatatableTables = () => {
                     </div>
                 </div>
 
-                <div className="mb-3 d-flex justify-content-end">
+                {/* <div className="mb-3 d-flex justify-content-end">
                     <strong>Total Staffs: {totalCount}</strong>
+                </div> */}
+
+                <div className="mb-3 d-flex justify-content-end gap-3 align-items-center flex-wrap">
+                    <div
+                        style={{
+                            padding: "8px 14px",
+                            borderRadius: "8px",
+                            backgroundColor: "#e8f7ee",
+                            color: "#198754",
+                            fontWeight: "700",
+                            border: "1px solid #bde5cc",
+                        }}
+                    >
+                        Active Staffs: {activeStaffCount}
+                    </div>
+
+                    <div
+                        style={{
+                            padding: "8px 14px",
+                            borderRadius: "8px",
+                            backgroundColor: "#fff1f1",
+                            color: "#dc3545",
+                            fontWeight: "700",
+                            border: "1px solid #f5c2c7",
+                        }}
+                    >
+                        Inactive Staffs: {inactiveStaffCount}
+                    </div>
+
+                    <div>
+                        <strong>Total Staffs: {totalCount}</strong>
+                    </div>
                 </div>
 
                 {loading ? (
@@ -465,12 +612,38 @@ const DatatableTables = () => {
                     <p className="text-danger">Error: {error}</p>
                 ) : (
                     <>
+                        {/* <TableContainer
+                            columns={columns}
+                            data={data || []}
+                            isGlobalFilter={false}
+                            isPagination={false}
+                            tableClass="table-bordered table-nowrap dt-responsive nowrap w-100 dataTable no-footer dtr-inline"
+                            getRowClassName={(row) =>
+                                getStaffStatus(row.original) === "inactive" ? "inactive-staff-row" : ""
+                            }
+
+
+                        /> */}
+
+
                         <TableContainer
                             columns={columns}
                             data={data || []}
                             isGlobalFilter={false}
                             isPagination={false}
                             tableClass="table-bordered table-nowrap dt-responsive nowrap w-100 dataTable no-footer dtr-inline"
+                            getRowStyle={(row) => {
+                                const status = String(row.original?.approval_status || "").toLowerCase();
+
+                                if (status === "disapproved") {
+                                    return {
+                                        backgroundColor: "#fff1f1",
+                                        color: "#842029",
+                                    };
+                                }
+
+                                return {};
+                            }}
                         />
 
                         <div className="d-flex justify-content-between align-items-center mt-3">

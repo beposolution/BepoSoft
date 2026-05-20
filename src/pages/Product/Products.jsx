@@ -757,6 +757,7 @@ const BasicTable = () => {
                                                                                         Edit
                                                                                     </UncontrolledTooltip>
                                                                                 </DropdownItem> */}
+                                                                                
                                                                                 <DropdownItem
                                                                                     onClick={() => handleEditVie(product.id)}
                                                                                 >

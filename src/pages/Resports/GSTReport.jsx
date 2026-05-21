@@ -8,12 +8,43 @@ import { saveAs } from "file-saver";
 import Paginations from "../../components/Common/Pagination";
 
 const stateCodes = {
-  "Jammu & Kashmir": "01", "Himachal Pradesh": "02", "Punjab": "03", "Chandigarh": "04", "Uttarakhand": "05", "Haryana": "06", "Delhi": "07",
-  "Rajasthan": "08", "Uttar Pradesh": "09", "Bihar": "10", "Sikkim": "11", "Arunachal Pradesh": "12", "Nagaland": "13", "Manipur": "14",
-  "Mizoram": "15", "Tripura": "16", "Meghalaya": "17", "Assam": "18", "West Bengal": "19", "Jharkhand": "20", "Odisha": "21",
-  "Chhattisgarh": "22", "Madhya Pradesh": "23", "Gujarat": "24", "Daman & Diu": "25", "Dadra & Nagar Haveli": "26", "Maharashtra": "27",
-  "Karnataka": "29", "Goa": "30", "Lakshadweep": "31", "Kerala": "32", "Tamil Nadu": "33", "Puducherry": "34", "Andaman & Nicobar Islands": "35",
-  "Telangana": "36", "Andhra Pradesh": "37", "Ladakh": "38",
+  "Jammu & Kashmir": "01",
+  "Himachal Pradesh": "02",
+  Punjab: "03",
+  Chandigarh: "04",
+  Uttarakhand: "05",
+  Haryana: "06",
+  Delhi: "07",
+  Rajasthan: "08",
+  "Uttar Pradesh": "09",
+  Bihar: "10",
+  Sikkim: "11",
+  "Arunachal Pradesh": "12",
+  Nagaland: "13",
+  Manipur: "14",
+  Mizoram: "15",
+  Tripura: "16",
+  Meghalaya: "17",
+  Assam: "18",
+  "West Bengal": "19",
+  Jharkhand: "20",
+  Odisha: "21",
+  Chhattisgarh: "22",
+  "Madhya Pradesh": "23",
+  Gujarat: "24",
+  "Daman & Diu": "25",
+  "Dadra & Nagar Haveli": "26",
+  Maharashtra: "27",
+  Karnataka: "29",
+  Goa: "30",
+  Lakshadweep: "31",
+  Kerala: "32",
+  "Tamil Nadu": "33",
+  Puducherry: "34",
+  "Andaman & Nicobar Islands": "35",
+  Telangana: "36",
+  "Andhra Pradesh": "37",
+  Ladakh: "38",
 };
 
 const GSTReport = () => {
@@ -22,7 +53,10 @@ const GSTReport = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(100);
   const [totalCount, setTotalCount] = useState(0);
-  const [gstData, setGSTData] = useState([]);
+
+  const [allGSTData, setAllGSTData] = useState([]);
+  const [filteredGSTData, setFilteredGSTData] = useState([]);
+
   const [loading, setLoading] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -31,128 +65,211 @@ const GSTReport = () => {
 
   const baseURL = `${import.meta.env.VITE_APP_KEY}gst/orders/`;
 
-  const fetchPage = async (page = 1, sDate = startDate, eDate = endDate) => {
-    setLoading(true);
-    try {
-      const params = { page, page_size: pageSize };
-      // if your Django view later supports these, they'll Just Work™
-      if (sDate) params.start_date = sDate;
-      if (eDate) params.end_date = eDate;
+  const formatDate = (dateValue) => {
+    if (!dateValue) return "";
 
-      const { data } = await axios.get(baseURL, {
+    const date = new Date(dateValue);
+
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+
+    return date
+      .toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "2-digit",
+      })
+      .replace(/ /g, "-");
+  };
+
+  const getDateOnly = (dateValue) => {
+    if (!dateValue) return null;
+
+    const date = new Date(dateValue);
+
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  };
+
+  const getInputDateOnly = (dateValue) => {
+    if (!dateValue) return null;
+
+    const parts = dateValue.split("-");
+
+    if (parts.length !== 3) {
+      return null;
+    }
+
+    const year = Number(parts[0]);
+    const month = Number(parts[1]) - 1;
+    const day = Number(parts[2]);
+
+    return new Date(year, month, day);
+  };
+
+  const fetchAllGSTData = async () => {
+    setLoading(true);
+
+    try {
+      const firstResponse = await axios.get(baseURL, {
         headers: { Authorization: `Bearer ${token}` },
-        params,
+        params: {
+          page: 1,
+          page_size: pageSize,
+        },
       });
 
-      // expects: { page, page_size, count, results }
-      if (data && Array.isArray(data.results)) {
-        setGSTData(data.results);
-        setTotalCount(Number(data.count || 0));
-        setCurrentPage(Number(data.page || page));
-      } else {
-        setGSTData([]);
-        setTotalCount(0);
+      const firstData = firstResponse.data;
+      const total = Number(firstData?.count || 0);
+      const totalPages = Math.ceil(total / pageSize);
+
+      let allResults = Array.isArray(firstData?.results)
+        ? [...firstData.results]
+        : [];
+
+      for (let page = 2; page <= totalPages; page++) {
+        const { data } = await axios.get(baseURL, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: {
+            page,
+            page_size: pageSize,
+          },
+        });
+
+        if (Array.isArray(data?.results)) {
+          allResults = [...allResults, ...data.results];
+        }
       }
+
+      setAllGSTData(allResults);
+      setFilteredGSTData(allResults);
+      setTotalCount(allResults.length);
+      setCurrentPage(1);
     } catch (err) {
+      console.error(err);
       toast.error("Error fetching GST data");
+      setAllGSTData([]);
+      setFilteredGSTData([]);
+      setTotalCount(0);
+      setCurrentPage(1);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchPage(1);
+    fetchAllGSTData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const handleFilter = () => {
-    // reset to page 1 with date params
-    fetchPage(1, startDate, endDate);
+    const selectedStartDate = getInputDateOnly(startDate);
+    const selectedEndDate = getInputDateOnly(endDate);
+
+    if (selectedStartDate && selectedEndDate && selectedStartDate > selectedEndDate) {
+      toast.error("Start date cannot be greater than end date");
+      return;
+    }
+
+    const filtered = allGSTData.filter((row) => {
+      const orderDate = getDateOnly(row.order_date);
+
+      if (!orderDate) {
+        return false;
+      }
+
+      let isValid = true;
+
+      if (selectedStartDate) {
+        isValid = isValid && orderDate >= selectedStartDate;
+      }
+
+      if (selectedEndDate) {
+        isValid = isValid && orderDate <= selectedEndDate;
+      }
+
+      return isValid;
+    });
+
+    setFilteredGSTData(filtered);
+    setTotalCount(filtered.length);
+    setCurrentPage(1);
   };
 
-  // table rows per current page (group items by tax per order)
+  const handleClearFilter = () => {
+    setStartDate("");
+    setEndDate("");
+    setFilteredGSTData(allGSTData);
+    setTotalCount(allGSTData.length);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const paginatedGSTData = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+
+    return filteredGSTData.slice(startIndex, endIndex);
+  }, [filteredGSTData, currentPage, pageSize]);
+
   const tableRows = useMemo(() => {
-    return gstData.flatMap((row, idx) => {
-      const grouped = row.items?.reduce((acc, item) => {
-        (acc[item.tax] = acc[item.tax] || []).push(item);
-        return acc;
-      }, {}) || {};
+    return paginatedGSTData.flatMap((row, idx) => {
+      const grouped =
+        row.items?.reduce((acc, item) => {
+          const taxKey = item.tax ?? "0";
+          acc[taxKey] = acc[taxKey] || [];
+          acc[taxKey].push(item);
+          return acc;
+        }, {}) || {};
+
       return Object.entries(grouped).map(([taxRate], i) => ({
         key: `${row.id}-${taxRate}-${i}`,
-        index: idx + 1, // index within the page
+        index: (currentPage - 1) * pageSize + idx + 1,
         gst: row.gst || "",
         receiver: row.customerName || "",
         invoice: row.invoice || "",
-        date: row.order_date
-          ? new Date(row.order_date)
-            .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })
-            .replace(/ /g, "-")
-          : "",
+        date: formatDate(row.order_date),
         placeOfSupply: stateCodes[row.address]
           ? `${stateCodes[row.address]}-${row.address}`
-          : (row.address || ""),
+          : row.address || "",
         taxRate: `${taxRate}%`,
+        invoiceType:
+          (row.gst_confirm || "").toString().trim().toUpperCase() === "YES"
+            ? "Regular B2B"
+            : "Regular B2C",
       }));
     });
-  }, [gstData]);
+  }, [paginatedGSTData, currentPage, pageSize]);
 
-  // Export: fetch all pages (respecting filters) and then create 3 sheets: B2B, B2C, HSN
   const exportCombinedExcel = async () => {
     try {
-      // first: get page 1 to learn totalCount
-      const first = await axios.get(baseURL, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: {
-          page: 1,
-          page_size: pageSize,
-          ...(startDate ? { start_date: startDate } : {}),
-          ...(endDate ? { end_date: endDate } : {}),
-        },
-      });
+      const allResults = [...filteredGSTData];
 
-      const total = Number(first.data?.count || 0);
-      if (!total) {
+      if (!allResults.length) {
         toast.warning("No data to export");
         return;
       }
 
-      const totalPages = Math.ceil(total / pageSize);
-      const allResults = [...(first.data?.results || [])];
-
-      // pull remaining pages (2..N)
-      for (let p = 2; p <= totalPages; p++) {
-        // eslint-disable-next-line no-await-in-loop
-        const { data } = await axios.get(baseURL, {
-          headers: { Authorization: `Bearer ${token}` },
-          params: {
-            page: p,
-            page_size: pageSize,
-            ...(startDate ? { start_date: startDate } : {}),
-            ...(endDate ? { end_date: endDate } : {}),
-          },
-        });
-        if (Array.isArray(data?.results)) allResults.push(...data.results);
-      }
-
-      // Helper: formatted date
-      const formatDate = (d) =>
-        d
-          ? new Date(d)
-            .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })
-            .replace(/ /g, "-")
-          : "";
-
-      // -------- B2B and B2C Sheets --------
       const b2bRows = [];
       const b2cRows = [];
 
       allResults.forEach((row, index) => {
-        // Normalize gst_confirm for comparison (handle null / undefined)
-        const gstConfirm = (row.gst_confirm || "").toString().trim().toUpperCase();
+        const gstConfirm = (row.gst_confirm || "")
+          .toString()
+          .trim()
+          .toUpperCase();
 
-        // group items by tax rate like before
         const groupedByTax = (row.items || []).reduce((acc, item) => {
-          (acc[item.tax] = acc[item.tax] || []).push(item);
+          const taxKey = item.tax ?? "0";
+          acc[taxKey] = acc[taxKey] || [];
+          acc[taxKey].push(item);
           return acc;
         }, {});
 
@@ -164,36 +281,39 @@ const GSTReport = () => {
             "Invoice Number": row.invoice || "",
             "Invoice Date": formatDate(row.order_date),
             "Invoice Value": "",
-            "Place of Supply": stateCodes[row.address] ? `${stateCodes[row.address]}-${row.address}` : (row.address || ""),
+            "Place of Supply": stateCodes[row.address]
+              ? `${stateCodes[row.address]}-${row.address}`
+              : row.address || "",
             "Reverse Charge": "N",
             "Applicable % of Tax": "",
             "E-Commerce GSTIN": "",
-            "Rate": `${taxRate}%`,
+            Rate: `${taxRate}%`,
             "Taxable Value": "",
             "Cess Amount": "",
           };
 
-          // Put into B2B if gst_confirm === "YES"
           if (gstConfirm === "YES") {
             b2bRows.push({
               ...baseRow,
               "Invoice Type": "Regular B2B",
             });
-          }
-          // Put into B2C if gst_confirm === "NO GST"
-          else if (gstConfirm === "NO GST") {
+          } else if (gstConfirm === "NO GST") {
             b2cRows.push({
               ...baseRow,
               "Invoice Type": "Regular B2C",
             });
-          }
-          // If gst_confirm is something else / blank, you can decide — here we default to B2C-like sheet
-          else {
-            // OPTIONAL: treat unknown as B2C (adjust if you prefer to skip)
-            b2cRows.push({
-              ...baseRow,
-              "Invoice Type": row.gst ? "Regular B2B" : "Regular B2C",
-            });
+          } else {
+            if (row.gst) {
+              b2bRows.push({
+                ...baseRow,
+                "Invoice Type": "Regular B2B",
+              });
+            } else {
+              b2cRows.push({
+                ...baseRow,
+                "Invoice Type": "Regular B2C",
+              });
+            }
           }
         });
       });
@@ -201,11 +321,12 @@ const GSTReport = () => {
       const b2bSheet = XLSX.utils.json_to_sheet(b2bRows);
       const b2cSheet = XLSX.utils.json_to_sheet(b2cRows);
 
-      // -------- HSN Summary Sheet (unchanged logic, aggregates across allResults) --------
       const summaryMap = {};
+
       allResults.forEach((row) => {
         (row.items || []).forEach((item) => {
           const key = `${item.name}-${item.product}`;
+
           if (!summaryMap[key]) {
             summaryMap[key] = {
               Description: item.name,
@@ -221,22 +342,23 @@ const GSTReport = () => {
               TOTAL: 0,
             };
           }
+
           const taxable = parseFloat(item.exclude_price) || 0;
           const qty = parseFloat(item.quantity) || 0;
           const rate = parseFloat(item.tax) || 0;
 
           summaryMap[key].TotalQuantity += qty;
           summaryMap[key].TotalTaxableValue += taxable;
+
           const taxAmount = (taxable * rate) / 100;
 
-          // If buyer GST present treat as interstate (IGST).
-          // NOTE: using row.gst presence here like your original logic.
           if (row.gst) {
             summaryMap[key].IGST += taxAmount;
           } else {
             summaryMap[key].CentralTax += taxAmount / 2;
             summaryMap[key].StateTax += taxAmount / 2;
           }
+
           summaryMap[key].TOTAL =
             summaryMap[key].TotalTaxableValue +
             summaryMap[key].IGST +
@@ -244,38 +366,41 @@ const GSTReport = () => {
             summaryMap[key].StateTax;
         });
       });
+
       const hsnRows = Object.values(summaryMap);
       const hsnSheet = XLSX.utils.json_to_sheet(hsnRows);
 
-      // -------- Write workbook with 3 sheets --------
       const workbook = XLSX.utils.book_new();
+
       XLSX.utils.book_append_sheet(workbook, b2bSheet, "B2B (GST YES)");
       XLSX.utils.book_append_sheet(workbook, b2cSheet, "B2C (NO GST)");
       XLSX.utils.book_append_sheet(workbook, hsnSheet, "HSN Summary");
 
-      const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-      saveAs(new Blob([excelBuffer], { type: "application/octet-stream" }), "GST_Report_B2B_B2C_With_HSN.xlsx");
+      const excelBuffer = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "array",
+      });
+
+      saveAs(
+        new Blob([excelBuffer], { type: "application/octet-stream" }),
+        "GST_Report_B2B_B2C_With_HSN.xlsx"
+      );
     } catch (e) {
       console.error(e);
       toast.error("Export failed");
     }
   };
 
-
-  // helper for Paginations: your component expects a "data" prop to know total pages.
-  // We pass a lightweight object exposing only a .length equal to totalCount.
-  const paginationDataProxy = useMemo(() => ({ length: totalCount }), [totalCount]);
-
-  // when user clicks a page in Paginations, load that page from server
-  const handlePageChange = (p) => {
-    // some Paginations implementations pass the raw page index; adapt if needed
-    fetchPage(p);
-  };
+  const paginationDataProxy = useMemo(
+    () => ({ length: totalCount }),
+    [totalCount]
+  );
 
   return (
     <div className="page-content">
       <div className="container-fluid">
         <Breadcrumbs title="Tables" breadcrumbItem="GST REPORT" />
+
         <Row>
           <Col lg={12}>
             <Card>
@@ -292,6 +417,7 @@ const GSTReport = () => {
                       onChange={(e) => setStartDate(e.target.value)}
                     />
                   </Col>
+
                   <Col md={3}>
                     <label>End Date</label>
                     <input
@@ -301,15 +427,62 @@ const GSTReport = () => {
                       onChange={(e) => setEndDate(e.target.value)}
                     />
                   </Col>
+
                   <Col md={3} className="d-flex align-items-end">
-                    <Button color="primary" onClick={handleFilter} disabled={loading}>
+                    <Button
+                      color="primary"
+                      onClick={handleFilter}
+                      disabled={loading}
+                    >
                       {loading ? "Filtering..." : "Filter"}
                     </Button>
+
+                    <Button
+                      color="secondary"
+                      onClick={handleClearFilter}
+                      disabled={loading}
+                      className="ms-2"
+                    >
+                      Clear
+                    </Button>
                   </Col>
+
                   <Col md={3} className="d-flex align-items-end">
-                    <Button color="success" onClick={exportCombinedExcel} disabled={loading || !totalCount}>
+                    <Button
+                      color="success"
+                      onClick={exportCombinedExcel}
+                      disabled={loading || !totalCount}
+                    >
                       Export GST + HSN Excel
                     </Button>
+                  </Col>
+                </Row>
+
+                <Row className="mb-3">
+                  <Col md={12}>
+                    <div
+                      style={{
+                        background: "#f8f9fa",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "8px",
+                        padding: "10px 14px",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Showing{" "}
+                      <span style={{ fontWeight: 700 }}>
+                        {totalCount === 0
+                          ? 0
+                          : (currentPage - 1) * pageSize + 1}
+                      </span>{" "}
+                      to{" "}
+                      <span style={{ fontWeight: 700 }}>
+                        {Math.min(currentPage * pageSize, totalCount)}
+                      </span>{" "}
+                      of <span style={{ fontWeight: 700 }}>{totalCount}</span>{" "}
+                      records
+                    </div>
                   </Col>
                 </Row>
 
@@ -333,6 +506,7 @@ const GSTReport = () => {
                         <th>Cess Amount</th>
                       </tr>
                     </thead>
+
                     <tbody>
                       {!loading && tableRows.length ? (
                         tableRows.map((r) => (
@@ -346,7 +520,7 @@ const GSTReport = () => {
                             <td>{r.placeOfSupply}</td>
                             <td>N</td>
                             <td></td>
-                            <td>Regular B2B</td>
+                            <td>{r.invoiceType}</td>
                             <td></td>
                             <td>{r.taxRate}</td>
                             <td></td>
@@ -366,13 +540,15 @@ const GSTReport = () => {
 
                 <Paginations
                   perPageData={pageSize}
-                  data={paginationDataProxy}   // proxy with .length = totalCount
+                  data={paginationDataProxy}
                   currentPage={currentPage}
                   setCurrentPage={handlePageChange}
                   isShowingPageLength
                   paginationDiv="col-auto"
                   paginationClass="pagination"
-                  indexOfFirstItem={(currentPage - 1) * pageSize + 1}
+                  indexOfFirstItem={
+                    totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1
+                  }
                   indexOfLastItem={Math.min(currentPage * pageSize, totalCount)}
                 />
               </CardBody>

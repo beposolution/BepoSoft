@@ -1,4 +1,3 @@
-// import React, { useEffect, useState } from "react";
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import {
@@ -7,12 +6,10 @@ import {
     Col,
     Card,
     CardBody,
-    CardTitle,
     UncontrolledDropdown,
     DropdownToggle,
     DropdownMenu,
     DropdownItem,
-    // UncontrolledTooltip,
     Input,
     Button,
 } from "reactstrap";
@@ -30,22 +27,21 @@ const truncateText = (text, length) => {
 
 const BasicTable = () => {
     const [products, setProducts] = useState([]);
+    const [summary, setSummary] = useState({});
+    const [warehouseName, setWarehouseName] = useState("");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("ALL");
     const [categories, setCategories] = useState([]);
-
     const [warehouseID, setWarehouseID] = useState(null);
-
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const [nextPageUrl, setNextPageUrl] = useState(null);
     const [previousPageUrl, setPreviousPageUrl] = useState(null);
     const [loadingMore, setLoadingMore] = useState(false);
-    const isFetchingRef = useRef(false);
 
+    const isFetchingRef = useRef(false);
     const pageSize = 50;
 
     const token = localStorage.getItem("token");
@@ -79,7 +75,11 @@ const BasicTable = () => {
         fetchUserData();
     }, [token, navigate]);
 
-    const buildProductsUrl = (page = 1, search = searchTerm, category = selectedCategory) => {
+    const buildProductsUrl = (
+        page = 1,
+        search = searchTerm,
+        category = selectedCategory
+    ) => {
         let url = `${import.meta.env.VITE_APP_KEY}warehouse/products/gets/${warehouseID}/?page=${page}`;
 
         if (search && search.trim() !== "") {
@@ -92,87 +92,6 @@ const BasicTable = () => {
 
         return url;
     };
-
-    // const fetchProducts = async (
-    //     page = currentPage,
-    //     search = searchTerm,
-    //     category = selectedCategory
-    // ) => {
-    //     try {
-    //         if (!token || !warehouseID) return;
-
-    //         setLoading(true);
-    //         setError(null);
-
-    //         const response = await fetch(buildProductsUrl(page, search, category), {
-    //             method: "GET",
-    //             headers: {
-    //                 Authorization: `Bearer ${token}`,
-    //                 "Content-Type": "application/json",
-    //             },
-    //         });
-
-    //         const data = await response.json();
-
-    //         if (!response.ok) {
-    //             const backendMessage =
-    //                 data?.message ||
-    //                 data?.detail ||
-    //                 `HTTP error! Status: ${response.status}`;
-
-    //             setProducts([]);
-    //             setTotalCount(0);
-    //             setNextPageUrl(null);
-    //             setPreviousPageUrl(null);
-    //             setCurrentPage(page);
-
-    //             throw new Error(backendMessage);
-    //         }
-
-    //         const productList = data?.results?.data || [];
-
-    //         setProducts(productList);
-    //         setTotalCount(data?.count || 0);
-    //         setNextPageUrl(data?.next || null);
-    //         setPreviousPageUrl(data?.previous || null);
-    //         setCurrentPage(page);
-
-    //         const categoryMap = new Map();
-
-    //         productList.forEach((product) => {
-    //             if (product?.product_category && product?.product_category_name) {
-    //                 categoryMap.set(product.product_category, product.product_category_name);
-    //             }
-    //         });
-
-    //         setCategories((prevCategories) => {
-    //             const oldMap = new Map();
-
-    //             prevCategories.forEach((cat) => {
-    //                 if (cat.id && cat.name) {
-    //                     oldMap.set(cat.id, cat.name);
-    //                 }
-    //             });
-
-    //             categoryMap.forEach((name, id) => {
-    //                 oldMap.set(id, name);
-    //             });
-
-    //             return [
-    //                 { id: "ALL", name: "ALL" },
-    //                 ...Array.from(oldMap.entries()).map(([id, name]) => ({
-    //                     id,
-    //                     name,
-    //                 })),
-    //             ];
-    //         });
-    //     } catch (err) {
-    //         setError(err.message || "Unknown error occurred");
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // };
-
 
     const fetchProducts = async (
         page = currentPage,
@@ -212,6 +131,8 @@ const BasicTable = () => {
 
                 if (!append) {
                     setProducts([]);
+                    setSummary({});
+                    setWarehouseName("");
                     setTotalCount(0);
                     setNextPageUrl(null);
                     setPreviousPageUrl(null);
@@ -222,6 +143,7 @@ const BasicTable = () => {
             }
 
             const productList = data?.results?.data || [];
+            const apiSummary = data?.results?.summary || {};
 
             setProducts((prevProducts) => {
                 if (append) {
@@ -231,6 +153,8 @@ const BasicTable = () => {
                 return productList;
             });
 
+            setSummary(apiSummary);
+            setWarehouseName(data?.results?.warehouse_name || "");
             setTotalCount(data?.count || 0);
             setNextPageUrl(data?.next || null);
             setPreviousPageUrl(data?.previous || null);
@@ -271,10 +195,6 @@ const BasicTable = () => {
             isFetchingRef.current = false;
         }
     };
-    // useEffect(() => {
-    //     if (!token || !warehouseID) return;
-    //     fetchProducts(1, "", "ALL");
-    // }, [token, warehouseID]);
 
     useEffect(() => {
         if (!token || !warehouseID) return;
@@ -318,27 +238,6 @@ const BasicTable = () => {
         warehouseID,
     ]);
 
-    // const handleCategoryChange = (e) => {
-    //     const value = e.target.value;
-    //     setSelectedCategory(value);
-    //     fetchProducts(1, searchTerm, value);
-    // };
-
-    // const handleSearchChange = (e) => {
-    //     setSearchTerm(e.target.value);
-    // };
-
-    // const handleSearchSubmit = (e) => {
-    //     e.preventDefault();
-    //     fetchProducts(1, searchTerm, selectedCategory);
-    // };
-
-    // const handleClearFilters = () => {
-    //     setSearchTerm("");
-    //     setSelectedCategory("ALL");
-    //     fetchProducts(1, "", "ALL");
-    // };
-
     const handleCategoryChange = (e) => {
         const value = e.target.value;
 
@@ -367,18 +266,6 @@ const BasicTable = () => {
 
         fetchProducts(1, "", "ALL", false);
     };
-
-    // const handleNextPage = () => {
-    //     if (nextPageUrl) {
-    //         fetchProducts(currentPage + 1, searchTerm, selectedCategory);
-    //     }
-    // };
-
-    // const handlePreviousPage = () => {
-    //     if (previousPageUrl && currentPage > 1) {
-    //         fetchProducts(currentPage - 1, searchTerm, selectedCategory);
-    //     }
-    // };
 
     const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -418,7 +305,9 @@ const BasicTable = () => {
             );
 
             if (response.status === 200) {
-                setProducts((prev) => prev.filter((product) => product.id !== productId));
+                setProducts((prev) =>
+                    prev.filter((product) => product.id !== productId)
+                );
                 toast.success("Product deleted successfully");
             } else {
                 throw new Error(`HTTP error! Status: ${response.status}`);
@@ -433,6 +322,7 @@ const BasicTable = () => {
             if (product.image.startsWith("http")) {
                 return product.image;
             }
+
             return `${import.meta.env.VITE_APP_IMAGE}${product.image}`;
         }
 
@@ -452,7 +342,7 @@ const BasicTable = () => {
             }
         }
 
-        return "fallback-image-url";
+        return "/no-image.png";
     };
 
     const toNumber = (value) => {
@@ -490,12 +380,21 @@ const BasicTable = () => {
         return toNumber(product?.locked_stock);
     };
 
+    const formatNumber = (value) => {
+        return Number(value || 0).toLocaleString("en-IN");
+    };
+
+    const formatCurrency = (value) => {
+        return `₹${Number(value || 0).toLocaleString("en-IN", {
+            maximumFractionDigits: 2,
+        })}`;
+    };
+
     const exportToExcel = () => {
         const exportData = [];
 
         products.forEach((product, index) => {
             exportData.push({
-                // "#": (currentPage - 1) * pageSize + index + 1,
                 "#": index + 1,
                 ID: product.id,
                 Name: product.name,
@@ -509,7 +408,8 @@ const BasicTable = () => {
                 Excluded_Price: Math.floor(product.exclude_price || 0),
                 Wholesale_Price: product.selling_price,
                 Retail_Price: product.retail_price,
-                Purchase_Type: product.purchase_type === "International" ? "IN" : "Local",
+                Purchase_Type:
+                    product.purchase_type === "International" ? "IN" : "Local",
                 Variant: "Main Product",
                 Size: product.size || "",
                 Color: product.color || "",
@@ -552,108 +452,565 @@ const BasicTable = () => {
         XLSX.writeFile(workbook, "Product_Details.xlsx");
     };
 
+    const renderSummaryCard = (title, value, subText, icon, bgColor, iconColor) => {
+        return (
+            <Col xl={3} md={6} className="mb-3">
+                <div
+                    className="card border-0 h-100"
+                    style={{
+                        borderRadius: "18px",
+                        boxShadow: "0 8px 25px rgba(15, 23, 42, 0.06)",
+                    }}
+                >
+                    <div className="card-body">
+                        <div className="d-flex align-items-center justify-content-between">
+                            <div>
+                                <p className="text-muted mb-1">{title}</p>
+                                <h3 className="mb-1 fw-bold">{value}</h3>
+
+                                {subText && (
+                                    <small style={{ color: "#64748b", fontWeight: 500 }}>
+                                        {subText}
+                                    </small>
+                                )}
+                            </div>
+
+                            <div
+                                style={{
+                                    width: "48px",
+                                    height: "48px",
+                                    borderRadius: "15px",
+                                    background: bgColor,
+                                    color: iconColor,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: "24px",
+                                    flexShrink: 0,
+                                }}
+                            >
+                                <i className={icon}></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Col>
+        );
+    };
+
     return (
         <React.Fragment>
             <ToastContainer />
-            <div className="page-content">
+
+            <div
+                className="page-content"
+                style={{
+                    background: "#f5f7fb",
+                    minHeight: "100vh",
+                }}
+            >
                 <div className="container-fluid">
-                    <Breadcrumbs title="Tables" breadcrumbItem="Product Tables" />
+
+                    <div
+                        className="card border-0 mb-4"
+                        style={{
+                            borderRadius: "22px",
+                            background:
+                                "linear-gradient(135deg, #1f2937 0%, #334155 45%, #0f172a 100%)",
+                            boxShadow: "0 12px 35px rgba(15, 23, 42, 0.18)",
+                            overflow: "hidden",
+                        }}
+                    >
+                        <div className="card-body p-4">
+                            <div className="row align-items-center">
+                                <div className="col-lg-8">
+                                    <div className="d-flex align-items-center gap-3">
+                                        <div
+                                            style={{
+                                                width: "58px",
+                                                height: "58px",
+                                                borderRadius: "18px",
+                                                background: "rgba(255,255,255,0.12)",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                color: "#fff",
+                                                fontSize: "26px",
+                                            }}
+                                        >
+                                            <i className="bx bx-store"></i>
+                                        </div>
+
+                                        <div>
+                                            <h4 className="mb-1 text-white fw-bold">
+                                                Warehouse Product Center
+                                            </h4>
+
+                                            <p
+                                                className="mb-0"
+                                                style={{
+                                                    color: "rgba(255,255,255,0.72)",
+                                                }}
+                                            >
+                                                View products, stock, locked stock, pricing,
+                                                variants, and export warehouse inventory data.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="col-lg-4 mt-4 mt-lg-0">
+                                    <div className="d-flex justify-content-lg-end gap-2 flex-wrap">
+                                        <span
+                                            className="badge"
+                                            style={{
+                                                background: "rgba(59,130,246,0.18)",
+                                                color: "#bfdbfe",
+                                                padding: "10px 14px",
+                                                borderRadius: "999px",
+                                                fontSize: "13px",
+                                                fontWeight: 500,
+                                            }}
+                                        >
+                                            {warehouseName || "Warehouse"}
+                                        </span>
+
+                                        <span
+                                            className="badge"
+                                            style={{
+                                                background: "rgba(34,197,94,0.18)",
+                                                color: "#bbf7d0",
+                                                padding: "10px 14px",
+                                                borderRadius: "999px",
+                                                fontSize: "13px",
+                                                fontWeight: 500,
+                                            }}
+                                        >
+                                            Total:{" "}
+                                            {formatNumber(summary?.total_products || totalCount)}
+                                        </span>
+
+                                        {/* <Button
+                                            color="success"
+                                            onClick={exportToExcel}
+                                            style={{
+                                                borderRadius: "999px",
+                                                padding: "9px 16px",
+                                                fontWeight: 700,
+                                                border: "none",
+                                                boxShadow:
+                                                    "0 8px 20px rgba(34, 197, 94, 0.25)",
+                                            }}
+                                        >
+                                            <i className="bx bx-download me-1"></i>
+                                            Export to Excel
+                                        </Button> */}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <Row className="mb-4">
+                        {renderSummaryCard(
+                            "Total Products",
+                            formatNumber(summary?.total_products || totalCount),
+                            `Single ${formatNumber(
+                                summary?.single_product_count
+                            )} | Variant ${formatNumber(summary?.variant_product_count)}`,
+                            "bx bx-grid-alt",
+                            "#eef2ff",
+                            "#4f46e5"
+                        )}
+
+                        {renderSummaryCard(
+                            "Total Stock",
+                            formatNumber(summary?.total_stock),
+                            `Single ${formatNumber(summary?.single_stock)} | Variant ${formatNumber(
+                                summary?.variant_stock
+                            )}`,
+                            "bx bx-package",
+                            "#ecfdf5",
+                            "#10b981"
+                        )}
+
+                        {renderSummaryCard(
+                            "Locked Stock",
+                            formatNumber(summary?.total_locked_stock),
+                            `Single ${formatNumber(
+                                summary?.single_locked_stock
+                            )} | Variant ${formatNumber(summary?.variant_locked_stock)}`,
+                            "bx bx-lock-alt",
+                            "#fff7ed",
+                            "#f97316"
+                        )}
+
+                        {renderSummaryCard(
+                            "Retail Amount",
+                            formatCurrency(summary?.total_retail_amount),
+                            `Single ${formatCurrency(
+                                summary?.single_retail_amount
+                            )} | Variant ${formatCurrency(summary?.variant_retail_amount)}`,
+                            "bx bx-rupee",
+                            "#fdf2f8",
+                            "#db2777"
+                        )}
+
+                        {renderSummaryCard(
+                            "Selling Amount",
+                            formatCurrency(summary?.total_selling_amount),
+                            `Single ${formatCurrency(
+                                summary?.single_selling_amount
+                            )} | Variant ${formatCurrency(summary?.variant_selling_amount)}`,
+                            "bx bx-money",
+                            "#f0fdf4",
+                            "#16a34a"
+                        )}
+
+                        {renderSummaryCard(
+                            "Landing Cost",
+                            formatCurrency(summary?.total_landing_cost_amount),
+                            `Single ${formatCurrency(
+                                summary?.single_landing_cost_amount
+                            )} | Variant ${formatCurrency(summary?.variant_landing_cost_amount)}`,
+                            "bx bx-purchase-tag-alt",
+                            "#eff6ff",
+                            "#2563eb"
+                        )}
+
+                        {renderSummaryCard(
+                            "Exclude Price Amount",
+                            formatCurrency(summary?.total_exclude_price_amount),
+                            `Single ${formatCurrency(
+                                summary?.single_exclude_price_amount
+                            )} | Variant ${formatCurrency(summary?.variant_exclude_price_amount)}`,
+                            "bx bx-minus-circle",
+                            "#fefce8",
+                            "#ca8a04"
+                        )}
+
+                        {renderSummaryCard(
+                            "Damaged Stock",
+                            formatNumber(summary?.damaged_stock_summary?.total_damaged_stock),
+                            `Single ${formatNumber(
+                                summary?.damaged_stock_summary?.single_damaged_stock
+                            )} | Variant ${formatNumber(
+                                summary?.damaged_stock_summary?.variant_damaged_stock
+                            )}`,
+                            "bx bx-error",
+                            "#fef2f2",
+                            "#dc2626"
+                        )}
+
+                        {renderSummaryCard(
+                            "Damaged Retail Amount",
+                            formatCurrency(
+                                summary?.damaged_stock_summary?.total_damaged_retail_amount
+                            ),
+                            `Selling ${formatCurrency(
+                                summary?.damaged_stock_summary?.total_damaged_selling_amount
+                            )}`,
+                            "bx bx-rupee",
+                            "#fff1f2",
+                            "#e11d48"
+                        )}
+
+                        {renderSummaryCard(
+                            "Partially Damaged Stock",
+                            formatNumber(
+                                summary?.partially_damaged_stock_summary
+                                    ?.total_partially_damaged_stock
+                            ),
+                            `Single ${formatNumber(
+                                summary?.partially_damaged_stock_summary
+                                    ?.single_partially_damaged_stock
+                            )} | Variant ${formatNumber(
+                                summary?.partially_damaged_stock_summary
+                                    ?.variant_partially_damaged_stock
+                            )}`,
+                            "bx bx-error-alt",
+                            "#fff7ed",
+                            "#ea580c"
+                        )}
+
+                        {renderSummaryCard(
+                            "Partial Damage Retail",
+                            formatCurrency(
+                                summary?.partially_damaged_stock_summary
+                                    ?.total_partially_damaged_retail_amount
+                            ),
+                            `Selling ${formatCurrency(
+                                summary?.partially_damaged_stock_summary
+                                    ?.total_partially_damaged_selling_amount
+                            )}`,
+                            "bx bx-rupee",
+                            "#fffbeb",
+                            "#d97706"
+                        )}
+
+                        {renderSummaryCard(
+                            "Partial Damage Landing",
+                            formatCurrency(
+                                summary?.partially_damaged_stock_summary
+                                    ?.total_partially_damaged_landing_cost_amount
+                            ),
+                            `Exclude ${formatCurrency(
+                                summary?.partially_damaged_stock_summary
+                                    ?.total_partially_damaged_exclude_price_amount
+                            )}`,
+                            "bx bx-receipt",
+                            "#f8fafc",
+                            "#475569"
+                        )}
+                    </Row>
+
                     <Row>
                         <Col xl={12}>
-                            <Card>
-                                <CardBody>
-                                    <Row className="mb-3 align-items-center">
-                                        <Col md={7}>
-                                            <form onSubmit={handleSearchSubmit}>
-                                                <div className="hstack gap-3">
-                                                    <Input
-                                                        className="form-control me-auto"
-                                                        type="text"
-                                                        placeholder="Search with Product Name, HSN code..."
-                                                        aria-label="Search products"
-                                                        value={searchTerm}
-                                                        onChange={handleSearchChange}
-                                                    />
+                            <Card
+                                className="border-0"
+                                style={{
+                                    borderRadius: "22px",
+                                    boxShadow: "0 10px 35px rgba(15, 23, 42, 0.08)",
+                                    overflow: "hidden",
+                                }}
+                            >
+                                <CardBody className="p-0">
+                                    <div
+                                        style={{
+                                            background: "#fff",
+                                            padding: "22px 24px",
+                                            borderBottom: "1px solid #edf0f4",
+                                        }}
+                                    >
+                                        <Row className="align-items-center">
+                                            <Col lg={5}>
+                                                <h5 className="mb-1 fw-bold text-dark">
+                                                    Product Table
+                                                </h5>
 
-                                                    <Button color="secondary" type="submit">
-                                                        <FaSearch />
-                                                    </Button>
-                                                </div>
-                                            </form>
-                                        </Col>
-                                        <Col md={3}>
-                                            <Input
-                                                type="select"
-                                                value={selectedCategory}
-                                                onChange={handleCategoryChange}
-                                            >
-                                                {categories.map((cat) => (
-                                                    <option key={cat.id} value={cat.id}>
-                                                        {cat.name}
-                                                    </option>
-                                                ))}
-                                            </Input>
-                                        </Col>
-                                        <Col md={2}>
-                                            <Button
-                                                color="light"
-                                                className="w-100"
-                                                onClick={handleClearFilters}
-                                            >
-                                                Clear
-                                            </Button>
-                                        </Col>
-                                    </Row>
-                                    <CardTitle className="h4 text-center">
-                                        Product Table
-                                    </CardTitle>
+                                                <p className="text-muted mb-0">
+                                                    Loaded {formatNumber(products.length)} of{" "}
+                                                    {formatNumber(totalCount)} products.
+                                                </p>
+                                            </Col>
+
+                                            <Col lg={7} className="mt-3 mt-lg-0">
+                                                <form onSubmit={handleSearchSubmit}>
+                                                    <div className="d-flex gap-2 flex-wrap justify-content-lg-end">
+                                                        <div
+                                                            className="position-relative"
+                                                            style={{
+                                                                width: "100%",
+                                                                maxWidth: "360px",
+                                                            }}
+                                                        >
+                                                            <i
+                                                                className="bx bx-search"
+                                                                style={{
+                                                                    position: "absolute",
+                                                                    left: "16px",
+                                                                    top: "50%",
+                                                                    transform: "translateY(-50%)",
+                                                                    color: "#94a3b8",
+                                                                    fontSize: "20px",
+                                                                }}
+                                                            ></i>
+
+                                                            <Input
+                                                                type="text"
+                                                                placeholder="Search with product name, HSN code..."
+                                                                aria-label="Search products"
+                                                                value={searchTerm}
+                                                                onChange={handleSearchChange}
+                                                                style={{
+                                                                    borderRadius: "14px",
+                                                                    padding: "12px 16px 12px 45px",
+                                                                    border: "1px solid #e5e7eb",
+                                                                    background: "#f8fafc",
+                                                                }}
+                                                            />
+                                                        </div>
+
+                                                        <Input
+                                                            type="select"
+                                                            value={selectedCategory}
+                                                            onChange={handleCategoryChange}
+                                                            style={{
+                                                                maxWidth: "190px",
+                                                                borderRadius: "14px",
+                                                                padding: "12px 14px",
+                                                                border: "1px solid #e5e7eb",
+                                                                background: "#f8fafc",
+                                                            }}
+                                                        >
+                                                            {categories.map((cat) => (
+                                                                <option key={cat.id} value={cat.id}>
+                                                                    {cat.name}
+                                                                </option>
+                                                            ))}
+                                                        </Input>
+
+                                                        <Button
+                                                            color="secondary"
+                                                            type="submit"
+                                                            style={{
+                                                                borderRadius: "12px",
+                                                                padding: "10px 16px",
+                                                                fontWeight: 600,
+                                                            }}
+                                                        >
+                                                            <FaSearch />
+                                                        </Button>
+
+                                                        <Button
+                                                            color="light"
+                                                            onClick={handleClearFilters}
+                                                            style={{
+                                                                borderRadius: "12px",
+                                                                padding: "10px 16px",
+                                                                fontWeight: 600,
+                                                            }}
+                                                        >
+                                                            Clear
+                                                        </Button>
+                                                    </div>
+                                                </form>
+                                            </Col>
+                                        </Row>
+                                    </div>
 
                                     {loading ? (
-                                        <p>Loading...</p>
-                                    ) : error ? (
-                                        <p className="text-danger">{error}</p>
-                                    ) : (
-                                        <>
-                                            <div className="d-flex justify-content-between align-items-center mb-3">
-                                                {/* <div>
-                                                    <strong>Total Products:</strong> {totalCount}
-                                                    <span className="ms-3">
-                                                        Page {currentPage} of {totalPages || 1}
-                                                    </span>
-                                                </div> */}
+                                        <div className="p-4">
+                                            {[1, 2, 3, 4, 5].map((item) => (
+                                                <div
+                                                    key={item}
+                                                    className="d-flex align-items-center mb-3"
+                                                    style={{
+                                                        padding: "16px",
+                                                        background: "#f8fafc",
+                                                        borderRadius: "16px",
+                                                    }}
+                                                >
+                                                    <div
+                                                        style={{
+                                                            width: "58px",
+                                                            height: "58px",
+                                                            borderRadius: "14px",
+                                                            background: "#e5e7eb",
+                                                        }}
+                                                    ></div>
 
-                                                <div>
-                                                    <strong>Total Products:</strong> {totalCount}
-                                                    <span className="ms-3">
-                                                        Loaded {products.length} of {totalCount}
-                                                    </span>
+                                                    <div className="flex-grow-1 ms-3">
+                                                        <div
+                                                            style={{
+                                                                height: "14px",
+                                                                width: "40%",
+                                                                background: "#e5e7eb",
+                                                                borderRadius: "10px",
+                                                                marginBottom: "10px",
+                                                            }}
+                                                        ></div>
+
+                                                        <div
+                                                            style={{
+                                                                height: "12px",
+                                                                width: "25%",
+                                                                background: "#edf2f7",
+                                                                borderRadius: "10px",
+                                                            }}
+                                                        ></div>
+                                                    </div>
+
+                                                    <div
+                                                        style={{
+                                                            width: "100px",
+                                                            height: "34px",
+                                                            background: "#e5e7eb",
+                                                            borderRadius: "10px",
+                                                        }}
+                                                    ></div>
                                                 </div>
-
-                                                <Button color="success" onClick={exportToExcel}>
-                                                    Export to Excel
-                                                </Button>
+                                            ))}
+                                        </div>
+                                    ) : error ? (
+                                        <div
+                                            className="text-center"
+                                            style={{
+                                                padding: "60px 20px",
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    width: "76px",
+                                                    height: "76px",
+                                                    borderRadius: "24px",
+                                                    background: "#fee2e2",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    margin: "0 auto 18px",
+                                                    color: "#dc2626",
+                                                    fontSize: "34px",
+                                                }}
+                                            >
+                                                <i className="bx bx-error-circle"></i>
                                             </div>
 
+                                            <h5 className="fw-bold text-dark mb-2">
+                                                Failed to load products
+                                            </h5>
+
+                                            <p className="text-danger mb-0">{error}</p>
+                                        </div>
+                                    ) : (
+                                        <>
                                             <div className="table-responsive">
-                                                <Table className="table mb-0">
+                                                <Table className="table align-middle mb-0">
                                                     <thead>
-                                                        <tr className="text-center">
-                                                            <th>#</th>
-                                                            <th>Image</th>
-                                                            <th>Name</th>
-                                                            <th>HSN CODE</th>
-                                                            <th>Category</th>
-                                                            <th>TYPE</th>
-                                                            <th>UNIT</th>
-                                                            <th>STOCK</th>
-                                                            <th>PURCHASE RATE</th>
-                                                            <th>TAX %</th>
-                                                            <th>LANDING COST</th>
-                                                            <th>EXCLUDED PRICE</th>
-                                                            <th>WHOLESALE PRICE</th>
-                                                            <th>RETAIL PRICE</th>
-                                                            <th>PURCHASE TYPE</th>
-                                                            <th>Actions</th>
+                                                        <tr
+                                                            className="text-center"
+                                                            style={{
+                                                                background: "#f8fafc",
+                                                                borderTop: "1px solid #edf0f4",
+                                                            }}
+                                                        >
+                                                            {[
+                                                                "#",
+                                                                "Image",
+                                                                "Name",
+                                                                "HSN\nCode",
+                                                                "Category",
+                                                                "Type",
+                                                                "Unit",
+                                                                "Stock",
+                                                                "Purchase\nRate",
+                                                                "Tax %",
+                                                                "Landing\nCost",
+                                                                // "Excluded\nPrice",
+                                                                "Wholesale\nPrice",
+                                                                "Retail\nPrice",
+                                                                "Purchase\nType",
+                                                                "Actions",
+                                                            ].map((heading) => (
+                                                                <th
+                                                                    key={heading}
+                                                                    style={{
+                                                                        padding: "14px 16px",
+                                                                        color: "#1f2937",
+                                                                        fontSize: "12px",
+                                                                        fontWeight: 800,
+                                                                        letterSpacing: "0.03em",
+                                                                        textTransform: "uppercase",
+                                                                        borderBottom: "1px solid #edf0f4",
+                                                                        whiteSpace: "pre-line",
+                                                                        lineHeight: "1.35",
+                                                                        textAlign: "center",
+                                                                        verticalAlign: "middle",
+                                                                    }}
+                                                                >
+                                                                    {heading}
+                                                                </th>
+                                                            ))}
                                                         </tr>
                                                     </thead>
 
@@ -663,31 +1020,54 @@ const BasicTable = () => {
                                                                 <tr
                                                                     key={product.id}
                                                                     className="text-center"
+                                                                    style={{
+                                                                        borderBottom: "1px solid #f1f5f9",
+                                                                    }}
                                                                 >
-                                                                    {/* <th scope="row">
-                                                                        {(currentPage - 1) * pageSize +
-                                                                            index +
-                                                                            1}
-                                                                    </th> */}
-                                                                    <th scope="row">
+                                                                    <th
+                                                                        scope="row"
+                                                                        style={{
+                                                                            padding: "18px",
+                                                                            color: "#64748b",
+                                                                            fontWeight: 600,
+                                                                        }}
+                                                                    >
                                                                         {index + 1}
                                                                     </th>
 
-                                                                    <td>
-                                                                        <img
-                                                                            src={getProductImage(product)}
-                                                                            alt={product.name}
+                                                                    <td style={{ padding: "18px" }}>
+                                                                        <div
                                                                             style={{
-                                                                                width: "60px",
-                                                                                height: "60px",
-                                                                                objectFit: "cover",
-                                                                                borderRadius: "5px",
+                                                                                width: "58px",
+                                                                                height: "58px",
+                                                                                borderRadius: "14px",
+                                                                                overflow: "hidden",
+                                                                                background: "#f3f6f9",
+                                                                                border: "1px solid #edf0f4",
+                                                                                display: "flex",
+                                                                                alignItems: "center",
+                                                                                justifyContent: "center",
+                                                                                margin: "0 auto",
                                                                             }}
-                                                                        />
+                                                                        >
+                                                                            <img
+                                                                                src={getProductImage(product)}
+                                                                                alt={product.name}
+                                                                                style={{
+                                                                                    width: "100%",
+                                                                                    height: "100%",
+                                                                                    objectFit: "cover",
+                                                                                }}
+                                                                            />
+                                                                        </div>
                                                                     </td>
 
                                                                     <td
-                                                                        style={{ cursor: "pointer" }}
+                                                                        style={{
+                                                                            padding: "18px",
+                                                                            cursor: "pointer",
+                                                                            minWidth: "220px",
+                                                                        }}
                                                                         onClick={() =>
                                                                             handleProductClick(
                                                                                 product.id,
@@ -695,16 +1075,60 @@ const BasicTable = () => {
                                                                             )
                                                                         }
                                                                     >
-                                                                        {truncateText(product.name, 30)}
+                                                                        <div className="fw-bold text-dark">
+                                                                            {truncateText(product.name, 35)}
+                                                                        </div>
+
+                                                                        {product?.type === "variant" && (
+                                                                            <small className="text-muted">
+                                                                                Variant product
+                                                                            </small>
+                                                                        )}
                                                                     </td>
 
-                                                                    <td>{product?.hsn_code}</td>
-                                                                    <td>{product?.product_category_name}</td>
-                                                                    <td>{product?.type}</td>
-                                                                    <td>{product?.unit}</td>
-                                                                    <td>
-                                                                        <div className="fw-semibold">
-                                                                            {getCalculatedStock(product)}
+                                                                    <td style={{ padding: "18px" }}>
+                                                                        {product?.hsn_code}
+                                                                    </td>
+
+                                                                    <td style={{ padding: "18px" }}>
+                                                                        {product?.product_category_name}
+                                                                    </td>
+
+                                                                    <td style={{ padding: "18px" }}>
+                                                                        <span
+                                                                            className="badge"
+                                                                            style={{
+                                                                                background:
+                                                                                    product?.type === "variant"
+                                                                                        ? "#eef2ff"
+                                                                                        : "#ecfdf5",
+                                                                                color:
+                                                                                    product?.type === "variant"
+                                                                                        ? "#4f46e5"
+                                                                                        : "#15803d",
+                                                                                borderRadius: "999px",
+                                                                                padding: "8px 12px",
+                                                                                fontSize: "12px",
+                                                                            }}
+                                                                        >
+                                                                            {product?.type}
+                                                                        </span>
+                                                                    </td>
+
+                                                                    <td style={{ padding: "18px" }}>
+                                                                        {product?.unit}
+                                                                    </td>
+
+                                                                    <td
+                                                                        style={{
+                                                                            padding: "18px",
+                                                                            minWidth: "130px",
+                                                                        }}
+                                                                    >
+                                                                        <div className="fw-bold text-dark">
+                                                                            {formatNumber(
+                                                                                getCalculatedStock(product)
+                                                                            )}
                                                                         </div>
 
                                                                         {product?.type === "variant" && (
@@ -712,70 +1136,102 @@ const BasicTable = () => {
                                                                                 Including all variants
                                                                             </small>
                                                                         )}
+
+                                                                        <div>
+                                                                            <small className="text-muted">
+                                                                                Locked:{" "}
+                                                                                {formatNumber(
+                                                                                    getCalculatedLockedStock(product)
+                                                                                )}
+                                                                            </small>
+                                                                        </div>
                                                                     </td>
-                                                                    <td>{product?.purchase_rate}</td>
-                                                                    <td>{product?.tax}%</td>
-                                                                    <td>{product?.landing_cost}</td>
-                                                                    <td>
-                                                                        {Math.floor(
-                                                                            product?.exclude_price || 0
-                                                                        )}
+
+                                                                    <td style={{ padding: "18px" }}>
+                                                                        {product?.purchase_rate}
                                                                     </td>
-                                                                    <td>{product?.selling_price}</td>
-                                                                    <td>{product?.retail_price}</td>
-                                                                    <td>
-                                                                        {product?.purchase_type ===
-                                                                            "International"
+
+                                                                    <td style={{ padding: "18px" }}>
+                                                                        {product?.tax}%
+                                                                    </td>
+
+                                                                    <td style={{ padding: "18px" }}>
+                                                                        {product?.landing_cost}
+                                                                    </td>
+
+                                                                    {/* <td style={{ padding: "18px" }}>
+                                                                        {Math.floor(product?.exclude_price || 0)}
+                                                                    </td> */}
+
+                                                                    <td style={{ padding: "18px" }}>
+                                                                        <strong>₹{product?.selling_price}</strong>
+                                                                    </td>
+
+                                                                    <td style={{ padding: "18px" }}>
+                                                                        <strong>₹{product?.retail_price}</strong>
+                                                                    </td>
+
+                                                                    <td style={{ padding: "18px" }}>
+                                                                        {product?.purchase_type === "International"
                                                                             ? "IN"
                                                                             : "Local"}
                                                                     </td>
 
-                                                                    <td>
-                                                                        <UncontrolledDropdown>
-                                                                            <DropdownToggle
-                                                                                tag="a"
-                                                                                className="card-drop"
-                                                                            >
-                                                                                <i className="mdi mdi-dots-horizontal font-size-18"></i>
-                                                                            </DropdownToggle>
-
-                                                                            <DropdownMenu className="dropdown-menu-end">
-                                                                                {/* <DropdownItem
-                                                                                    onClick={() =>
-                                                                                        handleEditVie(product.id)
-                                                                                    }
-                                                                                >
-                                                                                    <i
-                                                                                        className="mdi mdi-pencil font-size-16 text-success me-1"
-                                                                                        id={`edittooltip-${product.id}`}
-                                                                                    ></i>
-                                                                                    Edit
-                                                                                    <UncontrolledTooltip
-                                                                                        placement="top"
-                                                                                        target={`edittooltip-${product.id}`}
-                                                                                    >
-                                                                                        Edit
-                                                                                    </UncontrolledTooltip>
-                                                                                </DropdownItem> */}
-                                                                                
-                                                                                <DropdownItem
-                                                                                    onClick={() => handleEditVie(product.id)}
-                                                                                >
-                                                                                    <i className="mdi mdi-pencil font-size-16 text-success me-1"></i>
-                                                                                    Edit
-                                                                                </DropdownItem>
-                                                                            </DropdownMenu>
-                                                                        </UncontrolledDropdown>
+                                                                    <td style={{ padding: "18px" }}>
+                                                                        <Button
+                                                                            color="primary"
+                                                                            size="sm"
+                                                                            onClick={() => handleEditVie(product.id)}
+                                                                            style={{
+                                                                                borderRadius: "10px",
+                                                                                padding: "7px 14px",
+                                                                                fontWeight: 700,
+                                                                                display: "inline-flex",
+                                                                                alignItems: "center",
+                                                                                gap: "6px",
+                                                                                border: "none",
+                                                                                boxShadow: "0 6px 14px rgba(34, 124, 197, 0.22)",
+                                                                            }}
+                                                                        >
+                                                                            <i className="mdi mdi-pencil font-size-16"></i>
+                                                                            Edit
+                                                                        </Button>
                                                                     </td>
                                                                 </tr>
                                                             ))
                                                         ) : (
                                                             <tr>
-                                                                <td
-                                                                    colSpan="16"
-                                                                    className="text-center"
-                                                                >
-                                                                    No products available
+                                                                <td colSpan="16" className="text-center">
+                                                                    <div
+                                                                        style={{
+                                                                            padding: "60px 20px",
+                                                                        }}
+                                                                    >
+                                                                        <div
+                                                                            style={{
+                                                                                width: "76px",
+                                                                                height: "76px",
+                                                                                borderRadius: "24px",
+                                                                                background: "#f1f5f9",
+                                                                                display: "flex",
+                                                                                alignItems: "center",
+                                                                                justifyContent: "center",
+                                                                                margin: "0 auto 18px",
+                                                                                color: "#64748b",
+                                                                                fontSize: "34px",
+                                                                            }}
+                                                                        >
+                                                                            <i className="bx bx-box"></i>
+                                                                        </div>
+
+                                                                        <h5 className="fw-bold text-dark mb-2">
+                                                                            No products available
+                                                                        </h5>
+
+                                                                        <p className="text-muted mb-0">
+                                                                            No products found for the selected filters.
+                                                                        </p>
+                                                                    </div>
                                                                 </td>
                                                             </tr>
                                                         )}
@@ -783,42 +1239,48 @@ const BasicTable = () => {
                                                 </Table>
                                             </div>
 
-                                            {/* <div className="d-flex justify-content-between align-items-center mt-3">
-                                                <div>
-                                                    Showing {products.length} products on this page
+                                            <div
+                                                className="d-flex align-items-center justify-content-between flex-wrap gap-3"
+                                                style={{
+                                                    padding: "18px 24px",
+                                                    background: "#fff",
+                                                    borderTop: "1px solid #edf0f4",
+                                                }}
+                                            >
+                                                {/* <div className="text-muted">
+                                                    Loaded{" "}
+                                                    <strong className="text-dark">
+                                                        {formatNumber(products.length)}
+                                                    </strong>{" "}
+                                                    of{" "}
+                                                    <strong className="text-dark">
+                                                        {formatNumber(totalCount)}
+                                                    </strong>{" "}
+                                                    products
+                                                    {totalPages > 0 && (
+                                                        <>
+                                                            {" "}
+                                                            | Page{" "}
+                                                            <strong className="text-dark">
+                                                                {currentPage}
+                                                            </strong>{" "}
+                                                            of{" "}
+                                                            <strong className="text-dark">
+                                                                {totalPages}
+                                                            </strong>
+                                                        </>
+                                                    )}
+                                                </div> */}
+
+                                                <div className="text-muted">
+                                                    {loadingMore ? (
+                                                        <span>Loading more products...</span>
+                                                    ) : nextPageUrl ? (
+                                                        <span>Scroll down to load more products</span>
+                                                    ) : (
+                                                        <span>All products loaded</span>
+                                                    )}
                                                 </div>
-
-                                                <div className="d-flex gap-2">
-                                                    <Button
-                                                        color="secondary"
-                                                        disabled={!previousPageUrl || loading}
-                                                        onClick={handlePreviousPage}
-                                                    >
-                                                        Previous
-                                                    </Button>
-
-                                                    <Button color="light" disabled>
-                                                        Page {currentPage}
-                                                    </Button>
-
-                                                    <Button
-                                                        color="secondary"
-                                                        disabled={!nextPageUrl || loading}
-                                                        onClick={handleNextPage}
-                                                    >
-                                                        Next
-                                                    </Button>
-                                                </div>
-                                            </div> */}
-
-                                            <div className="text-center mt-3">
-                                                {loadingMore ? (
-                                                    <p className="text-muted mb-0">Loading more products...</p>
-                                                ) : nextPageUrl ? (
-                                                    <p className="text-muted mb-0">Scroll down to load more products</p>
-                                                ) : (
-                                                    <p className="text-muted mb-0">All products loaded</p>
-                                                )}
                                             </div>
                                         </>
                                     )}
@@ -827,6 +1289,28 @@ const BasicTable = () => {
                         </Col>
                     </Row>
                 </div>
+                <Button
+                    color="success"
+                    onClick={exportToExcel}
+                    disabled={loading || products.length === 0}
+                    style={{
+                        position: "fixed",
+                        right: "28px",
+                        bottom: "28px",
+                        zIndex: 1050,
+                        borderRadius: "999px",
+                        padding: "13px 22px",
+                        fontWeight: 700,
+                        border: "none",
+                        boxShadow: "0 12px 30px rgba(34, 197, 94, 0.35)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                    }}
+                >
+                    <i className="bx bx-download" style={{ fontSize: "20px" }}></i>
+                    <span className="d-none d-sm-inline">Export to Excel</span>
+                </Button>
             </div>
         </React.Fragment>
     );

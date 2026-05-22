@@ -49,21 +49,21 @@ const stateCodes = {
 
 const GSTReport = () => {
   const token = localStorage.getItem("token");
-
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(100);
   const [totalCount, setTotalCount] = useState(0);
-
   const [allGSTData, setAllGSTData] = useState([]);
   const [filteredGSTData, setFilteredGSTData] = useState([]);
-
+  const [companyList, setCompanyList] = useState([]);
+  const [selectedCompany, setSelectedCompany] = useState("");
   const [loading, setLoading] = useState(false);
+  const [companyLoading, setCompanyLoading] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
   document.title = "GST Report | Beposoft";
 
-  const baseURL = `${import.meta.env.VITE_APP_KEY}gst/orders/`;
+  const apiBase = import.meta.env.VITE_APP_KEY;
 
   const formatDate = (dateValue) => {
     if (!dateValue) return "";
@@ -83,75 +83,92 @@ const GSTReport = () => {
       .replace(/ /g, "-");
   };
 
-  const getDateOnly = (dateValue) => {
-    if (!dateValue) return null;
-
-    const date = new Date(dateValue);
-
-    if (Number.isNaN(date.getTime())) {
-      return null;
+  const normalizeCompanyList = (data) => {
+    if (Array.isArray(data)) {
+      return data;
     }
 
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  };
-
-  const getInputDateOnly = (dateValue) => {
-    if (!dateValue) return null;
-
-    const parts = dateValue.split("-");
-
-    if (parts.length !== 3) {
-      return null;
+    if (Array.isArray(data?.data)) {
+      return data.data;
     }
 
-    const year = Number(parts[0]);
-    const month = Number(parts[1]) - 1;
-    const day = Number(parts[2]);
+    if (Array.isArray(data?.results)) {
+      return data.results;
+    }
 
-    return new Date(year, month, day);
+    return [];
   };
 
-  const fetchAllGSTData = async () => {
+  const getCompanyName = (company) => {
+    return (
+      company?.name ||
+      company?.company_name ||
+      company?.companyName ||
+      company?.title ||
+      `Company ${company?.id || ""}`
+    );
+  };
+
+  const fetchCompanies = async () => {
+    setCompanyLoading(true);
+
+    try {
+      const { data } = await axios.get(`${apiBase}company/data/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const companies = normalizeCompanyList(data);
+      setCompanyList(companies);
+    } catch (err) {
+      // console.error(err);
+      toast.error("Error fetching companies");
+      setCompanyList([]);
+    } finally {
+      setCompanyLoading(false);
+    }
+  };
+
+  const fetchGSTReport = async () => {
+    if (!startDate) {
+      toast.error("Please select start date");
+      return;
+    }
+
+    if (!endDate) {
+      toast.error("Please select end date");
+      return;
+    }
+
+    if (startDate > endDate) {
+      toast.error("Start date cannot be greater than end date");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const firstResponse = await axios.get(baseURL, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: {
-          page: 1,
-          page_size: pageSize,
-        },
-      });
+      const url = `${apiBase}gst/orders/report/${startDate}/${endDate}/`;
 
-      const firstData = firstResponse.data;
-      const total = Number(firstData?.count || 0);
-      const totalPages = Math.ceil(total / pageSize);
+      const params = {};
 
-      let allResults = Array.isArray(firstData?.results)
-        ? [...firstData.results]
-        : [];
-
-      for (let page = 2; page <= totalPages; page++) {
-        const { data } = await axios.get(baseURL, {
-          headers: { Authorization: `Bearer ${token}` },
-          params: {
-            page,
-            page_size: pageSize,
-          },
-        });
-
-        if (Array.isArray(data?.results)) {
-          allResults = [...allResults, ...data.results];
-        }
+      if (selectedCompany) {
+        params.company = selectedCompany;
       }
 
-      setAllGSTData(allResults);
-      setFilteredGSTData(allResults);
-      setTotalCount(allResults.length);
+      const { data } = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        params,
+      });
+
+      const results = Array.isArray(data?.results) ? data.results : [];
+
+      setAllGSTData(results);
+      setFilteredGSTData(results);
+      setTotalCount(results.length);
       setCurrentPage(1);
     } catch (err) {
-      console.error(err);
-      toast.error("Error fetching GST data");
+      // console.error(err);
+      toast.error("Error fetching GST report");
       setAllGSTData([]);
       setFilteredGSTData([]);
       setTotalCount(0);
@@ -162,49 +179,21 @@ const GSTReport = () => {
   };
 
   useEffect(() => {
-    fetchAllGSTData();
+    fetchCompanies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const handleFilter = () => {
-    const selectedStartDate = getInputDateOnly(startDate);
-    const selectedEndDate = getInputDateOnly(endDate);
-
-    if (selectedStartDate && selectedEndDate && selectedStartDate > selectedEndDate) {
-      toast.error("Start date cannot be greater than end date");
-      return;
-    }
-
-    const filtered = allGSTData.filter((row) => {
-      const orderDate = getDateOnly(row.order_date);
-
-      if (!orderDate) {
-        return false;
-      }
-
-      let isValid = true;
-
-      if (selectedStartDate) {
-        isValid = isValid && orderDate >= selectedStartDate;
-      }
-
-      if (selectedEndDate) {
-        isValid = isValid && orderDate <= selectedEndDate;
-      }
-
-      return isValid;
-    });
-
-    setFilteredGSTData(filtered);
-    setTotalCount(filtered.length);
-    setCurrentPage(1);
+    fetchGSTReport();
   };
 
   const handleClearFilter = () => {
     setStartDate("");
     setEndDate("");
-    setFilteredGSTData(allGSTData);
-    setTotalCount(allGSTData.length);
+    setSelectedCompany("");
+    setAllGSTData([]);
+    setFilteredGSTData([]);
+    setTotalCount(0);
     setCurrentPage(1);
   };
 
@@ -236,6 +225,7 @@ const GSTReport = () => {
         receiver: row.customerName || "",
         invoice: row.invoice || "",
         date: formatDate(row.order_date),
+        total_amount: row.total_amount || 0,
         placeOfSupply: stateCodes[row.address]
           ? `${stateCodes[row.address]}-${row.address}`
           : row.address || "",
@@ -248,7 +238,155 @@ const GSTReport = () => {
     });
   }, [paginatedGSTData, currentPage, pageSize]);
 
-  const exportCombinedExcel = async () => {
+
+
+  const getExportFileBaseName = () => {
+    const selectedCompanyName = selectedCompany
+      ? getCompanyName(
+        companyList.find((c) => String(c.id) === String(selectedCompany))
+      )
+      : "All_Companies";
+
+    const cleanCompanyName = selectedCompanyName
+      .toString()
+      .replace(/[^a-zA-Z0-9]/g, "_");
+
+    return `${cleanCompanyName}_${startDate || "start"}_to_${endDate || "end"}`;
+  };
+
+  const downloadSingleExcel = (rows, sheetName, fileName) => {
+    if (!rows.length) {
+      toast.warning(`No data found for ${sheetName}`);
+      return;
+    }
+
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(workbook, sheet, sheetName);
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+
+    saveAs(
+      new Blob([excelBuffer], { type: "application/octet-stream" }),
+      fileName
+    );
+  };
+
+
+  const buildB2BB2CRows = () => {
+    const allResults = [...filteredGSTData];
+
+    const b2bRows = [];
+    const b2cRows = [];
+
+    allResults.forEach((row) => {
+      const gstConfirm = (row.gst_confirm || "")
+        .toString()
+        .trim()
+        .toUpperCase();
+
+      const groupedByTax = (row.items || []).reduce((acc, item) => {
+        const taxKey = item.tax ?? "0";
+        acc[taxKey] = acc[taxKey] || [];
+        acc[taxKey].push(item);
+        return acc;
+      }, {});
+
+      Object.entries(groupedByTax).forEach(([taxRate, items]) => {
+        const invoiceValue = parseFloat(row.total_amount) || 0;
+        const numericTaxRate = parseFloat(taxRate) || 0;
+
+        const taxableValue =
+          numericTaxRate > 0
+            ? (invoiceValue * 100) / (100 + numericTaxRate)
+            : invoiceValue;
+
+        const baseRow = {
+          "GSTIN/UIN of Recipient": row.gst || "",
+          "Receiver Name": row.customerName || "",
+          "Invoice Number": row.invoice || "",
+          "Invoice date": formatDate(row.order_date),
+          "Invoice Value": row.total_amount || 0,
+          "Place Of Supply": stateCodes[row.address]
+            ? `${stateCodes[row.address]}-${row.address}`
+            : row.address || "",
+          "Reverse Charge": "N",
+          "Applicable % of Tax Rate": "",
+          "Invoice Type": "",
+          "E-Commerce GSTIN": "",
+          Rate: `${taxRate}`,
+          "Taxable Value": Number(taxableValue.toFixed(4)),
+          "Cess Amount": "",
+        };
+
+        if (gstConfirm === "YES") {
+          b2bRows.push({
+            ...baseRow,
+            "Invoice Type": "Regular B2B",
+          });
+        } else if (gstConfirm === "NO GST") {
+          b2cRows.push({
+            ...baseRow,
+            "Invoice Type": "Regular B2C",
+          });
+        } else {
+          if (row.gst) {
+            b2bRows.push({
+              ...baseRow,
+              "Invoice Type": "Regular B2B",
+            });
+          } else {
+            b2cRows.push({
+              ...baseRow,
+              "Invoice Type": "Regular B2C",
+            });
+          }
+        }
+      });
+    });
+
+    return { b2bRows, b2cRows };
+  };
+
+  const exportB2BExcel = () => {
+    try {
+      if (!filteredGSTData.length) {
+        toast.warning("No data to export");
+        return;
+      }
+
+      const { b2bRows } = buildB2BB2CRows();
+      const fileBaseName = getExportFileBaseName();
+
+      downloadSingleExcel(b2bRows, "B2B", `GST_B2B_${fileBaseName}.xlsx`);
+    } catch (e) {
+      // console.error(e);
+      toast.error("B2B export failed");
+    }
+  };
+
+  const exportB2CExcel = () => {
+    try {
+      if (!filteredGSTData.length) {
+        toast.warning("No data to export");
+        return;
+      }
+
+      const { b2cRows } = buildB2BB2CRows();
+      const fileBaseName = getExportFileBaseName();
+
+      downloadSingleExcel(b2cRows, "B2C", `GST_B2C_${fileBaseName}.xlsx`);
+    } catch (e) {
+      // console.error(e);
+      toast.error("B2C export failed");
+    }
+  };
+
+  const exportHSNExcel = () => {
     try {
       const allResults = [...filteredGSTData];
 
@@ -257,87 +395,23 @@ const GSTReport = () => {
         return;
       }
 
-      const b2bRows = [];
-      const b2cRows = [];
-
-      allResults.forEach((row, index) => {
-        const gstConfirm = (row.gst_confirm || "")
-          .toString()
-          .trim()
-          .toUpperCase();
-
-        const groupedByTax = (row.items || []).reduce((acc, item) => {
-          const taxKey = item.tax ?? "0";
-          acc[taxKey] = acc[taxKey] || [];
-          acc[taxKey].push(item);
-          return acc;
-        }, {});
-
-        Object.entries(groupedByTax).forEach(([taxRate]) => {
-          const baseRow = {
-            "#": index + 1,
-            "GSTIN/UIN Number": row.gst || "",
-            "Receiver Name": row.customerName || "",
-            "Invoice Number": row.invoice || "",
-            "Invoice Date": formatDate(row.order_date),
-            "Invoice Value": "",
-            "Place of Supply": stateCodes[row.address]
-              ? `${stateCodes[row.address]}-${row.address}`
-              : row.address || "",
-            "Reverse Charge": "N",
-            "Applicable % of Tax": "",
-            "E-Commerce GSTIN": "",
-            Rate: `${taxRate}%`,
-            "Taxable Value": "",
-            "Cess Amount": "",
-          };
-
-          if (gstConfirm === "YES") {
-            b2bRows.push({
-              ...baseRow,
-              "Invoice Type": "Regular B2B",
-            });
-          } else if (gstConfirm === "NO GST") {
-            b2cRows.push({
-              ...baseRow,
-              "Invoice Type": "Regular B2C",
-            });
-          } else {
-            if (row.gst) {
-              b2bRows.push({
-                ...baseRow,
-                "Invoice Type": "Regular B2B",
-              });
-            } else {
-              b2cRows.push({
-                ...baseRow,
-                "Invoice Type": "Regular B2C",
-              });
-            }
-          }
-        });
-      });
-
-      const b2bSheet = XLSX.utils.json_to_sheet(b2bRows);
-      const b2cSheet = XLSX.utils.json_to_sheet(b2cRows);
-
       const summaryMap = {};
 
       allResults.forEach((row) => {
         (row.items || []).forEach((item) => {
-          const key = `${item.name}-${item.product}`;
+          const key = `${item.name}-${item.product}-${item.hsn}-${item.tax}`;
 
           if (!summaryMap[key]) {
             summaryMap[key] = {
               Description: item.name,
               HSN: item.hsn || "",
-              measurement: item.unit || "PCS",
-              TotalQuantity: 0,
-              TaxRate: item.tax,
-              TotalTaxableValue: 0,
+              Measurement: item.unit || "PCS",
+              "Total Quantity": 0,
+              "Tax Rate": item.tax || 0,
+              "Total Taxable Value": 0,
               IGST: 0,
-              CentralTax: 0,
-              StateTax: 0,
+              "Central Tax": 0,
+              "State Tax": 0,
               Cess: 0,
               TOTAL: 0,
             };
@@ -347,49 +421,51 @@ const GSTReport = () => {
           const qty = parseFloat(item.quantity) || 0;
           const rate = parseFloat(item.tax) || 0;
 
-          summaryMap[key].TotalQuantity += qty;
-          summaryMap[key].TotalTaxableValue += taxable;
+          summaryMap[key]["Total Quantity"] += qty;
+          summaryMap[key]["Total Taxable Value"] += taxable;
 
           const taxAmount = (taxable * rate) / 100;
 
           if (row.gst) {
             summaryMap[key].IGST += taxAmount;
           } else {
-            summaryMap[key].CentralTax += taxAmount / 2;
-            summaryMap[key].StateTax += taxAmount / 2;
+            summaryMap[key]["Central Tax"] += taxAmount / 2;
+            summaryMap[key]["State Tax"] += taxAmount / 2;
           }
 
           summaryMap[key].TOTAL =
-            summaryMap[key].TotalTaxableValue +
+            summaryMap[key]["Total Taxable Value"] +
             summaryMap[key].IGST +
-            summaryMap[key].CentralTax +
-            summaryMap[key].StateTax;
+            summaryMap[key]["Central Tax"] +
+            summaryMap[key]["State Tax"] +
+            summaryMap[key].Cess;
         });
       });
 
-      const hsnRows = Object.values(summaryMap);
-      const hsnSheet = XLSX.utils.json_to_sheet(hsnRows);
+      const hsnRows = Object.values(summaryMap).map((row) => ({
+        ...row,
+        "Total Quantity": Number(row["Total Quantity"].toFixed(2)),
+        "Total Taxable Value": Number(row["Total Taxable Value"].toFixed(2)),
+        IGST: Number(row.IGST.toFixed(2)),
+        "Central Tax": Number(row["Central Tax"].toFixed(2)),
+        "State Tax": Number(row["State Tax"].toFixed(2)),
+        Cess: Number(row.Cess.toFixed(2)),
+        TOTAL: Number(row.TOTAL.toFixed(2)),
+      }));
 
-      const workbook = XLSX.utils.book_new();
+      const fileBaseName = getExportFileBaseName();
 
-      XLSX.utils.book_append_sheet(workbook, b2bSheet, "B2B (GST YES)");
-      XLSX.utils.book_append_sheet(workbook, b2cSheet, "B2C (NO GST)");
-      XLSX.utils.book_append_sheet(workbook, hsnSheet, "HSN Summary");
-
-      const excelBuffer = XLSX.write(workbook, {
-        bookType: "xlsx",
-        type: "array",
-      });
-
-      saveAs(
-        new Blob([excelBuffer], { type: "application/octet-stream" }),
-        "GST_Report_B2B_B2C_With_HSN.xlsx"
+      downloadSingleExcel(
+        hsnRows,
+        "HSN Summary",
+        `GST_HSN_${fileBaseName}.xlsx`
       );
     } catch (e) {
-      console.error(e);
-      toast.error("Export failed");
+      // console.error(e);
+      toast.error("HSN export failed");
     }
   };
+
 
   const paginationDataProxy = useMemo(
     () => ({ length: totalCount }),
@@ -399,7 +475,7 @@ const GSTReport = () => {
   return (
     <div className="page-content">
       <div className="container-fluid">
-        <Breadcrumbs title="Tables" breadcrumbItem="GST REPORT" />
+        {/* <Breadcrumbs title="Tables" breadcrumbItem="GST REPORT" /> */}
 
         <Row>
           <Col lg={12}>
@@ -428,6 +504,24 @@ const GSTReport = () => {
                     />
                   </Col>
 
+                  <Col md={3}>
+                    <label>Company</label>
+                    <select
+                      className="form-control"
+                      value={selectedCompany}
+                      onChange={(e) => setSelectedCompany(e.target.value)}
+                      disabled={companyLoading}
+                    >
+                      <option value="">All Companies</option>
+
+                      {companyList.map((company) => (
+                        <option key={company.id} value={company.id}>
+                          {getCompanyName(company)}
+                        </option>
+                      ))}
+                    </select>
+                  </Col>
+
                   <Col md={3} className="d-flex align-items-end">
                     <Button
                       color="primary"
@@ -446,14 +540,32 @@ const GSTReport = () => {
                       Clear
                     </Button>
                   </Col>
+                </Row>
 
-                  <Col md={3} className="d-flex align-items-end">
+                <Row className="mb-3">
+                  <Col md={12} className="d-flex align-items-end gap-2 flex-wrap">
                     <Button
                       color="success"
-                      onClick={exportCombinedExcel}
+                      onClick={exportB2BExcel}
                       disabled={loading || !totalCount}
                     >
-                      Export GST + HSN Excel
+                      Export B2B Excel
+                    </Button>
+
+                    <Button
+                      color="info"
+                      onClick={exportB2CExcel}
+                      disabled={loading || !totalCount}
+                    >
+                      Export B2C Excel
+                    </Button>
+
+                    <Button
+                      color="warning"
+                      onClick={exportHSNExcel}
+                      disabled={loading || !totalCount}
+                    >
+                      Export HSN Excel
                     </Button>
                   </Col>
                 </Row>
@@ -516,7 +628,7 @@ const GSTReport = () => {
                             <td>{r.receiver}</td>
                             <td>{r.invoice}</td>
                             <td>{r.date}</td>
-                            <td></td>
+                            <td>{r.total_amount}</td>
                             <td>{r.placeOfSupply}</td>
                             <td>N</td>
                             <td></td>

@@ -218,23 +218,39 @@ const GSTReport = () => {
           return acc;
         }, {}) || {};
 
-      return Object.entries(grouped).map(([taxRate], i) => ({
-        key: `${row.id}-${taxRate}-${i}`,
-        index: (currentPage - 1) * pageSize + idx + 1,
-        gst: row.gst || "",
-        receiver: row.customerName || "",
-        invoice: row.invoice || "",
-        date: formatDate(row.order_date),
-        total_amount: row.total_amount || 0,
-        placeOfSupply: stateCodes[row.address]
-          ? `${stateCodes[row.address]}-${row.address}`
-          : row.address || "",
-        taxRate: `${taxRate}%`,
-        invoiceType:
-          (row.gst_confirm || "").toString().trim().toUpperCase() === "YES"
-            ? "Regular B2B"
-            : "Regular B2C",
-      }));
+      return Object.entries(grouped).map(([taxRate, items], i) => {
+        const numericTaxRate = parseFloat(taxRate) || 0;
+
+        const taxableValue = items.reduce((sum, item) => {
+          const excludePrice = parseFloat(item.exclude_price) || 0;
+          const quantity = parseFloat(item.quantity) || 0;
+          return sum + excludePrice * quantity;
+        }, 0);
+
+        const invoiceValue =
+          numericTaxRate > 0
+            ? taxableValue + (taxableValue * numericTaxRate) / 100
+            : taxableValue;
+
+        return {
+          key: `${row.id}-${taxRate}-${i}`,
+          index: (currentPage - 1) * pageSize + idx + 1,
+          gst: row.gst || "",
+          receiver: row.customerName || "",
+          invoice: row.invoice || "",
+          date: formatDate(row.order_date),
+          total_amount: Number(invoiceValue.toFixed(2)),
+          taxable_value: Number(taxableValue.toFixed(2)),
+          placeOfSupply: stateCodes[row.address]
+            ? `${stateCodes[row.address]}-${row.address}`
+            : row.address || "",
+          taxRate: `${taxRate}%`,
+          invoiceType:
+            (row.gst_confirm || "").toString().trim().toUpperCase() === "YES"
+              ? "Regular B2B"
+              : "Regular B2C",
+        };
+      });
     });
   }, [paginatedGSTData, currentPage, pageSize]);
 
@@ -297,20 +313,34 @@ const GSTReport = () => {
       }, {});
 
       Object.entries(groupedByTax).forEach(([taxRate, items]) => {
-        const invoiceValue = parseFloat(row.total_amount) || 0;
+        // const invoiceValue = parseFloat(row.total_amount) || 0;
+        // const numericTaxRate = parseFloat(taxRate) || 0;
+
+        // const taxableValue =
+        //   numericTaxRate > 0
+        //     ? (invoiceValue * 100) / (100 + numericTaxRate)
+        //     : invoiceValue;
+
         const numericTaxRate = parseFloat(taxRate) || 0;
 
-        const taxableValue =
+        const taxableValue = items.reduce((sum, item) => {
+          const excludePrice = parseFloat(item.exclude_price) || 0;
+          const quantity = parseFloat(item.quantity) || 0;
+          return sum + excludePrice * quantity;
+        }, 0);
+
+        const invoiceValue =
           numericTaxRate > 0
-            ? (invoiceValue * 100) / (100 + numericTaxRate)
-            : invoiceValue;
+            ? taxableValue + (taxableValue * numericTaxRate) / 100
+            : taxableValue;
 
         const baseRow = {
           "GSTIN/UIN of Recipient": row.gst || "",
           "Receiver Name": row.customerName || "",
           "Invoice Number": row.invoice || "",
           "Invoice date": formatDate(row.order_date),
-          "Invoice Value": row.total_amount || 0,
+          // "Invoice Value": row.total_amount || 0,
+          "Invoice Value": Number(invoiceValue.toFixed(2)),
           "Place Of Supply": stateCodes[row.address]
             ? `${stateCodes[row.address]}-${row.address}`
             : row.address || "",
@@ -422,9 +452,11 @@ const GSTReport = () => {
           const rate = parseFloat(item.tax) || 0;
 
           summaryMap[key]["Total Quantity"] += qty;
-          summaryMap[key]["Total Taxable Value"] += taxable;
+          // summaryMap[key]["Total Taxable Value"] += taxable;
+          summaryMap[key]["Total Taxable Value"] += taxable * qty;
 
-          const taxAmount = (taxable * rate) / 100;
+          // const taxAmount = (taxable * rate) / 100;
+          const taxAmount = (taxable * qty * rate) / 100;
 
           if (row.gst) {
             summaryMap[key].IGST += taxAmount;

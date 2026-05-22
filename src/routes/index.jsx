@@ -497,7 +497,7 @@ const authProtectedRoutes = [
   { path: "/sales/team/division/cd/report/", component: <SalesTeamDivisionDailyReportPage /> },
   { path: "/sales/team/leader/report/view/", component: <TeamLeaderSalesDetailedSummary /> },
   { path: "/sales/family/summary/team/view/:familyId", component: <FamilyTeamListPage /> },
-  {path: "/sales/team/Detailed/Summary/view/:teamId",component: <TeamDetailedSummaryPage />},
+  { path: "/sales/team/Detailed/Summary/view/:teamId", component: <TeamDetailedSummaryPage /> },
 
 
 

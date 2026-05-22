@@ -211,7 +211,7 @@ const BasicTable = () => {
                                         <tr key={item.id}>
                                             <th scope="row">{index + 1}</th>
                                             <td>{item.box || "N/A"}</td>
-                                            <td>{item.parcel_service || "N/A"}</td>
+                                            <td>{item.parcel_service_name || "N/A"}</td>
                                             <td>{item.tracking_id || "N/A"}</td>
                                             <td>{item.height}</td>
                                             <td>{item.breadth}</td>

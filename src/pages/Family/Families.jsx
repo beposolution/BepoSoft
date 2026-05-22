@@ -1,227 +1,636 @@
-import React, { useEffect, useMemo, useState } from "react";
-import PropTypes from 'prop-types';
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import PropTypes from "prop-types";
+import axios from "axios";
 import {
-    Modal, ModalHeader, ModalBody, ModalFooter, Button, Input, Label, Form
+  Table,
+  Row,
+  Col,
+  Card,
+  CardBody,
+  Button,
+  Form,
+  Input,
+  Label,
+  Badge,
 } from "reactstrap";
-import { FaEdit, FaTrash } from 'react-icons/fa'; 
-import Breadcrumbs from '../../components/Common/Breadcrumb';
-import TableContainer from '../../components/Common/TableContainer';
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import Paginations from "../../components/Common/Pagination";
 
 const FamilyTable = () => {
-    const [data, setData] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [selectedCustomer, setSelectedCustomer] = useState(null);
-    const [modal, setModal] = useState(false);
-    const [isAddMode, setIsAddMode] = useState(false); // New state to differentiate between add and edit
-    const [newState, setNewState] = useState({ name: "" }); // State for the new state form
-    const token = localStorage.getItem('token');
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [newDivision, setNewDivision] = useState("");
+  const [editingDivision, setEditingDivision] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
-    const toggleModal = () => setModal(!modal);
+  const token = localStorage.getItem("token");
 
-    const columns = useMemo(
-        () => [
-            {
-                header: () => <div style={{ textAlign: 'center' }}>ID</div>,  // Center alignment for header
-                accessorKey: 'id',
-                enableColumnFilter: false,
-                enableSorting: true,
-                cell: ({ row }) => (
-                    <div style={{ textAlign: 'center' }}>{row.original.id}</div> // Center alignment for ID value
-                ),
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPageData] = useState(25);
+
+  document.title = "Beposoft | Division Information";
+
+  const resetForm = () => {
+    setNewDivision("");
+    setEditingDivision(null);
+  };
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+
+      const response = await axios.get(`${import.meta.env.VITE_APP_KEY}familys/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 200) {
+        const familyData = Array.isArray(response.data?.data)
+          ? response.data.data
+          : Array.isArray(response.data)
+          ? response.data
+          : [];
+
+        setData(familyData);
+      } else {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+    } catch (error) {
+      toast.error("Failed to fetch divisions");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [token]);
+
+  const handleAddOrUpdateDivision = async (e) => {
+    e.preventDefault();
+
+    if (!newDivision.trim()) {
+      toast.warning("Please enter division name");
+      return;
+    }
+
+    try {
+      if (editingDivision) {
+        await axios.put(
+          `${import.meta.env.VITE_APP_KEY}family/update/${editingDivision.id}/`,
+          {
+            ...editingDivision,
+            name: newDivision.trim(),
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
             },
-            {
-                header: () => <div style={{ textAlign: 'center' }}>NAME</div>,
-                accessorKey: 'name',
-                enableColumnFilter: false,
-                enableSorting: true,
-                cell: ({ row }) => (
-                    <div style={{ textAlign: 'center' }}>{row.original.name}</div> // Center alignment for Name
-                ),
+          }
+        );
+
+        toast.success("Division updated successfully!");
+      } else {
+        await axios.post(
+          `${import.meta.env.VITE_APP_KEY}add/family/`,
+          {
+            name: newDivision.trim(),
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
             },
-            {
-                header: () => <div style={{ textAlign: 'center' }}>EDIT</div>,
-                accessorKey: 'editActions',
-                enableColumnFilter: false,
-                enableSorting: false,
-                cell: ({ row }) => (
-                    <div style={{ display: 'flex', justifyContent: 'center' }}>
-                        <button
-                            className="btn btn-primary d-flex align-items-center"
-                            style={{ height: '30px', padding: '0 10px' }}
-                            onClick={() => handleEdit(row.original)}
-                        >
-                            <FaEdit style={{ marginRight: '5px' }} />
-                            Edit
-                        </button>
+          }
+        );
+
+        toast.success("Division added successfully!");
+      }
+
+      resetForm();
+      await fetchData();
+    } catch (error) {
+      toast.error(
+        editingDivision ? "Failed to update division" : "Failed to add division"
+      );
+    }
+  };
+
+  const handleEditDivision = (division) => {
+    setEditingDivision(division);
+    setNewDivision(division.name || "");
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  const handleDeleteDivision = async (id) => {
+    const originalData = [...data];
+
+    setData(data.filter((division) => division.id !== id));
+
+    try {
+      await axios.delete(`${import.meta.env.VITE_APP_KEY}family/update/${id}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      toast.success("Division deleted successfully!");
+      await fetchData();
+    } catch (error) {
+      setData(originalData);
+      toast.error("Failed to delete division");
+    }
+  };
+
+  const filteredDivisions = data.filter((division) => {
+    const search = searchTerm.toLowerCase();
+    const divisionName = division?.name?.toLowerCase() || "";
+    const divisionId = String(division?.id || "").toLowerCase();
+
+    return divisionName.includes(search) || divisionId.includes(search);
+  });
+
+  const indexOfLastItem = currentPage * perPageData;
+  const indexOfFirstItem = indexOfLastItem - perPageData;
+
+  const currentPageDivisions = filteredDivisions.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  return (
+    <React.Fragment>
+      <div className="page-content" style={{ backgroundColor: "#f3f6fb" }}>
+        <ToastContainer />
+
+        <div className="container-fluid">
+          <Row>
+            <Col xl={12}>
+              <Card
+                className="border-0"
+                style={{
+                  borderRadius: "18px",
+                  boxShadow: "0 8px 25px rgba(15, 23, 42, 0.10)",
+                }}
+              >
+                <CardBody className="p-4">
+                  <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+                    <div>
+                      <h4
+                        className="mb-1"
+                        style={{
+                          fontWeight: "800",
+                          color: "#111827",
+                          fontSize: "22px",
+                        }}
+                      >
+                        {editingDivision ? "Update Division" : "Add New Division"}
+                      </h4>
+
+                      <p
+                        className="mb-0"
+                        style={{
+                          color: "#475569",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        {editingDivision
+                          ? "Modify the selected division information."
+                          : "Create and manage company divisions from one place."}
+                      </p>
                     </div>
-                ),
-            },
-            // {
-            //     header: () => <div style={{ textAlign: 'center' }}>DELETE</div>,
-            //     accessorKey: 'deleteActions',
-            //     enableColumnFilter: false,
-            //     enableSorting: false,
-            //     cell: ({ row }) => (
-            //         <div style={{ display: 'flex', justifyContent: 'center' }}>
-            //             <button
-            //                 className="btn btn-danger d-flex align-items-center"
-            //                 style={{ height: '30px', padding: '0 10px' }}
-            //                 onClick={() => handleDelete(row.original.id)}
-            //             >
-            //                 <FaTrash style={{ marginRight: '5px' }} />
-            //                 Delete
-            //             </button>
-            //         </div>
-            //     ),
-            // },
-        ],
-        []
-    );
 
-    const handleEdit = (customer) => {
-        setSelectedCustomer(customer);
-        setIsAddMode(false);
-        toggleModal();
-    };
+                    <div className="d-flex gap-2 flex-wrap">
+                      <Badge
+                        color="primary"
+                        pill
+                        className="px-3 py-2"
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: "700",
+                        }}
+                      >
+                        Total Divisions: {data.length}
+                      </Badge>
 
-    const handleDelete = async (id) => {
-        // Optimistically remove the state from the UI
-        const originalData = [...data];
-        setData(data.filter(customer => customer.id !== id));
+                      {editingDivision && (
+                        <Badge
+                          color="warning"
+                          pill
+                          className="px-3 py-2"
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "700",
+                            color: "#111827",
+                          }}
+                        >
+                          Edit Mode
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
 
-        try {
-            await axios.delete(`${import.meta.env.VITE_APP_KEY}family/update/${id}/`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-        } catch (error) {
-            setError(error.message || "Failed to delete customer");
-            setData(originalData); // Revert the UI if deletion fails
-        }
-    };
+                  <Form onSubmit={handleAddOrUpdateDivision}>
+                    <Row className="g-3 align-items-end">
+                      <Col md={10}>
+                        <Label
+                          htmlFor="divisionName"
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: "800",
+                            color: "#111827",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          Division Name
+                        </Label>
 
-    const handleInputChange = (event) => {
-        const { name, value } = event.target;
-        if (isAddMode) {
-            setNewState((prev) => ({ ...prev, [name]: value }));
-        } else {
-            setSelectedCustomer((prev) => ({ ...prev, [name]: value }));
-        }
-    };
+                        <Input
+                          type="text"
+                          id="divisionName"
+                          name="name"
+                          value={newDivision}
+                          onChange={(e) => setNewDivision(e.target.value)}
+                          placeholder="Example: Bepocart, Skating, Cycling"
+                          style={{
+                            height: "48px",
+                            borderRadius: "10px",
+                            border: "1.5px solid #b8c2d6",
+                            color: "#111827",
+                            fontSize: "14px",
+                            fontWeight: "600",
+                            backgroundColor: "#ffffff",
+                          }}
+                        />
+                      </Col>
 
-    const handleSubmit = async () => {
-        if (isAddMode) {
-            // Handle Add State
-            try {
-                const response = await axios.post(`${import.meta.env.VITE_APP_KEY}add/family/`, newState, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                setData([...data, response.data]); // Add new state to table data
-                await fetchData();
-                toggleModal();
-            } catch (error) {
-                setError(error.message || "Failed to add state");
-            }
-        } else {
-            // Handle Update State
-            try {
-                const response = await axios.put(`${import.meta.env.VITE_APP_KEY}family/update/${selectedCustomer.id}/`, selectedCustomer, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                // Update the specific state entry
-                setData(data.map(customer => customer.id === selectedCustomer.id ? response.data : customer));
-                await fetchData();
-                toggleModal();
-            } catch (error) {
-                setError(error.message || "Failed to update customer");
-            }
-        }
-    };
-
-    const handleAddState = () => {
-        setIsAddMode(true);
-        setNewState({ name: "" }); // Clear the new state form
-        toggleModal();
-    };
-
-    const fetchData = async () => {
-        try {
-            const response = await axios.get(`${import.meta.env.VITE_APP_KEY}familys/`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (response.status === 200) {
-                setData(response.data.data);
-            } else {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-        } catch (error) {
-            setError(error.message || "Failed to fetch data");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchData();
-    }, [token]);
-
-    document.title = "Division | Beposoft";
-
-    return (
-        <div className="page-content">
-            <div className="container-fluid">
-                <Breadcrumbs title="Tables" breadcrumbItem="Division Information" />
-
-                <Button color="success" onClick={handleAddState} className="mb-4">
-                    Add Division
-                </Button>
-
-                {loading ? (
-                    <p>Loading...</p>
-                ) : error ? (
-                    <p className="text-danger">Error: {error}</p>
-                ) : (
-                    <TableContainer
-                        columns={columns}
-                        data={data || []}
-                        isGlobalFilter={true}
-                        isPagination={true}
-                        SearchPlaceholder="Search by Name, Department, or Designation..."
-                        pagination="pagination"
-                        paginationWrapper='dataTables_paginate paging_simple_numbers'
-                        tableClass="table-bordered table-nowrap dt-responsive nowrap w-100 dataTable no-footer dtr-inline"
-                    />
-                )}
-
-                {/* Modal for adding/editing state */}
-                <Modal isOpen={modal} toggle={toggleModal}>
-                    <ModalHeader toggle={toggleModal}>
-                        {isAddMode ? "Add New State" : "Edit State"}
-                    </ModalHeader>
-                    <ModalBody>
-                        <Form>
-                            <Label for="name">Name</Label>
-                            <Input
-                                id="name"
-                                name="name"
-                                value={isAddMode ? newState.name : selectedCustomer?.name || ''}
-                                onChange={handleInputChange}
-                            />
-                        </Form>
-                    </ModalBody>
-                    <ModalFooter>
-                        <Button color="secondary" onClick={toggleModal}>Cancel</Button>
-                        <Button color="primary" onClick={handleSubmit}>
-                            {isAddMode ? "Add" : "Save"}
+                      <Col md={2}>
+                        <Button
+                          color="primary"
+                          type="submit"
+                          className="w-100"
+                          style={{
+                            height: "48px",
+                            borderRadius: "10px",
+                            fontSize: "14px",
+                            fontWeight: "800",
+                            backgroundColor: "#1d4ed8",
+                            borderColor: "#1d4ed8",
+                            boxShadow: "0 8px 18px rgba(29, 78, 216, 0.30)",
+                          }}
+                        >
+                          {editingDivision ? "Update" : "Add"}
                         </Button>
-                    </ModalFooter>
-                </Modal>
-            </div>
+                      </Col>
+                    </Row>
+
+                    {editingDivision && (
+                      <Button
+                        className="mt-3"
+                        color="secondary"
+                        type="button"
+                        style={{
+                          borderRadius: "10px",
+                          fontWeight: "700",
+                          padding: "10px 24px",
+                        }}
+                        onClick={resetForm}
+                      >
+                        Cancel Edit
+                      </Button>
+                    )}
+                  </Form>
+                </CardBody>
+              </Card>
+            </Col>
+          </Row>
+
+          <Row>
+            <Col xl={12}>
+              <Card
+                className="border-0 mt-0"
+                style={{
+                  borderRadius: "18px",
+                  boxShadow: "0 8px 25px rgba(15, 23, 42, 0.10)",
+                }}
+              >
+                <CardBody className="p-4">
+                  <Row className="mb-4 align-items-center g-3">
+                    <Col md={6}>
+                      <h4
+                        className="mb-1"
+                        style={{
+                          fontWeight: "800",
+                          color: "#111827",
+                          fontSize: "22px",
+                        }}
+                      >
+                        Division Information
+                      </h4>
+
+                      <p
+                        className="mb-0"
+                        style={{
+                          color: "#475569",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        View, search and update all divisions.
+                      </p>
+                    </Col>
+
+                    <Col md={6}>
+                      <Input
+                        type="text"
+                        placeholder="Search by division name or ID..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{
+                          height: "48px",
+                          borderRadius: "10px",
+                          border: "1.5px solid #b8c2d6",
+                          color: "#111827",
+                          fontSize: "14px",
+                          fontWeight: "600",
+                          backgroundColor: "#ffffff",
+                        }}
+                      />
+                    </Col>
+                  </Row>
+
+                  <div
+                    className="table-responsive"
+                    style={{
+                      border: "1.5px solid #d7deea",
+                      borderRadius: "14px",
+                      overflow: "hidden",
+                      backgroundColor: "#ffffff",
+                    }}
+                  >
+                    <Table className="table mb-0 align-middle">
+                      <thead>
+                        <tr style={{ backgroundColor: "#eaf0fb" }}>
+                          <th
+                            style={{
+                              width: "80px",
+                              padding: "16px 14px",
+                              color: "#1e293b",
+                              fontSize: "13px",
+                              fontWeight: "800",
+                              borderBottom: "1.5px solid #cbd5e1",
+                            }}
+                          >
+                            #
+                          </th>
+
+                          {/* <th
+                            style={{
+                              width: "120px",
+                              padding: "16px 14px",
+                              color: "#1e293b",
+                              fontSize: "13px",
+                              fontWeight: "800",
+                              borderBottom: "1.5px solid #cbd5e1",
+                            }}
+                          >
+                            ID
+                          </th> */}
+
+                          <th
+                            style={{
+                              padding: "16px 14px",
+                              color: "#1e293b",
+                              fontSize: "13px",
+                              fontWeight: "800",
+                              borderBottom: "1.5px solid #cbd5e1",
+                            }}
+                          >
+                            Division Name
+                          </th>
+
+                          <th
+                            className="text-end"
+                            style={{
+                              width: "180px",
+                              padding: "16px 14px",
+                              color: "#1e293b",
+                              fontSize: "13px",
+                              fontWeight: "800",
+                              borderBottom: "1.5px solid #cbd5e1",
+                            }}
+                          >
+                            Action
+                          </th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {loading ? (
+                          <tr>
+                            <td colSpan="4">
+                              <div className="text-center py-5">
+                                <h5
+                                  style={{
+                                    fontWeight: "800",
+                                    color: "#111827",
+                                  }}
+                                >
+                                  Loading divisions...
+                                </h5>
+
+                                <p
+                                  className="mb-0"
+                                  style={{
+                                    color: "#475569",
+                                    fontWeight: "500",
+                                  }}
+                                >
+                                  Please wait while division information is being
+                                  loaded.
+                                </p>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : currentPageDivisions.length > 0 ? (
+                          currentPageDivisions.map((division, index) => (
+                            <tr
+                              key={division.id || index}
+                              style={{
+                                borderBottom: "1px solid #dfe6f1",
+                              }}
+                            >
+                              <td
+                                style={{
+                                  padding: "16px 14px",
+                                  color: "#334155",
+                                  fontSize: "14px",
+                                  fontWeight: "700",
+                                }}
+                              >
+                                {indexOfFirstItem + index + 1}
+                              </td>
+
+                              {/* <td
+                                style={{
+                                  padding: "16px 14px",
+                                  color: "#334155",
+                                  fontSize: "14px",
+                                  fontWeight: "800",
+                                }}
+                              >
+                                #{division?.id || "-"}
+                              </td> */}
+
+                              <td style={{ padding: "16px 14px" }}>
+                                <div className="d-flex align-items-center gap-3">
+                                  <div
+                                    className="rounded-circle d-flex align-items-center justify-content-center"
+                                    style={{
+                                      width: "42px",
+                                      height: "42px",
+                                      backgroundColor: "#dbeafe",
+                                      color: "#1d4ed8",
+                                      fontWeight: "900",
+                                      fontSize: "14px",
+                                      border: "1px solid #bfdbfe",
+                                    }}
+                                  >
+                                    {division?.name
+                                      ? division.name.substring(0, 2).toUpperCase()
+                                      : "DV"}
+                                  </div>
+
+                                  <div>
+                                    <h6
+                                      className="mb-1"
+                                      style={{
+                                        fontSize: "14px",
+                                        fontWeight: "900",
+                                        color: "#0f172a",
+                                        letterSpacing: "0.2px",
+                                      }}
+                                    >
+                                      {division?.name || "-"}
+                                    </h6>
+
+                                    <small
+                                      style={{
+                                        color: "#64748b",
+                                        fontSize: "12px",
+                                        fontWeight: "600",
+                                      }}
+                                    >
+                                      Division name
+                                    </small>
+                                  </div>
+                                </div>
+                              </td>
+
+                              <td
+                                className="text-end"
+                                style={{ padding: "16px 14px" }}
+                              >
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleEditDivision(division)}
+                                  style={{
+                                    backgroundColor: "#f59e0b",
+                                    borderColor: "#f59e0b",
+                                    color: "#111827",
+                                    borderRadius: "8px",
+                                    fontSize: "12px",
+                                    fontWeight: "900",
+                                    padding: "8px 18px",
+                                    marginRight: "8px",
+                                  }}
+                                >
+                                  Edit
+                                </Button>
+
+                                {/* <Button
+                                  size="sm"
+                                  onClick={() => handleDeleteDivision(division.id)}
+                                  style={{
+                                    backgroundColor: "#ef4444",
+                                    borderColor: "#ef4444",
+                                    color: "#ffffff",
+                                    borderRadius: "8px",
+                                    fontSize: "12px",
+                                    fontWeight: "900",
+                                    padding: "8px 18px",
+                                  }}
+                                >
+                                  Delete
+                                </Button> */}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="4">
+                              <div className="text-center py-5">
+                                <h5
+                                  style={{
+                                    fontWeight: "800",
+                                    color: "#111827",
+                                  }}
+                                >
+                                  No divisions found
+                                </h5>
+
+                                <p
+                                  className="mb-0"
+                                  style={{
+                                    color: "#475569",
+                                    fontWeight: "500",
+                                  }}
+                                >
+                                  Try another search keyword or add a new division.
+                                </p>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </Table>
+                  </div>
+
+                  <div className="mt-3">
+                    <Paginations
+                      perPageData={perPageData}
+                      data={filteredDivisions}
+                      currentPage={currentPage}
+                      setCurrentPage={setCurrentPage}
+                      isShowingPageLength={true}
+                      paginationDiv="col-auto"
+                      paginationClass="pagination-rounded"
+                      indexOfFirstItem={indexOfFirstItem}
+                      indexOfLastItem={indexOfLastItem}
+                    />
+                  </div>
+                </CardBody>
+              </Card>
+            </Col>
+          </Row>
         </div>
-    );
+      </div>
+    </React.Fragment>
+  );
 };
 
 FamilyTable.propTypes = {
-    preGlobalFilteredRows: PropTypes.any,
+  preGlobalFilteredRows: PropTypes.any,
 };
 
 export default FamilyTable;

@@ -805,13 +805,16 @@ const FormLayouts = () => {
                                                                 <td className="image-cell">
                                                                     {item.images ? (
                                                                         <img
-                                                                            src={`http://localhost:8000${item.images[0]}`}
-                                                                            alt={item.name}
+                                                                            src={`${import.meta.env.VITE_APP_IMAGE}${item.images}`}
+                                                                            alt={item.name || "Product Image"}
                                                                             style={{
-                                                                                width: '50px',
-                                                                                height: '50px',
-                                                                                objectFit: 'cover',
-                                                                                borderRadius: '5px'
+                                                                                width: "50px",
+                                                                                height: "50px",
+                                                                                objectFit: "cover",
+                                                                                borderRadius: "5px",
+                                                                            }}
+                                                                            onError={(e) => {
+                                                                                e.currentTarget.style.display = "none";
                                                                             }}
                                                                         />
                                                                     ) : (

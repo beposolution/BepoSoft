@@ -26,9 +26,10 @@ const BasicTable = () => {
     const [filteredOrders, setFilteredOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const name = localStorage.getItem('name');
+    const name = localStorage.getItem("name");
     document.title = `Ledger | Beposoft`;
-    const [advanceReceipts, setAdvanceReceipts] = useState([])
+
+    const [advanceReceipts, setAdvanceReceipts] = useState([]);
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [companyFilter, setCompanyFilter] = useState("");
@@ -47,13 +48,13 @@ const BasicTable = () => {
             const token = localStorage.getItem("token");
             try {
                 const response = await axios.get(`${import.meta.env.VITE_APP_KEY}banks/`, {
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: { Authorization: `Bearer ${token}` },
                 });
                 if (response.status === 200) setBanks(response.data.data);
             } catch (error) {
-                toast.error("Error fetching banks:");
+                toast.error("Error fetching banks");
             }
-        }
+        };
         fetchBanks();
     }, []);
 
@@ -67,13 +68,11 @@ const BasicTable = () => {
             const token = localStorage.getItem("token");
 
             try {
-                // Fetch ledger data
                 const ledgerResponse = await axios.get(
                     `${import.meta.env.VITE_APP_KEY}customer/${id}/ledger/`,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
 
-                // Fetch company data
                 const companyResponse = await axios.get(
                     `${import.meta.env.VITE_APP_KEY}company/data/`,
                     { headers: { Authorization: `Bearer ${token}` } }
@@ -83,21 +82,18 @@ const BasicTable = () => {
                     setCompany(companyResponse.data.data);
                 }
 
-
-                // Set the fetched data into the state
                 const ledgerData = ledgerResponse.data.data.ledger || [];
 
                 setOrders(ledgerData);
                 setFilteredOrders(ledgerData);
 
-                setAdvanceReceipts(ledgerResponse.data.data.advance_receipts);
+                setAdvanceReceipts(ledgerResponse.data.data.advance_receipts || []);
                 setPaymentReceipts(ledgerResponse.data.data.payment_receipts || []);
                 setGrvList(ledgerResponse.data.data.grv || []);
                 setRefundReceipts(ledgerResponse.data.data.refund_receipts || []);
                 setAdvanceTransfers(ledgerResponse.data.data.advance_transfers || []);
                 setLedgerSentTransfers(ledgerResponse.data.data.ledger_sent_transfers || []);
                 setLoading(false);
-
             } catch (error) {
                 setError("Failed to fetch ledger data.");
                 setLoading(false);
@@ -107,16 +103,22 @@ const BasicTable = () => {
         if (id) fetchLedgerData();
     }, [id]);
 
-
     const handleFilter = () => {
         setFilteredOrders(orders);
     };
 
-    const ledgerRows = React.useMemo(() => {
+    const applyCompanyFilter = (row) => {
+        return (
+            !companyFilter ||
+            (row.invoice && row.invoice.toString().includes(companyFilter))
+        );
+    };
+
+    const allLedgerRows = React.useMemo(() => {
         let rows = [];
 
         // ===== ORDERS =====
-        filteredOrders.forEach((order, orderIndex) => {
+        filteredOrders.forEach((order) => {
             if (order.status !== "Invoice Rejected" && order.status !== "Invoice Created") {
                 rows.push({
                     key: `O-${order.id}`,
@@ -129,7 +131,7 @@ const BasicTable = () => {
                 });
             }
 
-            (order.recived_payment || []).forEach((receipt, idx) => {
+            (order.recived_payment || []).forEach((receipt) => {
                 rows.push({
                     key: `OP-${receipt.id}`,
                     date: receipt.received_at,
@@ -209,7 +211,7 @@ const BasicTable = () => {
 
         // ===== GRV =====
         grvList
-            .filter(g => g.status?.toLowerCase() === "approved")
+            .filter((g) => g.status?.toLowerCase() === "approved")
             .forEach((g) => {
                 const qty = Number(g.quantity || 0);
                 const price = Number(g.price || 0);
@@ -237,26 +239,9 @@ const BasicTable = () => {
                 });
             });
 
-        // ===========================
-        // 🔥 APPLY FILTER HERE
-        // ===========================
-        rows = rows.filter(row => {
-            const rowDate = new Date(row.date?.split("T")[0]);
+        rows = rows.filter((row) => applyCompanyFilter(row));
 
-            const isWithinDateRange =
-                (!startDate || rowDate >= new Date(startDate)) &&
-                (!endDate || rowDate <= new Date(endDate));
-
-            const matchesCompany =
-                !companyFilter ||
-                (row.invoice && row.invoice.toString().includes(companyFilter));
-
-            return isWithinDateRange && matchesCompany;
-        });
-
-        // SORT
         return rows.sort((a, b) => new Date(a.date) - new Date(b.date));
-
     }, [
         filteredOrders,
         advanceReceipts,
@@ -266,60 +251,105 @@ const BasicTable = () => {
         advanceTransfers,
         ledgerSentTransfers,
         bankIdToName,
-        startDate,
-        endDate,
-        companyFilter
+        companyFilter,
     ]);
 
-    const { totalDebit, totalCredit, closingBalance, closingBalanceDebit, closingBalanceCredit } =
-        React.useMemo(() => {
-            const d = ledgerRows.reduce((sum, r) => sum + (Number(r.debit) || 0), 0);
-            const c = ledgerRows.reduce((sum, r) => sum + (Number(r.credit) || 0), 0);
-
-            const cb = d - c;
-
+    const openingBalanceData = React.useMemo(() => {
+        if (!startDate) {
             return {
-                totalDebit: d,
-                totalCredit: c,
-                closingBalance: cb,
-                closingBalanceDebit: cb > 0 ? cb : 0,
-                closingBalanceCredit: cb < 0 ? Math.abs(cb) : 0,
+                openingBalance: 0,
+                openingBalanceDebit: 0,
+                openingBalanceCredit: 0,
             };
-        }, [ledgerRows]);
+        }
 
-    const blackBorder = {
-        top: { style: "thin", color: { rgb: "FF000000" } },
-        bottom: { style: "thin", color: { rgb: "FF000000" } },
-        left: { style: "thin", color: { rgb: "FF000000" } },
-        right: { style: "thin", color: { rgb: "FF000000" } },
-    };
+        const start = new Date(startDate);
+
+        const previousRows = allLedgerRows.filter((row) => {
+            const rowDate = new Date(row.date?.split("T")[0]);
+            return rowDate < start;
+        });
+
+        const totalPrevDebit = previousRows.reduce(
+            (sum, row) => sum + (Number(row.debit) || 0),
+            0
+        );
+
+        const totalPrevCredit = previousRows.reduce(
+            (sum, row) => sum + (Number(row.credit) || 0),
+            0
+        );
+
+        const openingBalance = totalPrevDebit - totalPrevCredit;
+
+        return {
+            openingBalance,
+            openingBalanceDebit: openingBalance > 0 ? openingBalance : 0,
+            openingBalanceCredit: openingBalance < 0 ? Math.abs(openingBalance) : 0,
+        };
+    }, [allLedgerRows, startDate]);
+
+    const ledgerRows = React.useMemo(() => {
+        let rows = [...allLedgerRows];
+
+        rows = rows.filter((row) => {
+            const rowDate = new Date(row.date?.split("T")[0]);
+
+            const isWithinDateRange =
+                (!startDate || rowDate >= new Date(startDate)) &&
+                (!endDate || rowDate <= new Date(endDate));
+
+            return isWithinDateRange;
+        });
+
+        return rows.sort((a, b) => new Date(a.date) - new Date(b.date));
+    }, [allLedgerRows, startDate, endDate]);
+
+    const {
+        openingBalance,
+        openingBalanceDebit,
+        openingBalanceCredit,
+    } = openingBalanceData;
+
+    const {
+        totalDebit,
+        totalCredit,
+        closingBalance,
+        closingBalanceDebit,
+        closingBalanceCredit,
+    } = React.useMemo(() => {
+        const d = ledgerRows.reduce((sum, r) => sum + (Number(r.debit) || 0), 0);
+        const c = ledgerRows.reduce((sum, r) => sum + (Number(r.credit) || 0), 0);
+
+        const cb = openingBalance + d - c;
+
+        return {
+            totalDebit: d,
+            totalCredit: c,
+            closingBalance: cb,
+            closingBalanceDebit: cb > 0 ? cb : 0,
+            closingBalanceCredit: cb < 0 ? Math.abs(cb) : 0,
+        };
+    }, [ledgerRows, openingBalance]);
 
     const excelColorMap = (color) => {
         switch (color) {
-            case "red": // Goods Sale
+            case "red":
                 return { rgb: "FFF8D7DA" };
-
-            case "green": // Payment received
+            case "green":
                 return { rgb: "FFD4EDDA" };
-
-            case "blue": // Advance Receipt (Turquoise)
+            case "blue":
                 return { rgb: "FFD1ECF1" };
-
-            case "#6f42c1": // Payment Receipt (Blue)
+            case "#6f42c1":
                 return { rgb: "FFD6E4FF" };
-
-            case "#fd7e14": // Sales / COD Return
+            case "#fd7e14":
                 return { rgb: "FFFFE5D0" };
-
-            case "#dc3545": // Refund Issued
+            case "#dc3545":
                 return { rgb: "FFFFF3CD" };
-
-            case "#0d6efd": // Transfer sent
+            case "#0d6efd":
                 return { rgb: "FFE7F1FF" };
-
-            case "#198754": // Transfer received
+            case "#198754":
                 return { rgb: "FFE6F4EA" };
-
             default:
                 return { rgb: "FFFFFFFF" };
         }
@@ -339,7 +369,6 @@ const BasicTable = () => {
             right: { style: "thin", color: { rgb: "FF000000" } },
         };
 
-        // HEADER STYLE
         ["A1", "B1", "C1", "D1", "E1", "F1"].forEach((cell) => {
             worksheet[cell].s = {
                 font: { bold: true, color: { rgb: "FFFFFFFF" } },
@@ -350,6 +379,31 @@ const BasicTable = () => {
         });
 
         let rowIndex = 2;
+
+        // OPENING BALANCE
+        XLSX.utils.sheet_add_aoa(
+            worksheet,
+            [[
+                "",
+                "",
+                "",
+                "Opening Balance",
+                openingBalanceDebit ? openingBalanceDebit.toFixed(2) : "",
+                openingBalanceCredit ? openingBalanceCredit.toFixed(2) : "",
+            ]],
+            { origin: `A${rowIndex}` }
+        );
+
+        ["A", "B", "C", "D", "E", "F"].forEach((col) => {
+            const cell = `${col}${rowIndex}`;
+            worksheet[cell].s = {
+                font: { bold: true },
+                fill: { fgColor: { rgb: "FFF8F9FA" } },
+                border: blackBorder,
+            };
+        });
+
+        rowIndex++;
 
         ledgerRows.forEach((row, i) => {
             const excelRow = [
@@ -365,7 +419,6 @@ const BasicTable = () => {
                 origin: `A${rowIndex}`,
             });
 
-            // FULL ROW COLOR + BORDER
             ["A", "B", "C", "D", "E", "F"].forEach((col) => {
                 const cell = `${col}${rowIndex}`;
                 if (worksheet[cell]) {
@@ -380,10 +433,8 @@ const BasicTable = () => {
             rowIndex++;
         });
 
-        const customerName =
-            filteredOrders[0]?.customer_name || "Customer";
+        const customerName = filteredOrders[0]?.customer_name || "Customer";
 
-        // GRAND TOTAL
         XLSX.utils.sheet_add_aoa(
             worksheet,
             [["", "", "", "Grand Total", totalDebit.toFixed(2), totalCredit.toFixed(2)]],
@@ -401,7 +452,6 @@ const BasicTable = () => {
 
         rowIndex++;
 
-        // CLOSING BALANCE
         XLSX.utils.sheet_add_aoa(
             worksheet,
             [[
@@ -424,7 +474,6 @@ const BasicTable = () => {
             };
         });
 
-        // COLUMN WIDTHS
         worksheet["!cols"] = [
             { wch: 5 },
             { wch: 14 },
@@ -444,8 +493,7 @@ const BasicTable = () => {
         const companyName =
             (filteredOrders[0]?.company || name || "Company").toUpperCase();
 
-        const customerName =
-            filteredOrders[0]?.customer_name || "Customer";
+        const customerName = filteredOrders[0]?.customer_name || "Customer";
 
         const selectedCompany = companys.find(
             (c) =>
@@ -482,28 +530,38 @@ const BasicTable = () => {
 
         drawHeader();
 
-        // 🔥 Build rows ONLY from ledgerRows (filtered source of truth)
-        const rows = ledgerRows.map((row, index) => ({
-            index: index + 1,
-            date: row.date,
-            invoice: row.invoice,
-            particular: row.particular,
-            debit: row.debit !== null ? row.debit.toFixed(2) : "-",
-            credit: row.credit !== null ? row.credit.toFixed(2) : "-",
-            _particularColor:
-                row.particularColor === "red" ? [220, 53, 69] :
+        const rows = [
+            {
+                index: "",
+                date: "",
+                invoice: "",
+                particular: "Opening Balance",
+                debit: openingBalanceDebit ? openingBalanceDebit.toFixed(2) : "",
+                credit: openingBalanceCredit ? openingBalanceCredit.toFixed(2) : "",
+                _particularColor: [0, 0, 0],
+                _bold: true,
+            },
+            ...ledgerRows.map((row, index) => ({
+                index: index + 1,
+                date: row.date,
+                invoice: row.invoice,
+                particular: row.particular,
+                debit: row.debit !== null ? row.debit.toFixed(2) : "-",
+                credit: row.credit !== null ? row.credit.toFixed(2) : "-",
+                _particularColor:
+                    row.particularColor === "red" ? [220, 53, 69] :
                     row.particularColor === "green" ? [40, 167, 69] :
-                        row.particularColor === "blue" ? [0, 123, 255] :
-                            row.particularColor === "#6f42c1" ? [111, 66, 193] :
-                                row.particularColor === "#fd7e14" ? [253, 126, 20] :
-                                    row.particularColor === "#dc3545" ? [220, 53, 69] :
-                                        row.particularColor === "#0d6efd" ? [13, 110, 253] :
-                                            row.particularColor === "#198754" ? [25, 135, 84] :
-                                                [0, 0, 0],
-            _bold: false,
-        }));
+                    row.particularColor === "blue" ? [0, 123, 255] :
+                    row.particularColor === "#6f42c1" ? [111, 66, 193] :
+                    row.particularColor === "#fd7e14" ? [253, 126, 20] :
+                    row.particularColor === "#dc3545" ? [220, 53, 69] :
+                    row.particularColor === "#0d6efd" ? [13, 110, 253] :
+                    row.particularColor === "#198754" ? [25, 135, 84] :
+                    [0, 0, 0],
+                _bold: false,
+            })),
+        ];
 
-        // Add Grand Total & Closing Balance
         rows.push(
             {
                 index: "",
@@ -589,71 +647,6 @@ const BasicTable = () => {
         pdf.save(`${customerName}_Ledger.pdf`);
     };
 
-    // const approvedGrvList = grvList.filter(
-    //     g => g.status?.toLowerCase() === "approved"
-    // );
-
-    // const totalDebit =
-    //     filteredOrders.reduce((total, order) => {
-    //         if (order.status !== "Invoice Rejected" && order.status !== "Invoice Created") {
-    //             return total + order.total_amount;
-    //         }
-    //         return total;
-    //     }, 0)
-    //     +
-    //     refundReceipts.reduce(
-    //         (sum, refund) => sum + parseFloat(refund.amount || 0),
-    //         0
-    //     )
-    //     +
-    //     ledgerSentTransfers.reduce(
-    //         (sum, t) => sum + parseFloat(t.amount || 0),
-    //         0
-    //     );
-
-    // const totalCredit =
-    //     filteredOrders.reduce((total, order) => {
-    //         const receivedPayments = Array.isArray(order.recived_payment)
-    //             ? order.recived_payment
-    //             : [];
-
-    //         return total + receivedPayments.reduce(
-    //             (sum, receipt) => sum + parseFloat(receipt.amount || 0),
-    //             0
-    //         );
-    //     }, 0)
-    //     +
-    //     advanceReceipts.reduce(
-    //         (sum, receipt) => sum + parseFloat(receipt.amount || 0),
-    //         0
-    //     )
-    //     +
-    //     paymentReceipts.reduce(
-    //         (sum, receipt) => sum + parseFloat(receipt.amount || 0),
-    //         0
-    //     )
-    //     +
-    //     approvedGrvList.reduce((sum, g) => {
-    //         if (g.remark === "cod_return") {
-    //             return sum + parseFloat(g.cod_amount || 0);
-    //         }
-
-    //         const qty = Number(g.quantity || 0);
-    //         const price = Number(g.price || 0);
-
-    //         return sum + (qty * price);
-    //     }, 0)
-    //     +
-    //     advanceTransfers.reduce(
-    //         (sum, t) => sum + parseFloat(t.amount || 0),
-    //         0
-    //     );
-
-    // const closingBalance = totalDebit - totalCredit;
-
-    // const closingBalanceDebit = closingBalance > 0 ? closingBalance : 0;
-    // const closingBalanceCredit = closingBalance < 0 ? Math.abs(closingBalance) : 0;
-
     if (loading) {
         return <p>Loading...</p>;
     }
@@ -680,7 +673,6 @@ const BasicTable = () => {
                                         Detailed view of debits and credits for the customer ledger.
                                     </CardSubtitle>
 
-                                    {/* Filter Section */}
                                     <div className="mb-4">
                                         <Row>
                                             <Col md={3}>
@@ -689,7 +681,7 @@ const BasicTable = () => {
                                                     type="date"
                                                     id="startDate"
                                                     value={startDate}
-                                                    onChange={e => setStartDate(e.target.value)}
+                                                    onChange={(e) => setStartDate(e.target.value)}
                                                 />
                                             </Col>
                                             <Col md={3}>
@@ -698,7 +690,7 @@ const BasicTable = () => {
                                                     type="date"
                                                     id="endDate"
                                                     value={endDate}
-                                                    onChange={e => setEndDate(e.target.value)}
+                                                    onChange={(e) => setEndDate(e.target.value)}
                                                 />
                                             </Col>
                                             <Col md={3}>
@@ -707,7 +699,7 @@ const BasicTable = () => {
                                                     type="select"
                                                     id="company"
                                                     value={companyFilter}
-                                                    onChange={e => setCompanyFilter(e.target.value)}
+                                                    onChange={(e) => setCompanyFilter(e.target.value)}
                                                 >
                                                     <option value="">All Companies</option>
                                                     {companys.map((company, index) => (
@@ -725,7 +717,6 @@ const BasicTable = () => {
                                         </Row>
                                     </div>
 
-                                    {/* Table Section */}
                                     <div className="table-responsive" ref={tableRef}>
                                         <Table className="table table-bordered mb-0">
                                             <thead className="table-light">
@@ -739,6 +730,18 @@ const BasicTable = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                                <tr style={{ backgroundColor: "#f8f9fa" }}>
+                                                    <td colSpan="4" style={{ fontWeight: "bold", textAlign: "right" }}>
+                                                        Opening Balance
+                                                    </td>
+                                                    <td style={{ fontWeight: "bold" }}>
+                                                        {openingBalanceDebit ? openingBalanceDebit.toFixed(2) : ""}
+                                                    </td>
+                                                    <td style={{ fontWeight: "bold" }}>
+                                                        {openingBalanceCredit ? openingBalanceCredit.toFixed(2) : ""}
+                                                    </td>
+                                                </tr>
+
                                                 {ledgerRows.map((row, idx) => (
                                                     <tr key={row.key}>
                                                         <th scope="row">{idx + 1}</th>
@@ -752,7 +755,6 @@ const BasicTable = () => {
                                                     </tr>
                                                 ))}
 
-                                                {/* Grand Total */}
                                                 <tr>
                                                     <td colSpan="4" style={{ fontWeight: "bold", textAlign: "right" }}>
                                                         Grand Total
@@ -761,7 +763,6 @@ const BasicTable = () => {
                                                     <td style={{ fontWeight: "bold" }}>{totalCredit.toFixed(2)}</td>
                                                 </tr>
 
-                                                {/* Closing Balance */}
                                                 <tr>
                                                     <td colSpan="4" style={{ fontWeight: "bold", textAlign: "right" }}>
                                                         Closing Balance
@@ -776,15 +777,19 @@ const BasicTable = () => {
                                             </tbody>
                                         </Table>
                                     </div>
+
                                     <div className="d-flex justify-content-end mt-3">
-                                        <Button color="success" style={{ marginRight: "10px" }} onClick={exportToExcel}>
+                                        <Button
+                                            color="success"
+                                            style={{ marginRight: "10px" }}
+                                            onClick={exportToExcel}
+                                        >
                                             Export to Excel
                                         </Button>
                                         <Button color="danger" onClick={convertToPDF}>
                                             Convert to PDF
                                         </Button>
                                     </div>
-
                                 </CardBody>
                             </Card>
                         </Col>

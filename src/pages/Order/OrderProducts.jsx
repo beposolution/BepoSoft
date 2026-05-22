@@ -70,6 +70,9 @@ const FormLayouts = () => {
     const [isEditingCustomer, setIsEditingCustomer] = useState(false);
     const [customers, setCustomers] = useState([]);
     const [selectedCustomer, setSelectedCustomer] = useState("");
+    const [parcelService, setParcelService] = useState([]);
+    const [orderParcelServiceId, setOrderParcelServiceId] = useState("");
+    const [orderParcelServiceNote, setOrderParcelServiceNote] = useState("");
 
     const customerOptions = customers.map(c => ({
         value: c.id,
@@ -84,7 +87,6 @@ const FormLayouts = () => {
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 setCustomers(res.data.results || []);
-                console.log("Fetched customers:", res);
             } catch (err) {
                 toast.error("Failed to load customers");
             }
@@ -605,6 +607,23 @@ const FormLayouts = () => {
     }, [])
 
     useEffect(() => {
+        const fetchParcelServiceData = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}parcal/service/`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                setParcelService(response?.data?.data)
+            } catch (error) {
+                toast.error("Error fetching family data.")
+            }
+        };
+        fetchParcelServiceData();
+    }, [])
+
+
+    useEffect(() => {
         if (!customerId) return;
 
         const fetchLedger = async () => {
@@ -744,6 +763,9 @@ const FormLayouts = () => {
                 calculateTotalNetPrice(data.items || []);
                 calculateNetAmountBeforTax(data.items || []);
                 calculateTaxAmount(data.items || []);
+
+                setOrderParcelServiceId(data.order.parcel_service || "");
+                setOrderParcelServiceNote(data.order.parcel_service_note || "");
 
             }
         } catch (error) {
@@ -1029,26 +1051,61 @@ const FormLayouts = () => {
         ["Invoice Approved", "Waiting For Confirmation", "To Print", "Packed", "Packing under progress", "Ready to ship",].includes(formik.values.status);
 
     // ADD ONLY: cap per-rack input so total never exceeds the order line quantity
+    // const setRackQtyCapped = (item, rackIdx, val, rackStock) => {
+    //     const q = Math.max(0, Number(val || 0));
+    //     const current = rackSelections[item.id] || {};
+
+    //     // sum of all other racks for this item (excluding the one being edited)
+    //     const otherSum = Object.entries(current).reduce(
+    //         (s, [k, v]) => s + (Number(k) === rackIdx ? 0 : (Number(v) || 0)),
+    //         0
+    //     );
+
+    //     // how much is still allowed for this order line
+    //     const allowedLeft = Math.max(0, Number(item.quantity) - otherSum);
+
+    //     // final capped value by remaining allowable and this rack's stock
+    //     const finalVal = Math.min(q, allowedLeft, Number(rackStock) || 0);
+
+    //     setRackSelections(prev => ({
+    //         ...prev,
+    //         [item.id]: { ...(prev[item.id] || {}), [rackIdx]: finalVal }
+    //     }));
+    // };
     const setRackQtyCapped = (item, rackIdx, val, rackStock) => {
-        const q = Math.max(0, Number(val || 0));
-        const current = rackSelections[item.id] || {};
+        const enteredValue = val === "" ? 0 : Math.max(0, Number(val));
 
-        // sum of all other racks for this item (excluding the one being edited)
-        const otherSum = Object.entries(current).reduce(
-            (s, [k, v]) => s + (Number(k) === rackIdx ? 0 : (Number(v) || 0)),
-            0
-        );
+        setRackSelections(prev => {
+            const current = prev[item.id] || {};
 
-        // how much is still allowed for this order line
-        const allowedLeft = Math.max(0, Number(item.quantity) - otherSum);
+            const otherSum = Object.entries(current).reduce(
+                (sum, [key, value]) => {
+                    return sum + (Number(key) === rackIdx ? 0 : Number(value || 0));
+                },
+                0
+            );
 
-        // final capped value by remaining allowable and this rack's stock
-        const finalVal = Math.min(q, allowedLeft, Number(rackStock) || 0);
+            const maxAllowedForThisRack = Math.max(
+                0,
+                Number(item.quantity || 0) - otherSum
+            );
 
-        setRackSelections(prev => ({
-            ...prev,
-            [item.id]: { ...(prev[item.id] || {}), [rackIdx]: finalVal }
-        }));
+            const availableRackStock = Math.max(0, Number(rackStock || 0));
+
+            const finalValue = Math.min(
+                enteredValue,
+                maxAllowedForThisRack,
+                availableRackStock
+            );
+
+            return {
+                ...prev,
+                [item.id]: {
+                    ...current,
+                    [rackIdx]: finalValue,
+                },
+            };
+        });
     };
 
     // true if any order item still has unallocated racks
@@ -1118,6 +1175,67 @@ const FormLayouts = () => {
         return allocated;
     };
 
+    const handleParcelServiceUpdate = async () => {
+        try {
+            const payload = {
+                parcel_service: orderParcelServiceId ? Number(orderParcelServiceId) : null,
+                parcel_service_note: orderParcelServiceNote || "",
+            };
+
+            const response = await axios.put(
+                `${import.meta.env.VITE_APP_KEY}shipping/${id}/order/`,
+                payload,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            toast.success("Parcel service details updated successfully");
+            fetchOrderData();
+
+        } catch (error) {
+            console.error("Parcel service update failed:", error?.response?.data || error);
+            toast.error("Failed to update parcel service details");
+        }
+    };
+
+    const getParcelServiceName = () => {
+        const selectedService = parcelService.find(
+            service => Number(service.id) === Number(orderParcelServiceId)
+        );
+
+        return selectedService
+            ? `${selectedService.name} (${selectedService.label})`
+            : "";
+    };
+
+
+    const allowedStaffDetailsRoles = [
+        "ADMIN",
+        "Accounts / Accounting",
+        "BDM",
+        "BDO",
+    ];
+
+    const allowedStaffDetailsStatusesForOthers = [
+        "Invoice Created",
+        "Invoice Approved",
+        "Waiting For Confirmation",
+    ];
+
+    const showStaffAddedDetails =
+        allowedStaffDetailsRoles.includes(role) &&
+        (
+            role === "BDO"
+                ? formik.values.status === "Invoice Created"
+                : role === "BDM"
+                    ? ["Invoice Created", "Invoice Approved"].includes(formik.values.status)
+                    : allowedStaffDetailsStatusesForOthers.includes(formik.values.status)
+        );
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -1130,6 +1248,62 @@ const FormLayouts = () => {
                             <Button color="primary" onClick={handleNextOrder}>Next</Button>
                         </Col>
                     </Row>
+
+                    <Row>
+                        {showStaffAddedDetails && (
+                            <Row>
+                                <Col xl={12}>
+                                    <Card>
+                                        <CardBody>
+                                            <CardTitle>Staff Added Details (Sales Persons)</CardTitle>
+
+                                            <Row>
+                                                <Col md={6}>
+                                                    <Label>Parcel Service</Label>
+                                                    <Input
+                                                        type="select"
+                                                        value={orderParcelServiceId}
+                                                        onChange={(e) => setOrderParcelServiceId(e.target.value)}
+                                                    >
+                                                        <option value="">Select Parcel Service</option>
+
+                                                        {parcelService.map((service) => (
+                                                            <option key={service.id} value={service.id}>
+                                                                {service.name} ({service.label})
+                                                            </option>
+                                                        ))}
+                                                    </Input>
+                                                </Col>
+
+                                                <Col md={6}>
+                                                    <Label>Parcel Service Note</Label>
+                                                    <Input
+                                                        type="textarea"
+                                                        value={orderParcelServiceNote}
+                                                        onChange={(e) => setOrderParcelServiceNote(e.target.value)}
+                                                        rows="2"
+                                                        placeholder="Enter parcel service note"
+                                                    />
+                                                </Col>
+                                            </Row>
+
+                                            <Row>
+                                                <Col md={2} className="d-flex align-items-end mt-3">
+                                                    <Button
+                                                        color="primary"
+                                                        onClick={handleParcelServiceUpdate}
+                                                    >
+                                                        Save
+                                                    </Button>
+                                                </Col>
+                                            </Row>
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+                            </Row>
+                        )}
+                    </Row>
+
                     <Row>
 
                         <Col xl={12}>
@@ -1924,13 +2098,27 @@ const FormLayouts = () => {
                                                                                             <td>{rackStock}</td>
                                                                                             <td>{rackLock}</td>
                                                                                             <td style={{ width: 120 }}>
-                                                                                                <Input
+                                                                                                {/* <Input
                                                                                                     type="number"
                                                                                                     min={0}
                                                                                                     value={currentForRack}
                                                                                                     disabled={isFullyLocked}              // disable input
                                                                                                     onChange={e =>
                                                                                                         setRackQtyCapped(item, rackIdx, e.target.value, rackStock - rackLock)
+                                                                                                    }
+                                                                                                /> */}
+                                                                                                <Input
+                                                                                                    type="number"
+                                                                                                    min={0}
+                                                                                                    value={currentForRack}
+                                                                                                    disabled={isFullyLocked && currentForRack === 0}
+                                                                                                    onChange={(e) =>
+                                                                                                        setRackQtyCapped(
+                                                                                                            item,
+                                                                                                            rackIdx,
+                                                                                                            e.target.value,
+                                                                                                            rackStock - rackLock + currentForRack
+                                                                                                        )
                                                                                                     }
                                                                                                 />
                                                                                             </td>

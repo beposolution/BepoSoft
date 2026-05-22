@@ -368,6 +368,8 @@ const StatisticsApplications = () => {
         fetchCategoryCountData();
     }, [selectedDate]);
 
+    const todaysDate = new Date().toLocaleDateString('en-CA'); // "YYYY-MM-DD" format
+
 
     useEffect(() => {
         const fetchCategoryWiseCountData = async () => {
@@ -377,8 +379,8 @@ const StatisticsApplications = () => {
                     {
                         headers: { Authorization: `Bearer ${token}` },
                         params: {
-                            start_date: categoryStartDate || undefined,
-                            end_date: categoryEndDate || undefined,
+                            start_date: categoryStartDate || todaysDate,
+                            end_date: categoryEndDate || todaysDate,
                         },
                     }
                 );
@@ -392,7 +394,7 @@ const StatisticsApplications = () => {
         if (token) {
             fetchCategoryWiseCountData();
         }
-    }, [token, categoryStartDate, categoryEndDate]);
+    }, [token, categoryStartDate, categoryEndDate, todaysDate]);
 
 
     useEffect(() => {
@@ -780,6 +782,8 @@ const StatisticsApplications = () => {
     const totalAmount = orderSummary.total_amount || 0;
 
 
+
+    if (role !== "CEO" && role !== "COO") return null;
 
 
     return (
@@ -1605,15 +1609,15 @@ const StatisticsApplications = () => {
                                                     <tr className="table-primary fw-bold">
                                                         <td colSpan="2">TOTAL</td>
                                                         <td>
-                                                            {Number(warehouseSummary.today_summary.total_actual_weight_kg || 0).toLocaleString("en-IN", {
-                                                                minimumFractionDigits: 2,
-                                                                maximumFractionDigits: 3,
-                                                            })}
-                                                        </td>
-                                                        <td>
                                                             ₹ {Number(warehouseSummary.today_summary.total_parcel_amount || 0).toLocaleString("en-IN", {
                                                                 minimumFractionDigits: 2,
                                                                 maximumFractionDigits: 2,
+                                                            })}
+                                                        </td>
+                                                        <td>
+                                                            {Number(warehouseSummary.today_summary.total_actual_weight_kg || 0).toLocaleString("en-IN", {
+                                                                minimumFractionDigits: 2,
+                                                                maximumFractionDigits: 3,
                                                             })}
                                                         </td>
                                                         <td>{Number(warehouseSummary.today_summary.average || 0).toFixed(2)}</td>

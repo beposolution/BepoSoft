@@ -23,20 +23,24 @@ import { useParams } from "react-router-dom";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import * as XLSX from "xlsx-js-style";
 
+const getToday = () => {
+    return new Date().toISOString().split("T")[0];
+};
+
 const initialFilters = {
     search: "",
-    start_date: "",
-    end_date: "",
+    start_date: getToday(),
+    end_date: getToday(),
     staff_id: "",
     state_id: "",
     district_id: "",
     invoice_id: "",
     customer_id: "",
 };
- const format2 = (val) => {
-                const num = Number(val);
-                return Number.isFinite(num) ? Number(num.toFixed(2)) : 0;
-            };
+const format2 = (val) => {
+    const num = Number(val);
+    return Number.isFinite(num) ? Number(num.toFixed(2)) : 0;
+};
 const TeamDetailsPage = () => {
     document.title = "Team Details | Beposoft";
 
@@ -528,7 +532,7 @@ const TeamDetailsPage = () => {
                 return v === null || v === undefined || v === "" ? 0 : Number(v);
             };
 
-           
+
 
             const col = (c) => XLSX.utils.encode_col(c);
             const addr = (r, c) => `${col(c)}${r + 1}`;
@@ -553,7 +557,7 @@ const TeamDetailsPage = () => {
                     s: {
                         ...baseStyle,
                         ...style,
-                        fill: style.fill || baseStyle.fill, 
+                        fill: style.fill || baseStyle.fill,
                     },
                 };
             };
@@ -605,7 +609,7 @@ const TeamDetailsPage = () => {
                 rows.forEach((item, idx) => {
                     const r = startRow + 1 + idx;
 
-                    const bgColor = "D9EAF7"; 
+                    const bgColor = "D9EAF7";
 
                     setCell(r, startCol, item.label, {
                         font: { name: "Calibri", sz: 10, bold: true },
@@ -659,7 +663,7 @@ const TeamDetailsPage = () => {
             mergeRange(0, 0, 0, 10);
             applyBorderToRange(0, 0, 0, 10);
 
-          
+
             // =========================
             // TEAM SUMMARY
             // =========================
@@ -702,7 +706,7 @@ const TeamDetailsPage = () => {
 
             currentRow = Math.max(teamLeftEnd, teamRightEnd) + 2;
 
-           
+
             // =========================
             // STAFF SUMMARY (UPDATED TABLE FORMAT)
             // =========================
@@ -734,7 +738,7 @@ const TeamDetailsPage = () => {
             // Empty cells for summary section
             for (let c = 0; c <= hourlyColEnd; c++) {
                 setCell(currentRow, c, "", {
-                    fill: { fgColor: { rgb: "D9EAF7" } }, 
+                    fill: { fgColor: { rgb: "D9EAF7" } },
                 });
             }
 
@@ -953,7 +957,7 @@ const TeamDetailsPage = () => {
             const staffColors = [
                 "E8F5E9", // light green
                 "FFF3E0", // light orange
-              
+
             ];
 
             // DATA ROWS WITH STAFF COLOR BLOCK
@@ -1064,7 +1068,7 @@ const TeamDetailsPage = () => {
             toast.error("Excel export failed");
         }
     };
-   
+
     return (
         <React.Fragment>
             <div className="page-content">

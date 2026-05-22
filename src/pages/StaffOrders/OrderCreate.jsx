@@ -221,9 +221,16 @@ const FormLayouts = () => {
     };
 
     // Filter customers based on search term
-    const filteredCustomers = customers.filter(customer =>
-        customer.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredCustomers = customers.filter((customer) => {
+        const search = searchTerm.toLowerCase();
+
+        return (
+            customer.name?.toLowerCase().includes(search) ||
+            customer.phone?.toLowerCase().includes(search) ||
+            customer.state?.toLowerCase().includes(search) ||
+            customer.city?.toLowerCase().includes(search)
+        );
+    });
 
     const fetchCartProducts = async () => {
         try {
@@ -430,14 +437,15 @@ const FormLayouts = () => {
                                                         className="form-control mt-2"
                                                         id="customer"
                                                         value={formik.values.customer}
-                                                        onChange={handleCustomerChange} // Use the new handler
+                                                        onChange={handleCustomerChange}
                                                         onBlur={formik.handleBlur}
                                                         invalid={formik.touched.customer && formik.errors.customer ? true : false}
                                                     >
                                                         <option value="">Select a Customer...</option>
-                                                        {(role === "BDM" ? matchedCustomers : filteredCustomers).map((custo) => (
+
+                                                        {filteredCustomers.map((custo) => (
                                                             <option key={custo.id} value={custo.id}>
-                                                                {custo.name}
+                                                                {custo.name} - {custo.phone} - {custo.state}
                                                             </option>
                                                         ))}
                                                     </Input>
@@ -638,7 +646,7 @@ const FormLayouts = () => {
                                                             {/* AddProduct Modal */}
                                                             <AddProduct
                                                                 isOpen={modalOpen}
-                                                                toggle={toggleModal} 
+                                                                toggle={toggleModal}
                                                                 ProductsFetch={fetchCartProducts}
                                                             />
                                                         </CardBody>

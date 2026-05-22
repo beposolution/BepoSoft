@@ -454,22 +454,63 @@ const BasicTable = () => {
 
     const renderSummaryCard = (title, value, subText, icon, bgColor, iconColor) => {
         return (
-            <Col xl={3} md={6} className="mb-3">
+            <Col xl={3} lg={4} md={6} sm={6} xs={12} className="mb-3">
                 <div
                     className="card border-0 h-100"
                     style={{
-                        borderRadius: "18px",
-                        boxShadow: "0 8px 25px rgba(15, 23, 42, 0.06)",
+                        borderRadius: "14px",
+                        boxShadow: "0 5px 16px rgba(15, 23, 42, 0.05)",
+                        minHeight: "92px",
                     }}
                 >
-                    <div className="card-body">
-                        <div className="d-flex align-items-center justify-content-between">
-                            <div>
-                                <p className="text-muted mb-1">{title}</p>
-                                <h3 className="mb-1 fw-bold">{value}</h3>
+                    <div
+                        className="card-body"
+                        style={{
+                            padding: "14px 16px",
+                        }}
+                    >
+                        <div className="d-flex align-items-center justify-content-between gap-2">
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                                <p
+                                    className="text-muted mb-1"
+                                    style={{
+                                        fontSize: "12px",
+                                        fontWeight: 500,
+                                        lineHeight: "1.2",
+                                    }}
+                                >
+                                    {title}
+                                </p>
+
+                                <h4
+                                    className="mb-1 fw-bold"
+                                    style={{
+                                        fontSize: "20px",
+                                        lineHeight: "1.2",
+                                        color: "#334155",
+                                        whiteSpace: "nowrap",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                    }}
+                                    title={String(value)}
+                                >
+                                    {value}
+                                </h4>
 
                                 {subText && (
-                                    <small style={{ color: "#64748b", fontWeight: 500 }}>
+                                    <small
+                                        style={{
+                                            color: "#475569",
+                                            fontWeight: 500,
+                                            fontSize: "10px",
+                                            lineHeight: "1.25",
+                                            display: "block",
+                                            whiteSpace: "nowrap",
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                        }}
+                                        title={subText}
+                                    >
                                         {subText}
                                     </small>
                                 )}
@@ -477,15 +518,15 @@ const BasicTable = () => {
 
                             <div
                                 style={{
-                                    width: "48px",
-                                    height: "48px",
-                                    borderRadius: "15px",
+                                    width: "38px",
+                                    height: "38px",
+                                    borderRadius: "12px",
                                     background: bgColor,
                                     color: iconColor,
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    fontSize: "24px",
+                                    fontSize: "20px",
                                     flexShrink: 0,
                                 }}
                             >
@@ -611,7 +652,7 @@ const BasicTable = () => {
                         </div>
                     </div>
 
-                    <Row className="mb-4">
+                    <Row className="mb-3">
                         {renderSummaryCard(
                             "Total Products",
                             formatNumber(summary?.total_products || totalCount),

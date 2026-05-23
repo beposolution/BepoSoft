@@ -753,6 +753,12 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/gst/report/">{props.t("GST Report")}</Link>
                   </li>
+
+                   <li>
+                    <Link to="/product/stock/export/report/">{props.t("Product Stock Export Report")}</Link>
+                  </li>
+
+
                   <li>
                     <Link to="/date/product/report/">{props.t("Date-wise Product Report")}</Link>
                   </li>

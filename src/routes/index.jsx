@@ -385,6 +385,8 @@ import ReadyToShip from "../pages/Order/ReadyToShip";
 import Shipped from "../pages/Order/Shipped";
 import InvoiceRejected from "../pages/Order/InvoiceRejected";
 import GSTReport from "../pages/Resports/GSTReport";
+import ProductStockExportReport from "../pages/Resports/ProductStockExportReport";
+
 import WarehouseToWarehouseOrderCreation from "../pages/Order/WarehouseToWarehouseOrderCreation";
 import WarehouseToWarehouseOrderList from "../pages/Order/WarehouseToWarehouseOrderList";
 import WarehouseOrderDetails from "../pages/Order/WarehouseToWarehouseOrderDetails";
@@ -694,6 +696,7 @@ const authProtectedRoutes = [
   { path: "/orders/tracking/report/", component: <TrackingReport /> },
   { path: "/gst/report/", component: <GSTReport /> },
   { path: "/date/product/report/", component: <DateProductReport /> },
+  {path: "/product/stock/export/report/",component: <ProductStockExportReport />,},
 
 
 

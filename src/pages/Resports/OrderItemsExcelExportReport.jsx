@@ -123,6 +123,28 @@ const OrderItemsExcelExportReport = () => {
             }.xlsx`;
     };
 
+    const formatDateForExcel = (dateValue) => {
+        if (!dateValue) return "";
+
+        const date = new Date(dateValue);
+
+        if (Number.isNaN(date.getTime())) {
+            return "";
+        }
+
+        const day = String(date.getDate()).padStart(2, "0");
+
+        const months = [
+            "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+            "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+        ];
+
+        const month = months[date.getMonth()];
+        const year = date.getFullYear();
+
+        return `${day}-${month}-${year}`;
+    };
+
     const exportExcel = () => {
         try {
             if (!reportData.length) {
@@ -131,7 +153,7 @@ const OrderItemsExcelExportReport = () => {
             }
 
             const exportRows = reportData.map((item) => ({
-                DATE: item.date || "",
+                DATE: formatDateForExcel(item.date),
                 "Voucher Number": item.voucher_no || "",
                 "party name": item.party_name || "",
                 "item name": item.item_name || "",
@@ -339,7 +361,7 @@ const OrderItemsExcelExportReport = () => {
                                             {!loading && reportData.length ? (
                                                 reportData.map((item, index) => (
                                                     <tr key={`${item.voucher_no}-${item.item_name}-${index}`}>
-                                                        <td>{item.date || "-"}</td>
+                                                        <td>{formatDateForExcel(item.date) || "-"}</td>
                                                         <td>{item.voucher_no || "-"}</td>
                                                         <td>{item.party_name || "-"}</td>
                                                         <td>{item.item_name || "-"}</td>
@@ -354,7 +376,7 @@ const OrderItemsExcelExportReport = () => {
                                                 ))
                                             ) : (
                                                 <tr>
-                                                   <td colSpan="11" className="text-center">
+                                                    <td colSpan="11" className="text-center">
                                                         {loading ? "Loading..." : "No records found"}
                                                     </td>
                                                 </tr>

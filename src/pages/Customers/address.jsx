@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { Card, Col, Container, Row, CardBody, Label, Form, Input, FormFeedback, CardTitle, Button, Modal, ModalHeader, ModalBody, ModalFooter, Table } from "reactstrap";
 import * as Yup from 'yup';
@@ -15,14 +15,33 @@ const FormLayouts = () => {
     const [customerAddress, setCustomerAddress] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [message, setMessage] = useState(null);  // Stores the message
-    const [messageType, setMessageType] = useState("");  // "success" or "danger"
-
-    const [modal, setModal] = useState(false); // Modal state
-    const [currentAddress, setCurrentAddress] = useState(null); // Holds the current address to be edited
+    const [message, setMessage] = useState(null);
+    const [messageType, setMessageType] = useState("");
+    const [active, setActive] = useState(localStorage.getItem('active') || '');
+    const [modal, setModal] = useState(false);
+    const [currentAddress, setCurrentAddress] = useState(null);
+    const [profileData, setProfileData] = useState(null);
 
     const token = localStorage.getItem("token");
     const { id } = useParams();
+
+    const availableStates = useMemo(() => {
+        if (
+            active === "BDO" &&
+            profileData &&
+            Array.isArray(profileData.allocated_states)
+        ) {
+            const allocatedStateIds = profileData.allocated_states.map((item) =>
+                Number(item)
+            );
+
+            return state.filter((st) =>
+                allocatedStateIds.includes(Number(st.id))
+            );
+        }
+
+        return state;
+    }, [active, profileData, state]);
 
     // Toggle modal visibility
     const toggle = () => setModal(!modal);
@@ -103,6 +122,22 @@ const FormLayouts = () => {
         }
     };
 
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}profile/`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                setProfileData(response?.data?.data || null);
+            } catch (error) {
+                toast.error("Failed to load Profile");
+            }
+        };
+
+        fetchProfile();
+
+    }, [token]);
 
 
     // Fetch states from API
@@ -341,7 +376,7 @@ const FormLayouts = () => {
                                                         onBlur={formik.handleBlur}
                                                     >
                                                         <option value="">Choose...</option>
-                                                        {state.map((st) => (
+                                                        {availableStates.map((st) => (
                                                             <option key={st.id} value={st.id}>
                                                                 {st.name}
                                                             </option>
@@ -537,7 +572,7 @@ const FormLayouts = () => {
                                     onChange={(e) => setCurrentAddress({ ...currentAddress, state: e.target.value })}
                                 >
                                     <option value="">Choose State...</option>
-                                    {state.map((st) => (
+                                    {availableStates.map((st) => (
                                         <option key={st.id} value={st.id}>
                                             {st.name}
                                         </option>

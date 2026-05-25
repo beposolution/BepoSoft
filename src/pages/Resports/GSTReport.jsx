@@ -267,16 +267,16 @@ const GSTReport = () => {
         //   numericTaxRate > 0
         //     ? taxableValue + (taxableValue * numericTaxRate) / 100
         //     : taxableValue;
-       
+
         const invoiceValue = items.reduce((sum, item) => {
-  const rate = Number(item.rate || 0);
-  const quantity = Number(item.quantity || 0);
+          const rate = Number(item.rate || 0);
+          const quantity = Number(item.quantity || 0);
 
-  return sum + (rate * quantity);
-}, 0);
+          return sum + (rate * quantity);
+        }, 0);
 
-const taxableValue =
-  invoiceValue / (1 + numericTaxRate / 100);
+        const taxableValue =
+          invoiceValue / (1 + numericTaxRate / 100);
 
         return {
           key: `${row.id}-${taxRate}-${i}`,
@@ -383,14 +383,14 @@ const taxableValue =
         //     ? taxableValue + (taxableValue * numericTaxRate) / 100
         //     : taxableValue;
         const invoiceValue = items.reduce((sum, item) => {
-  const rate = Number(item.rate || 0);
-  const quantity = Number(item.quantity || 0);
+          const rate = Number(item.rate || 0);
+          const quantity = Number(item.quantity || 0);
 
-  return sum + (rate * quantity);
-}, 0);
+          return sum + (rate * quantity);
+        }, 0);
 
-const taxableValue =
-  invoiceValue / (1 + numericTaxRate / 100);
+        const taxableValue =
+          invoiceValue / (1 + numericTaxRate / 100);
 
         const baseRow = {
           "GSTIN/UIN of Recipient": row.gst || "",

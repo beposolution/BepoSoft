@@ -34,7 +34,7 @@ const CustomerType = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingType, setEditingType] = useState(null);
   const [saving, setSaving] = useState(false);
-
+  const [creating, setCreating] = useState(false);
   // Search + pagination
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -79,33 +79,43 @@ const CustomerType = () => {
   const indexOfFirstItem = indexOfLastItem - perPageData;
   const currentList = filtered.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Create (inline form)
   const handleCreate = async (e) => {
     e.preventDefault();
+
+    if (creating) return; // prevents double submit
+
     const name = typeName.trim();
+
     if (!name) {
       toast.warn("Type name is required");
       return;
     }
+
     try {
+      setCreating(true);
+
       await axios.post(
         `${BASE}customer-types/`,
         { type_name: name },
         authHeader
       );
+
       toast.success("Customer type created");
       setTypeName("");
-      // refresh
-      fetchList();
-      // reset to first page so the new item is visible when sorting differs
       setCurrentPage(1);
+
+      await fetchList();
     } catch (err) {
       console.error(err);
+
       const msg =
         err.response?.data?.detail ||
         Object.values(err.response?.data || {})?.[0]?.[0] ||
         "Create failed";
+
       toast.error(String(msg));
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -176,8 +186,20 @@ const CustomerType = () => {
                         />
                       </Col>
                       <Col xl={3} lg={3} md={4}>
-                        <Button color="primary" type="submit" className="mt-md-0 mt-2">
-                          Add Type
+                        <Button
+                          color="primary"
+                          type="submit"
+                          className="mt-md-0 mt-2"
+                          disabled={creating}
+                        >
+                          {creating ? (
+                            <>
+                              <Spinner size="sm" className="me-2" />
+                              Adding...
+                            </>
+                          ) : (
+                            "Add Type"
+                          )}
                         </Button>
                       </Col>
                       <Col xl={3} className="d-flex justify-content-end">

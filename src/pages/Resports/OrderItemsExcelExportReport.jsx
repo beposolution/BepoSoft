@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardBody, Col, Row, Table, Button, Input } from "reactstrap";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -39,6 +39,7 @@ const OrderItemsExcelExportReport = () => {
 
         return [];
     };
+
     const formatNumber = (value) => {
         const numberValue = Number(value || 0);
 
@@ -97,6 +98,7 @@ const OrderItemsExcelExportReport = () => {
             if (search.trim()) {
                 params.search = search.trim();
             }
+
             if (companyId) {
                 params.company_id = companyId;
             }
@@ -132,14 +134,14 @@ const OrderItemsExcelExportReport = () => {
 
         try {
             const { data } = await axios.get(`${apiBase}company/data/`, {
-
-                headers: { Authorization: `Bearer ${token}` },
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
             });
 
             const companies = normalizeCompanyList(data);
             setCompanyList(companies);
         } catch (err) {
-            // console.error(err);
             toast.error("Error fetching companies");
             setCompanyList([]);
         } finally {
@@ -161,7 +163,6 @@ const OrderItemsExcelExportReport = () => {
     };
 
     const getExportFileName = () => {
-
         const selectedCompany = companyList.find(
             (company) => String(company.id) === String(companyId)
         );
@@ -175,8 +176,7 @@ const OrderItemsExcelExportReport = () => {
             "_"
         );
 
-        return `Order_Items_${cleanCompanyName}_${startDate || "start"
-            }_to_${endDate || "end"}.xlsx`;
+        return `Order_Items_${cleanCompanyName}_${startDate || "start"}_to_${endDate || "end"}.xlsx`;
     };
 
     const formatDateForExcel = (dateValue) => {
@@ -191,8 +191,18 @@ const OrderItemsExcelExportReport = () => {
         const day = String(date.getDate()).padStart(2, "0");
 
         const months = [
-            "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
-            "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+            "JAN",
+            "FEB",
+            "MAR",
+            "APR",
+            "MAY",
+            "JUN",
+            "JUL",
+            "AUG",
+            "SEP",
+            "OCT",
+            "NOV",
+            "DEC",
         ];
 
         const month = months[date.getMonth()];
@@ -200,11 +210,101 @@ const OrderItemsExcelExportReport = () => {
 
         return `${day}-${month}-${year}`;
     };
-    const uniqueTaxes = [
-        ...new Set(
-            reportData.map((item) => Number(item.tax_percentage || 0))
-        ),
-    ].sort((a, b) => a - b);
+
+    const isKeralaState = (stateValue) => {
+        return String(stateValue || "")
+            .trim()
+            .toLowerCase() === "kerala";
+    };
+
+    const formatTaxPercentLabel = (value) => {
+        const numberValue = Number(value || 0);
+
+        if (Number.isInteger(numberValue)) {
+            return String(numberValue);
+        }
+
+        return String(numberValue).replace(/\.?0+$/, "");
+    };
+
+    const taxColumns = useMemo(() => {
+        const columnMap = new Map();
+
+        reportData.forEach((item) => {
+            const taxPercentage = Number(item.tax_percentage || 0);
+
+            if (!taxPercentage) return;
+
+            if (isKeralaState(item.state)) {
+                const splitTaxPercentage = taxPercentage / 2;
+                const splitTaxLabel = formatTaxPercentLabel(splitTaxPercentage);
+
+                const cgstKey = `kerala_${taxPercentage}_cgst`;
+                const sgstKey = `kerala_${taxPercentage}_sgst`;
+
+                if (!columnMap.has(cgstKey)) {
+                    columnMap.set(cgstKey, {
+                        key: cgstKey,
+                        header: `tax ${splitTaxLabel}% CGST`,
+                        originalTaxPercentage: taxPercentage,
+                        type: "kerala_cgst",
+                        sortValue: splitTaxPercentage,
+                    });
+                }
+
+                if (!columnMap.has(sgstKey)) {
+                    columnMap.set(sgstKey, {
+                        key: sgstKey,
+                        header: `tax ${splitTaxLabel}% SGST`,
+                        originalTaxPercentage: taxPercentage,
+                        type: "kerala_sgst",
+                        sortValue: splitTaxPercentage,
+                    });
+                }
+            } else {
+                const normalTaxLabel = formatTaxPercentLabel(taxPercentage);
+                const normalKey = `normal_${taxPercentage}`;
+
+                if (!columnMap.has(normalKey)) {
+                    columnMap.set(normalKey, {
+                        key: normalKey,
+                        header: `tax ${normalTaxLabel}%`,
+                        originalTaxPercentage: taxPercentage,
+                        type: "normal",
+                        sortValue: taxPercentage,
+                    });
+                }
+            }
+        });
+
+        return Array.from(columnMap.values()).sort((a, b) => {
+            if (a.sortValue !== b.sortValue) {
+                return a.sortValue - b.sortValue;
+            }
+
+            return a.header.localeCompare(b.header);
+        });
+    }, [reportData]);
+
+    const getTaxValueForColumn = (item, column) => {
+        const itemTaxPercentage = Number(item.tax_percentage || 0);
+        const itemTaxAmount = Number(item.tax || 0);
+        const isKerala = isKeralaState(item.state);
+
+        if (itemTaxPercentage !== column.originalTaxPercentage) {
+            return "";
+        }
+
+        if (column.type === "normal") {
+            return !isKerala ? itemTaxAmount : "";
+        }
+
+        if (column.type === "kerala_cgst" || column.type === "kerala_sgst") {
+            return isKerala ? itemTaxAmount / 2 : "";
+        }
+
+        return "";
+    };
 
     const exportExcel = () => {
         try {
@@ -226,11 +326,10 @@ const OrderItemsExcelExportReport = () => {
                     "item basic amt": Number(item.item_basic_amount || 0),
                 };
 
-                uniqueTaxes.forEach((tax) => {
-                    row[`tax ${tax}%`] =
-                        Number(item.tax_percentage || 0) === tax
-                            ? Number(item.tax || 0)
-                            : "";
+                taxColumns.forEach((column) => {
+                    const taxValue = getTaxValueForColumn(item, column);
+
+                    row[column.header] = taxValue === "" ? "" : Number(taxValue);
                 });
 
                 row["total amount"] = Number(item.total_amount || 0);
@@ -248,7 +347,7 @@ const OrderItemsExcelExportReport = () => {
                 "item rate",
                 "per",
                 "item basic amt",
-                ...uniqueTaxes.map((tax) => `tax ${tax}%`),
+                ...taxColumns.map((column) => column.header),
                 "total amount",
             ];
 
@@ -297,8 +396,16 @@ const OrderItemsExcelExportReport = () => {
                                     style={{ marginBottom: "18px" }}
                                 >
                                     <div>
-                                        <h4 className="mb-1">Order Items Excel Export Report</h4>
-                                        <div style={{ color: "#64748b", fontSize: "13px" }}>
+                                        <h4 className="mb-1">
+                                            Order Items Excel Export Report
+                                        </h4>
+
+                                        <div
+                                            style={{
+                                                color: "#64748b",
+                                                fontSize: "13px",
+                                            }}
+                                        >
                                             Search by voucher number, party name, or item name.
                                         </div>
                                     </div>
@@ -332,6 +439,7 @@ const OrderItemsExcelExportReport = () => {
                                             onChange={(e) => setEndDate(e.target.value)}
                                         />
                                     </Col>
+
                                     <Col md={3}>
                                         <label>Company</label>
 
@@ -444,13 +552,13 @@ const OrderItemsExcelExportReport = () => {
                                                 <th>item rate</th>
                                                 <th>per</th>
                                                 <th>item basic amt</th>
-                                                {/* <th>tax %</th> */}
-                                                {/* <th>tax</th> */}
-                                                {uniqueTaxes.map((tax) => (
-                                                    <th key={tax}>
-                                                        tax {tax}%
+
+                                                {taxColumns.map((column) => (
+                                                    <th key={column.key}>
+                                                        {column.header}
                                                     </th>
                                                 ))}
+
                                                 <th>total amount</th>
                                             </tr>
                                         </thead>
@@ -458,7 +566,9 @@ const OrderItemsExcelExportReport = () => {
                                         <tbody>
                                             {!loading && reportData.length ? (
                                                 reportData.map((item, index) => (
-                                                    <tr key={`${item.voucher_no}-${item.item_name}-${index}`}>
+                                                    <tr
+                                                        key={`${item.voucher_no}-${item.item_name}-${index}`}
+                                                    >
                                                         <td>{formatDateForExcel(item.date) || "-"}</td>
                                                         <td>{item.voucher_no || "-"}</td>
                                                         <td>{item.party_name || "-"}</td>
@@ -468,22 +578,29 @@ const OrderItemsExcelExportReport = () => {
                                                         <td>{formatNumber(item.item_rate)}</td>
                                                         <td>{item.unit || "-"}</td>
                                                         <td>{formatNumber(item.item_basic_amount)}</td>
-                                                        {/* <td>{formatNumber(item.tax_percentage)}</td> */}
-                                                        {/* <td>{formatNumber(item.tax)}</td> */}
-                                                        {uniqueTaxes.map((tax) => (
-                                                            <td key={tax}>
-                                                                {Number(item.tax_percentage || 0) === tax
-                                                                    ? formatNumber(item.tax)
-                                                                    : "-"}
-                                                            </td>
-                                                        ))}
+
+                                                        {taxColumns.map((column) => {
+                                                            const taxValue = getTaxValueForColumn(
+                                                                item,
+                                                                column
+                                                            );
+
+                                                            return (
+                                                                <td key={column.key}>
+                                                                    {taxValue === ""
+                                                                        ? "-"
+                                                                        : formatNumber(taxValue)}
+                                                                </td>
+                                                            );
+                                                        })}
+
                                                         <td>{formatNumber(item.total_amount)}</td>
                                                     </tr>
                                                 ))
                                             ) : (
                                                 <tr>
                                                     <td
-                                                        colSpan={10 + uniqueTaxes.length}
+                                                        colSpan={10 + taxColumns.length}
                                                         className="text-center"
                                                     >
                                                         {loading ? "Loading..." : "No records found"}

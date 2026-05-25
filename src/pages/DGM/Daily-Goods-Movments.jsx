@@ -26,62 +26,55 @@ const BasicTable = () => {
     const [endDate, setEndDate] = useState("");
     const token = localStorage.getItem('token');
     const [currentPage, setCurrentPage] = useState(1);
-    const [perPageData] = useState(15);
+    const [perPageData] = useState(50);
     const [totalAmountSum, setTotalAmountSum] = useState(0);
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedProducts, setSelectedProducts] = useState([]);
     const [topProducts, setTopProducts] = useState([]);
+    const [totalCount, setTotalCount] = useState(0);
 
     const navigate = useNavigate();
 
-    useEffect(() => {
-        axios.get(`${import.meta.env.VITE_APP_KEY}warehouse/box/detail/`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        })
-            .then(response => {
-
-                setTopProducts(response.data[0]?.top_5_products || []);
-                const cleanedData = response.data.filter(
-                    item => item.shipped_date
-                );
-
-                setData(cleanedData);
-                setFilteredData(cleanedData);
-
-                const total = cleanedData.reduce(
-                    (sum, item) => sum + (item.total_order_amount || 0),
-                    0
-                );
-
-                setTotalAmountSum(total);
-
-            });
-    }, []);
-
-    const handleFilter = async () => {
+    const fetchDailyGoodsMovement = async (page = 1) => {
         try {
+            const params = {
+                page: page,
+                page_size: perPageData
+            };
+
+            if (startDate) {
+                params.from_date = startDate;
+            }
+
+            if (endDate) {
+                params.to_date = endDate;
+            }
 
             const response = await axios.get(
-                `${import.meta.env.VITE_APP_KEY}warehouse/box/detail/`,
+                `${import.meta.env.VITE_APP_KEY}pagenated/warehouse/box/detail/`,
                 {
-                    params: {
-                        from_date: startDate,
-                        to_date: endDate
-                    },
+                    params: params,
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
                 }
             );
 
-            setTopProducts(response.data[0]?.top_5_products || []);
+            const responseData = response.data;
 
-            const cleanedData = response.data.filter(
+            setTotalCount(responseData.count || 0);
+
+            const resultData = responseData.results || {};
+            const summaryData = resultData.summary || {};
+            const dailyGoodsData = resultData.data || [];
+
+            setTopProducts(summaryData.top_5_products || []);
+
+            const cleanedData = dailyGoodsData.filter(
                 item => item.shipped_date
             );
 
+            setData(cleanedData);
             setFilteredData(cleanedData);
 
             const total = cleanedData.reduce(
@@ -96,18 +89,31 @@ const BasicTable = () => {
         }
     };
 
+    useEffect(() => {
+        fetchDailyGoodsMovement(currentPage);
+    }, [currentPage]);
+
+    const handleFilter = async () => {
+        if (currentPage !== 1) {
+            setCurrentPage(1);
+        } else {
+            fetchDailyGoodsMovement(1);
+        }
+    };
+
     const handleClick = (date) => {
         navigate(`/Movement/${date}`);
     }
 
     const handleOpenModal = (products) => {
-        setSelectedProducts(products);
+        setSelectedProducts(products || []);
         setModalOpen(true);
     };
 
-    const indexOfLastItem = currentPage * perPageData;
-    const indexOfFirstItem = indexOfLastItem - perPageData;
-    const currentPageData = filteredData.slice(indexOfFirstItem, indexOfLastItem);
+    const indexOfFirstItem = (currentPage - 1) * perPageData;
+    const indexOfLastItem = indexOfFirstItem + filteredData.length;
+
+    const paginationData = Array.from({ length: totalCount });
 
     return (
         <React.Fragment>
@@ -273,7 +279,7 @@ const BasicTable = () => {
                                             <tbody>
                                                 {filteredData.map((item, index) => (
                                                     <tr key={index}>
-                                                        <th scope="row">{index + 1}</th>
+                                                        <th scope="row">{indexOfFirstItem + index + 1}</th>
                                                         <td>{item.shipped_date}</td>
                                                         <td>{item.total_boxes}</td>
                                                         <td>{item.total_volume_weight}</td>
@@ -303,6 +309,7 @@ const BasicTable = () => {
                                             </tbody>
                                         </Table>
                                     </div>
+
                                     <Modal isOpen={modalOpen} toggle={() => setModalOpen(false)} size="lg">
                                         <ModalHeader toggle={() => setModalOpen(false)}>
                                             Top 5 Products
@@ -335,7 +342,7 @@ const BasicTable = () => {
 
                                     <Paginations
                                         perPageData={perPageData}
-                                        data={filteredData}
+                                        data={paginationData}
                                         currentPage={currentPage}
                                         setCurrentPage={setCurrentPage}
                                         isShowingPageLength={true}

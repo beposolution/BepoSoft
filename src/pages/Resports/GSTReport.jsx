@@ -8,7 +8,7 @@ import { saveAs } from "file-saver";
 import Paginations from "../../components/Common/Pagination";
 
 const stateCodes = {
-  "Jammu & Kashmir": "01",
+  "Jammu Kashmir": "01",
   "Himachal Pradesh": "02",
   Punjab: "03",
   Chandigarh: "04",
@@ -40,7 +40,7 @@ const stateCodes = {
   Lakshadweep: "31",
   Kerala: "32",
   "Tamil Nadu": "33",
-  Puducherry: "34",
+  Pondicherry: "34",
   "Andaman & Nicobar Islands": "35",
   Telangana: "36",
   "Andhra Pradesh": "37",
@@ -437,7 +437,7 @@ const GSTReport = () => {
     }
   };
 
-  const exportB2CExcel = () => {
+  const exportB2CDetailedExcel = () => {
     try {
       if (!filteredGSTData.length) {
         toast.warning("No data to export");
@@ -448,6 +448,143 @@ const GSTReport = () => {
       const fileBaseName = getExportFileBaseName();
 
       downloadSingleExcel(b2cRows, "B2C", `GST_B2C_${fileBaseName}.xlsx`);
+    } catch (e) {
+      // console.error(e);
+      toast.error("B2C export failed");
+    }
+  };
+
+  const exportB2CExcel = () => {
+    try {
+      if (!filteredGSTData.length) {
+        toast.warning("No data to export");
+        return;
+      }
+
+      const { b2cRows } = buildB2BB2CRows();
+
+      if (!b2cRows.length) {
+        toast.warning("No B2C data found");
+        return;
+      }
+
+      const summaryMap = {};
+
+      b2cRows.forEach((row) => {
+        const placeOfSupply = row["Place Of Supply"] || "";
+        const rate = row.Rate || "0";
+        const taxableValue = parseFloat(row["Taxable Value"]) || 0;
+
+        const key = `${placeOfSupply}-${rate}`;
+
+        if (!summaryMap[key]) {
+          summaryMap[key] = {
+            Type: "OE",
+            "Place Of Supply": placeOfSupply,
+            "Applicable % of Tax Rate": "",
+            Rate: rate,
+            "Taxable Value": 0,
+            "Cess Amount": "",
+            "E-Commerce GSTIN": "",
+          };
+        }
+
+        summaryMap[key]["Taxable Value"] += taxableValue;
+      });
+
+      const summaryRows = Object.values(summaryMap)
+        .map((row) => ({
+          ...row,
+          "Taxable Value": Number(row["Taxable Value"].toFixed(4)),
+        }))
+        .sort((a, b) => {
+          const placeA = (a["Place Of Supply"] || "").toString().toLowerCase();
+          const placeB = (b["Place Of Supply"] || "").toString().toLowerCase();
+
+          if (placeA < placeB) return -1;
+          if (placeA > placeB) return 1;
+
+          const rateA = parseFloat(a.Rate) || 0;
+          const rateB = parseFloat(b.Rate) || 0;
+
+          return rateA - rateB;
+        });
+
+      const selectedCompanyName = selectedCompany
+        ? getCompanyName(
+          companyList.find((c) => String(c.id) === String(selectedCompany))
+        )
+        : "BEPOSITIVE";
+
+      const titleCompany = selectedCompanyName.toString().toUpperCase();
+
+      const fromDate = startDate ? new Date(startDate) : null;
+      const monthYear = fromDate
+        ? fromDate
+          .toLocaleDateString("en-US", {
+            month: "short",
+            year: "numeric",
+          })
+          .toUpperCase()
+        : "";
+
+      const title = `B2C ${titleCompany} ${monthYear}`;
+
+      const sheetData = [
+        [title],
+        [
+          "Type",
+          "Place Of Supply",
+          "Applicable % of Tax Rate",
+          "Rate",
+          "Taxable Value",
+          "Cess Amount",
+          "E-Commerce GSTIN",
+        ],
+        ...summaryRows.map((row) => [
+          row.Type,
+          row["Place Of Supply"],
+          row["Applicable % of Tax Rate"],
+          row.Rate,
+          row["Taxable Value"],
+          row["Cess Amount"],
+          row["E-Commerce GSTIN"],
+        ]),
+      ];
+
+      const sheet = XLSX.utils.aoa_to_sheet(sheetData);
+
+      sheet["!merges"] = [
+        {
+          s: { r: 0, c: 0 },
+          e: { r: 0, c: 6 },
+        },
+      ];
+
+      sheet["!cols"] = [
+        { wch: 10 },
+        { wch: 28 },
+        { wch: 28 },
+        { wch: 10 },
+        { wch: 18 },
+        { wch: 18 },
+        { wch: 25 },
+      ];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, sheet, "B2C");
+
+      const excelBuffer = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "array",
+      });
+
+      const fileBaseName = getExportFileBaseName();
+
+      saveAs(
+        new Blob([excelBuffer], { type: "application/octet-stream" }),
+        `GST_B2C_${fileBaseName}.xlsx`
+      );
     } catch (e) {
       // console.error(e);
       toast.error("B2C export failed");
@@ -623,11 +760,19 @@ const GSTReport = () => {
                     </Button>
 
                     <Button
-                      color="info"
+                      color="primary"
                       onClick={exportB2CExcel}
                       disabled={loading || !totalCount}
                     >
                       Export B2C Excel
+                    </Button>
+
+                    <Button
+                      color="info"
+                      onClick={exportB2CDetailedExcel}
+                      disabled={loading || !totalCount}
+                    >
+                      Export B2C Detailed Excel
                     </Button>
 
                     <Button

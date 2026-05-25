@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardBody, Col, Row, Table, Button, Input } from "reactstrap";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -15,12 +15,30 @@ const OrderItemsExcelExportReport = () => {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [search, setSearch] = useState("");
+    const [companyList, setCompanyList] = useState([]);
+    const [companyLoading, setCompanyLoading] = useState(false);
+    const [companyId, setCompanyId] = useState("");
 
     const [loading, setLoading] = useState(false);
     const [reportData, setReportData] = useState([]);
 
     document.title = "Order Items Excel Export Report | Beposoft";
 
+    const normalizeCompanyList = (data) => {
+        if (Array.isArray(data)) {
+            return data;
+        }
+
+        if (Array.isArray(data?.results)) {
+            return data.results;
+        }
+
+        if (Array.isArray(data?.data)) {
+            return data.data;
+        }
+
+        return [];
+    };
     const formatNumber = (value) => {
         const numberValue = Number(value || 0);
 
@@ -79,6 +97,9 @@ const OrderItemsExcelExportReport = () => {
             if (search.trim()) {
                 params.search = search.trim();
             }
+            if (companyId) {
+                params.company_id = companyId;
+            }
 
             const { data } = await axios.get(url, {
                 headers: {
@@ -106,21 +127,56 @@ const OrderItemsExcelExportReport = () => {
         fetchOrderItemsReport();
     };
 
+    const fetchCompanies = async () => {
+        setCompanyLoading(true);
+
+        try {
+            const { data } = await axios.get(`${apiBase}company/data/`, {
+
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            const companies = normalizeCompanyList(data);
+            setCompanyList(companies);
+        } catch (err) {
+            // console.error(err);
+            toast.error("Error fetching companies");
+            setCompanyList([]);
+        } finally {
+            setCompanyLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCompanies();
+    }, []);
+
     const handleClearFilter = () => {
         setStartDate("");
         setEndDate("");
         setSearch("");
+        setCompanyId("");
         setWarehouseName("");
         setReportData([]);
     };
 
     const getExportFileName = () => {
-        const cleanWarehouseName = warehouseName
-            ? warehouseName.toString().replace(/[^a-zA-Z0-9]/g, "_")
-            : `Warehouse_${warehouseId}`;
 
-        return `Order_Items_${cleanWarehouseName}_${startDate || "start"}_to_${endDate || "end"
-            }.xlsx`;
+        const selectedCompany = companyList.find(
+            (company) => String(company.id) === String(companyId)
+        );
+
+        const companyName = selectedCompany
+            ? selectedCompany.name
+            : "All_Companies";
+
+        const cleanCompanyName = companyName.replace(
+            /[^a-zA-Z0-9]/g,
+            "_"
+        );
+
+        return `Order_Items_${cleanCompanyName}_${startDate || "start"
+            }_to_${endDate || "end"}.xlsx`;
     };
 
     const formatDateForExcel = (dateValue) => {
@@ -144,6 +200,11 @@ const OrderItemsExcelExportReport = () => {
 
         return `${day}-${month}-${year}`;
     };
+    const uniqueTaxes = [
+        ...new Set(
+            reportData.map((item) => Number(item.tax_percentage || 0))
+        ),
+    ].sort((a, b) => a - b);
 
     const exportExcel = () => {
         try {
@@ -152,57 +213,60 @@ const OrderItemsExcelExportReport = () => {
                 return;
             }
 
-            const exportRows = reportData.map((item) => ({
-                DATE: formatDateForExcel(item.date),
-                "Voucher Number": item.voucher_no || "",
-                "party name": item.party_name || "",
-                "item name": item.item_name || "",
-                "item qty": Number(item.item_quantity || 0),
-                "item rate": Number(item.item_rate || 0),
-                per: item.unit || "",
-                "item basic amt": Number(item.item_basic_amount || 0),
-                // "tax %": Number(item.tax_percentage || 0),
-                // tax: Number(item.tax || 0),
-                "tax 5%": Number(item.tax_percentage || 0) === 5 ? Number(item.tax || 0) : "",
-                "tax 18%": Number(item.tax_percentage || 0) === 18 ? Number(item.tax || 0) : "",
-                "total amount": Number(item.total_amount || 0),
-            }));
+            const exportRows = reportData.map((item) => {
+                const row = {
+                    DATE: formatDateForExcel(item.date),
+                    "Voucher Number": item.voucher_no || "",
+                    "party name": item.party_name || "",
+                    "item name": item.item_name || "",
+                    state: item.state || "",
+                    "item qty": Number(item.item_quantity || 0),
+                    "item rate": Number(item.item_rate || 0),
+                    per: item.unit || "",
+                    "item basic amt": Number(item.item_basic_amount || 0),
+                };
 
-            const sheet = XLSX.utils.json_to_sheet(exportRows, {
-                header: [
-                    "DATE",
-                    "Voucher Number",
-                    "party name",
-                    "item name",
-                    "item qty",
-                    "item rate",
-                    "per",
-                    "item basic amt",
-                    // "tax %",
-                    // "tax",
-                    "tax 5%",
-                    "tax 18%",
-                    "total amount",
-                ],
+                uniqueTaxes.forEach((tax) => {
+                    row[`tax ${tax}%`] =
+                        Number(item.tax_percentage || 0) === tax
+                            ? Number(item.tax || 0)
+                            : "";
+                });
+
+                row["total amount"] = Number(item.total_amount || 0);
+
+                return row;
             });
 
-            sheet["!cols"] = [
-                { wch: 15 },
-                { wch: 20 },
-                { wch: 30 },
-                { wch: 45 },
-                { wch: 12 },
-                { wch: 12 },
-                { wch: 10 },
-                { wch: 18 },
-                { wch: 16 },
-                { wch: 12 },
-                { wch: 16 },
+            const headers = [
+                "DATE",
+                "Voucher Number",
+                "party name",
+                "item name",
+                "state",
+                "item qty",
+                "item rate",
+                "per",
+                "item basic amt",
+                ...uniqueTaxes.map((tax) => `tax ${tax}%`),
+                "total amount",
             ];
+
+            const sheet = XLSX.utils.json_to_sheet(exportRows, {
+                header: headers,
+            });
+
+            sheet["!cols"] = headers.map(() => ({
+                wch: 18,
+            }));
 
             const workbook = XLSX.utils.book_new();
 
-            XLSX.utils.book_append_sheet(workbook, sheet, "Order Items");
+            XLSX.utils.book_append_sheet(
+                workbook,
+                sheet,
+                "Order Items"
+            );
 
             const excelBuffer = XLSX.write(workbook, {
                 bookType: "xlsx",
@@ -210,7 +274,9 @@ const OrderItemsExcelExportReport = () => {
             });
 
             saveAs(
-                new Blob([excelBuffer], { type: "application/octet-stream" }),
+                new Blob([excelBuffer], {
+                    type: "application/octet-stream",
+                }),
                 getExportFileName()
             );
         } catch (err) {
@@ -266,8 +332,30 @@ const OrderItemsExcelExportReport = () => {
                                             onChange={(e) => setEndDate(e.target.value)}
                                         />
                                     </Col>
+                                    <Col md={3}>
+                                        <label>Company</label>
 
-                                    <Col md={4}>
+                                        <Input
+                                            type="select"
+                                            className="form-control"
+                                            value={companyId}
+                                            onChange={(e) => setCompanyId(e.target.value)}
+                                            disabled={companyLoading}
+                                        >
+                                            <option value="">All Companies</option>
+
+                                            {companyList?.map((company) => (
+                                                <option
+                                                    key={company.id}
+                                                    value={company.id}
+                                                >
+                                                    {company.name}
+                                                </option>
+                                            ))}
+                                        </Input>
+                                    </Col>
+
+                                    <Col md={3}>
                                         <label>Search</label>
                                         <Input
                                             type="text"
@@ -278,7 +366,7 @@ const OrderItemsExcelExportReport = () => {
                                         />
                                     </Col>
 
-                                    <Col md={4} className="d-flex align-items-end">
+                                    <Col md={2} className="d-flex align-items-end">
                                         <Button
                                             color="primary"
                                             onClick={handleFilter}
@@ -351,14 +439,18 @@ const OrderItemsExcelExportReport = () => {
                                                 <th>Voucher Number</th>
                                                 <th>party name</th>
                                                 <th>item name</th>
+                                                <th>state</th>
                                                 <th>item qty</th>
                                                 <th>item rate</th>
                                                 <th>per</th>
                                                 <th>item basic amt</th>
                                                 {/* <th>tax %</th> */}
                                                 {/* <th>tax</th> */}
-                                                <th>tax 5%</th>
-                                                <th>tax 18%</th>
+                                                {uniqueTaxes.map((tax) => (
+                                                    <th key={tax}>
+                                                        tax {tax}%
+                                                    </th>
+                                                ))}
                                                 <th>total amount</th>
                                             </tr>
                                         </thead>
@@ -371,28 +463,29 @@ const OrderItemsExcelExportReport = () => {
                                                         <td>{item.voucher_no || "-"}</td>
                                                         <td>{item.party_name || "-"}</td>
                                                         <td>{item.item_name || "-"}</td>
+                                                        <td>{item.state || "-"}</td>
                                                         <td>{formatNumber(item.item_quantity)}</td>
                                                         <td>{formatNumber(item.item_rate)}</td>
                                                         <td>{item.unit || "-"}</td>
                                                         <td>{formatNumber(item.item_basic_amount)}</td>
                                                         {/* <td>{formatNumber(item.tax_percentage)}</td> */}
                                                         {/* <td>{formatNumber(item.tax)}</td> */}
-                                                        <td>
-                                                            {Number(item.tax_percentage || 0) === 5
-                                                                ? formatNumber(item.tax)
-                                                                : "-"}
-                                                        </td>
-                                                        <td>
-                                                            {Number(item.tax_percentage || 0) === 18
-                                                                ? formatNumber(item.tax)
-                                                                : "-"}
-                                                        </td>
+                                                        {uniqueTaxes.map((tax) => (
+                                                            <td key={tax}>
+                                                                {Number(item.tax_percentage || 0) === tax
+                                                                    ? formatNumber(item.tax)
+                                                                    : "-"}
+                                                            </td>
+                                                        ))}
                                                         <td>{formatNumber(item.total_amount)}</td>
                                                     </tr>
                                                 ))
                                             ) : (
                                                 <tr>
-                                                    <td colSpan="11" className="text-center">
+                                                    <td
+                                                        colSpan={10 + uniqueTaxes.length}
+                                                        className="text-center"
+                                                    >
                                                         {loading ? "Loading..." : "No records found"}
                                                     </td>
                                                 </tr>

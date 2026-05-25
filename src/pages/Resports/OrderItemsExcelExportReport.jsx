@@ -161,8 +161,10 @@ const OrderItemsExcelExportReport = () => {
                 "item rate": Number(item.item_rate || 0),
                 per: item.unit || "",
                 "item basic amt": Number(item.item_basic_amount || 0),
-                "tax %": Number(item.tax_percentage || 0),
-                tax: Number(item.tax || 0),
+                // "tax %": Number(item.tax_percentage || 0),
+                // tax: Number(item.tax || 0),
+                "tax 5%": Number(item.tax_percentage || 0) === 5 ? Number(item.tax || 0) : "",
+                "tax 18%": Number(item.tax_percentage || 0) === 18 ? Number(item.tax || 0) : "",
                 "total amount": Number(item.total_amount || 0),
             }));
 
@@ -176,8 +178,10 @@ const OrderItemsExcelExportReport = () => {
                     "item rate",
                     "per",
                     "item basic amt",
-                    "tax %",
-                    "tax",
+                    // "tax %",
+                    // "tax",
+                    "tax 5%",
+                    "tax 18%",
                     "total amount",
                 ],
             });
@@ -351,8 +355,10 @@ const OrderItemsExcelExportReport = () => {
                                                 <th>item rate</th>
                                                 <th>per</th>
                                                 <th>item basic amt</th>
-                                                <th>tax %</th>
-                                                <th>tax</th>
+                                                {/* <th>tax %</th> */}
+                                                {/* <th>tax</th> */}
+                                                <th>tax 5%</th>
+                                                <th>tax 18%</th>
                                                 <th>total amount</th>
                                             </tr>
                                         </thead>
@@ -369,8 +375,18 @@ const OrderItemsExcelExportReport = () => {
                                                         <td>{formatNumber(item.item_rate)}</td>
                                                         <td>{item.unit || "-"}</td>
                                                         <td>{formatNumber(item.item_basic_amount)}</td>
-                                                        <td>{formatNumber(item.tax_percentage)}</td>
-                                                        <td>{formatNumber(item.tax)}</td>
+                                                        {/* <td>{formatNumber(item.tax_percentage)}</td> */}
+                                                        {/* <td>{formatNumber(item.tax)}</td> */}
+                                                        <td>
+                                                            {Number(item.tax_percentage || 0) === 5
+                                                                ? formatNumber(item.tax)
+                                                                : "-"}
+                                                        </td>
+                                                        <td>
+                                                            {Number(item.tax_percentage || 0) === 18
+                                                                ? formatNumber(item.tax)
+                                                                : "-"}
+                                                        </td>
                                                         <td>{formatNumber(item.total_amount)}</td>
                                                     </tr>
                                                 ))

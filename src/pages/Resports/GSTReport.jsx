@@ -256,17 +256,27 @@ const GSTReport = () => {
       return Object.entries(grouped).map(([taxRate, items], i) => {
         const numericTaxRate = parseFloat(taxRate) || 0;
 
-        const taxableValue = items.reduce((sum, item) => {
-          const excludePrice = parseFloat(item.exclude_price) || 0;
-          const quantity = parseFloat(item.quantity) || 0;
+        // const taxableValue = items.reduce((sum, item) => {
+        //   const excludePrice = parseFloat(item.exclude_price) || 0;
+        //   const quantity = parseFloat(item.quantity) || 0;
 
-          return sum + excludePrice * quantity;
+        //   return sum + excludePrice * quantity;
+        // }, 0);
+
+        // const invoiceValue =
+        //   numericTaxRate > 0
+        //     ? taxableValue + (taxableValue * numericTaxRate) / 100
+        //     : taxableValue;
+
+        const invoiceValue = items.reduce((sum, item) => {
+          const rate = Number(item.rate || 0);
+          const quantity = Number(item.quantity || 0);
+
+          return sum + (rate * quantity);
         }, 0);
 
-        const invoiceValue =
-          numericTaxRate > 0
-            ? taxableValue + (taxableValue * numericTaxRate) / 100
-            : taxableValue;
+        const taxableValue =
+          invoiceValue / (1 + numericTaxRate / 100);
 
         return {
           key: `${row.id}-${taxRate}-${i}`,
@@ -275,7 +285,8 @@ const GSTReport = () => {
           receiver: row.customerName || "",
           invoice: row.invoice || "",
           date: formatDate(row.order_date),
-          total_amount: Number(invoiceValue.toFixed(2)),
+          // total_amount: Number(invoiceValue.toFixed(2)),
+          total_amount: Math.round(invoiceValue),
           placeOfSupply: stateCodes[row.address]
             ? `${stateCodes[row.address]}-${row.address}`
             : row.address || "",
@@ -361,16 +372,25 @@ const GSTReport = () => {
 
         const numericTaxRate = parseFloat(taxRate) || 0;
 
-        const taxableValue = items.reduce((sum, item) => {
-          const excludePrice = parseFloat(item.exclude_price) || 0;
-          const quantity = parseFloat(item.quantity) || 0;
-          return sum + excludePrice * quantity;
+        // const taxableValue = items.reduce((sum, item) => {
+        //   const excludePrice = parseFloat(item.exclude_price) || 0;
+        //   const quantity = parseFloat(item.quantity) || 0;
+        //   return sum + excludePrice * quantity;
+        // }, 0);
+
+        // const invoiceValue =
+        //   numericTaxRate > 0
+        //     ? taxableValue + (taxableValue * numericTaxRate) / 100
+        //     : taxableValue;
+        const invoiceValue = items.reduce((sum, item) => {
+          const rate = Number(item.rate || 0);
+          const quantity = Number(item.quantity || 0);
+
+          return sum + (rate * quantity);
         }, 0);
 
-        const invoiceValue =
-          numericTaxRate > 0
-            ? taxableValue + (taxableValue * numericTaxRate) / 100
-            : taxableValue;
+        const taxableValue =
+          invoiceValue / (1 + numericTaxRate / 100);
 
         const baseRow = {
           "GSTIN/UIN of Recipient": row.gst || "",
@@ -378,7 +398,8 @@ const GSTReport = () => {
           "Invoice Number": row.invoice || "",
           "Invoice date": formatDate(row.order_date),
           // "Invoice Value": row.total_amount || 0,
-          "Invoice Value": Number(invoiceValue.toFixed(2)),
+          // "Invoice Value": Number(invoiceValue.toFixed(2)),
+          "Invoice Value": Math.round(invoiceValue),
           "Place Of Supply": stateCodes[row.address]
             ? `${stateCodes[row.address]}-${row.address}`
             : row.address || "",

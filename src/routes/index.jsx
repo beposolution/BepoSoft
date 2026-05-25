@@ -700,7 +700,7 @@ const authProtectedRoutes = [
   { path: "/date/product/report/", component: <DateProductReport /> },
   { path: "/product/stock/export/report/", component: <ProductStockExportReport />, },
   { path: "/order/items/excel/export/report/", component: <OrderItemsExcelExportReport />, },
-  {path: "/shipping/address/excel/export/report/",component: <ShippingAddressExcelExportReport />,},
+  { path: "/shipping/address/excel/export/report/", component: <ShippingAddressExcelExportReport />, },
 
 
 

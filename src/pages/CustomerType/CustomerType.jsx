@@ -38,7 +38,7 @@ const CustomerType = () => {
   // Search + pagination
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const perPageData = 10;
+  const perPageData = 20;
 
   const BASE = import.meta.env.VITE_APP_KEY;
   const token = localStorage.getItem("token");

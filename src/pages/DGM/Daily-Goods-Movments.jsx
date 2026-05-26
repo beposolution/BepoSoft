@@ -190,34 +190,39 @@ const BasicTable = () => {
                                                         Top 5 Products
                                                     </h5>
 
-                                                    <Row className="g-2 flex-nowrap">
-                                                        {topProducts.map((product, index) => (
+                                                    <Row className="g-3">
+                                                        {topProducts.slice(0, 10).map((product, index) => (
                                                             <Col
-                                                                className="d-flex"
                                                                 key={index}
+                                                                xs={12}   // 1 card in mobile
+                                                                sm={6}    // 2 cards in small devices
+                                                                md={4}    // 3 cards in tablets
+                                                                lg={3}    // 4 cards in laptops
+                                                                xl={true} // auto equal width in large screens
+                                                                className="d-flex"
                                                                 style={{
-                                                                    flex: "0 0 20%",
-                                                                    maxWidth: "20%"
+                                                                    flex: window.innerWidth >= 1200 ? "0 0 20%" : "",
+                                                                    maxWidth: window.innerWidth >= 1200 ? "20%" : ""
                                                                 }}
                                                             >
                                                                 <Card
                                                                     style={{
-                                                                        minHeight: "70px",
+                                                                        width: "100%",
                                                                         borderRadius: "10px",
                                                                         border: "1px solid #e5e7eb",
-                                                                        marginBottom: "12px",
-                                                                        width: "100%"
+                                                                        minHeight: "90px",
+                                                                        boxShadow: "0 2px 6px rgba(0,0,0,0.05)"
                                                                     }}
                                                                 >
-                                                                    <CardBody className="p-2">
+                                                                    <CardBody className="p-2 d-flex flex-column justify-content-between">
 
                                                                         <div
                                                                             style={{
-                                                                                marginTop: "4px",
                                                                                 fontSize: "13px",
                                                                                 fontWeight: "600",
                                                                                 color: "#1e293b",
-                                                                                lineHeight: "15px"
+                                                                                wordBreak: "break-word",
+                                                                                lineHeight: "18px"
                                                                             }}
                                                                         >
                                                                             {product.product_name}
@@ -228,14 +233,16 @@ const BasicTable = () => {
                                                                                 display: "flex",
                                                                                 justifyContent: "space-between",
                                                                                 alignItems: "center",
-                                                                                marginTop: "6px",
-                                                                                fontSize: "13px"
+                                                                                marginTop: "10px",
+                                                                                flexWrap: "wrap",
+                                                                                gap: "5px"
                                                                             }}
                                                                         >
                                                                             <span
                                                                                 style={{
                                                                                     fontWeight: "500",
-                                                                                    color: "#0d6efd"
+                                                                                    color: "#0d6efd",
+                                                                                    fontSize: "13px"
                                                                                 }}
                                                                             >
                                                                                 Qty : {product.total_quantity}
@@ -244,7 +251,8 @@ const BasicTable = () => {
                                                                             <span
                                                                                 style={{
                                                                                     color: "#0d6efd",
-                                                                                    fontWeight: "700"
+                                                                                    fontWeight: "700",
+                                                                                    fontSize: "13px"
                                                                                 }}
                                                                             >
                                                                                 ₹ {product.total_amount}
@@ -312,7 +320,7 @@ const BasicTable = () => {
 
                                     <Modal isOpen={modalOpen} toggle={() => setModalOpen(false)} size="lg">
                                         <ModalHeader toggle={() => setModalOpen(false)}>
-                                            Top 5 Products
+                                            Top 10 Products
                                         </ModalHeader>
 
                                         <ModalBody>

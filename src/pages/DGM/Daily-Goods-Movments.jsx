@@ -187,7 +187,7 @@ const BasicTable = () => {
                                                             color: "#1e293b"
                                                         }}
                                                     >
-                                                        Top 5 Products
+                                                        Top 10 Products
                                                     </h5>
 
                                                     <Row className="g-3">

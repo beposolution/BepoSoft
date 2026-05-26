@@ -194,11 +194,11 @@ const BasicTable = () => {
                                                         {topProducts.slice(0, 10).map((product, index) => (
                                                             <Col
                                                                 key={index}
-                                                                xs={12}   // 1 card in mobile
-                                                                sm={6}    // 2 cards in small devices
-                                                                md={4}    // 3 cards in tablets
-                                                                lg={3}    // 4 cards in laptops
-                                                                xl={true} // auto equal width in large screens
+                                                                xs={12}   
+                                                                sm={6}    
+                                                                md={4}    
+                                                                lg={3}    
+                                                                xl={true} 
                                                                 className="d-flex"
                                                                 style={{
                                                                     flex: window.innerWidth >= 1200 ? "0 0 20%" : "",

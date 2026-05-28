@@ -170,9 +170,9 @@ const SidebarContent = (props) => {
       <SimpleBar className="h-100" ref={ref}>
         <div id="sidebar-menu">
           <ul className="metismenu list-unstyled" id="side-menu">
-            <li className="menu-title">{props.t("Menu")} </li>
+            {/* <li className="menu-title">{props.t("Menu")} </li> */}
             <li>
-              <Link to="/#" className="has-arrow">
+              <Link to="/dashboard/" className="has-arrow">
                 <i className="bx bx-home-circle"></i>
                 <span>{props.t("Dashboards")}</span>
               </Link>

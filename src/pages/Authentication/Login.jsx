@@ -252,6 +252,7 @@ const Login = (props) => {
   //   </React.Fragment>
   // );
 
+
   return (
     <React.Fragment>
       <div className="home-btn d-none d-sm-block">
@@ -264,217 +265,204 @@ const Login = (props) => {
         className="account-pages"
         style={{
           minHeight: "100vh",
+          background: "#f4f9ff",
           display: "flex",
           alignItems: "center",
-          background: "linear-gradient(135deg, #f4f9ff 0%, #ffffff 100%)",
           padding: "30px 0",
         }}
       >
         <Container>
           <Row className="justify-content-center">
-            <Col md={8} lg={6} xl={5}>
+            <Col lg={9} xl={8}>
               <Card
                 style={{
-                  overflow: "visible",
                   border: "none",
-                  borderRadius: "22px",
-                  boxShadow: "0 18px 45px rgba(0, 0, 0, 0.10)",
+                  borderRadius: "24px",
+                  overflow: "hidden",
+                  boxShadow: "0 20px 50px rgba(0,0,0,0.12)",
                 }}
               >
-                <div
-                  className="bg-primary-subtle"
-                  style={{
-                    borderTopLeftRadius: "22px",
-                    borderTopRightRadius: "22px",
-                    padding: "8px 4px 0",
-                  }}
-                >
-                  <Row className="align-items-center">
-                    <Col xs={7}>
-                      <div className="text-primary p-4">
-                        <h4
-                          style={{
-                            color: "#3f89ec",
-                            fontWeight: "700",
-                            marginBottom: "8px",
-                          }}
-                        >
-                          Welcome Back !
-                        </h4>
-                        <p
-                          style={{
-                            color: "#3f89ec",
-                            marginBottom: 0,
-                            fontSize: "14px",
-                          }}
-                        >
-                          Sign in to PSAGE.
-                        </p>
-                      </div>
-                    </Col>
+                <Row className="g-0">
+                  <Col
+                    md={5}
+                    className="bg-primary-subtle d-flex flex-column justify-content-between"
+                    style={{ padding: "35px" }}
+                  >
+                    <div>
+                      <h3
+                        style={{
+                          color: "#3f89ec",
+                          fontWeight: "800",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        Welcome Back !
+                      </h3>
+                      <p
+                        style={{
+                          color: "#3f89ec",
+                          fontSize: "15px",
+                          lineHeight: "1.6",
+                        }}
+                      >
+                        Sign in to continue managing your PSAGE dashboard.
+                      </p>
+                    </div>
 
-                    <Col xs={5} className="align-self-end text-end">
+                    <div className="text-center">
                       <img
                         src={profile}
                         alt=""
                         className="img-fluid"
                         style={{
-                          maxHeight: "130px",
+                          maxHeight: "230px",
                           objectFit: "contain",
                         }}
                       />
-                    </Col>
-                  </Row>
-                </div>
+                    </div>
+                  </Col>
 
-                <CardBody
-                  className="pt-0"
-                  style={{
-                    padding: "0 32px 34px",
-                  }}
-                >
-                  <div
-                    className="auth-logo text-center"
-                    style={{
-                      marginTop: "-45px",
-                      marginBottom: "18px",
-                      position: "relative",
-                      zIndex: 10,
-                    }}
-                  >
-                    <Link to="/" className="auth-logo-dark">
-                      <span
-                        className="avatar-title rounded-circle bg-light d-inline-flex align-items-center justify-content-center shadow"
-                        style={{
-                          width: "92px",
-                          height: "92px",
-                          border: "6px solid #fff",
-                        }}
-                      >
-                        <img
-                          src={logo}
-                          alt=""
-                          className="rounded-circle"
-                          style={{
-                            width: "78px",
-                            height: "78px",
-                            objectFit: "cover",
-                          }}
-                        />
-                      </span>
-                    </Link>
-                  </div>
-
-                  <div className="text-center mb-4">
-                    <h5
+                  <Col md={7}>
+                    <CardBody
                       style={{
-                        fontWeight: "700",
-                        color: "#343a40",
-                        marginBottom: "6px",
+                        padding: "45px 42px",
                       }}
                     >
-                      Login to your account
-                    </h5>
-                    <p
-                      style={{
-                        color: "#74788d",
-                        fontSize: "14px",
-                        marginBottom: 0,
-                      }}
-                    >
-                      Enter your credentials to access dashboard
-                    </p>
-                  </div>
+                      <div className="text-center mb-4">
+                        <Link to="/" className="auth-logo-dark">
+                          <span
+                            className="bg-light d-inline-flex align-items-center justify-content-center shadow"
+                            style={{
+                              width: "96px",
+                              height: "96px",
+                              borderRadius: "24px",
+                              border: "6px solid #fff",
+                              marginBottom: "22px",
+                            }}
+                          >
+                            <img
+                              src={logo}
+                              alt=""
+                              style={{
+                                width: "78px",
+                                height: "78px",
+                                borderRadius: "18px",
+                                objectFit: "cover",
+                              }}
+                            />
+                          </span>
+                        </Link>
 
-                  <Form
-                    className="form-horizontal"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      validation.handleSubmit();
-                      return false;
-                    }}
-                  >
-                    {error && <Alert color="danger">{error}</Alert>}
+                        <h4 style={{ fontWeight: "800", color: "#343a40" }}>
+                          Login
+                        </h4>
+                        <p style={{ color: "#74788d", fontSize: "14px" }}>
+                          Enter your username and password
+                        </p>
+                      </div>
 
-                    <div className="mb-3">
-                      <Label className="form-label" style={{ fontWeight: "600" }}>
-                        Username
-                      </Label>
-                      <Input
-                        name="username"
-                        className="form-control"
-                        placeholder="Enter Your Username"
-                        type="text"
-                        onChange={validation.handleChange}
-                        onBlur={validation.handleBlur}
-                        value={validation.values.username}
-                        invalid={
-                          validation.touched.username &&
-                          validation.errors.username
-                        }
-                        style={{
-                          height: "46px",
-                          borderRadius: "10px",
-                          paddingLeft: "14px",
-                        }}
-                      />
-                      {validation.touched.username &&
-                        validation.errors.username ? (
-                        <FormFeedback type="invalid">
-                          {validation.errors.username}
-                        </FormFeedback>
-                      ) : null}
-                    </div>
-
-                    <div className="mb-3">
-                      <Label className="form-label" style={{ fontWeight: "600" }}>
-                        Password
-                      </Label>
-                      <Input
-                        name="password"
-                        autoComplete="off"
-                        value={validation.values.password}
-                        type="password"
-                        placeholder="Enter Password"
-                        onChange={validation.handleChange}
-                        onBlur={validation.handleBlur}
-                        invalid={
-                          validation.touched.password &&
-                          validation.errors.password
-                        }
-                        style={{
-                          height: "46px",
-                          borderRadius: "10px",
-                          paddingLeft: "14px",
-                        }}
-                      />
-                      {validation.touched.password &&
-                        validation.errors.password ? (
-                        <FormFeedback type="invalid">
-                          {validation.errors.password}
-                        </FormFeedback>
-                      ) : null}
-                    </div>
-
-                    <div className="mt-4 d-grid">
-                      <button
-                        className="btn btn-primary btn-block"
-                        type="submit"
-                        style={{
-                          backgroundColor: "#329ff2",
-                          borderColor: "#007bff",
-                          height: "48px",
-                          borderRadius: "12px",
-                          fontWeight: "700",
-                          fontSize: "15px",
-                          boxShadow: "0 8px 18px rgba(50, 159, 242, 0.28)",
+                      <Form
+                        className="form-horizontal"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          validation.handleSubmit();
+                          return false;
                         }}
                       >
-                        Log In
-                      </button>
-                    </div>
-                  </Form>
-                </CardBody>
+                        {error && <Alert color="danger">{error}</Alert>}
+
+                        <div className="mb-3">
+                          <Label
+                            className="form-label"
+                            style={{ fontWeight: "600" }}
+                          >
+                            Username
+                          </Label>
+                          <Input
+                            name="username"
+                            className="form-control"
+                            placeholder="Enter Your Username"
+                            type="text"
+                            onChange={validation.handleChange}
+                            onBlur={validation.handleBlur}
+                            value={validation.values.username}
+                            invalid={
+                              validation.touched.username &&
+                              validation.errors.username
+                            }
+                            style={{
+                              height: "48px",
+                              borderRadius: "14px",
+                              backgroundColor: "#f8fbff",
+                              border: "1px solid #dbeafe",
+                              paddingLeft: "15px",
+                            }}
+                          />
+                          {validation.touched.username &&
+                            validation.errors.username ? (
+                            <FormFeedback type="invalid">
+                              {validation.errors.username}
+                            </FormFeedback>
+                          ) : null}
+                        </div>
+
+                        <div className="mb-3">
+                          <Label
+                            className="form-label"
+                            style={{ fontWeight: "600" }}
+                          >
+                            Password
+                          </Label>
+                          <Input
+                            name="password"
+                            autoComplete="off"
+                            value={validation.values.password}
+                            type="password"
+                            placeholder="Enter Password"
+                            onChange={validation.handleChange}
+                            onBlur={validation.handleBlur}
+                            invalid={
+                              validation.touched.password &&
+                              validation.errors.password
+                            }
+                            style={{
+                              height: "48px",
+                              borderRadius: "14px",
+                              backgroundColor: "#f8fbff",
+                              border: "1px solid #dbeafe",
+                              paddingLeft: "15px",
+                            }}
+                          />
+                          {validation.touched.password &&
+                            validation.errors.password ? (
+                            <FormFeedback type="invalid">
+                              {validation.errors.password}
+                            </FormFeedback>
+                          ) : null}
+                        </div>
+
+                        <div className="mt-4 d-grid">
+                          <button
+                            className="btn btn-primary btn-block"
+                            type="submit"
+                            style={{
+                              backgroundColor: "#329ff2",
+                              borderColor: "#007bff",
+                              height: "50px",
+                              borderRadius: "14px",
+                              fontWeight: "800",
+                              fontSize: "15px",
+                              boxShadow:
+                                "0 10px 22px rgba(50, 159, 242, 0.32)",
+                            }}
+                          >
+                            Log In
+                          </button>
+                        </div>
+                      </Form>
+                    </CardBody>
+                  </Col>
+                </Row>
               </Card>
             </Col>
           </Row>

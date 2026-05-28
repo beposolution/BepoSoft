@@ -26,7 +26,8 @@ import {
   Label,
 } from "reactstrap";
 import { loginUser, socialLogin } from "../../store/actions";
-import profile from "../../assets/images/profile-img.png";
+// import profile from "../../assets/images/profile-img.png";
+import profile from "../../assets/images/login.png";
 // import logo from "../../../src/logo.png";
 import logo from "../../../src/psage.jpeg";
 import lightlogo from "../../assets/images/logo-light.svg";
@@ -257,7 +258,7 @@ const Login = (props) => {
     <React.Fragment>
       <div className="home-btn d-none d-sm-block">
         <Link to="/" className="text-dark">
-          <i className="bx bx-home h2" />
+          {/* <i className="bx bx-home h2" /> */}
         </Link>
       </div>
 
@@ -265,7 +266,7 @@ const Login = (props) => {
         className="account-pages"
         style={{
           minHeight: "100vh",
-          background: "#f4f9ff",
+          background: "#ffffff",
           display: "flex",
           alignItems: "center",
           padding: "30px 0",
@@ -286,14 +287,16 @@ const Login = (props) => {
                   <Col
                     md={5}
                     className="bg-primary-subtle d-flex flex-column justify-content-between"
-                    style={{ padding: "35px" }}
+                    style={{ padding: "35px 10px" }}
                   >
-                    <div>
+                    <div style={{ padding: "0 20px", marginTop: "20px" }}>
                       <h3
                         style={{
                           color: "#3f89ec",
                           fontWeight: "800",
                           marginBottom: "12px",
+                          marginTop: "10px",
+                          textAlign: "center",
                         }}
                       >
                         Welcome Back !
@@ -303,13 +306,14 @@ const Login = (props) => {
                           color: "#3f89ec",
                           fontSize: "15px",
                           lineHeight: "1.6",
+                          textAlign: "center",
                         }}
                       >
-                        Sign in to continue managing your PSAGE dashboard.
+                        Sign in to continue managing your PSAGE account.
                       </p>
                     </div>
 
-                    <div className="text-center">
+                    {/* <div className="text-center">
                       <img
                         src={profile}
                         alt=""
@@ -317,6 +321,26 @@ const Login = (props) => {
                         style={{
                           maxHeight: "230px",
                           objectFit: "contain",
+                        }}
+                      />
+                    </div> */}
+                    <div
+                      className="text-center"
+                      style={{
+                        marginTop: "-20px",
+                        marginBottom: "10px",
+                        overflow: "visible",
+                      }}
+                    >
+                      <img
+                        src={profile}
+                        alt=""
+                        style={{
+                          width: "145%",
+                          maxWidth: "5020px",
+                          height: "auto",
+                          objectFit: "contain",
+                          transformOrigin: "center bottom",
                         }}
                       />
                     </div>

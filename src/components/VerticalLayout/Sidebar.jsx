@@ -9,10 +9,11 @@ import SidebarContent from "./SidebarContent";
 
 import { Link } from "react-router-dom";
 
-import logo from "../../assets/images/logo.svg";
+// import logo from "../../assets/images/logo.svg";
 import logoLightPng from "../../assets/images/logo-light.png";
 import logoLightSvg from "../../assets/images/logo-light.svg";
 import logoDark from "../../assets/images/logo-dark.png";
+import logo from "../../psagesidebar.png";
 
 const Sidebar = (props) => {
   return (
@@ -32,9 +33,15 @@ const Sidebar = (props) => {
             {/* <span className="logo-sm">
               <img src={logoLightSvg} alt="" height="22" />
             </span> */}
+            <span className="logo-sm">
+              <img src={logo} alt="" height="30" />
+            </span>
             {/* <span className="logo-lg">
               <img src={logoLightPng} alt="" height="19" />
             </span> */}
+            <span className="logo-lg">
+              <img src={logo} alt="" height="60" />
+            </span>
           </Link>
         </div>
         <div data-simplebar className="h-100">

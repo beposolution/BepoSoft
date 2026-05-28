@@ -211,11 +211,14 @@ const OrderItemsExcelExportReport = () => {
         return `${day}-${month}-${year}`;
     };
 
-    const isKeralaState = (stateValue) => {
-        return String(stateValue || "")
-            .trim()
-            .toLowerCase() === "kerala";
-    };
+
+    // Kerala tax splitting logic is removed as per new requirements.
+
+    // const isKeralaState = (stateValue) => {
+    //     return String(stateValue || "")
+    //         .trim()
+    //         .toLowerCase() === "kerala";
+    // };
 
     const formatTaxPercentLabel = (value) => {
         const numberValue = Number(value || 0);
@@ -227,84 +230,124 @@ const OrderItemsExcelExportReport = () => {
         return String(numberValue).replace(/\.?0+$/, "");
     };
 
-    const taxColumns = useMemo(() => {
-        const columnMap = new Map();
+    // tax splitting logic is removed as per new requirements. 
+    // Now we will show total tax amount in one column for each tax percentage, regardless of the state.
 
-        reportData.forEach((item) => {
-            const taxPercentage = Number(item.tax_percentage || 0);
+    // const taxColumns = useMemo(() => {
+    //     const columnMap = new Map();
 
-            if (!taxPercentage) return;
+    //     reportData.forEach((item) => {
+    //         const taxPercentage = Number(item.tax_percentage || 0);
 
-            if (isKeralaState(item.state)) {
-                const splitTaxPercentage = taxPercentage / 2;
-                const splitTaxLabel = formatTaxPercentLabel(splitTaxPercentage);
+    //         if (!taxPercentage) return;
 
-                const cgstKey = `kerala_${taxPercentage}_cgst`;
-                const sgstKey = `kerala_${taxPercentage}_sgst`;
+    //         if (isKeralaState(item.state)) {
+    //             const splitTaxPercentage = taxPercentage / 2;
+    //             const splitTaxLabel = formatTaxPercentLabel(splitTaxPercentage);
 
-                if (!columnMap.has(cgstKey)) {
-                    columnMap.set(cgstKey, {
-                        key: cgstKey,
-                        header: `tax ${splitTaxLabel}% CGST`,
-                        originalTaxPercentage: taxPercentage,
-                        type: "kerala_cgst",
-                        sortValue: splitTaxPercentage,
-                    });
-                }
+    //             const cgstKey = `kerala_${taxPercentage}_cgst`;
+    //             const sgstKey = `kerala_${taxPercentage}_sgst`;
 
-                if (!columnMap.has(sgstKey)) {
-                    columnMap.set(sgstKey, {
-                        key: sgstKey,
-                        header: `tax ${splitTaxLabel}% SGST`,
-                        originalTaxPercentage: taxPercentage,
-                        type: "kerala_sgst",
-                        sortValue: splitTaxPercentage,
-                    });
-                }
-            } else {
-                const normalTaxLabel = formatTaxPercentLabel(taxPercentage);
-                const normalKey = `normal_${taxPercentage}`;
+    //             if (!columnMap.has(cgstKey)) {
+    //                 columnMap.set(cgstKey, {
+    //                     key: cgstKey,
+    //                     header: `tax ${splitTaxLabel}% CGST`,
+    //                     originalTaxPercentage: taxPercentage,
+    //                     type: "kerala_cgst",
+    //                     sortValue: splitTaxPercentage,
+    //                 });
+    //             }
 
-                if (!columnMap.has(normalKey)) {
-                    columnMap.set(normalKey, {
-                        key: normalKey,
-                        header: `tax ${normalTaxLabel}%`,
-                        originalTaxPercentage: taxPercentage,
-                        type: "normal",
-                        sortValue: taxPercentage,
-                    });
-                }
-            }
-        });
+    //             if (!columnMap.has(sgstKey)) {
+    //                 columnMap.set(sgstKey, {
+    //                     key: sgstKey,
+    //                     header: `tax ${splitTaxLabel}% SGST`,
+    //                     originalTaxPercentage: taxPercentage,
+    //                     type: "kerala_sgst",
+    //                     sortValue: splitTaxPercentage,
+    //                 });
+    //             }
+    //         } else {
+    //             const normalTaxLabel = formatTaxPercentLabel(taxPercentage);
+    //             const normalKey = `normal_${taxPercentage}`;
 
-        return Array.from(columnMap.values()).sort((a, b) => {
-            if (a.sortValue !== b.sortValue) {
-                return a.sortValue - b.sortValue;
-            }
+    //             if (!columnMap.has(normalKey)) {
+    //                 columnMap.set(normalKey, {
+    //                     key: normalKey,
+    //                     header: `tax ${normalTaxLabel}%`,
+    //                     originalTaxPercentage: taxPercentage,
+    //                     type: "normal",
+    //                     sortValue: taxPercentage,
+    //                 });
+    //             }
+    //         }
+    //     });
 
-            return a.header.localeCompare(b.header);
-        });
-    }, [reportData]);
+    //     return Array.from(columnMap.values()).sort((a, b) => {
+    //         if (a.sortValue !== b.sortValue) {
+    //             return a.sortValue - b.sortValue;
+    //         }
 
-    const getTaxValueForColumn = (item, column) => {
-        const itemTaxPercentage = Number(item.tax_percentage || 0);
-        const itemTaxAmount = Number(item.tax || 0);
-        const isKerala = isKeralaState(item.state);
+    //         return a.header.localeCompare(b.header);
+    //     });
+    // }, [reportData]);
 
-        if (itemTaxPercentage !== column.originalTaxPercentage) {
-            return "";
-        }
+    // const getTaxValueForColumn = (item, column) => {
+    //     const itemTaxPercentage = Number(item.tax_percentage || 0);
+    //     const itemTaxAmount = Number(item.tax || 0);
+    //     const isKerala = isKeralaState(item.state);
 
-        if (column.type === "normal") {
-            return !isKerala ? itemTaxAmount : "";
-        }
+    //     if (itemTaxPercentage !== column.originalTaxPercentage) {
+    //         return "";
+    //     }
 
-        if (column.type === "kerala_cgst" || column.type === "kerala_sgst") {
-            return isKerala ? itemTaxAmount / 2 : "";
-        }
+    //     if (column.type === "normal") {
+    //         return !isKerala ? itemTaxAmount : "";
+    //     }
 
-        return "";
-    };
+    //     if (column.type === "kerala_cgst" || column.type === "kerala_sgst") {
+    //         return isKerala ? itemTaxAmount / 2 : "";
+    //     }
+
+    //     return "";
+    // };
+
+    // const taxColumns = useMemo(() => {
+    //     const columnMap = new Map();
+
+    //     reportData.forEach((item) => {
+    //         const taxPercentage = Number(item.tax_percentage || 0);
+
+    //         if (!taxPercentage) return;
+
+    //         const taxLabel = formatTaxPercentLabel(taxPercentage);
+    //         const key = `tax_${taxPercentage}`;
+
+    //         if (!columnMap.has(key)) {
+    //             columnMap.set(key, {
+    //                 key,
+    //                 header: `tax ${taxLabel}%`,
+    //                 originalTaxPercentage: taxPercentage,
+    //                 sortValue: taxPercentage,
+    //             });
+    //         }
+    //     });
+
+    //     return Array.from(columnMap.values()).sort((a, b) => {
+    //         return a.sortValue - b.sortValue;
+    //     });
+    // }, [reportData]);
+
+    // const getTaxValueForColumn = (item, column) => {
+    //     const itemTaxPercentage = Number(item.tax_percentage || 0);
+    //     const itemTaxAmount = Number(item.tax || 0);
+
+    //     if (itemTaxPercentage !== column.originalTaxPercentage) {
+    //         return "";
+    //     }
+
+    //     return itemTaxAmount;
+    // };
 
     const exportExcel = () => {
         try {
@@ -324,15 +367,20 @@ const OrderItemsExcelExportReport = () => {
                     "item rate": Number(item.item_rate || 0),
                     per: item.unit || "",
                     "item basic amt": Number(item.item_basic_amount || 0),
+                    "tax %": item.tax_percentage
+                        ? `${formatTaxPercentLabel(item.tax_percentage)}%`
+                        : "",
+                    "tax amount": Number(item.tax || 0),
+                    "total amount": Number(item.total_amount || 0),
                 };
 
-                taxColumns.forEach((column) => {
-                    const taxValue = getTaxValueForColumn(item, column);
+                // taxColumns.forEach((column) => {
+                //     const taxValue = getTaxValueForColumn(item, column);
 
-                    row[column.header] = taxValue === "" ? "" : Number(taxValue);
-                });
+                //     row[column.header] = taxValue === "" ? "" : Number(taxValue);
+                // });
 
-                row["total amount"] = Number(item.total_amount || 0);
+                // row["total amount"] = Number(item.total_amount || 0);
 
                 return row;
             });
@@ -347,7 +395,8 @@ const OrderItemsExcelExportReport = () => {
                 "item rate",
                 "per",
                 "item basic amt",
-                ...taxColumns.map((column) => column.header),
+                "tax %",
+                "tax amount",
                 "total amount",
             ];
 
@@ -552,12 +601,14 @@ const OrderItemsExcelExportReport = () => {
                                                 <th>item rate</th>
                                                 <th>per</th>
                                                 <th>item basic amt</th>
+                                                <th>tax %</th>
 
-                                                {taxColumns.map((column) => (
+                                                {/* {taxColumns.map((column) => (
                                                     <th key={column.key}>
                                                         {column.header}
                                                     </th>
-                                                ))}
+                                                ))} */}
+                                                <th>tax amount</th>
 
                                                 <th>total amount</th>
                                             </tr>
@@ -578,8 +629,9 @@ const OrderItemsExcelExportReport = () => {
                                                         <td>{formatNumber(item.item_rate)}</td>
                                                         <td>{item.unit || "-"}</td>
                                                         <td>{formatNumber(item.item_basic_amount)}</td>
+                                                        <td>{item.tax_percentage ? `${formatTaxPercentLabel(item.tax_percentage)}%` : "-"}</td>
 
-                                                        {taxColumns.map((column) => {
+                                                        {/* {taxColumns.map((column) => {
                                                             const taxValue = getTaxValueForColumn(
                                                                 item,
                                                                 column
@@ -592,7 +644,8 @@ const OrderItemsExcelExportReport = () => {
                                                                         : formatNumber(taxValue)}
                                                                 </td>
                                                             );
-                                                        })}
+                                                        })} */}
+                                                        <td>{item.tax ? formatNumber(item.tax) : "-"}</td>
 
                                                         <td>{formatNumber(item.total_amount)}</td>
                                                     </tr>
@@ -600,7 +653,8 @@ const OrderItemsExcelExportReport = () => {
                                             ) : (
                                                 <tr>
                                                     <td
-                                                        colSpan={10 + taxColumns.length}
+                                                        // colSpan={11 + taxColumns.length}
+                                                        colSpan={11}
                                                         className="text-center"
                                                     >
                                                         {loading ? "Loading..." : "No records found"}

@@ -151,6 +151,10 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
   //   }
   // };
 
+  const getAvailableStock = (item) => {
+    return Math.max((item?.stock || 0) - (item?.locked_stock || 0), 0);
+  };
+
   const handleQuantityChange = (productId, value) => {
     const parsedValue = parseInt(value, 10);
     const product = products.find(
@@ -252,10 +256,16 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
         product.approval_status === "Approved" &&
         product.name.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const parentHasStock = product.stock > 0;
+      // const parentHasStock = product.stock > 0;
+
+      // const variantsHaveStock = Array.isArray(product.variantIDs)
+      //   ? product.variantIDs.some((variant) => variant.stock > 0)
+      //   : false;
+
+      const parentHasStock = getAvailableStock(product) > 0;
 
       const variantsHaveStock = Array.isArray(product.variantIDs)
-        ? product.variantIDs.some((variant) => variant.stock > 0)
+        ? product.variantIDs.some((variant) => getAvailableStock(variant) > 0)
         : false;
 
       return parentMatches && (parentHasStock || variantsHaveStock);
@@ -309,6 +319,7 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
 
                     // Parent row
                     if (product.stock > 0) {
+                      const availableStock = getAvailableStock(product);
                       rows.push(
                         <tr
                           key={`parent-${product.id}`}
@@ -333,7 +344,8 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
                               type="number"
                               min="1"
                               // max={product.stock}
-                              max={(product.stock || 0) - (product.locked_stock || 0)}
+                              // max={(product.stock || 0) - (product.locked_stock || 0)}
+                              max={availableStock}
                               value={quantity[product.id] || 1}
                               onChange={(e) =>
                                 handleQuantityChange(product.id, e.target.value)
@@ -357,9 +369,19 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
                                 color="success"
                                 size="sm"
                                 onClick={() => addToCart(product)}
-                                disabled={product.stock === 0 || parseInt(warehouseId) !== 1}
+                                // disabled={product.stock === 0 || parseInt(warehouseId) !== 1}
+                                disabled={
+                                  availableStock <= 0 ||
+                                  (quantity[product.id] || 1) > availableStock ||
+                                  parseInt(warehouseId) !== parseInt(userWarehouseId)
+                                }
                               >
-                                {parseInt(warehouseId) !== 1 ? "Restricted" : "Add"}
+                                {/* {parseInt(warehouseId) !== 1 ? "Restricted" : "Add"} */}
+                                {availableStock <= 0
+                                  ? "No Stock"
+                                  : parseInt(warehouseId) !== parseInt(userWarehouseId)
+                                    ? "Restricted"
+                                    : "Add"}
                               </Button>
                             </div>
                           </td>
@@ -401,6 +423,7 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
                     if (Array.isArray(product.variantIDs)) {
                       product.variantIDs.forEach((variant, variantIndex) => {
                         if (variant.stock > 0) {
+                          const variantAvailableStock = getAvailableStock(variant);
                           rows.push(
                             <tr
                               key={`variant-${variant.id}`}
@@ -424,7 +447,8 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
                                 <Input
                                   type="number"
                                   min="1"
-                                  max={variant.stock}
+                                  // max={variant.stock}
+                                  max={variantAvailableStock}
                                   value={quantity[variant.id] || 1}
                                   onChange={(e) =>
                                     handleQuantityChange(
@@ -457,14 +481,24 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
                                     color="success"
                                     size="sm"
                                     onClick={() => addToCart(product, variant)}
+                                    // disabled={
+                                    //   (variant ? variant.stock : product.stock) === 0 ||
+                                    //   parseInt(warehouseId) !== parseInt(userWarehouseId)
+                                    // }
                                     disabled={
-                                      (variant ? variant.stock : product.stock) === 0 ||
+                                      variantAvailableStock <= 0 ||
+                                      (quantity[variant.id] || 1) > variantAvailableStock ||
                                       parseInt(warehouseId) !== parseInt(userWarehouseId)
                                     }
                                   >
-                                    {parseInt(warehouseId) !== parseInt(userWarehouseId)
+                                    {/* {parseInt(warehouseId) !== parseInt(userWarehouseId)
                                       ? "Restricted"
-                                      : "Add"}
+                                      : "Add"} */}
+                                    {variantAvailableStock <= 0
+                                      ? "No Stock"
+                                      : parseInt(warehouseId) !== parseInt(userWarehouseId)
+                                        ? "Restricted"
+                                        : "Add"}
                                   </Button>
                                 </div>
                               </td>

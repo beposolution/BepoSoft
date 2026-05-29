@@ -923,7 +923,8 @@ const FormLayouts = () => {
         }
     };
 
-    const updateCartProduct = async (productId, updateData) => {
+    // const updateCartProduct = async (productId, updateData) => {
+    const updateCartProduct = async (productId, updateData, beforeItem = null) => {
         const token = localStorage.getItem("token");
         if (!token) return;
 
@@ -945,6 +946,22 @@ const FormLayouts = () => {
                 throw new Error(err?.message || "Update failed");
             }
 
+            if (beforeItem) {
+                await writeOrderItemChangeLog(
+                    beforeItem,
+                    {
+                        quantity: beforeItem.quantity,
+                        rate: beforeItem.rate,
+                        discount: beforeItem.discount,
+                    },
+                    {
+                        quantity: updateData.quantity,
+                        rate: updateData.rate,
+                        discount: updateData.discount,
+                    }
+                );
+            }
+
             // REFRESH ORDER ITEMS
             await fetchOrderData();
 
@@ -953,6 +970,49 @@ const FormLayouts = () => {
 
         } catch (err) {
             toast.error(err.message || "Failed to update product");
+        }
+    };
+
+
+    const writeOrderItemChangeLog = async (item, beforeData, afterData) => {
+        const changedBefore = {};
+        const changedAfter = {};
+
+        Object.keys(afterData).forEach((key) => {
+            if (String(beforeData[key] ?? "") !== String(afterData[key] ?? "")) {
+                changedBefore[key] = beforeData[key];
+                changedAfter[key] = afterData[key];
+            }
+        });
+
+        if (Object.keys(changedAfter).length === 0) return;
+
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                {
+                    order: Number(id),
+                    before_data: {
+                        action: "Order item updated",
+                        item_id: item.id,
+                        product_name: item.name,
+                        ...changedBefore,
+                    },
+                    after_data: {
+                        action: "Order item updated",
+                        item_id: item.id,
+                        product_name: item.name,
+                        ...changedAfter,
+                    },
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+        } catch (err) {
+            console.warn("Order item DataLog failed:", err?.response?.data || err.message);
         }
     };
 
@@ -967,9 +1027,33 @@ const FormLayouts = () => {
         }));
     };
 
+    // const handleItemChange = (index, field, value) => {
+    //     const updatedItems = [...orderItems];
+    //     const productId = updatedItems[index].id;
+
+    //     if (field === "quantity") {
+    //         updatedItems[index].quantity = Number(value);
+    //     } else if (field === "discount") {
+    //         updatedItems[index].discount = Number(value);
+    //     } else if (field === "rate") {
+    //         updatedItems[index].rate = Number(value);
+    //     }
+
+    //     setOrderItems(updatedItems);
+
+    //     updateCartProduct(productId, {
+    //         quantity: updatedItems[index].quantity,
+    //         discount: updatedItems[index].discount,
+    //         rate: updatedItems[index].rate,
+    //     });
+    // };
+
     const handleItemChange = (index, field, value) => {
         const updatedItems = [...orderItems];
-        const productId = updatedItems[index].id;
+
+        const beforeItem = {
+            ...updatedItems[index],
+        };
 
         if (field === "quantity") {
             updatedItems[index].quantity = Number(value);
@@ -979,13 +1063,19 @@ const FormLayouts = () => {
             updatedItems[index].rate = Number(value);
         }
 
+        const afterItem = updatedItems[index];
+
         setOrderItems(updatedItems);
 
-        updateCartProduct(productId, {
-            quantity: updatedItems[index].quantity,
-            discount: updatedItems[index].discount,
-            rate: updatedItems[index].rate,
-        });
+        updateCartProduct(
+            afterItem.id,
+            {
+                quantity: afterItem.quantity,
+                discount: afterItem.discount,
+                rate: afterItem.rate,
+            },
+            beforeItem
+        );
     };
 
     const totalPayableAmount = orderItems.reduce(

@@ -3,7 +3,6 @@ import PropTypes from "prop-types";
 import axios from "axios";
 import Select from "react-select";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
-import TableContainer from "../../components/Common/TableContainer";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -58,90 +57,6 @@ const DatatableTables = () => {
         { value: "disapproved", label: "Disapproved" },
     ];
 
-    const columns = useMemo(
-        () => [
-            {
-                header: "EID",
-                accessorKey: "staff_id",
-                enableColumnFilter: false,
-                enableSorting: true,
-            },
-            {
-                header: "Name",
-                accessorKey: "name",
-                enableColumnFilter: false,
-                enableSorting: true,
-            },
-            {
-                header: "Position",
-                accessorKey: "designation",
-                enableColumnFilter: false,
-                enableSorting: true,
-            },
-            {
-                header: "Phone",
-                accessorKey: "phone",
-                enableColumnFilter: false,
-                enableSorting: true,
-            },
-            {
-                header: "Email",
-                accessorKey: "email",
-                enableColumnFilter: false,
-                enableSorting: true,
-            },
-            {
-                header: "Start date",
-                accessorKey: "join_date",
-                enableColumnFilter: false,
-                enableSorting: true,
-            },
-            {
-                header: "Department",
-                accessorKey: "department_name",
-                enableColumnFilter: false,
-                enableSorting: true,
-            },
-            {
-                header: "Image",
-                accessorKey: "image",
-                enableColumnFilter: false,
-                enableSorting: false,
-                cell: ({ row }) =>
-                    row.original.image ? (
-                        <img
-                            src={`${import.meta.env.VITE_APP_IMAGE}${row.original.image}`}
-                            alt="Staff"
-                            style={{
-                                width: "70px",
-                                height: "70px",
-                                objectFit: "cover",
-                                borderRadius: "6px",
-                            }}
-                        />
-                    ) : (
-                        <span>No Image</span>
-                    ),
-            },
-            {
-                header: "Actions",
-                accessorKey: "actions",
-                enableColumnFilter: false,
-                enableSorting: false,
-                cell: ({ row }) => (
-                    <button
-                        className="btn btn-primary"
-                        style={{ height: "30px" }}
-                        onClick={() => handleViewClick(row.original)}
-                    >
-                        Edit
-                    </button>
-                ),
-            },
-        ],
-        []
-    );
-
     const handleViewClick = (staff) => {
         if (staff && staff.id) {
             navigate(`/edit/staffs/${staff.id}/`);
@@ -176,7 +91,7 @@ const DatatableTables = () => {
             setFamilies(familiesRes?.data?.data || []);
             setCountryCodes(countryCodesRes?.data?.data || []);
         } catch (err) {
-            console.error("Filter API error:", err);
+            // console.error("Filter API error:", err);
             toast.error("Failed to load filter data");
         }
     };
@@ -191,130 +106,103 @@ const DatatableTables = () => {
         return "inactive";
     };
 
-    // const fetchStaffs = async (page = 1, searchValue = "", filterValues = filters) => {
-    //     try {
-    //         setLoading(true);
-    //         setError(null);
-
-    //         const params = {
-    //             page: page,
-    //             search: searchValue,
-    //             ...filterValues,
-    //         };
-
-    //         Object.keys(params).forEach((key) => {
-    //             if (
-    //                 params[key] === "" ||
-    //                 params[key] === null ||
-    //                 params[key] === undefined
-    //             ) {
-    //                 delete params[key];
-    //             }
-    //         });
-
-    //         const response = await axios.get(
-    //             `${import.meta.env.VITE_APP_KEY}get/staffs/`,
-    //             {
-    //                 headers: {
-    //                     Authorization: `Bearer ${token}`,
-    //                 },
-    //                 params,
-    //             }
-    //         );
-
-    //         // if (response.status === 200) {
-    //         //     setData(response?.data?.results?.data || []);
-    //         //     setTotalCount(response?.data?.count || 0);
-    //         //     setNextPage(response?.data?.next || null);
-    //         //     setPreviousPage(response?.data?.previous || null);
-    //         // } 
-    //         if (response.status === 200) {
-    //             const staffList = response?.data?.results?.data || [];
-
-    //             setData(staffList);
-    //             setTotalCount(response?.data?.count || 0);
-    //             setNextPage(response?.data?.next || null);
-    //             setPreviousPage(response?.data?.previous || null);
-
-    //             const activeCount = staffList.filter(
-    //                 (staff) => getStaffStatus(staff) === "active"
-    //             ).length;
-
-    //             const inactiveCount = staffList.filter(
-    //                 (staff) => getStaffStatus(staff) === "inactive"
-    //             ).length;
-
-    //             setActiveStaffCount(activeCount);
-    //             setInactiveStaffCount(inactiveCount);
-    //         }
-
-    //         else {
-    //             throw new Error(`HTTP error! Status: ${response.status}`);
-    //         }
-    //     } catch (err) {
-    //         setError(err.response?.data?.message || err.message || "Failed to fetch staff data");
-    //         setData([]);
-    //         setTotalCount(0);
-    //         setNextPage(null);
-    //         setPreviousPage(null);
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // };
-
-
     const fetchStaffs = async (page = 1, searchValue = "", filterValues = filters) => {
-    try {
-        setLoading(true);
-        setError(null);
+        try {
+            setLoading(true);
+            setError(null);
 
-        const params = {
-            page: page,
-            search: searchValue,
-            ...filterValues,
-        };
+            const params = {
+                page,
+                search: searchValue,
+                ...filterValues,
+            };
 
-        Object.keys(params).forEach((key) => {
-            if (
-                params[key] === "" ||
-                params[key] === null ||
-                params[key] === undefined
-            ) {
-                delete params[key];
-            }
-        });
+            Object.keys(params).forEach((key) => {
+                if (
+                    params[key] === "" ||
+                    params[key] === null ||
+                    params[key] === undefined
+                ) {
+                    delete params[key];
+                }
+            });
 
-        const response = await axios.get(
-            `${import.meta.env.VITE_APP_KEY}get/staffs/`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-                params,
-            }
-        );
-
-        if (response.status === 200) {
-            const staffList = response?.data?.results?.data || [];
-
-            setData(staffList);
-            setTotalCount(response?.data?.count || 0);
-            setNextPage(response?.data?.next || null);
-            setPreviousPage(response?.data?.previous || null);
-
-            let allStaffs = [...staffList];
-            let nextUrl = response?.data?.next || null;
-
-            while (nextUrl) {
-                const nextResponse = await axios.get(nextUrl, {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}get/staffs/`,
+                {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
+                    params,
+                }
+            );
+
+            if (response.status === 200) {
+                const staffList = response?.data?.results?.data || [];
+                // console.log("Fetched staff data:", response?.data);
+
+                setData(staffList);
+                setTotalCount(response?.data?.count || 0);
+                setNextPage(response?.data?.next || null);
+                setPreviousPage(response?.data?.previous || null);
+
+            } else {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || err.message || "Failed to fetch staff data");
+            setData([]);
+            setTotalCount(0);
+            setActiveStaffCount(0);
+            setInactiveStaffCount(0);
+            setNextPage(null);
+            setPreviousPage(null);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchAllStaffCounts = async (searchValue = "", filterValues = filters) => {
+        try {
+            let page = 1;
+            let allStaffs = [];
+            let hasNext = true;
+
+            const headers = {
+                Authorization: `Bearer ${token}`,
+            };
+
+            while (hasNext) {
+                const params = {
+                    page,
+                    search: searchValue,
+                    ...filterValues,
+                };
+
+                Object.keys(params).forEach((key) => {
+                    if (
+                        params[key] === "" ||
+                        params[key] === null ||
+                        params[key] === undefined
+                    ) {
+                        delete params[key];
+                    }
                 });
 
-                const nextStaffList = nextResponse?.data?.results?.data || [];
-                allStaffs = [...allStaffs, ...nextStaffList];
-                nextUrl = nextResponse?.data?.next || null;
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}get/staffs/`,
+                    {
+                        headers,
+                        params,
+                    }
+                );
+
+                const staffList = response?.data?.results?.data || [];
+
+                allStaffs = [...allStaffs, ...staffList];
+
+                hasNext = response?.data?.next ? true : false;
+                page++;
             }
 
             const activeCount = allStaffs.filter(
@@ -327,22 +215,15 @@ const DatatableTables = () => {
 
             setActiveStaffCount(activeCount);
             setInactiveStaffCount(inactiveCount);
-        } else {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-    } catch (err) {
-        setError(err.response?.data?.message || err.message || "Failed to fetch staff data");
-        setData([]);
-        setTotalCount(0);
-        setActiveStaffCount(0);
-        setInactiveStaffCount(0);
-        setNextPage(null);
-        setPreviousPage(null);
-    } finally {
-        setLoading(false);
-    }
-};
+            setTotalCount(allStaffs.length);
 
+        } catch (err) {
+            // console.error("Staff count fetch error:", err);
+            setActiveStaffCount(0);
+            setInactiveStaffCount(0);
+            setTotalCount(0);
+        }
+    };
 
     useEffect(() => {
         fetchFilterData();
@@ -350,6 +231,7 @@ const DatatableTables = () => {
 
     useEffect(() => {
         fetchStaffs(currentPage, search, filters);
+        fetchAllStaffCounts(search, filters);
     }, [currentPage, search, filters]);
 
     const handleSearchSubmit = () => {
@@ -457,9 +339,11 @@ const DatatableTables = () => {
                                 isClearable
                                 isSearchable
                                 placeholder="Select Supervisor"
-                                value={supervisorOptions.find(
-                                    (option) => option.value === filters.supervisor_id
-                                ) || null}
+                                value={
+                                    supervisorOptions.find(
+                                        (option) => option.value === filters.supervisor_id
+                                    ) || null
+                                }
                                 onChange={(selectedOption) =>
                                     handleReactSelectChange("supervisor_id", selectedOption)
                                 }
@@ -473,9 +357,11 @@ const DatatableTables = () => {
                                 isClearable
                                 isSearchable
                                 placeholder="Select Department"
-                                value={departmentOptions.find(
-                                    (option) => option.value === filters.department_id
-                                ) || null}
+                                value={
+                                    departmentOptions.find(
+                                        (option) => option.value === filters.department_id
+                                    ) || null
+                                }
                                 onChange={(selectedOption) =>
                                     handleReactSelectChange("department_id", selectedOption)
                                 }
@@ -489,9 +375,11 @@ const DatatableTables = () => {
                                 isClearable
                                 isSearchable
                                 placeholder="Select Warehouse"
-                                value={warehouseOptions.find(
-                                    (option) => option.value === filters.warehouse_id
-                                ) || null}
+                                value={
+                                    warehouseOptions.find(
+                                        (option) => option.value === filters.warehouse_id
+                                    ) || null
+                                }
                                 onChange={(selectedOption) =>
                                     handleReactSelectChange("warehouse_id", selectedOption)
                                 }
@@ -505,9 +393,11 @@ const DatatableTables = () => {
                                 isClearable
                                 isSearchable
                                 placeholder="Select Family"
-                                value={familyOptions.find(
-                                    (option) => option.value === filters.family
-                                ) || null}
+                                value={
+                                    familyOptions.find(
+                                        (option) => option.value === filters.family
+                                    ) || null
+                                }
                                 onChange={(selectedOption) =>
                                     handleReactSelectChange("family", selectedOption)
                                 }
@@ -521,9 +411,11 @@ const DatatableTables = () => {
                                 isClearable
                                 isSearchable
                                 placeholder="Select Country Code"
-                                value={countryCodeOptions.find(
-                                    (option) => option.value === filters.country_code
-                                ) || null}
+                                value={
+                                    countryCodeOptions.find(
+                                        (option) => option.value === filters.country_code
+                                    ) || null
+                                }
                                 onChange={(selectedOption) =>
                                     handleReactSelectChange("country_code", selectedOption)
                                 }
@@ -537,9 +429,11 @@ const DatatableTables = () => {
                                 isClearable
                                 isSearchable
                                 placeholder="Select Blood Group"
-                                value={bloodGroups.find(
-                                    (option) => option.value === filters.blood_group
-                                ) || null}
+                                value={
+                                    bloodGroups.find(
+                                        (option) => option.value === filters.blood_group
+                                    ) || null
+                                }
                                 onChange={(selectedOption) =>
                                     handleReactSelectChange("blood_group", selectedOption)
                                 }
@@ -553,9 +447,11 @@ const DatatableTables = () => {
                                 isClearable
                                 isSearchable
                                 placeholder="Select Approval Status"
-                                value={approvalStatuses.find(
-                                    (option) => option.value === filters.approval_status
-                                ) || null}
+                                value={
+                                    approvalStatuses.find(
+                                        (option) => option.value === filters.approval_status
+                                    ) || null
+                                }
                                 onChange={(selectedOption) =>
                                     handleReactSelectChange("approval_status", selectedOption)
                                 }
@@ -569,10 +465,6 @@ const DatatableTables = () => {
                         </div>
                     </div>
                 </div>
-
-                {/* <div className="mb-3 d-flex justify-content-end">
-                    <strong>Total Staffs: {totalCount}</strong>
-                </div> */}
 
                 <div className="mb-3 d-flex justify-content-end gap-3 align-items-center flex-wrap">
                     <div
@@ -612,39 +504,88 @@ const DatatableTables = () => {
                     <p className="text-danger">Error: {error}</p>
                 ) : (
                     <>
-                        {/* <TableContainer
-                            columns={columns}
-                            data={data || []}
-                            isGlobalFilter={false}
-                            isPagination={false}
-                            tableClass="table-bordered table-nowrap dt-responsive nowrap w-100 dataTable no-footer dtr-inline"
-                            getRowClassName={(row) =>
-                                getStaffStatus(row.original) === "inactive" ? "inactive-staff-row" : ""
-                            }
+                        <div className="table-responsive">
+                            <table className="table table-bordered table-nowrap dt-responsive nowrap w-100 dataTable no-footer dtr-inline">
+                                <thead>
+                                    <tr>
+                                        <th>EID</th>
+                                        <th>Name</th>
+                                        <th>Position</th>
+                                        <th>Phone</th>
+                                        <th>Email</th>
+                                        <th>Start date</th>
+                                        <th>Department</th>
+                                        <th>Image</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
 
+                                <tbody>
+                                    {data && data.length > 0 ? (
+                                        data.map((staff) => {
 
-                        /> */}
+                                            const status = String(staff?.approval_status || "").toLowerCase();
 
+                                            const rowStyle =
+                                                status === "approved" || status === "active"
+                                                    ? {
+                                                        backgroundColor: "#ffffff",
+                                                        color: "#000000",
+                                                    }
+                                                    : {
+                                                        backgroundColor: "#fff1f1",
+                                                        color: "#842029",
+                                                    };
 
-                        <TableContainer
-                            columns={columns}
-                            data={data || []}
-                            isGlobalFilter={false}
-                            isPagination={false}
-                            tableClass="table-bordered table-nowrap dt-responsive nowrap w-100 dataTable no-footer dtr-inline"
-                            getRowStyle={(row) => {
-                                const status = String(row.original?.approval_status || "").toLowerCase();
+                                            return (
+                                                <tr key={staff.id}>
+                                                    <td style={rowStyle}>{staff.staff_id || ""}</td>
+                                                    <td style={rowStyle}>{staff.name || ""}</td>
+                                                    <td style={rowStyle}>{staff.designation || ""}</td>
+                                                    <td style={rowStyle}>{staff.phone || ""}</td>
+                                                    <td style={rowStyle}>{staff.email || ""}</td>
+                                                    <td style={rowStyle}>{staff.join_date || ""}</td>
+                                                    <td style={rowStyle}>{staff.department_name || ""}</td>
 
-                                if (status === "disapproved") {
-                                    return {
-                                        backgroundColor: "#fff1f1",
-                                        color: "#842029",
-                                    };
-                                }
+                                                    <td style={rowStyle}>
+                                                        {staff.image ? (
+                                                            <img
+                                                                src={`${import.meta.env.VITE_APP_IMAGE}${staff.image}`}
+                                                                alt="Staff"
+                                                                style={{
+                                                                    width: "70px",
+                                                                    height: "70px",
+                                                                    objectFit: "cover",
+                                                                    borderRadius: "6px",
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <span>No Image</span>
+                                                        )}
+                                                    </td>
 
-                                return {};
-                            }}
-                        />
+                                                    <td style={rowStyle}>
+                                                        <button
+                                                            className="btn btn-primary"
+                                                            style={{ height: "30px" }}
+                                                            onClick={() => handleViewClick(staff)}
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="9" className="text-center">
+                                                No staff found
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
 
                         <div className="d-flex justify-content-between align-items-center mt-3">
                             <button

@@ -322,6 +322,7 @@ const SalesData = () => {
             team: "",
             state: "",
             district: "",
+            new_leads: 0,
             unbilled: 0,
             billed: 0,
             new_customers: 0,
@@ -347,6 +348,10 @@ const SalesData = () => {
                 .typeError("New conversions must be a number")
                 .min(0, "New conversions cannot be negative")
                 .required("New conversions is required"),
+            new_leads: Yup.number()
+                .nullable()
+                .typeError("New leads must be a number")
+                .min(0, "New leads cannot be negative"),
         }),
         onSubmit: async (values, { resetForm }) => {
             try {
@@ -361,6 +366,7 @@ const SalesData = () => {
                     billed: Number(values.billed) || 0,
                     new_customers: Number(values.new_customers) || 0,
                     new_conversions: Number(values.new_conversions) || 0,
+                    new_leads: values.new_leads === "" ? null : Number(values.new_leads),
                 };
 
                 let response;
@@ -536,6 +542,7 @@ const SalesData = () => {
                 billed: data?.billed ?? 0,
                 new_customers: data?.new_customers ?? 0,
                 new_conversions: data?.new_conversions ?? 0,
+                new_leads: data?.new_leads ?? 0,
             });
 
             setSelectedReportId(id);
@@ -672,7 +679,7 @@ const SalesData = () => {
 
                                                     <Form onSubmit={formik.handleSubmit}>
                                                         <Row>
-                                                            <Col xl={4}>
+                                                            <Col xl={3}>
                                                                 <div className="mb-3">
                                                                     <Label htmlFor="team">Team</Label>
                                                                     <Select
@@ -730,7 +737,7 @@ const SalesData = () => {
                                                                 </div>
                                                             </Col>
 
-                                                            <Col xl={4}>
+                                                            <Col xl={3}>
                                                                 <div className="mb-3">
                                                                     <Label htmlFor="state">
                                                                         State
@@ -800,7 +807,7 @@ const SalesData = () => {
                                                                 </div>
                                                             </Col>
 
-                                                            <Col xl={4}>
+                                                            <Col xl={3}>
                                                                 <div className="mb-3">
                                                                     <Label htmlFor="district">
                                                                         District
@@ -863,6 +870,25 @@ const SalesData = () => {
                                                                         <div className="invalid-feedback d-block">
                                                                             {formik.errors.district}
                                                                         </div>
+                                                                    ) : null}
+                                                                </div>
+                                                            </Col>
+
+                                                            <Col md={3}>
+                                                                <div className="mb-3">
+                                                                    <Label htmlFor="new_leads">New Leads</Label>
+                                                                    <Input
+                                                                        id="new_leads"
+                                                                        name="new_leads"
+                                                                        type="number"
+                                                                        min="0"
+                                                                        value={formik.values.new_leads}
+                                                                        onChange={formik.handleChange}
+                                                                        onBlur={formik.handleBlur}
+                                                                        invalid={formik.touched.new_leads && !!formik.errors.new_leads}
+                                                                    />
+                                                                    {formik.touched.new_leads && formik.errors.new_leads ? (
+                                                                        <FormFeedback>{formik.errors.new_leads}</FormFeedback>
                                                                     ) : null}
                                                                 </div>
                                                             </Col>
@@ -1170,6 +1196,7 @@ const SalesData = () => {
                                                                 <th style={{ minWidth: "100px" }}>
                                                                     Billed
                                                                 </th>
+                                                                <th style={{ minWidth: "120px" }}>New Leads</th>
                                                                 <th style={{ minWidth: "130px" }}>
                                                                     New Customers
                                                                 </th>
@@ -1195,6 +1222,7 @@ const SalesData = () => {
                                                                     <td>{item?.district_name || "-"}</td>
                                                                     <td>{item?.unbilled ?? 0}</td>
                                                                     <td>{item?.billed ?? 0}</td>
+                                                                    <td>{item?.new_leads ?? 0}</td>
                                                                     <td>{item?.new_customers ?? 0}</td>
                                                                     <td>{item?.new_conversions ?? 0}</td>
                                                                     <td>

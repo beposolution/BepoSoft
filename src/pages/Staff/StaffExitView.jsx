@@ -231,6 +231,7 @@ const StaffExitView = () => {
         sales_clearance_signature: null,
         it_clearance_signature: null,
         employee_signature: null,
+        feedback: "",
     });
 
     const imageBaseUrl = import.meta.env.VITE_APP_IMAGE || "";
@@ -474,7 +475,7 @@ const StaffExitView = () => {
             ),
             logistics_clearance_by:
                 data?.logistics_clearance_by !== null &&
-                data?.logistics_clearance_by !== undefined
+                    data?.logistics_clearance_by !== undefined
                     ? String(data.logistics_clearance_by).trim()
                     : "",
             logistics_clearance_note: data?.logistics_clearance_note || "",
@@ -485,7 +486,7 @@ const StaffExitView = () => {
             ),
             finance_clearance_by:
                 data?.finance_clearance_by !== null &&
-                data?.finance_clearance_by !== undefined
+                    data?.finance_clearance_by !== undefined
                     ? String(data.finance_clearance_by).trim()
                     : "",
             finance_clearance_note: data?.finance_clearance_note || "",
@@ -494,7 +495,7 @@ const StaffExitView = () => {
             hr_clearance_date: formatInputDate(data?.hr_clearance_date),
             hr_clearance_by:
                 data?.hr_clearance_by !== null &&
-                data?.hr_clearance_by !== undefined
+                    data?.hr_clearance_by !== undefined
                     ? String(data.hr_clearance_by).trim()
                     : "",
             hr_clearance_note: data?.hr_clearance_note || "",
@@ -503,7 +504,7 @@ const StaffExitView = () => {
             sales_clearance_date: formatInputDate(data?.sales_clearance_date),
             sales_clearance_by:
                 data?.sales_clearance_by !== null &&
-                data?.sales_clearance_by !== undefined
+                    data?.sales_clearance_by !== undefined
                     ? String(data.sales_clearance_by).trim()
                     : "",
             sales_clearance_note: data?.sales_clearance_note || "",
@@ -512,11 +513,12 @@ const StaffExitView = () => {
             it_clearance_date: formatInputDate(data?.it_clearance_date),
             it_clearance_by:
                 data?.it_clearance_by !== null &&
-                data?.it_clearance_by !== undefined
+                    data?.it_clearance_by !== undefined
                     ? String(data.it_clearance_by).trim()
                     : "",
             it_clearance_note: data?.it_clearance_note || "",
 
+            feedback: data?.feedback || "",
             exit_form_date: formatInputDate(data?.exit_form_date),
 
             logistics_clearance_signature: null,
@@ -559,8 +561,8 @@ const StaffExitView = () => {
             console.error("Error fetching staffs:", error);
             toast.error(
                 error?.response?.data?.message ||
-                    error?.response?.data?.detail ||
-                    "Error fetching staff list"
+                error?.response?.data?.detail ||
+                "Error fetching staff list"
             );
             setStaffs([]);
         } finally {
@@ -590,6 +592,7 @@ const StaffExitView = () => {
                     {};
 
                 setDetails(finalData);
+                console.log("Fetched exit details:", finalData);
                 setFormFromDetails(finalData);
             } else {
                 toast.error("Failed to fetch exit details");
@@ -598,8 +601,8 @@ const StaffExitView = () => {
             console.error("Error fetching exit details:", error);
             toast.error(
                 error?.response?.data?.message ||
-                    error?.response?.data?.detail ||
-                    "Error fetching exit details"
+                error?.response?.data?.detail ||
+                "Error fetching exit details"
             );
         } finally {
             setLoading(false);
@@ -760,9 +763,9 @@ const StaffExitView = () => {
             console.error("Error updating employee exit:", error);
             toast.error(
                 error?.response?.data?.message ||
-                    error?.response?.data?.detail ||
-                    JSON.stringify(error?.response?.data?.errors) ||
-                    "Error updating employee exit"
+                error?.response?.data?.detail ||
+                JSON.stringify(error?.response?.data?.errors) ||
+                "Error updating employee exit"
             );
         } finally {
             setUpdating(false);
@@ -805,8 +808,8 @@ const StaffExitView = () => {
             console.error("Error deleting employee exit:", error);
             toast.error(
                 error?.response?.data?.message ||
-                    error?.response?.data?.detail ||
-                    "Error deleting employee exit"
+                error?.response?.data?.detail ||
+                "Error deleting employee exit"
             );
         } finally {
             setDeleting(false);
@@ -1040,8 +1043,8 @@ const StaffExitView = () => {
                                             <h5 className="mb-0 fw-bold">
                                                 {getValue(
                                                     details.employee_id ??
-                                                        details.employee ??
-                                                        "-"
+                                                    details.employee ??
+                                                    "-"
                                                 )}
                                             </h5>
                                         </CardBody>
@@ -1756,8 +1759,8 @@ const StaffExitView = () => {
                                                         label="Employee ID"
                                                         value={getValue(
                                                             details.employee_id ??
-                                                                details.employee ??
-                                                                "-"
+                                                            details.employee ??
+                                                            "-"
                                                         )}
                                                     />
                                                     <DetailItem
@@ -1969,6 +1972,24 @@ const StaffExitView = () => {
                                                     </Row>
                                                 </CardBody>
                                             </Card>
+                                        </Col>
+                                    </Row>
+
+                                    <Row className="mt-4">
+                                        <Col xl={6} className="mb-4">
+                                            <SectionCard
+                                                title="Feedback"
+                                                icon="✍️"
+                                            >
+                                                <Row>
+                                                    <DetailItem
+                                                        label="Feedback"
+                                                        value={getValue(
+                                                            details.feedback
+                                                        )}
+                                                    />
+                                                </Row>
+                                            </SectionCard>
                                         </Col>
                                     </Row>
 

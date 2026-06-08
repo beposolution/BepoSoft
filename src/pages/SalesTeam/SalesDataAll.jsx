@@ -377,6 +377,9 @@ const SalesDataAll = () => {
                                                                 <th style={{ minWidth: "100px" }}>
                                                                     Billed
                                                                 </th>
+                                                                <th style={{ minWidth: "100px" }}>
+                                                                    New Leads
+                                                                </th>
                                                                 <th style={{ minWidth: "130px" }}>
                                                                     New Customers
                                                                 </th>
@@ -404,6 +407,7 @@ const SalesDataAll = () => {
                                                                     <td>{item?.district_name || "-"}</td>
                                                                     <td>{item?.unbilled ?? 0}</td>
                                                                     <td>{item?.billed ?? 0}</td>
+                                                                    <td>{item?.new_leads ?? 0}</td>
                                                                     <td>{item?.new_customers ?? 0}</td>
                                                                     <td>{item?.new_conversions ?? 0}</td>
                                                                     <td>

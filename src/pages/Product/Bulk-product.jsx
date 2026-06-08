@@ -1127,19 +1127,91 @@ const OrdersComponent = () => {
 
                 <div className="col-lg-6 mt-3 mt-lg-0">
                   <div className="d-flex justify-content-lg-end">
+                    <label
+                      htmlFor="excelUpload"
+                      style={{
+                        cursor: "pointer",
+                        width: "100%",
+                        maxWidth: "420px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          background: "linear-gradient(135deg,#2563eb,#1d4ed8)",
+                          borderRadius: "18px",
+                          padding: "18px 20px",
+                          color: "#fff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          boxShadow: "0 8px 25px rgba(37,99,235,0.25)",
+                          transition: "0.3s",
+                        }}
+                      >
+                        <div className="d-flex align-items-center">
+                          <div
+                            style={{
+                              width: "50px",
+                              height: "50px",
+                              borderRadius: "14px",
+                              background: "rgba(255,255,255,0.18)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              marginRight: "14px",
+                            }}
+                          >
+                            <i
+                              className="bx bx-cloud-upload"
+                              style={{
+                                fontSize: "26px",
+                                color: "#fff",
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <div
+                              style={{
+                                fontWeight: 700,
+                                fontSize: "15px",
+                              }}
+                            >
+                              Upload Excel File
+                            </div>
+
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                opacity: 0.85,
+                              }}
+                            >
+                              XLSX, XLS or CSV
+                            </div>
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            background: "#fff",
+                            color: "#2563eb",
+                            padding: "8px 14px",
+                            borderRadius: "10px",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Browse
+                        </div>
+                      </div>
+                    </label>
+
                     <input
+                      id="excelUpload"
                       type="file"
                       accept=".xlsx,.xls,.csv"
                       onChange={handleExcelUpload}
                       disabled={isLoading}
-                      className="form-control"
-                      style={{
-                        maxWidth: "380px",
-                        borderRadius: "14px",
-                        padding: "12px 16px",
-                        border: "1px solid #e5e7eb",
-                        background: "#f8fafc",
-                      }}
+                      style={{ display: "none" }}
                     />
                   </div>
                 </div>

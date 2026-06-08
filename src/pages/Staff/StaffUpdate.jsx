@@ -51,8 +51,8 @@ const FormLayouts = () => {
             marital_status: "",
             phone: "",
             alternate_number: "",
-            driving_license: "",
-            driving_license_exp_date: "",
+            // driving_license: "",
+            // driving_license_exp_date: "",
             employment_status: "",
             designation: "",
             join_date: "",
@@ -61,7 +61,7 @@ const FormLayouts = () => {
             supervisor_id: "",
             department_id: "",
             approval_status: "",
-            signatur_up: "",
+            // signatur_up: "",
             family: "",
             check: "",
             country_code: "",
@@ -69,14 +69,17 @@ const FormLayouts = () => {
             place: "",
             emergency_contact_name: "",
             emergency_contact_number: "",
-            experience: "",
+            // experience: "",
+            yr_experience: "",
             exp_letter: "",
             previous_company: "",
             blood_group: "",
             education: "",
-            salrary_slip: "",
+            // salrary_slip: "",
             aadhar_no: "",
             pan_no: "",
+            aadhar_image: "",
+            pan_image: "",
             address: "",
             image: "",
         },
@@ -123,7 +126,7 @@ const FormLayouts = () => {
             country_code: Yup.string().required("Please select country code"),
 
             // Signature
-            signatur_up: Yup.string(),
+            // signatur_up: Yup.string(),
             // .required("Signature is required"),
 
             // Marital and Personal Info
@@ -150,37 +153,36 @@ const FormLayouts = () => {
                     if (!value) return true;
                     return /^[0-9]{10}$/.test(value);
                 }),
-            experience: Yup.number()
-                .typeError("Experience must be a number")
-                .nullable()
-                .transform((value, originalValue) => originalValue === "" ? null : value)
-                .min(0, "Experience cannot be negative"),
+            // experience: Yup.number()
+            //     .typeError("Experience must be a number")
+            //     .nullable()
+            //     .transform((value, originalValue) => originalValue === "" ? null : value)
+            //     .min(0, "Experience cannot be negative"),
+
+            yr_experience: Yup.string().nullable(),
             previous_company: Yup.string().nullable(),
             blood_group: Yup.string().nullable(),
             education: Yup.string().nullable(),
-            aadhar_no: Yup.string()
-                .nullable()
-                .notRequired()
-                .test("aadhar-valid", "Aadhar number must be 12 digits", function (value) {
-                    if (!value) return true;
-                    return /^[0-9]{12}$/.test(value);
-                }),
-            pan_no: Yup.string()
-                .nullable()
-                .notRequired()
-                .test("pan-valid", "PAN number must be 10 characters", function (value) {
-                    if (!value) return true;
-                    return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value.toUpperCase());
-                }),
+            aadhar_no: Yup.string().nullable(),
+            pan_no: Yup.string().nullable(),
+            aadhar_image: Yup.mixed().nullable(),
+            pan_image: Yup.mixed().nullable(),
             address: Yup.string().nullable(),
         }),
         onSubmit: async (values) => {
             try {
+                // const hasFiles =
+                //     values.signatur_up instanceof File ||
+                //     values.image instanceof File ||
+                //     values.exp_letter instanceof File ||
+                //     values.salrary_slip instanceof File ||
+                //     values.aadhar_image instanceof File ||
+                //     values.pan_image instanceof File;
                 const hasFiles =
-                    values.signatur_up instanceof File ||
                     values.image instanceof File ||
                     values.exp_letter instanceof File ||
-                    values.salrary_slip instanceof File;
+                    values.aadhar_image instanceof File ||
+                    values.pan_image instanceof File;
 
                 let response;
 
@@ -188,13 +190,21 @@ const FormLayouts = () => {
                     const formData = new FormData();
 
                     for (let key in values) {
-                        if (key === "signatur_up" && values[key]) {
-                            formData.append(key, values[key]);
-                        } else if (key === "image" && values[key]) {
+                        // if (key === "signatur_up" && values[key]) {
+                        //     formData.append(key, values[key]);
+                        // }
+                        //  else
+                        if (key === "image" && values[key]) {
                             formData.append(key, values[key]);
                         } else if (key === "exp_letter" && values[key]) {
                             formData.append(key, values[key]);
-                        } else if (key === "salrary_slip" && values[key]) {
+                        }
+                        //  else if (key === "salrary_slip" && values[key]) {
+                        //     formData.append(key, values[key]);
+                        // }
+                        else if (key === "aadhar_image" && values[key]) {
+                            formData.append(key, values[key]);
+                        } else if (key === "pan_image" && values[key]) {
                             formData.append(key, values[key]);
                         } else if (key === "allocated_states") {
                             if (Array.isArray(values[key]) && values[key].length > 0) {
@@ -234,7 +244,8 @@ const FormLayouts = () => {
                                 payload[key] = values[key];
                             }
                         } else if (
-                            !["signatur_up", "image", "exp_letter", "salrary_slip", "check"].includes(key) &&
+                            // !["signatur_up", "image", "exp_letter", "salrary_slip", "aadhar_image", "pan_image", "check"].includes(key) &&
+                            !["image", "exp_letter", "aadhar_image", "pan_image", "check"].includes(key) &&
                             values[key] !== "" &&
                             values[key] !== null &&
                             values[key] !== undefined
@@ -460,8 +471,8 @@ const FormLayouts = () => {
                             marital_status: staffData.marital_status || "",
                             phone: staffData.phone || "",
                             alternate_number: staffData.alternate_number || "",
-                            driving_license: staffData.driving_license || "",
-                            driving_license_exp_date: staffData.driving_license_exp_date || "",
+                            // driving_license: staffData.driving_license || "",
+                            // driving_license_exp_date: staffData.driving_license_exp_date || "",
                             employment_status: staffData.employment_status || "",
                             designation: staffData.designation || "",
                             join_date: staffData.join_date || "",
@@ -471,20 +482,23 @@ const FormLayouts = () => {
                             department_id: staffData.department_id || "",
                             approval_status: staffData.approval_status || "",
                             country_code: staffData.country_code || "",
-                            signatur_up: "",
+                            // signatur_up: "",
                             check: "",
                             staff_id: staffData.staff_id || "",
                             place: staffData.place || "",
                             emergency_contact_name: staffData.emergency_contact_name || "",
                             emergency_contact_number: staffData.emergency_contact_number || "",
-                            experience: staffData.experience || "",
+                            // experience: staffData.experience || "",
                             exp_letter: "",
                             previous_company: staffData.previous_company || "",
                             blood_group: staffData.blood_group || "",
                             education: staffData.education || "",
-                            salrary_slip: "",
+                            // salrary_slip: "",
+                            yr_experience: staffData.yr_experience || "",
                             aadhar_no: staffData.aadhar_no || "",
                             pan_no: staffData.pan_no || "",
+                            aadhar_image: "",
+                            pan_image: "",
                             address: staffData.address || "",
                             image: "",
                         });
@@ -891,6 +905,80 @@ const FormLayouts = () => {
                                                     </div>
                                                 </Col>
 
+                                                <Col md={3}>
+                                                    <div className="mb-3">
+                                                        <Label htmlFor="formrow-aadhar-image-Input">
+                                                            Aadhaar Image
+
+                                                            {oldStaffData?.aadhar_image && (
+                                                                <span
+                                                                    style={{ marginLeft: "10px", cursor: "pointer", color: "#007bff" }}
+                                                                    onClick={() =>
+                                                                        openDocument(
+                                                                            `${import.meta.env.VITE_APP_IMAGE}${oldStaffData.aadhar_image}`,
+                                                                            "Aadhaar Image"
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    ({oldStaffData.aadhar_image.split("/").pop()})
+                                                                </span>
+                                                            )}
+                                                        </Label>
+
+                                                        <Input
+                                                            type="file"
+                                                            name="aadhar_image"
+                                                            id="formrow-aadhar-image-Input"
+                                                            accept="image/*"
+                                                            onChange={(event) => {
+                                                                // formik.setFieldValue("aadhar_image", event.currentTarget.files[0]);
+                                                                formik.setFieldValue(
+                                                                    "aadhar_image",
+                                                                    event.currentTarget.files?.[0] || null
+                                                                );
+                                                            }}
+                                                            onBlur={formik.handleBlur}
+                                                        />
+                                                    </div>
+                                                </Col>
+
+                                                <Col md={3}>
+                                                    <div className="mb-3">
+                                                        <Label htmlFor="formrow-pan-image-Input">
+                                                            PAN Image
+
+                                                            {oldStaffData?.pan_image && (
+                                                                <span
+                                                                    style={{ marginLeft: "10px", cursor: "pointer", color: "#007bff" }}
+                                                                    onClick={() =>
+                                                                        openDocument(
+                                                                            `${import.meta.env.VITE_APP_IMAGE}${oldStaffData.pan_image}`,
+                                                                            "PAN Image"
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    ({oldStaffData.pan_image.split("/").pop()})
+                                                                </span>
+                                                            )}
+                                                        </Label>
+
+                                                        <Input
+                                                            type="file"
+                                                            name="pan_image"
+                                                            id="formrow-pan-image-Input"
+                                                            accept="image/*"
+                                                            onChange={(event) => {
+                                                                // formik.setFieldValue("pan_image", event.currentTarget.files[0]);
+                                                                formik.setFieldValue(
+                                                                    "pan_image",
+                                                                    event.currentTarget.files?.[0] || null
+                                                                );
+                                                            }}
+                                                            onBlur={formik.handleBlur}
+                                                        />
+                                                    </div>
+                                                </Col>
+
                                                 <Col lg={3}>
                                                     <div className="mb-3">
                                                         <Label htmlFor="formrow-gender-Input">Gender</Label>
@@ -1101,7 +1189,7 @@ const FormLayouts = () => {
 
                                                 <Col md={3}>
                                                     <div className="mb-3">
-                                                        <Label htmlFor="formrow-experience-Input">Experience (Months)</Label>
+                                                        {/* <Label htmlFor="formrow-experience-Input">Experience (Months)</Label>
                                                         <Input
                                                             type="number"
                                                             name="experience"
@@ -1111,9 +1199,22 @@ const FormLayouts = () => {
                                                             onChange={formik.handleChange}
                                                             onBlur={formik.handleBlur}
                                                             invalid={formik.touched.experience && !!formik.errors.experience}
+                                                        /> */}
+                                                        <Label htmlFor="formrow-experience-Input">
+                                                            Experience
+                                                        </Label>
+
+                                                        <Input
+                                                            type="text"
+                                                            name="yr_experience"
+                                                            id="formrow-experience-Input"
+                                                            placeholder="Eg: 2 Years / Fresher"
+                                                            value={formik.values.yr_experience}
+                                                            onChange={formik.handleChange}
+                                                            onBlur={formik.handleBlur}
                                                         />
-                                                        {formik.errors.experience && formik.touched.experience && (
-                                                            <FormFeedback>{formik.errors.experience}</FormFeedback>
+                                                        {formik.errors.yr_experience && formik.touched.yr_experience && (
+                                                            <FormFeedback>{formik.errors.yr_experience}</FormFeedback>
                                                         )}
                                                     </div>
                                                 </Col>
@@ -1153,7 +1254,7 @@ const FormLayouts = () => {
                                                     </div>
                                                 </Col>
 
-                                                <Col md={3}>
+                                                {/* <Col md={3}>
                                                     <div className="mb-3">
                                                         <Label htmlFor="formrow-salary-slip-Input">
                                                             Salary Slip
@@ -1186,7 +1287,7 @@ const FormLayouts = () => {
                                                             <FormFeedback>{formik.errors.salrary_slip}</FormFeedback>
                                                         )}
                                                     </div>
-                                                </Col>
+                                                </Col> */}
 
                                                 <Col lg={3}>
                                                     <div className="mb-3">
@@ -1226,7 +1327,7 @@ const FormLayouts = () => {
                                             <Row>
 
 
-                                                <Col md={3}>
+                                                {/* <Col md={3}>
                                                     <div className="mb-3">
                                                         <Label htmlFor="formrow-driving-Input">Driving License</Label>
                                                         <Input
@@ -1249,9 +1350,9 @@ const FormLayouts = () => {
                                                             ) : null
                                                         }
                                                     </div>
-                                                </Col>
+                                                </Col> */}
 
-                                                <Col md={3}>
+                                                {/* <Col md={3}>
                                                     <div className="mb-3">
                                                         <Label htmlFor="formrow-Driving-date-Input">Driving License Exp Date</Label>
                                                         <Input
@@ -1274,7 +1375,7 @@ const FormLayouts = () => {
                                                             ) : null
                                                         }
                                                     </div>
-                                                </Col>
+                                                </Col> */}
 
                                                 <Col lg={3}>
                                                     <div className="mb-3">
@@ -1364,7 +1465,7 @@ const FormLayouts = () => {
                                                     </div>
                                                 </Col>
 
-                                                <Col lg={3}>
+                                                {/* <Col lg={3}>
                                                     <div className="mb-3">
                                                         <Label htmlFor="formrow-Signature-Input">
                                                             Signature
@@ -1397,7 +1498,7 @@ const FormLayouts = () => {
                                                             <FormFeedback type="invalid">{formik.errors.signatur_up}</FormFeedback>
                                                         ) : null}
                                                     </div>
-                                                </Col>
+                                                </Col> */}
 
                                                 <Col md={3}>
                                                     <div className="mb-3">
@@ -1490,7 +1591,7 @@ const FormLayouts = () => {
 
                                             <Col lg={4}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-TerminationDate-Input">Termination Date</Label>
+                                                    <Label htmlFor="formrow-TerminationDate-Input">Last day of working</Label>
                                                     <Input
                                                         type="date" // Set type to "date"
                                                         name="termination_date"

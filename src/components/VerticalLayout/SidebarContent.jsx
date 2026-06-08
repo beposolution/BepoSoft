@@ -988,6 +988,13 @@ const SidebarContent = (props) => {
                     </li>
                   )}
 
+                  
+                  {(role === 'COO' || role === 'CEO' || role === 'ADMIN') && (
+                    <li>
+                      <Link to="/sales/team/cd/daily/report/">{props.t(" Sales Team CD Daily Report")}</Link>
+                    </li>
+                  )}
+
                   {(role === 'BDM' || role === 'SD') && (
                     <li>
                       <Link to="/sales/team/division/cd/report/">

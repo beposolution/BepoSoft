@@ -111,6 +111,7 @@ const StaffExitForm = () => {
                         it_clearance_note: values.it_clearance_note || "",
                         it_clearance_signature: values.it_clearance_signature?.name || "",
 
+                        feedback: values.feedback || "",
                         employee_signature: values.employee_signature?.name || "",
                         exit_form_date: values.exit_form_date || "",
                     },
@@ -170,6 +171,7 @@ const StaffExitForm = () => {
             it_clearance_note: "",
             it_clearance_signature: "",
 
+            feedback: "",
             employee_signature: "",
             exit_form_date: "",
         },
@@ -197,6 +199,7 @@ const StaffExitForm = () => {
             it_clearance_date: Yup.string().nullable(),
             it_clearance_by: Yup.string().nullable(),
             it_clearance_note: Yup.string().nullable(),
+            feedback: Yup.string().nullable(),
             exit_form_date: Yup.string().nullable(),
         }),
         onSubmit: async (values, { resetForm }) => {
@@ -459,11 +462,10 @@ const StaffExitForm = () => {
                                                     <select
                                                         name="reason_type"
                                                         id="reason_type"
-                                                        className={`form-control ${
-                                                            formik.touched.reason_type && formik.errors.reason_type
+                                                        className={`form-control ${formik.touched.reason_type && formik.errors.reason_type
                                                                 ? "is-invalid"
                                                                 : ""
-                                                        }`}
+                                                            }`}
                                                         value={formik.values.reason_type}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
@@ -542,7 +544,7 @@ const StaffExitForm = () => {
                                                         }
                                                     />
                                                     {formik.errors.asset_responsibility &&
-                                                    formik.touched.asset_responsibility ? (
+                                                        formik.touched.asset_responsibility ? (
                                                         <FormFeedback>
                                                             {formik.errors.asset_responsibility}
                                                         </FormFeedback>
@@ -1124,6 +1126,22 @@ const StaffExitForm = () => {
                                             <CardBody>
                                                 <CardTitle className="mb-4">Final Confirmation</CardTitle>
                                                 <Row>
+                                                    <Col lg={12}>
+                                                        <div className="mb-3">
+                                                            <Label htmlFor="feedback">Feedback</Label>
+                                                            <Input
+                                                                type="textarea"
+                                                                name="feedback"
+                                                                id="feedback"
+                                                                placeholder="Enter Feedback"
+                                                                value={formik.values.feedback}
+                                                                onChange={formik.handleChange}
+                                                                onBlur={formik.handleBlur}
+                                                            />
+                                                        </div>
+                                                    </Col>
+                                                </Row>
+                                                <Row>
                                                     <Col lg={6}>
                                                         <div className="mb-3">
                                                             <Label htmlFor="employee_signature">
@@ -1159,7 +1177,7 @@ const StaffExitForm = () => {
                                                                 }
                                                             />
                                                             {formik.errors.exit_form_date &&
-                                                            formik.touched.exit_form_date ? (
+                                                                formik.touched.exit_form_date ? (
                                                                 <FormFeedback>
                                                                     {formik.errors.exit_form_date}
                                                                 </FormFeedback>

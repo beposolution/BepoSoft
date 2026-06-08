@@ -988,7 +988,7 @@ const SidebarContent = (props) => {
                     </li>
                   )}
 
-                  
+
                   {(role === 'COO' || role === 'CEO' || role === 'ADMIN') && (
                     <li>
                       <Link to="/sales/team/cd/daily/report/">{props.t(" Sales Team CD Daily Report")}</Link>
@@ -1042,6 +1042,26 @@ const SidebarContent = (props) => {
                 </ul>
               </li>
             ) : null}
+
+            <li>
+              <Link to="/#" className="has-arrow">
+                <FaUserTie size={17} style={{ marginRight: "6px" }} />
+                <span>{props.t("Leave")}</span>
+              </Link>
+
+              <ul className="sub-menu" aria-expanded="false">
+                <li>
+                  <Link to="/staff/leave/form/">
+                    {props.t("Apply Leave")}
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/staff/leave/list/">
+                    {props.t("Leave List")}
+                  </Link>
+                </li>
+              </ul>
+            </li>
 
             {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
               <li>

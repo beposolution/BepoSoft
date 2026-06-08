@@ -442,6 +442,8 @@ import SalesTeamDivisionDailyReportPage from "../pages/SalesTeam/SalesTeamDivisi
 import TeamLeaderSalesDetailedSummary from "../pages/SalesTeam/TeamLeaderSalesDetailedSummary";
 import TeamDetailedSummaryPage from "../pages/SalesTeam/TeamDetailedSummaryPage";
 import FamilyTeamListPage from "../pages/SalesTeam/FamilyTeamListPage";
+import EmployeeLeaveForm from "../pages/Staff/EmployeeLeaveForm";
+import EmployeeLeaveList from "../pages/Staff/EmployeeLeaveList";
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
 
@@ -490,6 +492,8 @@ const authProtectedRoutes = [
   { path: "/staff/exit/form/", component: <StaffExitForm /> },
   { path: "/staff/exit/list/", component: <StaffExitList /> },
   { path: "/staff/exit/view/:id/", component: <StaffExitView /> },
+  { path: "/staff/leave/form/", component: <EmployeeLeaveForm /> },
+  { path: "/staff/leave/list/", component: <EmployeeLeaveList /> },
 
 
   // Team
@@ -499,7 +503,7 @@ const authProtectedRoutes = [
   { path: "/sales/all/user/data/", component: <SalesDataAll /> },
   { path: "/sales/user/call/duration/data/", component: <SalesTeamMemberDailyReportPage /> },
   { path: "/sales/team/summary/cd/report/", component: <SalesTeamSummaryReport /> },
-  {path: "/sales/team/cd/daily/report/",component: <SalesTeamCdDailyReport />},
+  { path: "/sales/team/cd/daily/report/", component: <SalesTeamCdDailyReport /> },
 
   { path: "/sales/team/division/cd/report/", component: <SalesTeamDivisionDailyReportPage /> },
   { path: "/sales/team/leader/report/view/", component: <TeamLeaderSalesDetailedSummary /> },

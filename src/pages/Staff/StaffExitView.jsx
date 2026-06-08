@@ -558,7 +558,7 @@ const StaffExitView = () => {
 
             setStaffs(finalData);
         } catch (error) {
-            console.error("Error fetching staffs:", error);
+            // console.error("Error fetching staffs:", error);
             toast.error(
                 error?.response?.data?.message ||
                 error?.response?.data?.detail ||
@@ -592,13 +592,13 @@ const StaffExitView = () => {
                     {};
 
                 setDetails(finalData);
-                console.log("Fetched exit details:", finalData);
+                // console.log("Fetched exit details:", finalData);
                 setFormFromDetails(finalData);
             } else {
                 toast.error("Failed to fetch exit details");
             }
         } catch (error) {
-            console.error("Error fetching exit details:", error);
+            // console.error("Error fetching exit details:", error);
             toast.error(
                 error?.response?.data?.message ||
                 error?.response?.data?.detail ||
@@ -760,7 +760,7 @@ const StaffExitView = () => {
                 toast.error("Failed to update employee exit");
             }
         } catch (error) {
-            console.error("Error updating employee exit:", error);
+            // console.error("Error updating employee exit:", error);
             toast.error(
                 error?.response?.data?.message ||
                 error?.response?.data?.detail ||
@@ -805,7 +805,7 @@ const StaffExitView = () => {
                 toast.error("Failed to delete employee exit");
             }
         } catch (error) {
-            console.error("Error deleting employee exit:", error);
+            // console.error("Error deleting employee exit:", error);
             toast.error(
                 error?.response?.data?.message ||
                 error?.response?.data?.detail ||
@@ -1268,6 +1268,20 @@ const StaffExitView = () => {
                                                                 name="exit_form_date"
                                                                 value={formData.exit_form_date}
                                                                 onChange={handleChange}
+                                                            />
+                                                        </FormGroup>
+                                                    </Col>
+
+                                                    <Col md={12} className="mb-3">
+                                                        <FormGroup>
+                                                            <Label>Feedback</Label>
+                                                            <Input
+                                                                type="textarea"
+                                                                name="feedback"
+                                                                value={formData.feedback}
+                                                                onChange={handleChange}
+                                                                rows="4"
+                                                                placeholder="Enter employee feedback..."
                                                             />
                                                         </FormGroup>
                                                     </Col>
@@ -1976,20 +1990,47 @@ const StaffExitView = () => {
                                     </Row>
 
                                     <Row className="mt-4">
-                                        <Col xl={6} className="mb-4">
-                                            <SectionCard
-                                                title="Feedback"
-                                                icon="✍️"
-                                            >
-                                                <Row>
-                                                    <DetailItem
-                                                        label="Feedback"
-                                                        value={getValue(
-                                                            details.feedback
-                                                        )}
-                                                    />
+                                        <Col xl={12} className="mb-4">
+                                                <Row className="mt-4">
+                                                    <Col xl={12} className="mb-4">
+                                                        <SectionCard title="Employee Feedback" icon="💬">
+                                                            <div
+                                                                className="p-4"
+                                                                style={{
+                                                                    border: "1px solid #e9edf5",
+                                                                    borderRadius: "14px",
+                                                                    background:
+                                                                        "linear-gradient(135deg, #fbfcff 0%, #f5f7ff 100%)",
+                                                                    minHeight: "120px",
+                                                                }}
+                                                            >
+                                                                <div
+                                                                    className="text-muted mb-2"
+                                                                    style={{
+                                                                        fontSize: "13px",
+                                                                        fontWeight: 600,
+                                                                        textTransform: "uppercase",
+                                                                        letterSpacing: "0.4px",
+                                                                    }}
+                                                                >
+                                                                    Feedback Note
+                                                                </div>
+
+                                                                <div
+                                                                    className="text-dark"
+                                                                    style={{
+                                                                        fontSize: "15px",
+                                                                        lineHeight: "1.7",
+                                                                        whiteSpace: "pre-wrap",
+                                                                        wordBreak: "break-word",
+                                                                    }}
+                                                                >
+                                                                    {getValue(details?.feedback)}
+                                                                </div>
+                                                            </div>
+                                                        </SectionCard>
+                                                    </Col>
                                                 </Row>
-                                            </SectionCard>
                                         </Col>
                                     </Row>
 

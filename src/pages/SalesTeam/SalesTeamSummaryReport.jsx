@@ -108,6 +108,7 @@ const SalesTeamSummaryReport = () => {
                         state_name: "-",
                         total_unbilled: 0,
                         unbilled_to_billed: 0,
+                        new_leads: 0,
                         new_customer: 0,
                         new_conversion: 0,
                         billing: 0,
@@ -131,6 +132,7 @@ const SalesTeamSummaryReport = () => {
                             state_name: stateItem.state_name || "-",
                             total_unbilled: safeNumber(stateItem.total_unbilled),
                             unbilled_to_billed: safeNumber(stateItem.unbilled_to_billed),
+                            new_leads: safeNumber(stateItem.new_leads),
                             new_customer: safeNumber(stateItem.new_customer),
                             new_conversion: safeNumber(stateItem.new_conversion),
                             billing: safeNumber(stateItem.billing),
@@ -224,6 +226,7 @@ const SalesTeamSummaryReport = () => {
                 },
             });
 
+            console.log("Report API Response:", response);
             const apiData = response?.data?.results?.data || [];
             const apiTotals = response?.data?.results?.totals || null;
 
@@ -340,6 +343,7 @@ const SalesTeamSummaryReport = () => {
                 "STATE",
                 "TOTAL UNBILLED",
                 "UNBILLED TO BILLED",
+                "NEW LEADS",
                 "NEW CUSTOMER",
                 "NEW CONVERSION",
                 "BILLING",
@@ -368,6 +372,7 @@ const SalesTeamSummaryReport = () => {
                     row.state_name,
                     safeNumber(row.total_unbilled),
                     safeNumber(row.unbilled_to_billed),
+                    safeNumber(row.new_leads),
                     safeNumber(row.new_customer),
                     safeNumber(row.new_conversion),
                     safeNumber(row.billing),
@@ -396,6 +401,7 @@ const SalesTeamSummaryReport = () => {
                 "",
                 safeNumber(totals?.total_unbilled),
                 safeNumber(totals?.unbilled_to_billed),
+                safeNumber(totals?.new_leads),
                 safeNumber(totals?.new_customer),
                 safeNumber(totals?.new_conversion),
                 safeNumber(totals?.billing),
@@ -429,12 +435,12 @@ const SalesTeamSummaryReport = () => {
             wsData.push(["Team Unbilled", safeNumber(totals?.team_unbilled), "", "09:00-10:00", safeNumber(totals?.hourly_durations?.["09:00-10:00"])]);
             wsData.push(["Total Unbilled", safeNumber(totals?.total_unbilled), "", "10:00-11:00", safeNumber(totals?.hourly_durations?.["10:00-11:00"])]);
             wsData.push(["Unbilled To Billed", safeNumber(totals?.unbilled_to_billed), "", "11:00-12:00", safeNumber(totals?.hourly_durations?.["11:00-12:00"])]);
-            wsData.push(["New Customer", safeNumber(totals?.new_customer), "", "12:00-01:00", safeNumber(totals?.hourly_durations?.["12:00-01:00"])]);
-            wsData.push(["New Conversion", safeNumber(totals?.new_conversion), "", "01:00-02:00", safeNumber(totals?.hourly_durations?.["01:00-02:00"])]);
-            wsData.push(["Billing", safeNumber(totals?.billing), "", "02:00-03:00", safeNumber(totals?.hourly_durations?.["02:00-03:00"])]);
-            wsData.push(["Volume", safeNumber(totals?.volume), "", "03:00-04:00", safeNumber(totals?.hourly_durations?.["03:00-04:00"])]);
-            wsData.push(["Total Call Duration", safeNumber(totals?.total_call_duration), "", "04:00-05:00", safeNumber(totals?.hourly_durations?.["04:00-05:00"])]);
-            wsData.push(["", "", "", "05:00-06:00", safeNumber(totals?.hourly_durations?.["05:00-06:00"])]);
+            wsData.push(["New Leads", safeNumber(totals?.new_leads), "", "12:00-01:00", safeNumber(totals?.hourly_durations?.["12:00-01:00"])]);
+            wsData.push(["New Customer", safeNumber(totals?.new_customer), "", "01:00-02:00", safeNumber(totals?.hourly_durations?.["01:00-02:00"])]);
+            wsData.push(["New Conversion", safeNumber(totals?.new_conversion), "", "02:00-03:00", safeNumber(totals?.hourly_durations?.["02:00-03:00"])]);
+            wsData.push(["Billing", safeNumber(totals?.billing), "", "03:00-04:00", safeNumber(totals?.hourly_durations?.["03:00-04:00"])]);
+            wsData.push(["Volume", safeNumber(totals?.volume), "", "04:00-05:00", safeNumber(totals?.hourly_durations?.["04:00-05:00"])]);
+            wsData.push(["Total Call Duration", safeNumber(totals?.total_call_duration), "", "05:00-06:00", safeNumber(totals?.hourly_durations?.["05:00-06:00"])]);
             wsData.push(["", "", "", "06:00-07:00", safeNumber(totals?.hourly_durations?.["06:00-07:00"])]);
 
             const bottomDataEndRow = wsData.length - 1;
@@ -470,7 +476,7 @@ const SalesTeamSummaryReport = () => {
             // Title merge
             ws["!merges"].push({
                 s: { r: 0, c: 0 },
-                e: { r: 0, c: 20 },
+                e: { r: 0, c: 21 },
             });
 
             // Summary heading merge A:B
@@ -546,7 +552,7 @@ const SalesTeamSummaryReport = () => {
             }
 
             // Title style
-            for (let c = 0; c <= 20; c++) {
+            for (let c = 0; c <= 21; c++) {
                 const cell = XLSX.utils.encode_cell({ r: 0, c });
                 if (!ws[cell]) continue;
 
@@ -605,9 +611,9 @@ const SalesTeamSummaryReport = () => {
                     if (c === 2) fillColor = "FFF8E7";
                     if (c === 3) fillColor = "F3EFFF";
                     if (c === 4) fillColor = "F9F9F9";
-                    if (c >= 5 && c <= 10) fillColor = "FFFDF5";
-                    if (c >= 11 && c <= 14) fillColor = "F0FFF7";
-                    if (c >= 15 && c <= 20) fillColor = "FFF7F0";
+                    if (c >= 5 && c <= 11) fillColor = "FFFDF5";
+                    if (c >= 12 && c <= 15) fillColor = "F0FFF7";
+                    if (c >= 16 && c <= 21) fillColor = "FFF7F0";
 
                     ws[cell].s = {
                         ...ws[cell].s,
@@ -1013,7 +1019,7 @@ const SalesTeamSummaryReport = () => {
                     <CardBody style={{ padding: "12px" }}>
                         {totals && (
                             <Row className="g-3 mb-3">
-                                <Col md="3">
+                                <Col md="4">
                                     <div
                                         style={{
                                             padding: "12px 16px",
@@ -1032,7 +1038,7 @@ const SalesTeamSummaryReport = () => {
                                     </div>
                                 </Col>
 
-                                <Col md="3">
+                                <Col md="4">
                                     <div
                                         style={{
                                             padding: "12px 16px",
@@ -1051,7 +1057,7 @@ const SalesTeamSummaryReport = () => {
                                     </div>
                                 </Col>
 
-                                <Col md="3">
+                                <Col md="4">
                                     <div
                                         style={{
                                             padding: "12px 16px",
@@ -1070,7 +1076,7 @@ const SalesTeamSummaryReport = () => {
                                     </div>
                                 </Col>
 
-                                <Col md="3">
+                                <Col md="4">
                                     <div
                                         style={{
                                             padding: "12px 16px",
@@ -1089,7 +1095,7 @@ const SalesTeamSummaryReport = () => {
                                     </div>
                                 </Col>
 
-                                <Col md="3">
+                                <Col md="4">
                                     <div
                                         style={{
                                             padding: "12px 16px",
@@ -1108,7 +1114,26 @@ const SalesTeamSummaryReport = () => {
                                     </div>
                                 </Col>
 
-                                <Col md="3">
+                                <Col md="4">
+                                    <div
+                                        style={{
+                                            padding: "12px 16px",
+                                            borderRadius: "10px",
+                                            background: "#f8f9fa",
+                                            border: "1px solid #e9ecef",
+                                            textAlign: "center",
+                                        }}
+                                    >
+                                        <div style={{ color: "#7A1F5C", fontWeight: 700, fontSize: "14px" }}>
+                                            New Leads
+                                        </div>
+                                        <div style={{ fontSize: "16px", fontWeight: 600 }}>
+                                            {formatValue(totals?.new_leads || 0)}
+                                        </div>
+                                    </div>
+                                </Col>
+
+                                <Col md="4">
                                     <div
                                         style={{
                                             padding: "12px 16px",
@@ -1127,7 +1152,7 @@ const SalesTeamSummaryReport = () => {
                                     </div>
                                 </Col>
 
-                                <Col md="3">
+                                <Col md="4">
                                     <div
                                         style={{
                                             padding: "12px 16px",
@@ -1146,7 +1171,7 @@ const SalesTeamSummaryReport = () => {
                                     </div>
                                 </Col>
 
-                                <Col md="3">
+                                <Col md="4">
                                     <div
                                         style={{
                                             padding: "12px 16px",
@@ -1281,6 +1306,19 @@ const SalesTeamSummaryReport = () => {
                                                 }}
                                             >
                                                 UNBILLED TO BILLED
+                                            </th>
+                                            <th
+                                                rowSpan="2"
+                                                style={{
+                                                    minWidth: "135px",
+                                                    color: "#7A1F5C",
+                                                    fontWeight: 700,
+                                                    verticalAlign: "middle",
+                                                    background: "#EAF4FF",
+                                                    border: "1px solid #000",
+                                                }}
+                                            >
+                                                NEW LEADS
                                             </th>
                                             <th
                                                 rowSpan="2"
@@ -1446,6 +1484,9 @@ const SalesTeamSummaryReport = () => {
                                                     {formatValue(row.unbilled_to_billed)}
                                                 </td>
                                                 <td style={{ background: "#FFFDF5", border: "1px solid #000" }}>
+                                                    {formatValue(row.new_leads)}
+                                                </td>
+                                                <td style={{ background: "#FFFDF5", border: "1px solid #000" }}>
                                                     {formatValue(row.new_customer)}
                                                 </td>
                                                 <td style={{ background: "#FFFDF5", border: "1px solid #000" }}>
@@ -1472,7 +1513,7 @@ const SalesTeamSummaryReport = () => {
                                             </tr>
                                         ))}
 
-                                        
+
                                         {/* space b/w table data and total */}
                                         <tr>
                                             <td></td>

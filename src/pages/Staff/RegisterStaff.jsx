@@ -39,8 +39,8 @@ const FormLayouts = () => {
             marital_status: "",
             phone: "",
             alternate_number: "",
-            driving_license: "",
-            driving_license_exp_date: "",
+            // driving_license: "",
+            // driving_license_exp_date: "",
             employment_status: "",
             designation: "",
             join_date: "",
@@ -49,7 +49,7 @@ const FormLayouts = () => {
             supervisor_id: "",
             department_id: "",
             approval_status: "",
-            signatur_up: "",
+            // signatur_up: "",
             family: "",
             image: "",
             warehouse_id: "",
@@ -58,12 +58,15 @@ const FormLayouts = () => {
             place: "",
             emergency_contact_name: "",
             emergency_contact_number: "",
-            experience: "",
+            // experience: "",
+            yr_experience: "",
+            aadhar_image: null,
+            pan_image: null,
             exp_letter: "",
             previous_company: "",
             blood_group: "",
             education: "",
-            salrary_slip: "",
+            // salrary_slip: "",
             aadhar_no: "",
             pan_no: "",
             address: ""
@@ -97,7 +100,7 @@ const FormLayouts = () => {
             department_id: Yup.string().required("Please select a department"),
             supervisor_id: Yup.string().required("Please select a supervisor"),
             warehouse_id: Yup.string().required("Please choose Warehouse"),
-            signatur_up: Yup.string().required("Signature is required"),
+            // signatur_up: Yup.string().required("Signature is required"),
             marital_status: Yup.string().required("Please select marital status"),
             country: Yup.string().required("This field is required"),
             state: Yup.string().required("This field is required"),
@@ -117,28 +120,20 @@ const FormLayouts = () => {
                     if (!value) return true;
                     return /^[0-9]{10}$/.test(value);
                 }),
-            experience: Yup.number()
-                .typeError("Experience must be a number")
-                .nullable()
-                .transform((value, originalValue) => originalValue === "" ? null : value)
-                .min(0, "Experience cannot be negative"),
+            // experience: Yup.number()
+            //     .typeError("Experience must be a number")
+            //     .nullable()
+            //     .transform((value, originalValue) => originalValue === "" ? null : value)
+            //     .min(0, "Experience cannot be negative"),
+
+            yr_experience: Yup.string().nullable(),
             previous_company: Yup.string().nullable(),
             blood_group: Yup.string().nullable(),
             education: Yup.string().nullable(),
-            aadhar_no: Yup.string()
-                .nullable()
-                .notRequired()
-                .test("aadhar-valid", "Aadhar number must be 12 digits", function (value) {
-                    if (!value) return true;
-                    return /^[0-9]{12}$/.test(value);
-                }),
-            pan_no: Yup.string()
-                .nullable()
-                .notRequired()
-                .test("pan-valid", "PAN number must be 10 characters", function (value) {
-                    if (!value) return true;
-                    return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value.toUpperCase());
-                }),
+            aadhar_no: Yup.string().nullable(),
+            pan_no: Yup.string().nullable(),
+            aadhar_image: Yup.mixed().nullable(),
+            pan_image: Yup.mixed().nullable(),
             address: Yup.string().nullable()
         }),
 
@@ -148,15 +143,22 @@ const FormLayouts = () => {
                 const formData = new FormData();
 
                 for (let key in values) {
-                    if (key === "signatur_up" && values[key]) {
+                    // if (key === "signatur_up" && values[key]) {
+                    //     formData.append(key, values[key]);
+                    // } else
+                    if (key === "aadhar_image" && values[key]) {
+                        formData.append(key, values[key]);
+                    } else if (key === "pan_image" && values[key]) {
                         formData.append(key, values[key]);
                     } else if (key === "image" && values[key]) {
                         formData.append(key, values[key]);
                     } else if (key === "exp_letter" && values[key]) {
                         formData.append(key, values[key]);
-                    } else if (key === "salrary_slip" && values[key]) {
-                        formData.append(key, values[key]);
-                    } else if (key === "allocated_states") {
+                    }
+                    // else if (key === "salrary_slip" && values[key]) {
+                    //     formData.append(key, values[key]);
+                    // } 
+                    else if (key === "allocated_states") {
                         if (Array.isArray(values[key]) && values[key].length > 0) {
                             values[key].forEach((val) => {
                                 formData.append("allocated_states", val);
@@ -168,7 +170,7 @@ const FormLayouts = () => {
                         formData.append(key, values[key]);
                     }
                 }
-                
+
                 for (let pair of formData.entries()) {
                     console.log(pair[0], pair[1]);
                 }
@@ -674,6 +676,22 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-aadhar-image-Input">Aadhaar Image</Label>
+                                                    <Input
+                                                        type="file"
+                                                        name="aadhar_image"
+                                                        id="formrow-aadhar-image-Input"
+                                                        accept="image/*"
+                                                        onChange={(event) => {
+                                                            // formik.setFieldValue("aadhar_image", event.currentTarget.files[0]);
+                                                            formik.setFieldValue("aadhar_image", event.currentTarget.files?.[0] || null);
+                                                        }}
+                                                        onBlur={formik.handleBlur}
+                                                    />
+                                                </div>
+                                            </Col>
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -694,7 +712,22 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-pan-image-Input">PAN Image</Label>
+                                                    <Input
+                                                        type="file"
+                                                        name="pan_image"
+                                                        id="formrow-pan-image-Input"
+                                                        accept="image/*"
+                                                        onChange={(event) => {
+                                                            // formik.setFieldValue("pan_image", event.currentTarget.files[0]);
+                                                            formik.setFieldValue("pan_image", event.currentTarget.files?.[0] || null);
+                                                        }}
+                                                        onBlur={formik.handleBlur}
+                                                    />
+                                                </div>
+                                            </Col>
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -742,9 +775,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                        </Row>
 
-                                        <Row>
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -796,6 +827,10 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
+                                        </Row>
+
+                                        <Row>
+
                                             <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-emergency-name-Input">Emergency Contact Name</Label>
@@ -835,9 +870,7 @@ const FormLayouts = () => {
                                             </Col>
 
 
-                                        </Row>
 
-                                        <Row>
                                             <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-countryCode">Country Code</Label>
@@ -882,6 +915,10 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
+                                        </Row>
+
+                                        <Row>
+
                                             <Col lg={6}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-previouscompany-Input">Previous Company</Label>
@@ -900,25 +937,34 @@ const FormLayouts = () => {
                                                     )}
                                                 </div>
                                             </Col>
-                                        </Row>
 
-                                        <Row>
                                             <Col lg={3}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-experience-Input">Experience (Months)</Label>
+                                                    {/* <Label htmlFor="formrow-experience-Input">Experience (Months)</Label>
                                                     <Input
                                                         type="number"
                                                         name="experience"
                                                         id="formrow-experience-Input"
-                                                        placeholder="Enter Experience in Months"
-                                                        value={formik.values.experience}
+                                                        placeholder="Enter Experience in Months" */}
+
+                                                    <Label htmlFor="formrow-experience-Input">Experience</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="yr_experience"
+                                                        id="formrow-experience-Input"
+                                                        placeholder="Eg: 2 years 3 months / Fresher"
+                                                        value={formik.values.yr_experience}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
-                                                        invalid={formik.touched.experience && !!formik.errors.experience}
+                                                        invalid={formik.touched.yr_experience && !!formik.errors.yr_experience}
                                                     />
-                                                    {formik.errors.experience && formik.touched.experience && (
-                                                        <FormFeedback>{formik.errors.experience}</FormFeedback>
+                                                    {formik.errors.yr_experience && formik.touched.yr_experience && (
+                                                        <FormFeedback>{formik.errors.yr_experience}</FormFeedback>
                                                     )}
+                                                    {/* {formik.errors.experience && formik.touched.experience && (
+                                                        <FormFeedback>{formik.errors.experience}</FormFeedback>
+                                                    )} */}
+
                                                 </div>
                                             </Col>
 
@@ -943,7 +989,11 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={3}>
+                                        </Row>
+
+                                        <Row>
+
+                                            {/* <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-salary-slip-Input">Salary Slip</Label>
                                                     <Input
@@ -960,7 +1010,7 @@ const FormLayouts = () => {
                                                         <FormFeedback>{formik.errors.salrary_slip}</FormFeedback>
                                                     )}
                                                 </div>
-                                            </Col>
+                                            </Col> */}
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -986,10 +1036,8 @@ const FormLayouts = () => {
                                                     </select>
                                                 </div>
                                             </Col>
-                                        </Row>
 
-                                        <Row>
-                                            <Col lg={3}>
+                                            {/* <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-driving-Input">Driving License</Label>
                                                     <Input
@@ -1012,9 +1060,9 @@ const FormLayouts = () => {
                                                         ) : null
                                                     }
                                                 </div>
-                                            </Col>
+                                            </Col> */}
 
-                                            <Col lg={3}>
+                                            {/* <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Driving-date-Input">Driving License Exp Date</Label>
                                                     <Input
@@ -1037,7 +1085,11 @@ const FormLayouts = () => {
                                                         ) : null
                                                     }
                                                 </div>
-                                            </Col>
+                                            </Col> */}
+
+                                        </Row>
+
+                                        <Row>
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -1088,9 +1140,7 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
-                                        </Row>
 
-                                        <Row>
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -1126,7 +1176,11 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={3}>
+                                        </Row>
+
+                                        <Row>
+
+                                            {/* <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Signature-Input">Signature Upload</Label>
                                                     <Input
@@ -1143,7 +1197,7 @@ const FormLayouts = () => {
                                                         <FormFeedback type="invalid">{formik.errors.signatur_up}</FormFeedback>
                                                     ) : null}
                                                 </div>
-                                            </Col>
+                                            </Col> */}
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -1163,32 +1217,11 @@ const FormLayouts = () => {
                                                     ) : null}
                                                 </div>
                                             </Col>
-                                        </Row>
-
-                                        <Row>
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-InputJoinDate">Join Date</Label>
                                                     <Input
@@ -1211,7 +1244,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-ConfirmationDate-Input">Confirmation Date</Label>
                                                     <Input
@@ -1234,9 +1267,13 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
+                                        </Row>
+
+                                        <Row>
+
+                                            <Col lg={3}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-TerminationDate-Input">Termination Date</Label>
+                                                    <Label htmlFor="formrow-TerminationDate-Input"> Last Day of Working</Label>
                                                     <Input
                                                         type="date" // Set type to "date"
                                                         name="termination_date"
@@ -1257,7 +1294,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Supervisor-Input">Supervisor</Label>
                                                     <select
@@ -1285,7 +1322,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Department-Input">Department</Label>
                                                     <select
@@ -1313,7 +1350,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-status-Input">Approval Status</Label>
                                                     <select

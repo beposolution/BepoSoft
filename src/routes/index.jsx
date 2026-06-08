@@ -437,6 +437,7 @@ import SalesData from "../pages/SalesTeam/SalesData";
 import SalesDataAll from "../pages/SalesTeam/SalesDataAll";
 import SalesTeamMemberDailyReportPage from "../pages/SalesTeam/SalesTeamMemberDailyReport";
 import SalesTeamSummaryReport from "../pages/SalesTeam/SalesTeamSummaryReport";
+import SalesTeamCdDailyReport from "../pages/SalesTeam/SalesTeamCdDailyReport";
 import SalesTeamDivisionDailyReportPage from "../pages/SalesTeam/SalesTeamDivisionDailyReportPage";
 import TeamLeaderSalesDetailedSummary from "../pages/SalesTeam/TeamLeaderSalesDetailedSummary";
 import TeamDetailedSummaryPage from "../pages/SalesTeam/TeamDetailedSummaryPage";
@@ -498,6 +499,8 @@ const authProtectedRoutes = [
   { path: "/sales/all/user/data/", component: <SalesDataAll /> },
   { path: "/sales/user/call/duration/data/", component: <SalesTeamMemberDailyReportPage /> },
   { path: "/sales/team/summary/cd/report/", component: <SalesTeamSummaryReport /> },
+  {path: "/sales/team/cd/daily/report/",component: <SalesTeamCdDailyReport />},
+
   { path: "/sales/team/division/cd/report/", component: <SalesTeamDivisionDailyReportPage /> },
   { path: "/sales/team/leader/report/view/", component: <TeamLeaderSalesDetailedSummary /> },
   { path: "/sales/family/summary/team/view/:familyId", component: <FamilyTeamListPage /> },

@@ -256,17 +256,17 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
         product.approval_status === "Approved" &&
         product.name.toLowerCase().includes(searchQuery.toLowerCase());
 
-      // const parentHasStock = product.stock > 0;
-
-      // const variantsHaveStock = Array.isArray(product.variantIDs)
-      //   ? product.variantIDs.some((variant) => variant.stock > 0)
-      //   : false;
-
-      const parentHasStock = getAvailableStock(product) > 0;
+      const parentHasStock = product.stock > 0;
 
       const variantsHaveStock = Array.isArray(product.variantIDs)
-        ? product.variantIDs.some((variant) => getAvailableStock(variant) > 0)
+        ? product.variantIDs.some((variant) => variant.stock > 0)
         : false;
+
+      // const parentHasStock = getAvailableStock(product) > 0;
+
+      // const variantsHaveStock = Array.isArray(product.variantIDs)
+      //   ? product.variantIDs.some((variant) => getAvailableStock(variant) > 0)
+      //   : false;
 
       return parentMatches && (parentHasStock || variantsHaveStock);
     })

@@ -238,7 +238,7 @@ import Family from "../pages/Family/Families";
 
 import AttendanceDepartment from "../pages/StaffAttendance/DepartmentAdd/AttendanceDepartment";
 import AttendanceTeamMembers from "../pages/StaffAttendance/AddMember/AttendanceTeamMembers";
-
+import AttendanceAdd from "../pages/StaffAttendance/AttendenceAdd/AttendenceAdd";
 
 import Attrubutes from "../pages/Attributes/attribute";
 import AttributeValues from "../pages/Attributes/attribute-values";
@@ -688,6 +688,7 @@ const authProtectedRoutes = [
 
   { path: "/attendance/department/", component: <AttendanceDepartment />, },
   { path: "/attendance/team-members/",component: <AttendanceTeamMembers />,},
+  {path: "/attendance/add/",component: <AttendanceAdd />,},
 
 
 

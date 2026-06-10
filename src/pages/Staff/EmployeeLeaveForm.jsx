@@ -195,15 +195,15 @@ const EmployeeLeaveForm = () => {
                             }
                           >
                             <option value="">Select Leave Type</option>
-                            <option value="sick_leave">Sick Leave</option>
+                            {/* <option value="sick_leave">Sick Leave</option> */}
                             <option value="casual_leave">Casual Leave</option>
-                            <option value="earned_leave">Earned Leave</option>
+                            {/* <option value="earned_leave">Earned Leave</option>
                             <option value="maternity_leave">
                               Maternity Leave
                             </option>
                             <option value="paternity_leave">
                               Paternity Leave
-                            </option>
+                            </option> */}
                           </Input>
 
                           {formik.errors.leave_type &&

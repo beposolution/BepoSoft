@@ -1036,16 +1036,24 @@ const SidebarContent = (props) => {
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUsers size={17} style={{ marginRight: "6px" }} />
-                  <span>{props.t("Team Attendance")}</span>
+                  <span>{props.t("Staff Attendance")}</span>
                 </Link>
 
                 <ul className="sub-menu" aria-expanded="false">
                   {(role === "CEO" || role === "COO" || role === "HR") && (
-                    <li>
-                      <Link to="/attendance/department/">
-                        {props.t("Attendance Department")}
-                      </Link>
-                    </li>
+                    <>
+                      <li>
+                        <Link to="/attendance/department/">
+                          {props.t("Attendance Department")}
+                        </Link>
+                      </li>
+
+                      <li>
+                        <Link to="/staff-attendance">
+                          {props.t("Staff Attendance")}
+                        </Link>
+                      </li>
+                    </>
                   )}
 
                   {(role === "Accounts / Accounting" || role === "ADMIN" || role === "Warehouse Admin" || role === "Marketing") && (

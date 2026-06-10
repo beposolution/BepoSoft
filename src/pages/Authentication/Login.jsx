@@ -63,6 +63,7 @@ const Login = (props) => {
           localStorage.setItem('active', data.active);
           localStorage.setItem('name', data.name);
           localStorage.setItem('warehouseId', data.warehouse_id || '');
+          localStorage.setItem('is_manager', data.manager || false);
 
           dispatch(loginUser({
             token: data.token,

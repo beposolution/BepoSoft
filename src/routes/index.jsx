@@ -688,13 +688,9 @@ const authProtectedRoutes = [
   // employee attendance
 
   { path: "/attendance/department/", component: <AttendanceDepartment />, },
-  { path: "/attendance/team-members/",component: <AttendanceTeamMembers />,},
-  {path: "/attendance/add/",component: <AttendanceAdd />,},
-
-{
-  path: "/staff-attendance",
-  component: <StaffAttendance />,
-},
+  { path: "/attendance/team-members/", component: <AttendanceTeamMembers />, },
+  { path: "/attendance/add/", component: <AttendanceAdd />, },
+  { path: "/staff-attendance", component: <StaffAttendance />, },
 
 
   //Bank

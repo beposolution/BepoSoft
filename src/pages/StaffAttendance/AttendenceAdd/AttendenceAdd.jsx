@@ -94,16 +94,42 @@ const AttendanceAdd = () => {
         }
     };
 
+    // const fetchStaffs = async (search = "") => {
+    //     try {
+    //         const res = await axios.get(`${baseUrl}get/staffs/`, {
+    //             headers: {
+    //                 Authorization: `Bearer ${token}`,
+    //             },
+    //             params: { search },
+    //         });
+    //         console.log("Staffs Response:", res);
+    //         setStaffs(res?.data?.results?.data || []);
+    //     } catch {
+    //         toast.error("Failed to load staff");
+    //     }
+    // };
+
     const fetchStaffs = async (search = "") => {
         try {
-            const res = await axios.get(`${baseUrl}get/staffs/`, {
+            const res = await axios.get(`${baseUrl}staff/attendance/my/team/details/`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
                 params: { search },
             });
 
-            setStaffs(res?.data?.results?.data || []);
+            const teamsData = res?.data?.data || [];
+
+            const members = teamsData.flatMap((team) =>
+                team.members?.map((m) => ({
+                    id: m.member,
+                    name: m.member_name,
+                    team_id: team.team_id,
+                    team_name: team.team_name,
+                })) || []
+            );
+
+            setStaffs(members);
         } catch {
             toast.error("Failed to load staff");
         }
@@ -132,17 +158,18 @@ const AttendanceAdd = () => {
 
     const fetchAttendance = async () => {
         try {
-            const res = await axios.get(`${baseUrl}staff/attendance/`, {
+            const res = await axios.get(`${baseUrl}staff/attendance/my/team/`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
-                params: {
-                    start_date: filters.start_date,
-                    end_date: filters.end_date,
-                    team: filters.team,
-                    member: filters.member,
-                },
+                // params: {
+                //     start_date: filters.start_date,
+                //     end_date: filters.end_date,
+                //     team: filters.team,
+                //     member: filters.member,
+                // },
             });
+
 
             const teamsData = res?.data?.results?.data || [];
             const flattened = flattenAttendanceResponse(teamsData);
@@ -538,10 +565,10 @@ const AttendanceAdd = () => {
                                                 <td>
                                                     <span
                                                         className={`badge ${item.status === "present"
-                                                                ? "bg-success"
-                                                                : item.status === "absent"
-                                                                    ? "bg-danger"
-                                                                    : "bg-warning"
+                                                            ? "bg-success"
+                                                            : item.status === "absent"
+                                                                ? "bg-danger"
+                                                                : "bg-warning"
                                                             }`}
                                                     >
                                                         {item.status || "-"}

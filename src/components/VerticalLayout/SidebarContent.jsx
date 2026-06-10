@@ -66,6 +66,25 @@ const SidebarContent = (props) => {
     const role = localStorage.getItem("active")
   }, [])
 
+
+  const [isManager, setIsManager] = React.useState(
+    localStorage.getItem("is_manager") === "true"
+  );
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setIsManager(localStorage.getItem("is_manager") === "true");
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+
+
+
   const removeActivation = (items) => {
     for (var i = 0; i < items.length; ++i) {
       var item = items[i];
@@ -1012,36 +1031,42 @@ const SidebarContent = (props) => {
             ) : null}
 
 
-            {role === "ADMIN" || role === "HR" ? (
+
+            {isManager && (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUsers size={17} style={{ marginRight: "6px" }} />
-                  <span>{props.t("Team Manager")}</span>
+                  <span>{props.t("Team Attendance")}</span>
                 </Link>
 
                 <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/attendance/department/">
-                      {props.t("Attendance Department")}
-                    </Link>
-                  </li>
+                  {(role === "CEO" || role === "COO" || role === "HR") && (
+                    <li>
+                      <Link to="/attendance/department/">
+                        {props.t("Attendance Department")}
+                      </Link>
+                    </li>
+                  )}
 
-                  <li>
-                    <Link to="/attendance/team-members/">
-                      {props.t("Attendance Team Members")}
-                    </Link>
-                  </li>
-
-                  <li>
-                    <Link to="/attendance/add/">
-                      {props.t("ADD Attendance")}
-                    </Link>
-                  </li>
+                  {(role === "Accounts / Accounting" || role === "ADMIN" || role === "Warehouse Admin" || role === "Marketing") && (
+                    <>
+                      <li>
+                        <Link to="/attendance/add/">
+                          {props.t("ADD Attendance")}
+                        </Link>
+                      </li>
 
 
+                      <li>
+                        <Link to="/attendance/team-members/">
+                          {props.t("Team Members")}
+                        </Link>
+                      </li>
+                    </>
+                  )}
                 </ul>
               </li>
-            ) : null}
+            )}
 
             {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'CSO' || role === 'COO' || role === 'HR' ? (
               <li>

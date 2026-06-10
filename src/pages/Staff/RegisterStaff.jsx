@@ -58,6 +58,8 @@ const FormLayouts = () => {
             place: "",
             emergency_contact_name: "",
             emergency_contact_number: "",
+            emergency_contact_name1: "",
+            emergency_contact_number1: "",
             // experience: "",
             yr_experience: "",
             aadhar_image: null,
@@ -114,6 +116,14 @@ const FormLayouts = () => {
             place: Yup.string().nullable(),
             emergency_contact_name: Yup.string().nullable(),
             emergency_contact_number: Yup.string()
+                .nullable()
+                .notRequired()
+                .test("emergency-phone-valid", "Emergency contact number must be 10 digits", function (value) {
+                    if (!value) return true;
+                    return /^[0-9]{10}$/.test(value);
+                }),
+            emergency_contact_name1: Yup.string().nullable(),
+            emergency_contact_number1: Yup.string()
                 .nullable()
                 .notRequired()
                 .test("emergency-phone-valid", "Emergency contact number must be 10 digits", function (value) {
@@ -251,6 +261,8 @@ const FormLayouts = () => {
                         place: staffData.place || "",
                         emergency_contact_name: staffData.emergency_contact_name || "",
                         emergency_contact_number: staffData.emergency_contact_number || "",
+                        emergency_contact_name1: staffData.emergency_contact_name1 || "",
+                        emergency_contact_number1: staffData.emergency_contact_number1 || "",
                         experience: staffData.experience || "",
                         previous_company: staffData.previous_company || "",
                         blood_group: staffData.blood_group || "",
@@ -833,7 +845,7 @@ const FormLayouts = () => {
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-emergency-name-Input">Emergency Contact Name</Label>
+                                                    <Label htmlFor="formrow-emergency-name-Input">Emergency Contact Name 1</Label>
                                                     <Input
                                                         type="text"
                                                         name="emergency_contact_name"
@@ -852,7 +864,7 @@ const FormLayouts = () => {
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-emergency-phone-Input">Emergency Contact Number</Label>
+                                                    <Label htmlFor="formrow-emergency-phone-Input">Emergency Contact Number 1</Label>
                                                     <Input
                                                         type="text"
                                                         name="emergency_contact_number"
@@ -869,7 +881,47 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-emergency-name-Input">Emergency Contact Name 2</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="emergency_contact_name1"
+                                                        id="formrow-emergency-name-Input"
+                                                        placeholder="Enter Emergency Contact Name"
+                                                        value={formik.values.emergency_contact_name1}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.emergency_contact_name1 && !!formik.errors.emergency_contact_name1}
+                                                    />
+                                                    {formik.errors.emergency_contact_name1 && formik.touched.emergency_contact_name1 && (
+                                                        <FormFeedback>{formik.errors.emergency_contact_name1}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
 
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-emergency-phone-Input">Emergency Contact Number 2</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="emergency_contact_number1"
+                                                        id="formrow-emergency-phone-Input"
+                                                        placeholder="Enter Emergency Contact Number"
+                                                        value={formik.values.emergency_contact_number1}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.emergency_contact_number1 && !!formik.errors.emergency_contact_number1}
+                                                    />
+                                                    {formik.errors.emergency_contact_number1 && formik.touched.emergency_contact_number1 && (
+                                                        <FormFeedback>{formik.errors.emergency_contact_number1}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+
+                                        </Row>
+
+                                        <Row>
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -915,9 +967,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                        </Row>
 
-                                        <Row>
 
                                             <Col lg={6}>
                                                 <div className="mb-3">
@@ -937,6 +987,10 @@ const FormLayouts = () => {
                                                     )}
                                                 </div>
                                             </Col>
+
+                                        </Row>
+
+                                        <Row>
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -989,9 +1043,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                        </Row>
 
-                                        <Row>
 
                                             {/* <Col lg={3}>
                                                 <div className="mb-3">
@@ -1087,9 +1139,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col> */}
 
-                                        </Row>
 
-                                        <Row>
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -1116,6 +1166,10 @@ const FormLayouts = () => {
                                                     ) : null}
                                                 </div>
                                             </Col>
+
+                                        </Row>
+
+                                        <Row>
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -1176,9 +1230,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                        </Row>
 
-                                        <Row>
 
                                             {/* <Col lg={3}>
                                                 <div className="mb-3">
@@ -1219,9 +1271,12 @@ const FormLayouts = () => {
                                             </Col>
 
 
+                                        </Row>
+
+                                        <Row>
 
 
-                                            <Col lg={3}>
+                                            <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-InputJoinDate">Join Date</Label>
                                                     <Input
@@ -1244,7 +1299,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={3}>
+                                            <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-ConfirmationDate-Input">Confirmation Date</Label>
                                                     <Input
@@ -1267,11 +1322,9 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                        </Row>
 
-                                        <Row>
 
-                                            <Col lg={3}>
+                                            <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-TerminationDate-Input"> Last Day of Working</Label>
                                                     <Input
@@ -1294,7 +1347,11 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={3}>
+                                        </Row>
+
+                                        <Row>
+
+                                            <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Supervisor-Input">Supervisor</Label>
                                                     <select
@@ -1322,7 +1379,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={3}>
+                                            <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Department-Input">Department</Label>
                                                     <select
@@ -1350,7 +1407,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={3}>
+                                            <Col lg={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-status-Input">Approval Status</Label>
                                                     <select

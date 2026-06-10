@@ -236,6 +236,9 @@ import States from "../pages/State/stateTable";
 import Departments from "../pages/Department/departments";
 import Family from "../pages/Family/Families";
 
+import AttendanceDepartment from "../pages/StaffAttendance/DepartmentAdd/AttendanceDepartment";
+import AttendanceTeamMembers from "../pages/StaffAttendance/AddMember/AttendanceTeamMembers";
+import AttendanceAdd from "../pages/StaffAttendance/AttendenceAdd/AttendenceAdd";
 
 import Attrubutes from "../pages/Attributes/attribute";
 import AttributeValues from "../pages/Attributes/attribute-values";
@@ -444,6 +447,7 @@ import TeamDetailedSummaryPage from "../pages/SalesTeam/TeamDetailedSummaryPage"
 import FamilyTeamListPage from "../pages/SalesTeam/FamilyTeamListPage";
 import EmployeeLeaveForm from "../pages/Staff/EmployeeLeaveForm";
 import EmployeeLeaveList from "../pages/Staff/EmployeeLeaveList";
+
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
 
@@ -679,6 +683,15 @@ const authProtectedRoutes = [
 
   // Parcel Services
   { path: "/add/parcel/service/", component: <AddParcelService /> },
+
+  // employee attendance
+
+  { path: "/attendance/department/", component: <AttendanceDepartment />, },
+  { path: "/attendance/team-members/",component: <AttendanceTeamMembers />,},
+  {path: "/attendance/add/",component: <AttendanceAdd />,},
+
+
+
 
   //Bank
 

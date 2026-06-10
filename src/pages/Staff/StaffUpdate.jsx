@@ -63,12 +63,15 @@ const FormLayouts = () => {
             approval_status: "",
             // signatur_up: "",
             family: "",
-            check: "",
+            // check: "",
+            check: false,
             country_code: "",
             staff_id: "",
             place: "",
             emergency_contact_name: "",
             emergency_contact_number: "",
+            emergency_contact_name1: "",
+            emergency_contact_number1: "",
             // experience: "",
             yr_experience: "",
             exp_letter: "",
@@ -82,6 +85,7 @@ const FormLayouts = () => {
             pan_image: "",
             address: "",
             image: "",
+            is_manager: false,
         },
         validationSchema: Yup.object({
             // Basic Info
@@ -141,12 +145,22 @@ const FormLayouts = () => {
             gender: Yup.string().required("This field is required"),
 
             // Other
-            check: Yup.string().required("This field is required"),
+            // check: Yup.string().required("This field is required"),
+            check: Yup.boolean().oneOf([true], "This field is required"),
 
             staff_id: Yup.string().nullable(),
             place: Yup.string().nullable(),
             emergency_contact_name: Yup.string().nullable(),
             emergency_contact_number: Yup.string()
+                .nullable()
+                .notRequired()
+                .test("emergency-phone-valid", "Emergency contact number must be 10 digits", function (value) {
+                    if (!value) return true;
+                    return /^[0-9]{10}$/.test(value);
+                }),
+
+            emergency_contact_name1: Yup.string().nullable(),
+            emergency_contact_number1: Yup.string()
                 .nullable()
                 .notRequired()
                 .test("emergency-phone-valid", "Emergency contact number must be 10 digits", function (value) {
@@ -330,6 +344,8 @@ const FormLayouts = () => {
                         place: beforeData.place || "",
                         emergency_contact_name: beforeData.emergency_contact_name || "",
                         emergency_contact_number: beforeData.emergency_contact_number || "",
+                        emergency_contact_name1: beforeData.emergency_contact_name1 || "",
+                        emergency_contact_number1: beforeData.emergency_contact_number1 || "",
                         experience: beforeData.experience || "",
                         previous_company: beforeData.previous_company || "",
                         blood_group: beforeData.blood_group || "",
@@ -366,6 +382,8 @@ const FormLayouts = () => {
                         place: afterData.place || "",
                         emergency_contact_name: afterData.emergency_contact_name || "",
                         emergency_contact_number: afterData.emergency_contact_number || "",
+                        emergency_contact_name1: afterData.emergency_contact_name1 || "",
+                        emergency_contact_number1: afterData.emergency_contact_number1 || "",
                         experience: afterData.experience || "",
                         previous_company: afterData.previous_company || "",
                         blood_group: afterData.blood_group || "",
@@ -452,6 +470,7 @@ const FormLayouts = () => {
                     // Check and handle staff data (renamed from customerData)
                     if (staffResponse.status === 200) {
                         const staffData = staffResponse.data.data;
+                        // console.log("Fetched staff data:", staffData);
 
                         setOldStaffData(staffData);
 
@@ -483,11 +502,13 @@ const FormLayouts = () => {
                             approval_status: staffData.approval_status || "",
                             country_code: staffData.country_code || "",
                             // signatur_up: "",
-                            check: "",
+                            check: false,
                             staff_id: staffData.staff_id || "",
                             place: staffData.place || "",
                             emergency_contact_name: staffData.emergency_contact_name || "",
                             emergency_contact_number: staffData.emergency_contact_number || "",
+                            emergency_contact_name1: staffData.emergency_contact_name1 || "",
+                            emergency_contact_number1: staffData.emergency_contact_number1 || "",
                             // experience: staffData.experience || "",
                             exp_letter: "",
                             previous_company: staffData.previous_company || "",
@@ -501,6 +522,7 @@ const FormLayouts = () => {
                             pan_image: "",
                             address: staffData.address || "",
                             image: "",
+                            is_manager: Boolean(staffData.is_manager),
                         });
                     } else {
                         setError(`Failed to fetch staff data. Status: ${staffResponse.status}`);
@@ -1025,9 +1047,7 @@ const FormLayouts = () => {
                                                     </div>
                                                 </Col>
 
-                                            </Row>
 
-                                            <Row>
                                                 <Col md={3}>
                                                     <div className="mb-3">
                                                         <Label htmlFor="formrow-Phone-Input">Phone</Label>
@@ -1078,6 +1098,10 @@ const FormLayouts = () => {
                                                     </div>
                                                 </Col>
 
+                                            </Row>
+
+                                            <Row>
+
                                                 <Col md={3}>
                                                     <div className="mb-3">
                                                         <Label htmlFor="formrow-emergency-name-Input">Emergency Contact Name</Label>
@@ -1113,6 +1137,44 @@ const FormLayouts = () => {
                                                         {formik.errors.emergency_contact_number && formik.touched.emergency_contact_number && (
                                                             <FormFeedback>{formik.errors.emergency_contact_number}</FormFeedback>
                                                         )}
+                                                    </div>
+                                                </Col>
+
+                                                <Col md={3}>
+                                                    <div className="mb-3">
+                                                        <Label>Emergency Contact Name 2</Label>
+                                                        <Input
+                                                            type="text"
+                                                            name="emergency_contact_name1"
+                                                            placeholder="Enter Emergency Contact Name"
+                                                            value={formik.values.emergency_contact_name1}
+                                                            onChange={formik.handleChange}
+                                                            onBlur={formik.handleBlur}
+                                                        />
+                                                    </div>
+                                                </Col>
+
+                                                <Col md={3}>
+                                                    <div className="mb-3">
+                                                        <Label>Emergency Contact Number 2</Label>
+                                                        <Input
+                                                            type="text"
+                                                            name="emergency_contact_number1"
+                                                            placeholder="Enter Emergency Contact Number"
+                                                            value={formik.values.emergency_contact_number1}
+                                                            onChange={formik.handleChange}
+                                                            onBlur={formik.handleBlur}
+                                                            invalid={
+                                                                formik.touched.emergency_contact_number1 &&
+                                                                !!formik.errors.emergency_contact_number1
+                                                            }
+                                                        />
+                                                        {formik.errors.emergency_contact_number1 &&
+                                                            formik.touched.emergency_contact_number1 && (
+                                                                <FormFeedback>
+                                                                    {formik.errors.emergency_contact_number1}
+                                                                </FormFeedback>
+                                                            )}
                                                     </div>
                                                 </Col>
 
@@ -1321,10 +1383,7 @@ const FormLayouts = () => {
                                                 </Col>
 
 
-                                            </Row>
 
-
-                                            <Row>
 
 
                                                 {/* <Col md={3}>
@@ -1403,6 +1462,11 @@ const FormLayouts = () => {
                                                     </div>
                                                 </Col>
 
+                                            </Row>
+
+
+                                            <Row>
+
                                                 <Col lg={3}>
                                                     <div className="mb-3">
                                                         <Label htmlFor="formrow-Designation">Designation</Label>
@@ -1427,9 +1491,7 @@ const FormLayouts = () => {
                                                     </div>
                                                 </Col>
 
-                                            </Row>
 
-                                            <Row>
 
                                                 <Col lg={3}>
                                                     <div className="mb-3">
@@ -1691,7 +1753,7 @@ const FormLayouts = () => {
 
                                         </Row>
 
-                                        <div className="mb-3">
+                                        {/* <div className="mb-3">
                                             <div className="form-check">
                                                 <Input
                                                     type="checkbox"
@@ -1717,6 +1779,53 @@ const FormLayouts = () => {
                                                     <FormFeedback type="invalid">{formik.errors.check}</FormFeedback>
                                                 ) : null
                                             }
+                                        </div> */}
+                                        <div className="mb-3">
+                                            <div
+                                                className="form-check"
+                                                style={{ cursor: "pointer" }}
+                                                onClick={() => formik.setFieldValue("check", !formik.values.check)}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    className="form-check-input"
+                                                    checked={formik.values.check}
+                                                    readOnly
+                                                />
+                                                <Label className="form-check-label ms-1">
+                                                    Check me out
+                                                </Label>
+                                            </div>
+
+                                            {formik.errors.check && formik.touched.check && (
+                                                <div className="text-danger">{formik.errors.check}</div>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <Col lg={4}>
+                                                <div className="mb-3">
+                                                    <Label>Manager Permission</Label>
+
+                                                    <div
+                                                        className="form-check mt-2"
+                                                        style={{ cursor: "pointer" }}
+                                                        onClick={() =>
+                                                            formik.setFieldValue("is_manager", !formik.values.is_manager)
+                                                        }
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            className="form-check-input"
+                                                            checked={formik.values.is_manager}
+                                                            readOnly
+                                                        />
+                                                        <Label className="form-check-label ms-1">
+                                                            Is Manager
+                                                        </Label>
+                                                    </div>
+                                                </div>
+                                            </Col>
                                         </div>
 
                                         <div className="mb-3">

@@ -47,6 +47,7 @@ const FormLayouts = () => {
             family: [], // Now an array for multiple selections
             unit: "",
             selling_price: "",
+            final_price: "",
             type: "",
             groupID: "",
             product_category: "",
@@ -65,6 +66,7 @@ const FormLayouts = () => {
             family: Yup.array().min(1, "At least one Division is required").required("This field is required"),
             unit: Yup.string().required("This field is required"),
             selling_price: Yup.string().required("This field is required"),
+            final_price: Yup.string().required("This field is required"),
             type: Yup.string().required("This field is required"),
             groupID: Yup.string().required("This field is required"),
             warehouse: Yup.string().required("This field is required"),
@@ -535,6 +537,26 @@ const FormLayouts = () => {
                                                         value={totalWithTax}
                                                         readOnly
                                                     />
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-selling_price-Input">FINAL PRICE</Label>
+                                                    <Input
+                                                        type="number"
+                                                        name="final_price"
+                                                        className="form-control"
+                                                        id="formrow-final_price-Input"
+                                                        placeholder="Enter Final Price"
+                                                        value={formik.values.final_price}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.final_price && formik.errors.final_price}
+                                                    />
+                                                    {formik.errors.final_price && formik.touched.final_price && (
+                                                        <FormFeedback>{formik.errors.final_price}</FormFeedback>
+                                                    )}
                                                 </div>
                                             </Col>
 

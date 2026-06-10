@@ -1012,6 +1012,37 @@ const SidebarContent = (props) => {
             ) : null}
 
 
+            {role === "ADMIN" || role === "HR" ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaUsers size={17} style={{ marginRight: "6px" }} />
+                  <span>{props.t("Team Manager")}</span>
+                </Link>
+
+                <ul className="sub-menu" aria-expanded="false">
+                  <li>
+                    <Link to="/attendance/department/">
+                      {props.t("Attendance Department")}
+                    </Link>
+                  </li>
+
+                  <li>
+                    <Link to="/attendance/team-members/">
+                      {props.t("Attendance Team Members")}
+                    </Link>
+                  </li>
+
+                  <li>
+                    <Link to="/attendance/add/">
+                      {props.t("ADD Attendance")}
+                    </Link>
+                  </li>
+
+
+                </ul>
+              </li>
+            ) : null}
+
             {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'CSO' || role === 'COO' || role === 'HR' ? (
               <li>
                 <Link to="/#" className="has-arrow">

@@ -47,6 +47,9 @@ const StatisticsApplications = () => {
     const [callDuration, setCallDuration] = useState([]);
     const [familyData, setFamilyData] = useState([]);
     const [familyLoading, setFamilyLoading] = useState(false);
+    const [teamAttendance, setTeamAttendance] = useState([]);
+    const [teamSummary, setTeamSummary] = useState(null);
+    const [teamLoading, setTeamLoading] = useState(false);
     const [orderSummary, setOrderSummary] = useState([]);
 
     useEffect(() => {
@@ -659,6 +662,42 @@ const StatisticsApplications = () => {
         }
     }, [token]);
 
+
+    useEffect(() => {
+        const fetchTeamAttendance = async () => {
+            try {
+                setTeamLoading(true);
+
+                const today = new Date().toISOString().split("T")[0];
+
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}staff/attendance/team/wise/count/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        params: {
+                            start_date: today,
+                            end_date: today,
+                        },
+                    }
+                );
+
+                setTeamAttendance(response.data.data || []);
+                setTeamSummary(response.data.summary || null);
+
+            } catch (error) {
+                toast.error("Failed to fetch team attendance");
+            } finally {
+                setTeamLoading(false);
+            }
+        };
+
+        if (token) {
+            fetchTeamAttendance();
+        }
+    }, [token]);
+
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -1045,10 +1084,53 @@ const StatisticsApplications = () => {
                                 {/* Middle Column (optional content) */}
                                 <div className="col-md-5 d-flex flex-column gap-4">
 
+                                    <div className="p-3 border rounded-4 shadow-sm bg-white">
+                                        <h5 className="text-center mb-3 text-primary fw-bold">
+                                            Daily Staff Attendance Summary
+                                        </h5>
+
+                                        {teamLoading ? (
+                                            <div className="text-center py-3">Loading...</div>
+                                        ) : (
+                                            <Row className="g-3">
+
+
+                                                <Col md={4}>
+                                                    <div className="bg-light rounded p-3 text-center">
+                                                        <small className="text-muted">Present</small>
+                                                        <h4 className="mb-0 text-success">
+                                                            {teamSummary?.total_present || 0}
+                                                        </h4>
+                                                    </div>
+                                                </Col>
+
+                                                <Col md={4}>
+                                                    <div className="bg-light rounded p-3 text-center">
+                                                        <small className="text-muted">Absent</small>
+                                                        <h4 className="mb-0 text-danger">
+                                                            {teamSummary?.total_absent || 0}
+                                                        </h4>
+                                                    </div>
+                                                </Col>
+
+                                                <Col md={4}>
+                                                    <div className="bg-light rounded p-3 text-center">
+                                                        <small className="text-muted">Half Day</small>
+                                                        <h4 className="mb-0 text-warning">
+                                                            {teamSummary?.total_half_day || 0}
+                                                        </h4>
+                                                    </div>
+                                                </Col>
+                                            </Row>
+                                        )}
+                                    </div>
+
                                     <div className="p-3 border rounded-4 shadow-sm bg-light">
                                         <h5 className="text-center mb-3 text-primary fw-bold">
                                             BDO Call Data
                                         </h5>
+
+
 
                                         {familyLoading ? (
                                             <div className="text-center py-3">Loading...</div>

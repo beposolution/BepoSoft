@@ -44,6 +44,8 @@ const EcommerenceAddProduct = () => {
             landing_cost: '',
             product_category: '',
             rack_details: [],
+            final_price: '',
+            duty_charge: '',
         },
         validationSchema: yup.object().shape({
             name: yup.string().required('Please Enter Your Product Name'),
@@ -226,6 +228,8 @@ const EcommerenceAddProduct = () => {
                         size: productData.data.size || '',
                         groupID: productData.data.groupID || '',
                         landing_cost: productData.data.landing_cost || '',
+                        final_price: productData.data.final_price || '',
+                        duty_charge: productData.data.duty_charge || '',
                         product_category: productData.data.product_category !== undefined && productData.data.product_category !== null
                             ? String(productData.data.product_category)
                             : "",
@@ -257,13 +261,24 @@ const EcommerenceAddProduct = () => {
 
 
 
+    // useEffect(() => {
+    //     const { purchase_rate, tax } = formik.values;
+    //     const rate = parseFloat(purchase_rate) || 0;
+    //     const taxValue = parseFloat(tax) || 0;
+    //     const calculatedLandingCost = rate + (rate * taxValue / 100);
+    //     formik.setFieldValue("landing_cost", calculatedLandingCost.toFixed(2));
+    // }, [formik.values.purchase_rate, formik.values.tax]);
+
     useEffect(() => {
-        const { purchase_rate, tax } = formik.values;
+        const { purchase_rate, duty_charge } = formik.values;
+
         const rate = parseFloat(purchase_rate) || 0;
-        const taxValue = parseFloat(tax) || 0;
-        const calculatedLandingCost = rate + (rate * taxValue / 100);
+        const dutyValue = parseFloat(duty_charge) || 0;
+
+        const calculatedLandingCost = rate + (rate * dutyValue / 100);
+
         formik.setFieldValue("landing_cost", calculatedLandingCost.toFixed(2));
-    }, [formik.values.purchase_rate, formik.values.tax]);
+    }, [formik.values.purchase_rate, formik.values.duty_charge]);
 
     // stable key per rack row
     const rackKey = (r) =>
@@ -307,6 +322,8 @@ const EcommerenceAddProduct = () => {
         product_category: getCategoryName(values.product_category) ?? values.product_category,
         rack_details: normalizeRackDetails(rackDetailsLocal),
         retail_price: Number(values.retail_price ?? 0),
+        final_price: Number(values.final_price ?? 0),
+        duty_charge: Number(values.duty_charge ?? 0),
     });
 
     const buildBeforeSnapshot = (raw) => {
@@ -328,6 +345,8 @@ const EcommerenceAddProduct = () => {
             product_category: getCategoryName(raw.product_category) ?? raw.product_category,
             rack_details: normalizeRackDetails(raw.rack_details),
             retail_price: Number(raw.retail_price ?? 0),
+            final_price: Number(raw.final_price ?? 0),
+            duty_charge: Number(raw.duty_charge ?? 0),
         };
     };
 
@@ -561,27 +580,19 @@ const EcommerenceAddProduct = () => {
                                         </Row>
 
                                         <Row>
+
+
                                             <Col lg={3}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-Inputpurchase_rate">Tax</Label>
+                                                    <Label>Duty Charge</Label>
                                                     <Input
                                                         type="number"
-                                                        name="tax"
+                                                        name="duty_charge"
                                                         className="form-control"
-                                                        id="formrow-Inputpurchase_rate"
-                                                        placeholder="Enter tax"
-                                                        value={formik.values.tax}
+                                                        value={formik.values.duty_charge}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
-                                                        invalid={
-                                                            formik.touched.tax && formik.errors.tax ? true : false
-                                                        }
                                                     />
-                                                    {
-                                                        formik.errors.tax && formik.touched.tax ? (
-                                                            <FormFeedback type="invalid">{formik.errors.tax}</FormFeedback>
-                                                        ) : null
-                                                    }
                                                 </div>
                                             </Col>
 
@@ -608,6 +619,65 @@ const EcommerenceAddProduct = () => {
                                                     }
                                                 </div>
                                             </Col>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-Inputpurchase_rate">Tax</Label>
+                                                    <Input
+                                                        type="number"
+                                                        name="tax"
+                                                        className="form-control"
+                                                        id="formrow-Inputpurchase_rate"
+                                                        placeholder="Enter tax"
+                                                        value={formik.values.tax}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={
+                                                            formik.touched.tax && formik.errors.tax ? true : false
+                                                        }
+                                                    />
+                                                    {
+                                                        formik.errors.tax && formik.touched.tax ? (
+                                                            <FormFeedback type="invalid">{formik.errors.tax}</FormFeedback>
+                                                        ) : null
+                                                    }
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label>Total Landing Cost + Tax</Label>
+                                                    <Input
+                                                        type="number"
+                                                        className="form-control"
+                                                        value={(
+                                                            (parseFloat(formik.values.landing_cost) || 0) +
+                                                            ((parseFloat(formik.values.landing_cost) || 0) *
+                                                                (parseFloat(formik.values.tax) || 0) / 100)
+                                                        ).toFixed(2)}
+                                                        readOnly
+                                                    />
+                                                </div>
+                                            </Col>
+
+                                        </Row>
+
+                                        <Row>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label>Final Price</Label>
+                                                    <Input
+                                                        type="number"
+                                                        name="final_price"
+                                                        className="form-control"
+                                                        value={formik.values.final_price}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                    />
+                                                </div>
+                                            </Col>
+
 
                                             <Col lg={3}>
 

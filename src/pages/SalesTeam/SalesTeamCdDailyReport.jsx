@@ -64,6 +64,8 @@ const SalesTeamCdDailyReport = () => {
         params: filters,
       });
 
+      // console.log("drtgyhuji", response.data)
+
       const apiData = response?.data?.data || [];
       const apiTotals = response?.data?.totals || {};
 
@@ -173,6 +175,8 @@ const SalesTeamCdDailyReport = () => {
         "ACD",
         "AVG CD",
         "NEW LEADS",
+        "MD",
+        "SD",
         "BILL",
         "VOLUME",
       ]);
@@ -189,6 +193,8 @@ const SalesTeamCdDailyReport = () => {
             safeNumber(member.ACD),
             safeNumber(member.AVG_CD),
             safeNumber(member.new_deals),
+            safeNumber(member.md),
+            safeNumber(member.sd),
             safeNumber(member.bill_count),
             safeNumber(member.volume),
           ]);
@@ -202,6 +208,8 @@ const SalesTeamCdDailyReport = () => {
           safeNumber(team.team_total?.ACD),
           safeNumber(team.team_total?.AVG_CD),
           safeNumber(team.team_total?.new_deals),
+          safeNumber(team.team_total?.md),
+          safeNumber(team.team_total?.sd),
           safeNumber(team.team_total?.bill_count),
           safeNumber(team.team_total?.volume),
         ]);
@@ -217,6 +225,8 @@ const SalesTeamCdDailyReport = () => {
         safeNumber(totals?.ACD),
         safeNumber(totals?.AVG_CD),
         safeNumber(totals?.new_deals),
+        safeNumber(totals?.md),
+        safeNumber(totals?.sd),
         safeNumber(totals?.bill_count),
         safeNumber(totals?.volume),
       ]);
@@ -231,6 +241,8 @@ const SalesTeamCdDailyReport = () => {
         { wch: 12 },
         { wch: 14 },
         { wch: 16 },
+        { wch: 10 },
+        { wch: 10 },
         { wch: 12 },
         { wch: 14 },
       ];
@@ -238,7 +250,7 @@ const SalesTeamCdDailyReport = () => {
       ws["!merges"] = [
         {
           s: { r: 0, c: 0 },
-          e: { r: 0, c: 8 },
+          e: { r: 0, c: 10 },
         },
       ];
 
@@ -289,7 +301,7 @@ const SalesTeamCdDailyReport = () => {
         border: thinBorder,
       };
 
-      for (let c = 0; c <= 8; c++) {
+      for (let c = 0; c <= 10; c++) {
         const cell = XLSX.utils.encode_cell({ r: 2, c });
         if (ws[cell]) {
           ws[cell].s = {
@@ -312,7 +324,7 @@ const SalesTeamCdDailyReport = () => {
         if (firstCell?.v === "TOTAL") {
           const isGrandTotal = r === range.e.r;
 
-          for (let c = 0; c <= 8; c++) {
+          for (let c = 0; c <= 10; c++) {
             const cell = XLSX.utils.encode_cell({ r, c });
             if (!ws[cell]) continue;
 
@@ -558,6 +570,8 @@ const SalesTeamCdDailyReport = () => {
                         "ACD",
                         "AVG CD",
                         "NEW LEADS",
+                        "MD",
+                        "SD",
                         "BILL",
                         "VOLUME",
                       ].map((head) => (
@@ -619,6 +633,12 @@ const SalesTeamCdDailyReport = () => {
                               {formatValue(member.new_deals)}
                             </td>
                             <td style={{ border: "1px solid #000" }}>
+                              {formatValue(member.md)}
+                            </td>
+                            <td style={{ border: "1px solid #000" }}>
+                              {formatValue(member.sd)}
+                            </td>
+                            <td style={{ border: "1px solid #000" }}>
                               {formatValue(member.bill_count)}
                             </td>
                             <td style={{ border: "1px solid #000" }}>
@@ -656,6 +676,12 @@ const SalesTeamCdDailyReport = () => {
                             {formatValue(team.team_total?.new_deals)}
                           </td>
                           <td style={teamTotalStyle}>
+                            {formatValue(team.team_total?.md)}
+                          </td>
+                          <td style={teamTotalStyle}>
+                            {formatValue(team.team_total?.sd)}
+                          </td>
+                          <td style={teamTotalStyle}>
                             {formatValue(team.team_total?.bill_count)}
                           </td>
                           <td style={teamTotalStyle}>
@@ -689,6 +715,12 @@ const SalesTeamCdDailyReport = () => {
                       </td>
                       <td style={grandTotalStyle}>
                         {formatValue(totals?.new_deals)}
+                      </td>
+                      <td style={grandTotalStyle}>
+                        {formatValue(totals?.md)}
+                      </td>
+                      <td style={grandTotalStyle}>
+                        {formatValue(totals?.sd)}
                       </td>
                       <td style={grandTotalStyle}>
                         {formatValue(totals?.bill_count)}

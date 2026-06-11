@@ -38,12 +38,12 @@ const StaffAttendance = () => {
     const [expandedRows, setExpandedRows] = useState({});
     const today = new Date().toISOString().split("T")[0];
 
-  const [filters, setFilters] = useState({
-    start_date: today,
-    end_date: today,
-    team: "",
-    member: "",
-});
+    const [filters, setFilters] = useState({
+        start_date: today,
+        end_date: today,
+        team: "",
+        member: "",
+    });
 
     const [teams, setTeams] = useState([]);
     const [members, setMembers] = useState([]);
@@ -69,6 +69,7 @@ const StaffAttendance = () => {
             );
 
             const result = res?.data;
+            // console.log("results", res.data)
 
             setAttendanceData(result?.results?.data || []);
 
@@ -112,33 +113,33 @@ const StaffAttendance = () => {
         } catch (error) {
             toast.error(
                 error?.response?.data?.message ||
-                    "Failed to load attendance"
+                "Failed to load attendance"
             );
         } finally {
             setLoading(false);
         }
     };
 
-   useEffect(() => {
-    fetchAttendance(1);
-}, []);
+    useEffect(() => {
+        fetchAttendance(1);
+    }, []);
 
     const handleSearch = () => {
         fetchAttendance(1);
     };
 
-  const resetFilters = () => {
-    setFilters({
-        start_date: today,
-        end_date: today,
-        team: "",
-        member: "",
-    });
+    const resetFilters = () => {
+        setFilters({
+            start_date: today,
+            end_date: today,
+            team: "",
+            member: "",
+        });
 
-    setTimeout(() => {
-        fetchAttendance(1);
-    }, 100);
-};
+        setTimeout(() => {
+            fetchAttendance(1);
+        }, 100);
+    };
 
     const toggleExpand = (key) => {
         setExpandedRows((prev) => ({
@@ -147,331 +148,338 @@ const StaffAttendance = () => {
         }));
     };
 
-  return (
-    <React.Fragment>
-        <div className="page-content">
-            <Container fluid>
-                <Breadcrumbs
-                    title="Attendance"
-                    breadcrumbItem="Staff Attendance"
-                />
+    return (
+        <React.Fragment>
+            <div className="page-content">
+                <Container fluid>
+                    <Breadcrumbs
+                        title="Attendance"
+                        breadcrumbItem="Staff Attendance"
+                    />
 
-                {/* FILTERS */}
+                    {/* FILTERS */}
 
-                <Card className="mb-4">
-                    <CardBody>
-                        <CardTitle>Filters</CardTitle>
+                    <Card className="mb-4">
+                        <CardBody>
+                            <CardTitle>Filters</CardTitle>
 
-                        <Row>
-                            <Col md={3}>
-                                <label>Start Date</label>
+                            <Row>
+                                <Col md={3}>
+                                    <label>Start Date</label>
 
-                                <Input
-                                    type="date"
-                                    value={filters.start_date}
-                                    onChange={(e) =>
-                                        setFilters({
-                                            ...filters,
-                                            start_date: e.target.value,
-                                        })
-                                    }
-                                />
-                            </Col>
+                                    <Input
+                                        type="date"
+                                        value={filters.start_date}
+                                        onChange={(e) =>
+                                            setFilters({
+                                                ...filters,
+                                                start_date: e.target.value,
+                                            })
+                                        }
+                                    />
+                                </Col>
 
-                            <Col md={3}>
-                                <label>End Date</label>
+                                <Col md={3}>
+                                    <label>End Date</label>
 
-                                <Input
-                                    type="date"
-                                    value={filters.end_date}
-                                    onChange={(e) =>
-                                        setFilters({
-                                            ...filters,
-                                            end_date: e.target.value,
-                                        })
-                                    }
-                                />
-                            </Col>
+                                    <Input
+                                        type="date"
+                                        value={filters.end_date}
+                                        onChange={(e) =>
+                                            setFilters({
+                                                ...filters,
+                                                end_date: e.target.value,
+                                            })
+                                        }
+                                    />
+                                </Col>
 
-                            <Col md={3}>
-                                <label>Team</label>
+                                <Col md={3}>
+                                    <label>Team</label>
 
-                                <Select
-                                    options={teams}
-                                    value={
-                                        teams.find(
-                                            (item) =>
-                                                item.value === filters.team
-                                        ) || null
-                                    }
-                                    onChange={(selected) =>
-                                        setFilters({
-                                            ...filters,
-                                            team:
-                                                selected?.value || "",
-                                        })
-                                    }
-                                    placeholder="Select Team"
-                                />
-                            </Col>
+                                    <Select
+                                        options={teams}
+                                        value={
+                                            teams.find(
+                                                (item) =>
+                                                    item.value === filters.team
+                                            ) || null
+                                        }
+                                        onChange={(selected) =>
+                                            setFilters({
+                                                ...filters,
+                                                team:
+                                                    selected?.value || "",
+                                            })
+                                        }
+                                        placeholder="Select Team"
+                                    />
+                                </Col>
 
-                            <Col md={3}>
-                                <label>Member</label>
+                                <Col md={3}>
+                                    <label>Member</label>
 
-                                <Select
-                                    options={members}
-                                    value={
-                                        members.find(
-                                            (item) =>
-                                                item.value === filters.member
-                                        ) || null
-                                    }
-                                    onChange={(selected) =>
-                                        setFilters({
-                                            ...filters,
-                                            member:
-                                                selected?.value || "",
-                                        })
-                                    }
-                                    placeholder="Select Member"
-                                />
-                            </Col>
-                        </Row>
+                                    <Select
+                                        options={members}
+                                        value={
+                                            members.find(
+                                                (item) =>
+                                                    item.value === filters.member
+                                            ) || null
+                                        }
+                                        onChange={(selected) =>
+                                            setFilters({
+                                                ...filters,
+                                                member:
+                                                    selected?.value || "",
+                                            })
+                                        }
+                                        placeholder="Select Member"
+                                    />
+                                </Col>
+                            </Row>
 
-                        <div className="mt-3">
-                            <Button
-                                color="primary"
-                                onClick={handleSearch}
-                            >
-                                Search
-                            </Button>
+                            <div className="mt-3">
+                                <Button
+                                    color="primary"
+                                    onClick={handleSearch}
+                                >
+                                    Search
+                                </Button>
 
-                            <Button
-                                color="secondary"
-                                className="ms-2"
-                                onClick={resetFilters}
-                            >
-                                Reset
-                            </Button>
+                                <Button
+                                    color="secondary"
+                                    className="ms-2"
+                                    onClick={resetFilters}
+                                >
+                                    Reset
+                                </Button>
+                            </div>
+                        </CardBody>
+                    </Card>
+
+                    {/* ATTENDANCE LIST */}
+
+                    {loading ? (
+                        <div className="text-center py-5">
+                            <Spinner />
                         </div>
-                    </CardBody>
-                </Card>
+                    ) : (
+                        <>
+                            <Row>
+                                {attendanceData?.length > 0 ? (
+                                    attendanceData.map((team) => {
+                                        const todayAttendance =
+                                            team?.date_wise_attendance?.[0];
 
-                {/* ATTENDANCE LIST */}
-
-                {loading ? (
-                    <div className="text-center py-5">
-                        <Spinner />
-                    </div>
-                ) : (
-                    <>
-                        <Row>
-                            {attendanceData?.length > 0 ? (
-                                attendanceData.map((team) => {
-                                    const todayAttendance =
-                                        team?.date_wise_attendance?.[0];
-
-                                    return (
-                                        <Col
-                                            xs={12}
-                                            key={team.team_id}
-                                            className="mb-3"
-                                        >
-                                            <Card
-                                                className="shadow-sm border-0"
-                                                style={{
-                                                    borderRadius: "12px",
-                                                }}
+                                        return (
+                                            <Col
+                                                xs={12}
+                                                key={team.team_id}
+                                                className="mb-3"
                                             >
-                                                <CardBody>
-                                                    <div className="d-flex justify-content-between align-items-center flex-wrap mb-3">
-                                                        <div>
-                                                            <h5 className="mb-1 fw-bold">
-                                                                {
-                                                                    team.team_name
-                                                                }
-                                                            </h5>
+                                                <Card
+                                                    className="shadow-sm border-0"
+                                                    style={{
+                                                        borderRadius: "12px",
+                                                    }}
+                                                >
+                                                    <CardBody>
+                                                        <div className="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                                                            <div>
+                                                                <h5 className="mb-1 fw-bold">
+                                                                    {
+                                                                        team.team_name
+                                                                    }
+                                                                </h5>
 
-                                                            <small className="text-muted">
-                                                                Team Leader :
-                                                                {" "}
-                                                                {
-                                                                    team.team_leader_name
-                                                                }
-                                                            </small>
+                                                                <small className="text-muted">
+                                                                    Team Leader :
+                                                                    {" "}
+                                                                    {
+                                                                        team.team_leader_name
+                                                                    }
+                                                                </small>
+                                                            </div>
+
+                                                            <div className="d-flex gap-2 flex-wrap">
+                                                                <span className="badge bg-success">
+                                                                    Present :
+                                                                    {" "}
+                                                                    {todayAttendance?.present_count ||
+                                                                        0}
+                                                                </span>
+
+                                                                <span className="badge bg-warning">
+                                                                    Half Day :
+                                                                    {" "}
+                                                                    {todayAttendance?.half_day_count ||
+                                                                        0}
+                                                                </span>
+
+                                                                <span className="badge bg-danger">
+                                                                    Absent :
+                                                                    {" "}
+                                                                    {todayAttendance?.absent_count ||
+                                                                        0}
+                                                                </span>
+
+                                                                <span className="badge bg-primary">
+                                                                    Members :
+                                                                    {" "}
+                                                                    {team.members_count ||
+                                                                        0}
+                                                                </span>
+                                                            </div>
                                                         </div>
 
-                                                        <div className="d-flex gap-2 flex-wrap">
-                                                            <span className="badge bg-success">
-                                                                Present :
-                                                                {" "}
-                                                                {todayAttendance?.present_count ||
-                                                                    0}
-                                                            </span>
+                                                        <Table
+                                                            bordered
+                                                            responsive
+                                                            size="sm"
+                                                            className="mb-0"
+                                                        >
+                                                            <thead>
+                                                                <tr>
+                                                                    <th
+                                                                        width="5%"
+                                                                    >
+                                                                        #
+                                                                    </th>
+                                                                    <th>
+                                                                        Staff Name
+                                                                    </th>
+                                                                    <th>
+                                                                        Reporting Time
+                                                                    </th>
+                                                                    <th
+                                                                        width="15%"
+                                                                    >
+                                                                        Status
+                                                                    </th>
+                                                                </tr>
+                                                            </thead>
 
-                                                            <span className="badge bg-warning">
-                                                                Half Day :
-                                                                {" "}
-                                                                {todayAttendance?.half_day_count ||
-                                                                    0}
-                                                            </span>
-
-                                                            <span className="badge bg-danger">
-                                                                Absent :
-                                                                {" "}
-                                                                {todayAttendance?.absent_count ||
-                                                                    0}
-                                                            </span>
-
-                                                            <span className="badge bg-primary">
-                                                                Members :
-                                                                {" "}
-                                                                {team.members_count ||
-                                                                    0}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                    <Table
-                                                        bordered
-                                                        responsive
-                                                        size="sm"
-                                                        className="mb-0"
-                                                    >
-                                                        <thead>
-                                                            <tr>
-                                                                <th
-                                                                    width="5%"
-                                                                >
-                                                                    #
-                                                                </th>
-                                                                <th>
-                                                                    Staff Name
-                                                                </th>
-                                                                <th
-                                                                    width="15%"
-                                                                >
-                                                                    Status
-                                                                </th>
-                                                            </tr>
-                                                        </thead>
-
-                                                        <tbody>
-                                                            {todayAttendance?.attendance
-                                                                ?.length >
-                                                            0 ? (
-                                                                todayAttendance.attendance.map(
-                                                                    (
-                                                                        staff,
-                                                                        index
-                                                                    ) => (
-                                                                        <tr
-                                                                            key={
-                                                                                staff.id
-                                                                            }
-                                                                        >
-                                                                            <td>
-                                                                                {index +
-                                                                                    1}
-                                                                            </td>
-
-                                                                            <td>
-                                                                                {
-                                                                                    staff.staff_name
+                                                            <tbody>
+                                                                {todayAttendance?.attendance
+                                                                    ?.length >
+                                                                    0 ? (
+                                                                    todayAttendance.attendance.map(
+                                                                        (
+                                                                            staff,
+                                                                            index
+                                                                        ) => (
+                                                                            <tr
+                                                                                key={
+                                                                                    staff.id
                                                                                 }
-                                                                            </td>
+                                                                            >
+                                                                                <td>
+                                                                                    {index +
+                                                                                        1}
+                                                                                </td>
 
-                                                                            <td>
-                                                                                <span
-                                                                                    className={`badge ${
-                                                                                        staff.status ===
-                                                                                        "present"
+                                                                                <td>
+                                                                                    {
+                                                                                        staff.staff_name
+                                                                                    }
+                                                                                </td>
+                                                                                <td>
+                                                                                    {
+                                                                                        staff.attendance_time || "--:--:--"
+                                                                                    }
+                                                                                </td>
+
+                                                                                <td>
+                                                                                    <span
+                                                                                        className={`badge ${staff.status ===
+                                                                                            "present"
                                                                                             ? "bg-success"
                                                                                             : staff.status ===
-                                                                                              "absent"
-                                                                                            ? "bg-danger"
-                                                                                            : "bg-warning"
-                                                                                    }`}
-                                                                                >
-                                                                                    {
-                                                                                        staff.status
-                                                                                    }
-                                                                                </span>
-                                                                            </td>
-                                                                        </tr>
+                                                                                                "absent"
+                                                                                                ? "bg-danger"
+                                                                                                : "bg-warning"
+                                                                                            }`}
+                                                                                    >
+                                                                                        {
+                                                                                            staff.status
+                                                                                        }
+                                                                                    </span>
+                                                                                </td>
+                                                                            </tr>
+                                                                        )
                                                                     )
-                                                                )
-                                                            ) : (
-                                                                <tr>
-                                                                    <td
-                                                                        colSpan="3"
-                                                                        className="text-center"
-                                                                    >
-                                                                        No Attendance
-                                                                    </td>
-                                                                </tr>
-                                                            )}
-                                                        </tbody>
-                                                    </Table>
-                                                </CardBody>
-                                            </Card>
-                                        </Col>
-                                    );
-                                })
-                            ) : (
-                                <Col md={12}>
-                                    <Card>
-                                        <CardBody className="text-center">
-                                            No Attendance Found
-                                        </CardBody>
-                                    </Card>
-                                </Col>
-                            )}
-                        </Row>
+                                                                ) : (
+                                                                    <tr>
+                                                                        <td
+                                                                            colSpan="3"
+                                                                            className="text-center"
+                                                                        >
+                                                                            No Attendance
+                                                                        </td>
+                                                                    </tr>
+                                                                )}
+                                                            </tbody>
+                                                        </Table>
+                                                    </CardBody>
+                                                </Card>
+                                            </Col>
+                                        );
+                                    })
+                                ) : (
+                                    <Col md={12}>
+                                        <Card>
+                                            <CardBody className="text-center">
+                                                No Attendance Found
+                                            </CardBody>
+                                        </Card>
+                                    </Col>
+                                )}
+                            </Row>
 
-                        <Card>
-                            <CardBody>
-                                <div className="d-flex justify-content-between align-items-center">
-                                    <Button
-                                        color="secondary"
-                                        disabled={
-                                            !pagination.previous
-                                        }
-                                        onClick={() =>
-                                            fetchAttendance(
-                                                pagination.page - 1
-                                            )
-                                        }
-                                    >
-                                        Previous
-                                    </Button>
+                            <Card>
+                                <CardBody>
+                                    <div className="d-flex justify-content-between align-items-center">
+                                        <Button
+                                            color="secondary"
+                                            disabled={
+                                                !pagination.previous
+                                            }
+                                            onClick={() =>
+                                                fetchAttendance(
+                                                    pagination.page - 1
+                                                )
+                                            }
+                                        >
+                                            Previous
+                                        </Button>
 
-                                    <span>
-                                        Page {pagination.page}
-                                    </span>
+                                        <span>
+                                            Page {pagination.page}
+                                        </span>
 
-                                    <Button
-                                        color="secondary"
-                                        disabled={!pagination.next}
-                                        onClick={() =>
-                                            fetchAttendance(
-                                                pagination.page + 1
-                                            )
-                                        }
-                                    >
-                                        Next
-                                    </Button>
-                                </div>
-                            </CardBody>
-                        </Card>
-                    </>
-                )}
+                                        <Button
+                                            color="secondary"
+                                            disabled={!pagination.next}
+                                            onClick={() =>
+                                                fetchAttendance(
+                                                    pagination.page + 1
+                                                )
+                                            }
+                                        >
+                                            Next
+                                        </Button>
+                                    </div>
+                                </CardBody>
+                            </Card>
+                        </>
+                    )}
 
-                <ToastContainer />
-            </Container>
-        </div>
-    </React.Fragment>
-);
+                    <ToastContainer />
+                </Container>
+            </div>
+        </React.Fragment>
+    );
 };
 
 export default StaffAttendance;

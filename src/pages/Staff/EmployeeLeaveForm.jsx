@@ -132,7 +132,7 @@ const EmployeeLeaveForm = () => {
       setSupervisorLoading(true);
 
       const response = await axios.get(
-        `${import.meta.env.VITE_APP_KEY}supervisors/`,
+        `${import.meta.env.VITE_APP_KEY}staff/managers/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

@@ -1133,11 +1133,7 @@ const SidebarContent = (props) => {
                   </li>
                 )}
 
-                <li>
-                  <Link to="/hr/leave/applications/">
-                    {props.t("Leave Applications")}
-                  </Link>
-                </li>
+             
 
                 {role === 'ADMIN' || role === 'HR' ? (
                   <li>

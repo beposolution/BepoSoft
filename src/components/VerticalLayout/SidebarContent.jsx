@@ -1125,13 +1125,25 @@ const SidebarContent = (props) => {
                   </Link>
                 </li>
 
-                {role === 'CEO' || role === 'HR' || role === 'COO' ? (
+                {isManager && (
                   <li>
-                    <Link to="/staff/leave/list/">
-                      {props.t("All Staff Leave List")}
+                    <Link to="/manager/leave/applications/">
+                      {props.t("Leave Applications")}
+                    </Link>
+                  </li>
+                )}
+
+             
+
+                {role === 'ADMIN' || role === 'HR' ? (
+                  <li>
+                    <Link to="/hr/leave/applications/">
+                      {props.t("HR Leave Applications")}
                     </Link>
                   </li>
                 ) : null}
+
+
               </ul>
             </li>
 

@@ -448,6 +448,9 @@ import TeamDetailedSummaryPage from "../pages/SalesTeam/TeamDetailedSummaryPage"
 import FamilyTeamListPage from "../pages/SalesTeam/FamilyTeamListPage";
 import EmployeeLeaveForm from "../pages/Staff/EmployeeLeaveForm";
 import EmployeeLeaveList from "../pages/Staff/EmployeeLeaveList";
+import ManagerLeaveApplications from "../pages/Staff/ManagerLeaveApplications";
+import HrLeaveApplication from "../pages/Staff/HrLeaveApplication";
+
 
 
 // import UiProgressbar from "../../src/pages/Ui/UiProgressbar"
@@ -499,7 +502,8 @@ const authProtectedRoutes = [
   { path: "/staff/exit/view/:id/", component: <StaffExitView /> },
   { path: "/staff/leave/form/", component: <EmployeeLeaveForm /> },
   { path: "/staff/leave/list/", component: <EmployeeLeaveList /> },
-
+  { path: "/manager/leave/applications/", component: <ManagerLeaveApplications /> },
+  { path: "/hr/leave/applications/", component: <HrLeaveApplication />, },
 
   // Team
   { path: "/sales/team/add/", component: <AddTeam /> },
@@ -691,6 +695,7 @@ const authProtectedRoutes = [
   { path: "/attendance/team-members/", component: <AttendanceTeamMembers />, },
   { path: "/attendance/add/", component: <AttendanceAdd />, },
   { path: "/staff-attendance", component: <StaffAttendance />, },
+  { path: "/manager-leave-applications", component: <ManagerLeaveApplications />, },
 
 
   //Bank

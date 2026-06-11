@@ -31,6 +31,7 @@ const BDOData = () => {
 
     const [entry, setEntry] = useState({ staff: null, status: "" });
     const [attendanceDate, setAttendanceDate] = useState("");
+    const [attendanceTime, setAttendanceTime] = useState("");
     const [allData, setAllData] = useState([]);
 
     const [selectedId, setSelectedId] = useState(null);
@@ -166,6 +167,7 @@ const BDOData = () => {
             });
 
             const rawList = normalizeList(res.data);
+            // console.log("RAW LIST:", rawList);
             const grouped = {};
 
             rawList.forEach((item) => {
@@ -176,7 +178,7 @@ const BDOData = () => {
                 const entriesForItem = Array.isArray(item?.staff_entries)
                     ? item.staff_entries.map((entry) => ({
                         ...entry,
-                        record_id: item.id, // ✅ ADD THIS (CRITICAL)
+                        record_id: item.id,
                     }))
                     : [];
 
@@ -237,27 +239,17 @@ const BDOData = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!entry.staff || !entry.status) {
-            toast.error("Please select staff and status");
+        if (!entry.staff || !entry.status || !attendanceTime) {
+            toast.error("Please select staff, status and time");
             return;
         }
-
-        // ❌ REMOVE THIS BLOCK
-        /*
-        const staffIds = entries.map((e) => e.staff?.value);
-        const hasDuplicate = new Set(staffIds).size !== staffIds.length;
-    
-        if (hasDuplicate) {
-            toast.error("Duplicate staff not allowed");
-            return;
-        }
-        */
 
         const payload = {
             attendance_date: attendanceDate,
             staff_entries: [
                 {
                     staff: Number(entry.staff?.value),
+                    attendance_time: attendanceTime,
                     status: entry.status,
                 },
             ],
@@ -271,8 +263,8 @@ const BDOData = () => {
             toast.success("Submitted successfully");
             await fetchAllData();
 
-            // ✅ FIX RESET
             setEntry({ staff: null, status: "" });
+            setAttendanceTime("");
 
         } catch (error) {
             const message =
@@ -292,9 +284,18 @@ const BDOData = () => {
         }
     };
 
+    // const handleView = (row, parentId) => {
+    //     setSelectedId(parentId);
+    //     setSelectedData(row);
+    //     setRowEditModal(true);
+    // };
+
     const handleView = (row, parentId) => {
         setSelectedId(parentId);
-        setSelectedData(row);
+        setSelectedData({
+            ...row,
+            attendance_time: row.attendance_time || "",
+        });
         setRowEditModal(true);
     };
 
@@ -327,16 +328,18 @@ const BDOData = () => {
                 })
                 .map((e) => ({
                     staff: e.staff?.id ?? e.staff,
+                    attendance_time: e.attendance_time,
                     status: e.status,
                 }));
 
             if (remainingEntries.length === 0) {
-                // ✅ DELETE FULL RECORD
+
                 await deleteRecord(parentId);
             } else {
-                // ✅ UPDATE RECORD
+
                 await updateRecord(parentId, {
                     attendance_date: parent.attendance_date,
+                    attendance_time: parent.attendance_time,
                     staff_entries: remainingEntries,
                 });
             }
@@ -345,7 +348,7 @@ const BDOData = () => {
             fetchAllData();
 
         } catch (err) {
-            console.log(err);
+            // console.log(err);
             toast.error("Delete failed");
         }
     };
@@ -362,14 +365,26 @@ const BDOData = () => {
                     selectedData.staff?.id ?? selectedData.staff;
 
                 if (String(staffId) === String(selectedStaffId)) {
+                    // return {
+                    //     staff: staffId,
+                    //     status: selectedData.status,
+                    // };
                     return {
                         staff: staffId,
-                        status: selectedData.status,
+                        attendance_time:
+                            String(staffId) === String(selectedStaffId)
+                                ? selectedData.attendance_time
+                                : e.attendance_time,
+                        status:
+                            String(staffId) === String(selectedStaffId)
+                                ? selectedData.status
+                                : e.status,
                     };
                 }
 
                 return {
                     staff: staffId,
+                    attendance_time: e.attendance_time,
                     status: e.status,
                 };
             });
@@ -384,7 +399,7 @@ const BDOData = () => {
             fetchAllData();
 
         } catch (err) {
-            console.log(err?.response?.data);
+            // console.log(err?.response?.data);
             toast.error("Update failed");
         }
     };
@@ -417,12 +432,6 @@ const BDOData = () => {
 
                                 <Form onSubmit={handleSubmit}>
 
-                                    {/* ❌ REMOVE THIS */}
-                                    {/*
-    {entries.map((entry, index) => (
-    */}
-
-                                    {/* ✅ SINGLE ENTRY UI */}
                                     <Row className="align-items-end">
                                         <Col md={6}>
                                             <Label>Staff</Label>
@@ -433,6 +442,16 @@ const BDOData = () => {
                                                 placeholder="Select staff"
                                                 isClearable
                                                 isSearchable
+                                            />
+                                        </Col>
+
+                                        <Col md={2}>
+                                            <Label>Time</Label>
+                                            <input
+                                                type="time"
+                                                className="form-control"
+                                                value={attendanceTime}
+                                                onChange={(e) => setAttendanceTime(e.target.value)}
                                             />
                                         </Col>
 
@@ -605,6 +624,7 @@ const BDOData = () => {
                                                                         <tr>
                                                                             <th style={{ width: "10%" }}>#</th>
                                                                             <th>Staff</th>
+                                                                            <th>Reporting Time</th>
                                                                             <th>Status</th>
                                                                             <th>Action</th>
                                                                         </tr>
@@ -619,6 +639,9 @@ const BDOData = () => {
                                                                                             staffItem.staff?.name ||
                                                                                             staffItem.staff ||
                                                                                             "-"}
+                                                                                    </td>
+                                                                                    <td style={{ backgroundColor: "#ffffff" }}>
+                                                                                        {staffItem.attendance_time || "--:--:--"}
                                                                                     </td>
                                                                                     <td style={{ backgroundColor: "#ffffff" }}>
                                                                                         {staffItem.status}
@@ -693,6 +716,23 @@ const BDOData = () => {
                                                         selectedData.staff ||
                                                         "-"}
                                                 </div>
+                                            </div>
+
+                                            <div className="mb-3">
+                                                <Label className="form-label fw-semibold">
+                                                    Attendance Time
+                                                </Label>
+                                                <input
+                                                    type="time"
+                                                    className="form-control"
+                                                    value={selectedData.attendance_time || ""}
+                                                    onChange={(e) =>
+                                                        setSelectedData((prev) => ({
+                                                            ...prev,
+                                                            attendance_time: e.target.value,
+                                                        }))
+                                                    }
+                                                />
                                             </div>
 
                                             {/* Status */}

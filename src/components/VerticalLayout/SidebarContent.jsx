@@ -899,7 +899,7 @@ const SidebarContent = (props) => {
                     <>
                       <li>
                         <Link to="/bdm/daily/report/">
-                          {props.t("BDM Report Add")}
+                          {props.t("BDM Attendance Add")}
                         </Link>
                       </li>
                       <li>
@@ -1032,7 +1032,7 @@ const SidebarContent = (props) => {
 
 
 
-            {isManager && (
+            {isManager && role !== 'BDM' && (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUsers size={17} style={{ marginRight: "6px" }} />

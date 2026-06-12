@@ -425,6 +425,22 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
+            {role === 'Marketing' ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <AiFillProduct size={17} style={{ marginRight: '6px' }} />
+                  <span>{props.t("purchase")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+
+                  <li>
+                    <Link to="/add/products/bulk/">{props.t("Bulk Order Creation")}</Link>
+                  </li>
+
+                </ul>
+              </li>
+            ) : null}
+
             {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'Warehouse Admin' || role === 'warehouse' || role === 'CEO' || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">

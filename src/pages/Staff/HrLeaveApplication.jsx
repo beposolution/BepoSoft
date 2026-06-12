@@ -16,7 +16,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const HrLeaveApplication = () => {
-    document.title = "HR Leave Applications | Beposoft";
+    document.title = "Staffs Leave Applications | Beposoft";
 
     const token = localStorage.getItem("token");
     const baseUrl = import.meta.env.VITE_APP_KEY;
@@ -208,7 +208,7 @@ const HrLeaveApplication = () => {
                                                 lineHeight: "1.2",
                                             }}
                                         >
-                                            HR Leave Applications
+                                            Staffs Leave Applications
                                         </h4>
 
                                         <p

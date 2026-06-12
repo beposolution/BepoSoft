@@ -1114,29 +1114,33 @@ const SidebarContent = (props) => {
               </Link>
 
               <ul className="sub-menu" aria-expanded="false">
-                <li>
-                  <Link to="/staff/leave/form/">
-                    {props.t("Apply Leave")}
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/staff/leave/list/">
-                    {props.t("My Leave List")}
-                  </Link>
-                </li>
+                {role !== 'COO' && role !== 'CEO' && role !== 'CMO' && (
+                  <>
+                    <li>
+                      <Link to="/staff/leave/form/">
+                        {props.t("Apply Leave")}
+                      </Link>
+                    </li>
+                    <li>
+                      <Link to="/staff/leave/list/">
+                        {props.t("My Leave Applications")}
+                      </Link>
+                    </li>
+                  </>
+                )}
 
                 {isManager && role !== 'HR' && (
                   <li>
                     <Link to="/manager/leave/applications/">
-                      {props.t("Leave Applications")}
+                      {props.t("Leave Applications For Approval")}
                     </Link>
                   </li>
                 )}
 
-                {role === 'CEO' || role === 'HR' || role === 'CEO' ? (
+                {role === 'CEO' || role === 'HR' || role === 'COO' || role === 'CMO' ? (
                   <li>
                     <Link to="/hr/leave/applications/">
-                      {props.t("HR Leave Applications")}
+                      {props.t("Staffs Leave Applications")}
                     </Link>
                   </li>
                 ) : null}

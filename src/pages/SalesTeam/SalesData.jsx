@@ -323,6 +323,8 @@ const SalesData = () => {
             state: "",
             district: "",
             new_leads: 0,
+            md: 0,
+            sd: 0,
             unbilled: 0,
             billed: 0,
             new_customers: 0,
@@ -352,6 +354,14 @@ const SalesData = () => {
                 .nullable()
                 .typeError("New leads must be a number")
                 .min(0, "New leads cannot be negative"),
+            md: Yup.number()
+                .nullable()
+                .typeError("New leads must be a number")
+                .min(0, "New leads cannot be negative"),
+            sd: Yup.number()
+                .nullable()
+                .typeError("New leads must be a number")
+                .min(0, "New leads cannot be negative"),
         }),
         onSubmit: async (values, { resetForm }) => {
             try {
@@ -366,6 +376,8 @@ const SalesData = () => {
                     billed: Number(values.billed) || 0,
                     new_customers: Number(values.new_customers) || 0,
                     new_conversions: Number(values.new_conversions) || 0,
+                    md: Number(values.md) || 0,
+                    sd: Number(values.sd) || 0,
                     new_leads: values.new_leads === "" ? null : Number(values.new_leads),
                 };
 
@@ -543,6 +555,8 @@ const SalesData = () => {
                 new_customers: data?.new_customers ?? 0,
                 new_conversions: data?.new_conversions ?? 0,
                 new_leads: data?.new_leads ?? 0,
+                md: data?.md ?? 0,
+                sd: data?.sd ?? 0,
             });
 
             setSelectedReportId(id);

@@ -1125,7 +1125,7 @@ const SidebarContent = (props) => {
                   </Link>
                 </li>
 
-                {isManager && (
+                {isManager && role !== 'HR' && (
                   <li>
                     <Link to="/manager/leave/applications/">
                       {props.t("Leave Applications")}
@@ -1133,9 +1133,7 @@ const SidebarContent = (props) => {
                   </li>
                 )}
 
-             
-
-                {role === 'ADMIN' || role === 'HR' ? (
+                {role === 'CEO' || role === 'HR' || role === 'CEO' ? (
                   <li>
                     <Link to="/hr/leave/applications/">
                       {props.t("HR Leave Applications")}

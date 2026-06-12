@@ -20,7 +20,7 @@ import {
 } from "reactstrap";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import Breadcrumbs from "../../components/Common/Breadcrumb";
+// import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -193,10 +193,10 @@ const ManagerLeaveApplications = () => {
                 style={{ background: "#f5f7fb", minHeight: "100vh" }}
             >
                 <Container fluid>
-                    <Breadcrumbs
+                    {/* <Breadcrumbs
                         title="Leave Management"
                         breadcrumbItem="Manager Leave Applications"
-                    />
+                    /> */}
 
                     <Card
                         className="border-0 mb-4"

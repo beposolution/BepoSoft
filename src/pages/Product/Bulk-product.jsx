@@ -9,6 +9,7 @@ const token = localStorage.getItem("token");
 
 const OrdersComponent = () => {
   const [states, setStates] = useState([]);
+  const [userId, setUserId] = useState(null);
   const [successLogs, setSuccessLogs] = useState([]);
   const [failureLogs, setFailureLogs] = useState([]);
   const [failedStockProducts, setFailedStockProducts] = useState([]);
@@ -16,6 +17,23 @@ const OrdersComponent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingText, setLoadingText] = useState("Processing orders...");
   const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}profile/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const userId = res?.data?.data?.id;
+        setUserId(userId);
+      } catch {
+        toast.error("Failed to load profile");
+      }
+    };
+
+    fetchProfile();
+  }, [API_BASE_URL, token]);
 
   useEffect(() => {
     fetchStates();
@@ -155,7 +173,6 @@ const OrdersComponent = () => {
         setStates(response.data.data || []);
       }
     } catch (error) {
-      // console.log("State fetch error:", error.response?.data || error.message);
       toast.error("Error fetching states");
     }
   };
@@ -287,6 +304,10 @@ const OrdersComponent = () => {
         getValue(row, ["Shipping", "Shipping Charge", "shipping_charge"], "0")
       ) || 0;
 
+      const codeCharge = parseFloat(
+        getValue(row, ["Total", "total", "code_charge"], "0")
+      ) || 0;
+
       const total = lineItemPrice * lineItemQuantity;
 
       const paymentStatus = getValue(
@@ -307,6 +328,7 @@ const OrdersComponent = () => {
           name: orderName,
           email,
           shippingCharge: shippingCharge,
+          codeCharge: codeCharge,
           createdAt:
             getValue(row, ["Created at", "Order Date", "Date"]) ||
             new Date().toISOString(),
@@ -444,14 +466,6 @@ const OrdersComponent = () => {
       });
     });
 
-    // console.log("GROUPED ORDERS");
-    // Object.values(groupedOrders).forEach((o) => {
-    //   console.log(
-    //     o.name,
-    //     o.totalPriceSet.shopMoney.amount,
-    //     o.lineItems.edges.length
-    //   );
-    // });
     return Object.values(groupedOrders);
   };
 
@@ -499,7 +513,6 @@ const OrdersComponent = () => {
 
         toast.success("Excel/CSV orders processed successfully");
       } catch (error) {
-        // console.log("Excel upload error:", error);
         toast.error("Failed to process Excel/CSV file");
       } finally {
         setIsLoading(false);
@@ -652,6 +665,7 @@ const OrdersComponent = () => {
     order,
     name,
     phone,
+    altPhone,
     email,
     address,
     city,
@@ -663,10 +677,11 @@ const OrdersComponent = () => {
 
       const body = {
         name: name || "Unknown Customer",
-        manager: 103,
+        manager: userId,
         state: stateId,
         phone: cleanPhone(phone),
-        alt_phone: "",
+        alt_phone: "7025400833",
+        // alt_phone: cleanPhone(altPhone) || "7025400833",
         email: email || "no-email@example.com",
         address,
         zip_code: zipcode,
@@ -688,7 +703,6 @@ const OrdersComponent = () => {
       addFailureLog(order, "Customer creation failed", "Add Customer API");
       return null;
     } catch (error) {
-      // console.log("addCustomer error:", error.response?.data || error.message);
       addFailureLog(order, "Customer creation failed", "Add Customer API", error);
       return null;
     }
@@ -739,7 +753,6 @@ const OrdersComponent = () => {
       addFailureLog(order, "Address creation failed", "Add Address API");
       return null;
     } catch (error) {
-      // console.log("addAddress error:", error.response?.data || error.message);
       addFailureLog(order, "Address creation failed", "Add Address API", error);
       return null;
     }
@@ -811,7 +824,6 @@ const OrdersComponent = () => {
 
       return true;
     } catch (error) {
-      // console.log("addToCart error:", error.response?.data || error.message);
       await deleteCartItems();
 
       addFailureLog(order, "Product add to cart failed", "Cart API", error);
@@ -833,10 +845,13 @@ const OrdersComponent = () => {
       );
 
       let shippingCharge = parseFloat(order?.shippingCharge || 0) || 0;
+
+      let codeCharge = parseFloat(order?.codeCharge || 0) || 0;
+
       totalAmount += shippingCharge;
 
       const body = {
-        manage_staff: 103,
+        manage_staff: userId,
         company: 5,
         customer: customerId,
         billing_address: addressId,
@@ -846,6 +861,7 @@ const OrdersComponent = () => {
         payment_status: mapPaymentStatus(order?.displayFinancialStatus),
         total_amount: totalAmount.toString(),
         shipping_charge: shippingCharge.toString(),
+        code_charge: codeCharge.toString(),
         bank: 8,
         payment_method: order?.paymentGatewayNames?.[0] || "N/A",
         warehouses: 1,
@@ -882,7 +898,6 @@ const OrdersComponent = () => {
       addFailureLog(order, "Order creation failed", "Create Order API");
       await deleteCartItems();
     } catch (error) {
-      // console.log("createOrder error:", error.response?.data || error.message);
 
       const errorBody = JSON.stringify(error.response?.data || "");
 
@@ -916,6 +931,8 @@ const OrdersComponent = () => {
         order?.shippingCharge || 0
       );
 
+      const codeCharge = parseFloat(order?.codeCharge || 0) || 0;
+
       const totalAmount = (
         productAmount + shippingCharge
       ).toFixed(2);
@@ -924,6 +941,7 @@ const OrdersComponent = () => {
         apiUrl(`shipping/${orderId}/order/`),
         {
           total_amount: totalAmount,
+          code_charge: codeCharge.toString(),
         },
         {
           headers: {
@@ -1363,6 +1381,30 @@ const SummaryCard = ({ title, value, icon, bg, color }) => {
   );
 };
 
+const formatBackendError = (error) => {
+  if (!error) return "No backend error response";
+
+  if (typeof error === "string") return error;
+
+  if (typeof error === "object") {
+    return Object.entries(error)
+      .map(([key, value]) => {
+        if (Array.isArray(value)) {
+          return `${key}: ${value.join(", ")}`;
+        }
+
+        if (typeof value === "object" && value !== null) {
+          return `${key}: ${JSON.stringify(value)}`;
+        }
+
+        return `${key}: ${value}`;
+      })
+      .join("\n");
+  }
+
+  return String(error);
+};
+
 const OrderTable = ({ title, subtitle, logs, type }) => {
   const isFailed = type === "failed";
 
@@ -1556,6 +1598,12 @@ const OrderTable = ({ title, subtitle, logs, type }) => {
                             }}
                           >
                             {log.reason}
+                            {log.backendError && (
+                              <>
+                                {"\n\n"}
+                                {formatBackendError(log.backendError)}
+                              </>
+                            )}
                           </div>
 
                           <div

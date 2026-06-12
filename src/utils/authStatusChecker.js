@@ -10,7 +10,6 @@ export const startAuthStatusChecker = (navigate) => {
     if (isLoggingOut) return;
 
     const token = localStorage.getItem("token");
-
     if (!token) return;
 
     try {
@@ -24,7 +23,6 @@ export const startAuthStatusChecker = (navigate) => {
 
       if (status === 401 || status === 403 || status === 404) {
         isLoggingOut = true;
-
         clearInterval(intervalId);
         intervalId = null;
 
@@ -37,7 +35,6 @@ export const startAuthStatusChecker = (navigate) => {
   };
 
   checkAuthStatus();
-
   intervalId = setInterval(checkAuthStatus, 20000);
 };
 

@@ -21,6 +21,9 @@ import NonAuthLayout from "./components/NonAuthLayout";
 // Import scss
 import "./assets/scss/theme.scss";
 
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 
 const App = (props) => {
   const LayoutProperties = createSelector(
@@ -51,6 +54,7 @@ const App = (props) => {
 
   return (
     <React.Fragment>
+      <ToastContainer />
       <Routes>
         {publicRoutes.map((route, idx) => (
           <Route

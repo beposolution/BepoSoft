@@ -30,6 +30,8 @@ const EmployeeLeaveForm = () => {
   const [supervisorLoading, setSupervisorLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const today = new Date().toISOString().split("T")[0];
+
   const supervisorOptions = supervisors.map((item) => ({
     value: item.id,
     label:
@@ -39,6 +41,18 @@ const EmployeeLeaveForm = () => {
       item.employee_name ||
       `Supervisor ${item.id}`,
   }));
+
+  const calculateDays = (startDate, endDate) => {
+    if (!startDate || !endDate) return "";
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (end < start) return "";
+
+    const diffTime = end.getTime() - start.getTime();
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  };
 
   const formik = useFormik({
     initialValues: {
@@ -54,9 +68,23 @@ const EmployeeLeaveForm = () => {
       leave_type: Yup.string().required("Please select leave type"),
       no_of_days: Yup.number()
         .typeError("No of days must be a number")
-        .nullable(),
+        .required("No of days is required")
+        .min(1, "No of days must be at least 1"),
+
       start_date: Yup.string().required("Start date is required"),
-      end_date: Yup.string().required("End date is required"),
+
+      end_date: Yup.string()
+        .required("End date is required")
+        .test(
+          "end-date-after-start-date",
+          "End date must be after or same as start date",
+          function (value) {
+            const { start_date } = this.parent;
+            if (!start_date || !value) return true;
+            return new Date(value) >= new Date(start_date);
+          }
+        ),
+
       reason: Yup.string().nullable(),
       manager: Yup.string().required("Please select manager"),
     }),
@@ -207,7 +235,7 @@ const EmployeeLeaveForm = () => {
                           </Input>
 
                           {formik.errors.leave_type &&
-                          formik.touched.leave_type ? (
+                            formik.touched.leave_type ? (
                             <FormFeedback>
                               {formik.errors.leave_type}
                             </FormFeedback>
@@ -215,31 +243,7 @@ const EmployeeLeaveForm = () => {
                         </div>
                       </Col>
 
-                      <Col lg={4}>
-                        <div className="mb-3">
-                          <Label htmlFor="no_of_days">No Of Days</Label>
-                          <Input
-                            type="number"
-                            name="no_of_days"
-                            id="no_of_days"
-                            placeholder="Enter no of days"
-                            value={formik.values.no_of_days}
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            invalid={
-                              formik.touched.no_of_days &&
-                              !!formik.errors.no_of_days
-                            }
-                          />
 
-                          {formik.errors.no_of_days &&
-                          formik.touched.no_of_days ? (
-                            <FormFeedback>
-                              {formik.errors.no_of_days}
-                            </FormFeedback>
-                          ) : null}
-                        </div>
-                      </Col>
 
                       <Col lg={4}>
                         <div className="mb-3">
@@ -298,17 +302,27 @@ const EmployeeLeaveForm = () => {
                             type="date"
                             name="start_date"
                             id="start_date"
+                            min={today}
                             value={formik.values.start_date}
-                            onChange={formik.handleChange}
+                            onChange={(e) => {
+                              const startDate = e.target.value;
+
+                              formik.setFieldValue("start_date", startDate);
+
+                              if (formik.values.end_date && formik.values.end_date < startDate) {
+                                formik.setFieldValue("end_date", "");
+                                formik.setFieldValue("no_of_days", "");
+                              } else {
+                                const days = calculateDays(startDate, formik.values.end_date);
+                                formik.setFieldValue("no_of_days", days);
+                              }
+                            }}
                             onBlur={formik.handleBlur}
-                            invalid={
-                              formik.touched.start_date &&
-                              !!formik.errors.start_date
-                            }
+                            invalid={formik.touched.start_date && !!formik.errors.start_date}
                           />
 
                           {formik.errors.start_date &&
-                          formik.touched.start_date ? (
+                            formik.touched.start_date ? (
                             <FormFeedback>
                               {formik.errors.start_date}
                             </FormFeedback>
@@ -323,19 +337,49 @@ const EmployeeLeaveForm = () => {
                             type="date"
                             name="end_date"
                             id="end_date"
+                            min={formik.values.start_date || today}
                             value={formik.values.end_date}
-                            onChange={formik.handleChange}
+                            onChange={(e) => {
+                              const endDate = e.target.value;
+
+                              formik.setFieldValue("end_date", endDate);
+
+                              const days = calculateDays(formik.values.start_date, endDate);
+                              formik.setFieldValue("no_of_days", days);
+                            }}
                             onBlur={formik.handleBlur}
-                            invalid={
-                              formik.touched.end_date &&
-                              !!formik.errors.end_date
-                            }
+                            invalid={formik.touched.end_date && !!formik.errors.end_date}
                           />
 
                           {formik.errors.end_date &&
-                          formik.touched.end_date ? (
+                            formik.touched.end_date ? (
                             <FormFeedback>
                               {formik.errors.end_date}
+                            </FormFeedback>
+                          ) : null}
+                        </div>
+                      </Col>
+
+                      <Col lg={4}>
+                        <div className="mb-3">
+                          <Label htmlFor="no_of_days">No Of Days</Label>
+                          <Input
+                            type="number"
+                            name="no_of_days"
+                            id="no_of_days"
+                            placeholder="Auto calculated"
+                            value={formik.values.no_of_days}
+                            readOnly
+                            invalid={
+                              formik.touched.no_of_days &&
+                              !!formik.errors.no_of_days
+                            }
+                          />
+
+                          {formik.errors.no_of_days &&
+                            formik.touched.no_of_days ? (
+                            <FormFeedback>
+                              {formik.errors.no_of_days}
                             </FormFeedback>
                           ) : null}
                         </div>

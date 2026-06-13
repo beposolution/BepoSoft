@@ -84,7 +84,14 @@ const EcommerenceAddProduct = () => {
             formData.append('product_category', values.product_category);
             formData.append('rack_details', JSON.stringify(
                 rackDetails
-                    .filter(r => r.rack_id && r.column_name && r.usability && r.rack_stock)
+                    .filter(r =>
+                        r.rack_id &&
+                        r.column_name &&
+                        r.usability &&
+                        r.rack_stock !== "" &&
+                        r.rack_stock !== null &&
+                        r.rack_stock !== undefined
+                    )
                     .map(r => {
                         const rackObj = rackList.find(rack => Number(rack.id) === Number(r.rack_id));
                         return {
@@ -120,18 +127,33 @@ const EcommerenceAddProduct = () => {
                 const prevSnap = buildBeforeSnapshot(beforeData);
                 const nextSnap = buildAfterSnapshot(values, rackDetails);
 
-                await axios.post(
-                    `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                    {
-                        before_data: prevSnap,
-                        after_data: nextSnap,
-                    },
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
+                const { before, after } = diffObjects(prevSnap, nextSnap);
+
+                // console.log("PREV RACK", prevSnap.rack_details);
+                // console.log("NEXT RACK", nextSnap.rack_details);
+                // console.log("FINAL BEFORE", before);
+                // console.log("FINAL AFTER", after);
+
+                if (Object.keys(before).length > 0) {
+                    await axios.post(
+                        `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                        {
+                            before_data: {
+                                product_data: prevSnap,
+                                changed_data: before,
+                            },
+                            after_data: {
+                                product_data: nextSnap,
+                                changed_data: after,
+                            },
                         },
-                    }
-                );
+                        {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                            },
+                        }
+                    );
+                }
 
                 formik.resetForm();
                 setImagePreview("");
@@ -212,7 +234,7 @@ const EcommerenceAddProduct = () => {
                 setSelectedWarehouseName(productData.data.warehouse_name || "");
                 if (response.ok && productData) {
 
-                    setBeforeData(productData.data);
+                    setBeforeData(JSON.parse(JSON.stringify(productData.data)));
 
                     formik.setValues({
                         name: productData.data.name || '',
@@ -236,7 +258,9 @@ const EcommerenceAddProduct = () => {
                         rack_details: productData.data.rack_details || [],
                         retail_price: productData.data.retail_price || ''
                     });
-                    setRackDetails(productData.data.rack_details || []);
+                    setRackDetails(
+                        JSON.parse(JSON.stringify(productData.data.rack_details || []))
+                    );
                     if (productData.data.image) {
                         setImagePreview(productData.data.image);
                     }
@@ -1001,15 +1025,16 @@ const EcommerenceAddProduct = () => {
                                                                     placeholder="Rack Stock"
                                                                     value={rack.rack_stock}
                                                                     onChange={e => {
-                                                                        const arr = [...rackDetails];
-                                                                        arr[idx].rack_stock = e.target.value;
+                                                                        const arr = rackDetails.map((item, i) =>
+                                                                            i === idx ? { ...item, rack_stock: e.target.value } : item
+                                                                        );
                                                                         setRackDetails(arr);
                                                                     }}
                                                                     min={0}
                                                                     required
                                                                 />
                                                             </Col>
-                                                            <Col md={1}>
+                                                            {/* <Col md={1}>
                                                                 <Button
                                                                     color="danger"
                                                                     size="sm"
@@ -1017,7 +1042,7 @@ const EcommerenceAddProduct = () => {
                                                                 >
                                                                     Remove
                                                                 </Button>
-                                                            </Col>
+                                                            </Col> */}
                                                         </Row>
                                                     );
                                                 })}

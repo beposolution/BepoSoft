@@ -170,9 +170,13 @@ const FormLayouts = () => {
     useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const endpoint = `${import.meta.env.VITE_APP_KEY}orders/?status=${encodeURIComponent(status)}`;
+                const endpoint = `${import.meta.env.VITE_APP_KEY}orders/`;
 
                 const response = await axios.get(endpoint, {
+                    params: {
+                        status: status,
+                        search: searchTerm || undefined,
+                    },
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -182,6 +186,7 @@ const FormLayouts = () => {
                     response.data?.results?.results ||
                     response.data?.results ||
                     [];
+
                 setOrders(orderList);
             } catch (error) {
                 toast.error(error.response?.data?.message || error.message);
@@ -189,7 +194,7 @@ const FormLayouts = () => {
         };
 
         fetchOrders();
-    }, [status]);
+    }, [status, searchTerm]);
 
     const handleOrderChange = async (e) => {
         const selectedId = parseInt(e.target.value, 10);

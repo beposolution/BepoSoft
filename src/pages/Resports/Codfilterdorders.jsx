@@ -16,9 +16,12 @@ const BasicTable = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const { date } = useParams(); // Use useParams to get staffID and order_date from the URL
+
+    const { date } = useParams();
+
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("active");
+
     const [currentPage, setCurrentPage] = useState(1);
     const perPageData = 10;
 
@@ -26,27 +29,41 @@ const BasicTable = () => {
 
     useEffect(() => {
         const fetchOrders = async () => {
-            try {
-                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}orders/`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
+            setLoading(true);
+            setError(null);
 
-                let filteredOrders = response.data?.results?.filter(
-                    (order) =>
-                        order.payment_status === "COD" && order.order_date === date
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}COD/sales/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        params: {
+                            start_date: date,
+                            end_date: date,
+                        },
+                    }
                 );
 
-                //  Exclude 'bepocart' family if role is CSO
+                const reportData = response.data || [];
+
+                let selectedDateData = reportData.find(
+                    (item) => String(item.date) === String(date)
+                );
+
+                let filteredOrders = selectedDateData?.orders || [];
+
                 if (role === "CSO") {
                     filteredOrders = filteredOrders.filter(
-                        (order) => order.family_name?.toLowerCase() !== "bepocart"
+                        (order) =>
+                            order.family_name?.toLowerCase() !== "bepocart"
                     );
                 }
 
                 setOrders(filteredOrders);
             } catch (error) {
+                console.error(error);
                 setError("Error fetching orders data. Please try again later.");
             } finally {
                 setLoading(false);
@@ -56,7 +73,6 @@ const BasicTable = () => {
         fetchOrders();
     }, [date, token, role]);
 
-
     const getStatusColor = (status) => {
         const statusColors = {
             Pending: "red",
@@ -65,7 +81,13 @@ const BasicTable = () => {
             Processing: "orange",
             Completed: "green",
             Cancelled: "gray",
+            "Invoice Created": "#0d6efd",
+            "Invoice Approved": "#198754",
+            "To Print": "#6f42c1",
+            Packed: "#20c997",
+            "Ready to ship": "#fd7e14",
         };
+
         return { color: statusColors[status] || "black" };
     };
 
@@ -78,17 +100,22 @@ const BasicTable = () => {
             <div className="page-content">
                 <div className="container-fluid">
                     <Breadcrumbs title="Tables" breadcrumbItem="ORDER" />
+
                     <Row>
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
-                                    <CardTitle className="h4">BEPOSOFT ORDERS</CardTitle>
+                                    <CardTitle className="h4">
+                                        BEPOSOFT ORDERS - {date}
+                                    </CardTitle>
 
                                     <div className="table-responsive">
                                         {loading ? (
                                             <div>Loading...</div>
                                         ) : error ? (
-                                            <div className="text-danger">{error}</div>
+                                            <div className="text-danger">
+                                                {error}
+                                            </div>
                                         ) : (
                                             <>
                                                 <Table className="table mb-0">
@@ -97,68 +124,88 @@ const BasicTable = () => {
                                                             <th>#</th>
                                                             <th>INVOICE NO</th>
                                                             <th>STAFF</th>
+                                                            <th>DIVISION</th>
                                                             <th>CUSTOMER</th>
                                                             <th>STATUS</th>
                                                             <th>BILL AMOUNT</th>
+                                                            <th>PAID AMOUNT</th>
+                                                            <th>BALANCE</th>
                                                             <th>CREATED AT</th>
                                                         </tr>
                                                     </thead>
+
                                                     <tbody>
                                                         {currentOrders.length > 0 ? (
                                                             currentOrders.map((order, index) => (
-                                                                <React.Fragment key={order.id}>
-                                                                    <tr>
-                                                                        <th scope="row">{indexOfFirstItem + index + 1}</th>
-                                                                        <td>
-                                                                            <Link to={`/order/${order.id}/items/`}>
-                                                                                {order.invoice}
-                                                                            </Link>
-                                                                        </td>
-                                                                        <td>{order.manage_staff} ({order.family})</td>
-                                                                        <td>{order.customer.name}</td>
-                                                                        <td style={getStatusColor(order.status)} className="position-relative">
-                                                                            {order.status}
-                                                                            {/* <table className="nested-table table table-sm table-bordered mt-2">
-                                                                            <thead>
-                                                                                <tr className="bg-light">
-                                                                                    <th>#</th>
-                                                                                    <th>BOX</th>
-                                                                                    <th>PARCEL</th>
-                                                                                    <th>TRACKING</th>
-                                                                                </tr>
-                                                                            </thead>
-                                                                            <tbody>
-                                                                                {Array.isArray(order.warehouse) && order.warehouse.length > 0 ? (
-                                                                                    order.warehouse.map((parcel, i) => (
-                                                                                        <tr key={i}>
-                                                                                            <td>{i + 1}</td>
-                                                                                            <td>{parcel.box}</td>
-                                                                                            <td>{parcel.parcel_service}</td>
-                                                                                            <td>{parcel.tracking_id}</td>
-                                                                                        </tr>
-                                                                                    ))
-                                                                                ) : (
-                                                                                    <tr>
-                                                                                        <td colSpan="4" className="text-center text-muted">No parcels</td>
-                                                                                    </tr>
-                                                                                )}
-                                                                            </tbody>
-                                                                        </table> */}
-                                                                        </td>
-                                                                        <td>{order.total_amount}</td>
-                                                                        <td>{order.order_date}</td>
-                                                                    </tr>
-                                                                </React.Fragment>
+                                                                <tr key={order.id}>
+                                                                    <th scope="row">
+                                                                        {indexOfFirstItem + index + 1}
+                                                                    </th>
+
+                                                                    <td>
+                                                                        <Link to={`/order/${order.id}/items/`}>
+                                                                            {order.invoice}
+                                                                        </Link>
+                                                                    </td>
+
+                                                                    <td>
+                                                                        {order.staff_name ||
+                                                                            order.manage_staff ||
+                                                                            "-"}
+                                                                    </td>
+
+                                                                    <td>
+                                                                        {order.family_name ||
+                                                                            order.family ||
+                                                                            "-"}
+                                                                    </td>
+
+                                                                    <td>
+                                                                        {order.customer_name ||
+                                                                            order.customer?.name ||
+                                                                            "-"}
+                                                                    </td>
+
+                                                                    <td
+                                                                        style={getStatusColor(order.status)}
+                                                                    >
+                                                                        {order.status}
+                                                                    </td>
+
+                                                                    <td>
+                                                                        {Number(
+                                                                            order.total_amount || 0
+                                                                        ).toFixed(2)}
+                                                                    </td>
+
+                                                                    <td>
+                                                                        {Number(
+                                                                            order.total_paid_amount || 0
+                                                                        ).toFixed(2)}
+                                                                    </td>
+
+                                                                    <td>
+                                                                        {Number(
+                                                                            order.balance_amount || 0
+                                                                        ).toFixed(2)}
+                                                                    </td>
+
+                                                                    <td>{order.order_date}</td>
+                                                                </tr>
                                                             ))
                                                         ) : (
                                                             <tr>
-                                                                <td colSpan="7" className="text-center text-muted">
+                                                                <td
+                                                                    colSpan="10"
+                                                                    className="text-center text-muted"
+                                                                >
                                                                     No orders found for this date.
                                                                 </td>
                                                             </tr>
                                                         )}
                                                     </tbody>
                                                 </Table>
+
                                                 <Paginations
                                                     perPageData={perPageData}
                                                     data={orders}
@@ -176,31 +223,6 @@ const BasicTable = () => {
                                 </CardBody>
                             </Card>
                         </Col>
-                        <style jsx>{`
-                                .nested-table {
-                                    width: 100%;
-                                    border: 1px solid #ccc;
-                                    margin-top: 10px;
-                                }
-
-                                /* Smaller font size and padding for nested table */
-                                .nested-table th, .nested-table td {
-                                    font-size: 0.55rem; /* Smaller font */
-                                    padding: 3px 5px; /* Reduced padding */
-                                }
-
-                                /* Light background for nested table header */
-                                .nested-table thead th {
-                                    background-color: #f9f9f9;
-                                }
-
-                                /* Optional hover effect */
-                                tr:hover {
-                                    background-color: #f5f5f5;
-                                    transition: background-color 0.2s ease;
-                                }
-                                `}</style>
-
                     </Row>
                 </div>
             </div>

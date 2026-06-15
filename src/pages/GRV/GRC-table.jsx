@@ -692,7 +692,7 @@ const BasicTable = () => {
                                             <thead className="table-light">
                                                 <tr>
                                                     <th>NO</th>
-                                                    <th>Product / Invoice / Amount</th>
+                                                    <th>Product / Invoice / Amount / Parcel</th>
                                                     <th>Condition</th>
                                                     <th>QTY</th>
                                                     <th>Price</th>
@@ -718,7 +718,7 @@ const BasicTable = () => {
                                                             <th scope="row">
                                                                 {(currentPage - 1) * pageSize + index + 1}
                                                             </th>
-                                                            <td>{item.product} / {item.invoice} / {item.price}</td>
+                                                            <td>{item?.product} / {item?.invoice} / {item?.price} / {item?.parcel_service_name}</td>
                                                             <td>{item.returnreason}</td>
                                                             <td>{item.quantity}</td>
                                                             <td>{item.price}</td>

@@ -170,15 +170,21 @@ const FormLayouts = () => {
     useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const endpoint = `${import.meta.env.VITE_APP_KEY}orders/${status}/`;
+                const endpoint = `${import.meta.env.VITE_APP_KEY}orders/?status=${encodeURIComponent(status)}`;
+
                 const response = await axios.get(endpoint, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
                 });
-                setOrders(response.data?.results);
+
+                const orderList =
+                    response.data?.results?.results ||
+                    response.data?.results ||
+                    [];
+                setOrders(orderList);
             } catch (error) {
-                toast.error(error.response?.data || error.message);
+                toast.error(error.response?.data?.message || error.message);
             }
         };
 
@@ -384,7 +390,7 @@ const FormLayouts = () => {
                                                                         });
                                                                     }}
                                                                 >
-                                                                    {`Order #${order.invoice || "N/A"} - ${order.manage_staff || "No Staff"
+                                                                    {`Order #${order.invoice || "N/A"} - ${order.warehouse_data?.[0]?.parcel_service_name || "No Parcel Service"} - ${order.manage_staff || "No Staff"
                                                                         } - ₹${order.total_amount || "No Amount"}`}
                                                                 </li>
                                                             ))}
@@ -403,7 +409,7 @@ const FormLayouts = () => {
                                                         <option value="">Choose Order</option>
                                                         {orders.map((order) => (
                                                             <option key={order.id} value={order.id}>
-                                                                {`Order #${order.invoice || "N/A"} - ${order.manage_staff || "No Staff"
+                                                                {`Order #${order.invoice || "N/A"} - ${order.warehouse_data?.[0]?.parcel_service_name || "No Parcel Service"} - ${order.manage_staff || "No Staff"
                                                                     } - ₹${order.total_amount || "No Amount"}`}
                                                             </option>
                                                         ))}

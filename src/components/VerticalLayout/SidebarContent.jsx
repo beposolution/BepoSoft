@@ -1072,7 +1072,7 @@ const SidebarContent = (props) => {
                     </>
                   )}
 
-                  {(role === "Accounts / Accounting" || role === "ADMIN" || role === "Warehouse Admin" || role === "Marketing") && (
+                  {(role === "Accounts / Accounting" || role === "SD" || role === "ADMIN" || role === "Warehouse Admin" || role === "Marketing") && (
                     <>
                       <li>
                         <Link to="/attendance/add/">

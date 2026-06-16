@@ -21,6 +21,8 @@ const DateWiseSalesReport = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const perPage = 30;
 
+    const [codStatus, setCodStatus] = useState("");
+
     document.title = "Date-wise Sales Report | Beposoft";
 
     // ----------------------------------------------------
@@ -39,6 +41,10 @@ const DateWiseSalesReport = () => {
 
             if (familyId) {
                 url += `?family_id=${familyId}`;
+            }
+
+            if (codStatus) {
+                url += `?cod_status=${codStatus}`;
             }
 
             const response = await axios.get(url, {
@@ -60,6 +66,7 @@ const DateWiseSalesReport = () => {
         setFromDate("");
         setToDate("");
         setFamilyId("");
+        setCodStatus("");
         setOrders([]);
         setSummary(null);
     };
@@ -370,6 +377,17 @@ const DateWiseSalesReport = () => {
                                         <option value="3">Bepocart</option>
                                     </select>
 
+                                    <select
+                                        className="form-select"
+                                        value={codStatus}
+                                        onChange={(e) => setCodStatus(e.target.value)}
+                                        style={{ maxWidth: "200px" }}
+                                    >
+                                        <option value="">All COD Status</option>
+                                        <option value="FULL_COD">Full COD</option>
+                                        <option value="PARTIAL_COD">Partial COD</option>
+                                    </select>
+
                                     <button className="btn btn-primary" onClick={fetchReport}>
                                         Search
                                     </button>
@@ -425,6 +443,7 @@ const DateWiseSalesReport = () => {
                                                     <th>ORDER ID</th>
                                                     <th>STAFF</th>
                                                     <th>STATUS</th>
+                                                    <th>COD STATUS</th>
                                                     <th>FAMILY</th>
                                                     <th>AMOUNT</th>
                                                 </tr>
@@ -438,6 +457,7 @@ const DateWiseSalesReport = () => {
                                                         <td>{item.order_id}</td>
                                                         <td>{item.staff_name}</td>
                                                         <td>{item.status}</td>
+                                                        <td>{item?.cod_status || "N/A"}</td>
                                                         <td>{item.family_name}</td>
                                                         <td>₹{item.amount.toLocaleString("en-IN")}</td>
                                                     </tr>

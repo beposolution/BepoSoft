@@ -873,7 +873,16 @@ const OrdersComponent = () => {
         payment_status: mapPaymentStatus(order?.displayFinancialStatus),
         total_amount: totalAmount.toString(),
         shipping_charge: shippingCharge.toString(),
-        code_charge: codeCharge.toString(),
+        // code_charge: codeCharge.toString(),
+        code_charge:
+          mapPaymentMethod(order?.paymentGatewayNames?.[0]) === "Cash on Delivery (COD)"
+            ? "0"
+            : codeCharge.toString(),
+
+        cod_amount:
+          mapPaymentMethod(order?.paymentGatewayNames?.[0]) === "Cash on Delivery (COD)"
+            ? codeCharge.toString()
+            : "0",
         bank: 8,
         // payment_method: order?.paymentGatewayNames?.[0] || "N/A",
         payment_method: mapPaymentMethod(order?.paymentGatewayNames?.[0]),
@@ -951,7 +960,16 @@ const OrdersComponent = () => {
         apiUrl(`shipping/${orderId}/order/`),
         {
           total_amount: totalAmount,
-          code_charge: codeCharge.toString(),
+          // code_charge: codeCharge.toString(),
+          code_charge:
+            mapPaymentMethod(order?.paymentGatewayNames?.[0]) === "Cash on Delivery (COD)"
+              ? "0"
+              : codeCharge.toString(),
+
+          cod_amount:
+            mapPaymentMethod(order?.paymentGatewayNames?.[0]) === "Cash on Delivery (COD)"
+              ? codeCharge.toString()
+              : "0",
         },
         {
           headers: authHeaders(),

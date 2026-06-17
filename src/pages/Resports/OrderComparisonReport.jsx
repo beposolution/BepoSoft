@@ -237,6 +237,33 @@ const OrderComparisonReport = () => {
         })}`;
     };
 
+    const formatDate = (dateValue) => {
+        if (!dateValue) return "-";
+
+        const date = new Date(dateValue);
+
+        if (Number.isNaN(date.getTime())) return dateValue;
+
+        return date.toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+        });
+    };
+
+    const formatPercentage = (value) => {
+        return `${Number(value || 0).toFixed(2)}%`;
+    };
+
+    const getPositiveNegativeColor = (value) => {
+        const numberValue = Number(value || 0);
+
+        if (numberValue > 0) return "#16a34a";
+        if (numberValue < 0) return "#dc2626";
+
+        return "#334155";
+    };
+
     const getRowName = (item) =>
         item.status ||
         item.payment_status ||
@@ -285,12 +312,24 @@ const OrderComparisonReport = () => {
 
     const getSelectedRowsByType = (type) => {
         if (!report || !type) {
-            return { leftRows: [], rightRows: [] };
+            return {
+                rows: [],
+                total: null,
+            };
+        }
+
+        const backendTable = report.comparison_tables?.[type];
+
+        if (backendTable) {
+            return {
+                rows: backendTable.rows || [],
+                total: backendTable.total || null,
+            };
         }
 
         return {
-            leftRows: report.range1?.[type] || [],
-            rightRows: report.range2?.[type] || [],
+            rows: [],
+            total: null,
         };
     };
 
@@ -377,8 +416,12 @@ const OrderComparisonReport = () => {
         </Col>
     );
 
-    const renderCompareTable = (title, leftRows, rightRows) => {
-        const rows = getCompareRows(leftRows, rightRows);
+    const renderCompareTable = (title, type) => {
+        const { rows, total } = getSelectedRowsByType(type);
+
+        const tableRows = total
+            ? [...rows, { ...total, is_total: true }]
+            : rows;
 
         return (
             <Card className="border-0 mb-4" style={tableCardStyle}>
@@ -419,52 +462,69 @@ const OrderComparisonReport = () => {
                             </thead>
 
                             <tbody>
-                                {rows.length === 0 ? (
+                                {tableRows.length === 0 ? (
                                     <tr>
                                         <td colSpan="7" className="text-center py-3" style={miniTdStyle}>
                                             No data
                                         </td>
                                     </tr>
                                 ) : (
-                                    rows.map((item, index) => {
-                                        const orderDiff = item.right_orders - item.left_orders;
-                                        const amountDiff = item.right_amount - item.left_amount;
+                                    tableRows.map((item, index) => {
+                                        const isTotalRow = item.is_total || item.name === "TOTAL";
 
-                                        const orderDiffColor =
-                                            orderDiff > 0
-                                                ? "#16a34a"
-                                                : orderDiff < 0
-                                                    ? "#dc2626"
-                                                    : "#334155";
+                                        const orderDiff = Number(item.order_difference || 0);
+                                        const amountDiff = Number(item.amount_difference || 0);
 
-                                        const amountDiffColor =
-                                            amountDiff > 0
-                                                ? "#16a34a"
-                                                : amountDiff < 0
-                                                    ? "#dc2626"
-                                                    : "#334155";
+                                        const orderDiffColor = getPositiveNegativeColor(orderDiff);
+                                        const amountDiffColor = getPositiveNegativeColor(amountDiff);
 
                                         return (
                                             <tr
                                                 key={index}
                                                 style={{
-                                                    backgroundColor: index % 2 === 0 ? "#ffffff" : "#f8fafc",
+                                                    backgroundColor: isTotalRow
+                                                        ? "#0f172a"
+                                                        : index % 2 === 0
+                                                            ? "#ffffff"
+                                                            : "#f8fafc",
                                                 }}
                                             >
-                                                <td style={nameTdStyle}>{item.name}</td>
+                                                <td style={isTotalRow ? totalNameTdStyle : nameTdStyle}>
+                                                    {item.name || "N/A"}
+                                                </td>
 
-                                                <td style={range1TdStyle}>{item.left_orders}</td>
-                                                <td style={range1TdStyle}>{formatAmount(item.left_amount)}</td>
+                                                <td style={isTotalRow ? totalRange1TdStyle : range1TdStyle}>
+                                                    {item.range1_orders || 0}
+                                                </td>
 
-                                                <td style={range2TdStyle}>{item.right_orders}</td>
-                                                <td style={range2TdStyle}>{formatAmount(item.right_amount)}</td>
+                                                <td style={isTotalRow ? totalRange1TdStyle : range1TdStyle}>
+                                                    {formatAmount(item.range1_amount)}
+                                                </td>
 
-                                                <td style={{ ...diffTdStyle, color: orderDiffColor }}>
+                                                <td style={isTotalRow ? totalRange2TdStyle : range2TdStyle}>
+                                                    {item.range2_orders || 0}
+                                                </td>
+
+                                                <td style={isTotalRow ? totalRange2TdStyle : range2TdStyle}>
+                                                    {formatAmount(item.range2_amount)}
+                                                </td>
+
+                                                <td
+                                                    style={{
+                                                        ...(isTotalRow ? totalDiffTdStyle : diffTdStyle),
+                                                        color: orderDiffColor,
+                                                    }}
+                                                >
                                                     {orderDiff > 0 ? "+" : ""}
                                                     {orderDiff}
                                                 </td>
 
-                                                <td style={{ ...diffTdStyle, color: amountDiffColor }}>
+                                                <td
+                                                    style={{
+                                                        ...(isTotalRow ? totalDiffTdStyle : diffTdStyle),
+                                                        color: amountDiffColor,
+                                                    }}
+                                                >
                                                     {amountDiff > 0 ? "+" : ""}
                                                     {formatAmount(amountDiff)}
                                                 </td>
@@ -534,8 +594,7 @@ const OrderComparisonReport = () => {
         };
 
         selectedReportTypes.forEach((type) => {
-            const { leftRows, rightRows } = getSelectedRowsByType(type);
-            const rows = getCompareRows(leftRows, rightRows);
+            const { rows, total } = getSelectedRowsByType(type);
 
             addMergedTitle(
                 `${getReportTitleByType(type).toUpperCase()} COMPARISON`,
@@ -553,38 +612,31 @@ const OrderComparisonReport = () => {
                 "Amount Difference",
             ]);
 
-            let totalLeftOrders = 0;
-            let totalLeftAmount = 0;
-            let totalRightOrders = 0;
-            let totalRightAmount = 0;
-
             rows.forEach((item) => {
-                totalLeftOrders += Number(item.left_orders || 0);
-                totalLeftAmount += Number(item.left_amount || 0);
-                totalRightOrders += Number(item.right_orders || 0);
-                totalRightAmount += Number(item.right_amount || 0);
-
                 wsData.push([
-                    item.name,
-                    item.left_orders,
-                    item.left_amount,
-                    item.right_orders,
-                    item.right_amount,
-                    item.right_orders - item.left_orders,
-                    item.right_amount - item.left_amount,
+                    item.name || "N/A",
+                    item.range1_orders || 0,
+                    item.range1_amount || 0,
+                    item.range2_orders || 0,
+                    item.range2_amount || 0,
+                    item.order_difference || 0,
+                    item.amount_difference || 0,
                 ]);
             });
 
-            totalRows.push(wsData.length);
-            wsData.push([
-                "TOTAL",
-                totalLeftOrders,
-                totalLeftAmount,
-                totalRightOrders,
-                totalRightAmount,
-                totalRightOrders - totalLeftOrders,
-                totalRightAmount - totalLeftAmount,
-            ]);
+            if (total) {
+                totalRows.push(wsData.length);
+
+                wsData.push([
+                    total.name || "TOTAL",
+                    total.range1_orders || 0,
+                    total.range1_amount || 0,
+                    total.range2_orders || 0,
+                    total.range2_amount || 0,
+                    total.order_difference || 0,
+                    total.amount_difference || 0,
+                ]);
+            }
 
             wsData.push([]);
         });
@@ -994,56 +1046,142 @@ const OrderComparisonReport = () => {
                             </Row>
 
                             <Row className="g-3 mb-4">
-                                <Col xl={6}>
-                                    <Card className="border-0" style={summaryCardStyle("#1d4ed8")}>
-                                        <CardBody>
-                                            <h5 style={summaryTitleStyle}>Range 1</h5>
+                                <Col xl={12}>
+                                    <Card className="border-0" style={rangeSummaryCardStyle}>
+                                        <CardBody className="p-4">
+                                            <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+                                                <div>
+                                                    <h4 className="mb-1" style={rangeSummaryTitleStyle}>
+                                                        Range Comparison Summary
+                                                    </h4>
 
-                                            <div style={summaryRowStyle}>
-                                                <span>Total Orders</span>
-                                                <strong>{report.range1?.order_count || 0}</strong>
+                                                    <p className="mb-0" style={rangeSummarySubTitleStyle}>
+                                                        Range 2 is compared against Range 1
+                                                    </p>
+                                                </div>
+
+                                                <Badge color="primary" pill className="px-3 py-2">
+                                                    {getReportTitle()}
+                                                </Badge>
                                             </div>
 
-                                            <div style={summaryRowStyle}>
-                                                <span>Total Amount</span>
-                                                <strong>{formatAmount(report.range1?.total_amount)}</strong>
-                                            </div>
-                                        </CardBody>
-                                    </Card>
-                                </Col>
+                                            <div className="table-responsive" style={rangeSummaryTableWrapperStyle}>
+                                                <Table className="mb-0 align-middle">
+                                                    <thead>
+                                                        <tr>
+                                                            <th style={rangeSummaryThStyle}>Metric</th>
 
-                                <Col xl={6}>
-                                    <Card className="border-0" style={summaryCardStyle("#16a34a")}>
-                                        <CardBody>
-                                            <h5 style={summaryTitleStyle}>Range 2</h5>
+                                                            <th style={range1SummaryThStyle}>
+                                                                Range 1 - Base
+                                                                <div style={rangeDateStyle}>
+                                                                    {formatDate(filters.range1_start)} to {formatDate(filters.range1_end)}
+                                                                </div>
+                                                            </th>
 
-                                            <div style={summaryRowStyle}>
-                                                <span>Total Orders</span>
-                                                <strong>{report.range2?.order_count || 0}</strong>
-                                            </div>
+                                                            <th style={range2SummaryThStyle}>
+                                                                Range 2 - Compare
+                                                                <div style={rangeDateStyle}>
+                                                                    {formatDate(filters.range2_start)} to {formatDate(filters.range2_end)}
+                                                                </div>
+                                                            </th>
 
-                                            <div style={summaryRowStyle}>
-                                                <span>Total Amount</span>
-                                                <strong>{formatAmount(report.range2?.total_amount)}</strong>
+                                                            <th style={diffSummaryThStyle}>
+                                                                Difference
+                                                                <div style={rangeDateStyle}>Range 2 - Range 1</div>
+                                                            </th>
+
+                                                            <th style={diffSummaryThStyle}>Growth %</th>
+                                                        </tr>
+                                                    </thead>
+
+                                                    <tbody>
+                                                        <tr>
+                                                            <td style={metricTdStyle}>Total Orders</td>
+
+                                                            <td style={range1SummaryTdStyle}>
+                                                                {report.range1?.order_count || 0}
+                                                            </td>
+
+                                                            <td style={range2SummaryTdStyle}>
+                                                                {report.range2?.order_count || 0}
+                                                            </td>
+
+                                                            <td
+                                                                style={{
+                                                                    ...diffSummaryTdStyle,
+                                                                    color: getPositiveNegativeColor(
+                                                                        report.comparison?.order_count_difference
+                                                                    ),
+                                                                }}
+                                                            >
+                                                                {Number(report.comparison?.order_count_difference || 0) > 0 ? "+" : ""}
+                                                                {report.comparison?.order_count_difference || 0}
+                                                            </td>
+
+                                                            <td
+                                                                style={{
+                                                                    ...diffSummaryTdStyle,
+                                                                    color: getPositiveNegativeColor(
+                                                                        report.comparison?.order_count_percentage
+                                                                    ),
+                                                                }}
+                                                            >
+                                                                {Number(report.comparison?.order_count_percentage || 0) > 0 ? "+" : ""}
+                                                                {formatPercentage(report.comparison?.order_count_percentage)}
+                                                            </td>
+                                                        </tr>
+
+                                                        <tr>
+                                                            <td style={metricTdStyle}>Total Amount</td>
+
+                                                            <td style={range1SummaryTdStyle}>
+                                                                {formatAmount(report.range1?.total_amount)}
+                                                            </td>
+
+                                                            <td style={range2SummaryTdStyle}>
+                                                                {formatAmount(report.range2?.total_amount)}
+                                                            </td>
+
+                                                            <td
+                                                                style={{
+                                                                    ...diffSummaryTdStyle,
+                                                                    color: getPositiveNegativeColor(
+                                                                        report.comparison?.amount_difference
+                                                                    ),
+                                                                }}
+                                                            >
+                                                                {Number(report.comparison?.amount_difference || 0) > 0 ? "+" : ""}
+                                                                {formatAmount(report.comparison?.amount_difference)}
+                                                            </td>
+
+                                                            <td
+                                                                style={{
+                                                                    ...diffSummaryTdStyle,
+                                                                    color: getPositiveNegativeColor(
+                                                                        report.comparison?.amount_percentage
+                                                                    ),
+                                                                }}
+                                                            >
+                                                                {Number(report.comparison?.amount_percentage || 0) > 0 ? "+" : ""}
+                                                                {formatPercentage(report.comparison?.amount_percentage)}
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </Table>
                                             </div>
                                         </CardBody>
                                     </Card>
                                 </Col>
                             </Row>
 
-                            {selectedReportTypes.map((type) => {
-                                const { leftRows, rightRows } = getSelectedRowsByType(type);
-
-                                return (
-                                    <React.Fragment key={type}>
-                                        {renderCompareTable(
-                                            `${getReportTitleByType(type)} Comparison`,
-                                            leftRows,
-                                            rightRows
-                                        )}
-                                    </React.Fragment>
-                                );
-                            })}
+                            {selectedReportTypes.map((type) => (
+                                <React.Fragment key={type}>
+                                    {renderCompareTable(
+                                        `${getReportTitleByType(type)} Comparison`,
+                                        type
+                                    )}
+                                </React.Fragment>
+                            ))}
                         </>
                     )}
                 </div>
@@ -1209,6 +1347,38 @@ const diffTdStyle = {
     fontWeight: "900",
 };
 
+const totalNameTdStyle = {
+    ...miniTdStyle,
+    textAlign: "left",
+    fontWeight: "900",
+    color: "#ffffff",
+    backgroundColor: "#0f172a",
+    borderTop: "2px solid #0f172a",
+};
+
+const totalRange1TdStyle = {
+    ...miniTdStyle,
+    fontWeight: "900",
+    color: "#ffffff",
+    backgroundColor: "#1d4ed8",
+    borderTop: "2px solid #0f172a",
+};
+
+const totalRange2TdStyle = {
+    ...miniTdStyle,
+    fontWeight: "900",
+    color: "#ffffff",
+    backgroundColor: "#16a34a",
+    borderTop: "2px solid #0f172a",
+};
+
+const totalDiffTdStyle = {
+    ...miniTdStyle,
+    fontWeight: "900",
+    backgroundColor: "#fff7ed",
+    borderTop: "2px solid #0f172a",
+};
+
 const buttonStyle = {
     height: "48px",
     borderRadius: "10px",
@@ -1250,6 +1420,111 @@ const summaryRowStyle = {
     fontWeight: "900",
     color: "#111827",
     padding: "8px 0",
+};
+
+const rangeSummaryCardStyle = {
+    borderRadius: "18px",
+    boxShadow: "0 8px 25px rgba(15, 23, 42, 0.10)",
+    borderLeft: "5px solid #2563eb",
+};
+
+const rangeSummaryTitleStyle = {
+    fontWeight: "900",
+    color: "#111827",
+    fontSize: "20px",
+};
+
+const rangeSummarySubTitleStyle = {
+    color: "#475569",
+    fontSize: "14px",
+    fontWeight: "700",
+};
+
+const rangeSummaryTableWrapperStyle = {
+    border: "1.5px solid #d7deea",
+    borderRadius: "14px",
+    overflow: "hidden",
+    backgroundColor: "#ffffff",
+};
+
+const rangeSummaryThStyle = {
+    padding: "14px",
+    backgroundColor: "#f8fafc",
+    color: "#111827",
+    fontSize: "13px",
+    fontWeight: "900",
+    borderBottom: "1.5px solid #cbd5e1",
+    whiteSpace: "nowrap",
+};
+
+const range1SummaryThStyle = {
+    ...rangeSummaryThStyle,
+    backgroundColor: "#eff6ff",
+    color: "#1d4ed8",
+    textAlign: "center",
+};
+
+const range2SummaryThStyle = {
+    ...rangeSummaryThStyle,
+    backgroundColor: "#f0fdf4",
+    color: "#16a34a",
+    textAlign: "center",
+};
+
+const diffSummaryThStyle = {
+    ...rangeSummaryThStyle,
+    backgroundColor: "#fff7ed",
+    color: "#ea580c",
+    textAlign: "center",
+};
+
+const rangeDateStyle = {
+    fontSize: "11px",
+    fontWeight: "800",
+    marginTop: "4px",
+    opacity: 0.85,
+};
+
+const metricTdStyle = {
+    padding: "15px 14px",
+    fontSize: "14px",
+    fontWeight: "900",
+    color: "#0f172a",
+    borderBottom: "1px solid #e5e7eb",
+    backgroundColor: "#ffffff",
+    whiteSpace: "nowrap",
+};
+
+const range1SummaryTdStyle = {
+    padding: "15px 14px",
+    fontSize: "14px",
+    fontWeight: "900",
+    color: "#1d4ed8",
+    textAlign: "center",
+    backgroundColor: "#eff6ff",
+    borderBottom: "1px solid #e5e7eb",
+    whiteSpace: "nowrap",
+};
+
+const range2SummaryTdStyle = {
+    padding: "15px 14px",
+    fontSize: "14px",
+    fontWeight: "900",
+    color: "#16a34a",
+    textAlign: "center",
+    backgroundColor: "#f0fdf4",
+    borderBottom: "1px solid #e5e7eb",
+    whiteSpace: "nowrap",
+};
+
+const diffSummaryTdStyle = {
+    padding: "15px 14px",
+    fontSize: "14px",
+    fontWeight: "900",
+    textAlign: "center",
+    backgroundColor: "#fff7ed",
+    borderBottom: "1px solid #e5e7eb",
+    whiteSpace: "nowrap",
 };
 
 export default OrderComparisonReport;

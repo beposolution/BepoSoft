@@ -450,6 +450,7 @@ import EmployeeLeaveForm from "../pages/Staff/EmployeeLeaveForm";
 import EmployeeLeaveList from "../pages/Staff/EmployeeLeaveList";
 import ManagerLeaveApplications from "../pages/Staff/ManagerLeaveApplications";
 import HrLeaveApplication from "../pages/Staff/HrLeaveApplication";
+import OrderComparisonReport from "../pages/Resports/OrderComparisonReport";
 
 
 
@@ -708,6 +709,10 @@ const authProtectedRoutes = [
   { path: '/expense/add-category/', component: <CategoryTable /> },
   { path: "/expense/update/:id/", component: <UpdateExpense /> },
   { path: "/bank/account/type/", component: <BankAccountTypePage /> },
+
+
+  // comparison report
+  { path: "/order/comparison/report/", component: <OrderComparisonReport /> },
 
 
   { path: "/sales/reports/", component: <Salesreport /> },

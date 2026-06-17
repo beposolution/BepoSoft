@@ -17,6 +17,7 @@ const authHeaders = () => ({
 const OrdersComponent = () => {
   const [states, setStates] = useState([]);
   const [userId, setUserId] = useState(null);
+  const [userDiv, setUserDiv] = useState(null);
   const [successLogs, setSuccessLogs] = useState([]);
   const [failureLogs, setFailureLogs] = useState([]);
   const [failedStockProducts, setFailedStockProducts] = useState([]);
@@ -33,7 +34,9 @@ const OrdersComponent = () => {
         });
 
         const userId = res?.data?.data?.id;
+        const userDiv = res?.data?.data?.family_name;
         setUserId(userId);
+        setUserDiv(userDiv);
       } catch {
         toast.error("Failed to load profile");
       }
@@ -54,28 +57,75 @@ const OrdersComponent = () => {
   const cleanPhone = (phone = "") => {
     let value = phone.toString().trim();
 
-    if (value.startsWith("+91")) {
-      value = value.substring(3);
-    } else if (value.startsWith("91") && value.length > 10) {
+    if (!value) return "";
+
+    // remove Excel decimal like 919541000000.0
+    value = value.replace(/\.0$/, "");
+
+    // remove all non-digits
+    value = value.replace(/\D/g, "");
+
+    // remove India country code only after cleaning
+    if (value.startsWith("91") && value.length > 10) {
       value = value.substring(2);
     }
 
-    value = value.replace(/\D/g, "");
-
+    // keep last 10 digits only
     if (value.length > 10) {
-      value = value.substring(value.length - 10);
+      value = value.slice(-10);
     }
 
     return value;
   };
 
+  // const getStateId = (provinceName) => {
+  //   if (!provinceName) return 14;
+
+  //   const matchedState = states.find(
+  //     (state) =>
+  //       state.name?.toLowerCase() === provinceName.toLowerCase() ||
+  //       state.province?.toLowerCase() === provinceName.toLowerCase()
+  //   );
+
+  //   return matchedState ? matchedState.id : 14;
+  // };
+
   const getStateId = (provinceName) => {
     if (!provinceName) return 14;
 
-    const matchedState = states.find(
-      (state) =>
-        state.name?.toLowerCase() === provinceName.toLowerCase() ||
-        state.province?.toLowerCase() === provinceName.toLowerCase()
+    const normalized = provinceName
+      .toString()
+      .toLowerCase()
+      .replace(/&/g, "and")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const matchedState = states.find((state) => {
+      const stateName = (state.name || "")
+        .toLowerCase()
+        .replace(/&/g, "and")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (stateName === normalized) return true;
+
+      // Special handling for Jammu Kashmir
+      if (
+        ["jk", "j&k", "jammu and kashmir", "jammu kashmir"].includes(normalized) &&
+        stateName === "jammu kashmir"
+      ) {
+        return true;
+      }
+
+      return false;
+    });
+
+    console.log(
+      "State Match:",
+      provinceName,
+      "=>",
+      matchedState?.name,
+      matchedState?.id
     );
 
     return matchedState ? matchedState.id : 14;
@@ -273,13 +323,15 @@ const OrdersComponent = () => {
       const orderId =
         getValue(row, ["Id", "ID", "Order ID", "Order Id"]) || orderName;
 
-      const phone = getValue(row, [
-        "Phone",
-        "phone",
-        "Shipping Phone",
-        "Billing Phone",
-        "Customer Phone",
-      ]);
+      const phone = cleanPhone(
+        getValue(row, [
+          "Shipping Phone",
+          "Billing Phone",
+          "Customer Phone",
+          "Phone",
+          "phone",
+        ])
+      );
 
       const customerName = getValue(row, [
         "Shipping Name",
@@ -844,6 +896,18 @@ const OrdersComponent = () => {
     return "Net Banking";
   };
 
+  const formatExcelDate = (value) => {
+    if (!value) return new Date().toISOString().split("T")[0];
+
+    if (!isNaN(value)) {
+      const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+      const date = new Date(excelEpoch.getTime() + Number(value) * 86400000);
+      return date.toISOString().split("T")[0];
+    }
+
+    return value.toString().split(" ")[0];
+  };
+
   const createOrder = async ({
     order,
     customerId,
@@ -862,12 +926,18 @@ const OrdersComponent = () => {
 
       totalAmount += shippingCharge;
 
+      const excelOrderDate = formatExcelDate(order?.createdAt);
+
       const body = {
         manage_staff: userId,
         company: 5,
         customer: customerId,
         billing_address: addressId,
-        order_date: new Date().toISOString().split("T")[0],
+        // order_date: new Date().toISOString().split("T")[0],
+        order_date:
+          userDiv?.toString().toLowerCase() === "bepocart"
+            ? excelOrderDate
+            : new Date().toISOString().split("T")[0],
         family: 3,
         state: shippingStateId,
         payment_status: mapPaymentStatus(order?.displayFinancialStatus),
@@ -890,6 +960,10 @@ const OrdersComponent = () => {
         status: "Invoice Created",
         shopify_order_id: order?.id,
       };
+
+      // console.log("userDiv =", userDiv);
+      // console.log("Excel createdAt =", order?.createdAt);
+      // console.log("Sending order_date =", body.order_date);
 
       const response = await axios.post(apiUrl("order/create/"), body, {
         headers: authHeaders(),

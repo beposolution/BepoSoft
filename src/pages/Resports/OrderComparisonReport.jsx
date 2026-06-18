@@ -27,6 +27,9 @@ const OrderComparisonReport = () => {
     const [staffs, setStaffs] = useState([]);
     const [staffSearch, setStaffSearch] = useState("");
     const [customerOptions, setCustomerOptions] = useState([]);
+    const [stateList, setStateList] = useState([]);
+    const [companies, setCompanies] = useState([]);
+    const [parcelServices, setParcelServices] = useState([]);
 
     const [filters, setFilters] = useState({
         range1_start: "",
@@ -98,14 +101,17 @@ const OrderComparisonReport = () => {
 
     const fetchStaffs = async (search = "") => {
         try {
-            const response = await axios.get(`${import.meta.env.VITE_APP_KEY}get/staffs/`, {
-                headers: { Authorization: `Bearer ${token}` },
-                params: {
-                    page: 1,
-                    page_size: 1000,
-                    search: search || undefined,
-                },
-            });
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}get/staffs/`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                    params: {
+                        page: 1,
+                        page_size: 1000,
+                        search: search || undefined,
+                    },
+                }
+            );
 
             if (response.status === 200) {
                 setStaffs(response.data.results?.data || response.data.data || []);
@@ -117,12 +123,15 @@ const OrderComparisonReport = () => {
 
     const fetchCustomers = async (search = "") => {
         try {
-            const response = await axios.get(`${import.meta.env.VITE_APP_KEY}customers/`, {
-                headers: { Authorization: `Bearer ${token}` },
-                params: {
-                    search: search || "",
-                },
-            });
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}customers/`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                    params: {
+                        search: search || "",
+                    },
+                }
+            );
 
             setCustomerOptions(response?.data?.results || []);
         } catch (err) {
@@ -132,10 +141,57 @@ const OrderComparisonReport = () => {
         }
     };
 
+    const fetchStates = async () => {
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}states/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            setStateList(response?.data?.data || []);
+        } catch (error) {
+            toast.error("Failed to load States");
+        }
+    };
+
+    const fetchCompanies = async () => {
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}company/data/`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+
+            setCompanies(response.data.data || []);
+        } catch (error) {
+            console.error("Company fetch error:", error);
+        }
+    };
+
     useEffect(() => {
-        if (token) fetchStaffs(staffSearch);
-        if (token) fetchCustomers();
+        if (token) {
+            fetchStaffs(staffSearch);
+            fetchCustomers();
+            fetchStates();
+            fetchCompanies();
+        }
     }, [token, staffSearch]);
+
+    useEffect(() => {
+        if (!token) return;
+
+        axios
+            .get(`${import.meta.env.VITE_APP_KEY}parcal/service/`, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+            .then((response) => setParcelServices(response.data.data || []))
+            .catch(() => toast.error("Error fetching parcel services"));
+    }, [token]);
 
     const handleChange = (key, value) => {
         setFilters((prev) => ({
@@ -264,52 +320,6 @@ const OrderComparisonReport = () => {
         return "#334155";
     };
 
-    const getRowName = (item) =>
-        item.status ||
-        item.payment_status ||
-        item.cod_status ||
-        item.family__name ||
-        item.manage_staff__name ||
-        item.state__name ||
-        item.parcel_service__name ||
-        "N/A";
-
-    const getCompareRows = (leftRows = [], rightRows = []) => {
-        const map = new Map();
-
-        leftRows.forEach((item) => {
-            const name = getRowName(item);
-
-            map.set(name, {
-                name,
-                left_orders: item.order_count || 0,
-                left_amount: item.total_amount || 0,
-                right_orders: 0,
-                right_amount: 0,
-            });
-        });
-
-        rightRows.forEach((item) => {
-            const name = getRowName(item);
-
-            if (map.has(name)) {
-                const existing = map.get(name);
-                existing.right_orders = item.order_count || 0;
-                existing.right_amount = item.total_amount || 0;
-            } else {
-                map.set(name, {
-                    name,
-                    left_orders: 0,
-                    left_amount: 0,
-                    right_orders: item.order_count || 0,
-                    right_amount: item.total_amount || 0,
-                });
-            }
-        });
-
-        return Array.from(map.values());
-    };
-
     const getSelectedRowsByType = (type) => {
         if (!report || !type) {
             return {
@@ -349,8 +359,8 @@ const OrderComparisonReport = () => {
         </Col>
     );
 
-    const renderSelect = (label, key, options) => (
-        <Col xl={2} md={6}>
+    const renderSelect = (label, key, options, colSize = 2) => (
+        <Col xl={colSize} md={6}>
             <label className="form-label" style={labelStyle}>
                 {label}
             </label>
@@ -372,8 +382,23 @@ const OrderComparisonReport = () => {
         </Col>
     );
 
+    const selectCommonStyles = {
+        control: (base) => ({
+            ...base,
+            minHeight: "48px",
+            borderRadius: "10px",
+            border: "1.5px solid #b8c2d6",
+            fontSize: "14px",
+            fontWeight: "600",
+        }),
+        menu: (base) => ({
+            ...base,
+            zIndex: 9999,
+        }),
+    };
+
     const renderReportTypeSelect = () => (
-        <Col xl={3} md={6}>
+        <Col xl={2} md={12}>
             <label className="form-label" style={labelStyle}>
                 Report Type
             </label>
@@ -394,22 +419,11 @@ const OrderComparisonReport = () => {
                 placeholder="Select report types"
                 closeMenuOnSelect={false}
                 styles={{
-                    control: (base) => ({
-                        ...base,
-                        minHeight: "48px",
-                        borderRadius: "10px",
-                        border: "1.5px solid #b8c2d6",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                    }),
+                    ...selectCommonStyles,
                     multiValue: (base) => ({
                         ...base,
                         borderRadius: "8px",
                         fontWeight: "700",
-                    }),
-                    menu: (base) => ({
-                        ...base,
-                        zIndex: 9999,
                     }),
                 }}
             />
@@ -419,9 +433,7 @@ const OrderComparisonReport = () => {
     const renderCompareTable = (title, type) => {
         const { rows, total } = getSelectedRowsByType(type);
 
-        const tableRows = total
-            ? [...rows, { ...total, is_total: true }]
-            : rows;
+        const tableRows = total ? [...rows, { ...total, is_total: true }] : rows;
 
         return (
             <Card className="border-0 mb-4" style={tableCardStyle}>
@@ -464,7 +476,11 @@ const OrderComparisonReport = () => {
                             <tbody>
                                 {tableRows.length === 0 ? (
                                     <tr>
-                                        <td colSpan="7" className="text-center py-3" style={miniTdStyle}>
+                                        <td
+                                            colSpan="7"
+                                            className="text-center py-3"
+                                            style={miniTdStyle}
+                                        >
                                             No data
                                         </td>
                                     </tr>
@@ -794,54 +810,31 @@ const OrderComparisonReport = () => {
                                         </div>
                                     </div>
 
-                                    <Row className="g-3 align-items-end">
+                                    <Row className="g-3 align-items-end mb-3">
                                         {renderInput("Range 1 Start", "range1_start", "date")}
                                         {renderInput("Range 1 End", "range1_end", "date")}
                                         {renderInput("Range 2 Start", "range2_start", "date")}
                                         {renderInput("Range 2 End", "range2_end", "date")}
-
                                         {renderReportTypeSelect()}
+                                    {/* </Row> */}
 
-                                        {renderInput("Search", "search", "text", "Invoice, customer")}
+                                    {/* <Row className="g-3 align-items-end mb-3"> */}
+                                        <Col xl={2} md={12}>
+                                            <label className="form-label" style={labelStyle}>
+                                                Search
+                                            </label>
 
-                                        <Col xl={2} md={6}>
-                                            <Button
-                                                color="primary"
-                                                className="w-100"
-                                                onClick={fetchReport}
-                                                disabled={loading}
-                                                style={buttonStyle}
-                                            >
-                                                {loading ? "Loading..." : "Compare"}
-                                            </Button>
+                                            <Input
+                                                type="text"
+                                                value={filters.search}
+                                                placeholder="Search invoice or customer"
+                                                onChange={(e) => handleChange("search", e.target.value)}
+                                                style={inputStyle}
+                                            />
                                         </Col>
-
-                                        <Col xl={1} md={6}>
-                                            <Button
-                                                color="secondary"
-                                                className="w-100"
-                                                onClick={clearFilters}
-                                                style={buttonStyle}
-                                            >
-                                                Clear
-                                            </Button>
-                                        </Col>
-
-                                        {report && (
-                                            <Col xl={2} md={6}>
-                                                <Button
-                                                    color="success"
-                                                    className="w-100"
-                                                    onClick={exportToExcel}
-                                                    style={buttonStyle}
-                                                >
-                                                    Export Excel
-                                                </Button>
-                                            </Col>
-                                        )}
                                     </Row>
 
-                                    <Row className="g-3 align-items-end mt-2">
+                                    <Row className="g-3 align-items-end mb-3">
                                         {renderSelect("Status", "status", [
                                             { value: "Invoice Created", label: "Invoice Created" },
                                             { value: "Invoice Approved", label: "Invoice Approved" },
@@ -866,15 +859,28 @@ const OrderComparisonReport = () => {
                                         ])}
 
                                         {renderSelect(
-                                            "Family",
+                                            "Division",
                                             "family",
                                             familyData.map((item) => ({
                                                 value: item.id,
                                                 label: item.name || item.family_name || `Family ${item.id}`,
-                                            }))
+                                            })),
+                                            3
                                         )}
 
-                                        <Col xl={2} md={6}>
+                                        {renderSelect(
+                                            "Company",
+                                            "company",
+                                            companies.map((item) => ({
+                                                value: item.id,
+                                                label: item.name || item.company_name || `Company ${item.id}`,
+                                            })),
+                                            3
+                                        )}
+                                    </Row>
+
+                                    <Row className="g-3 align-items-end">
+                                        <Col xl={3} md={6}>
                                             <label className="form-label" style={labelStyle}>
                                                 Staff
                                             </label>
@@ -883,50 +889,40 @@ const OrderComparisonReport = () => {
                                                 value={
                                                     staffs
                                                         .map((staff) => ({
-                                                            value: staff.id,
+                                                            value: String(staff.id),
                                                             label:
                                                                 staff.name ||
                                                                 staff.family_name ||
                                                                 staff.username ||
                                                                 `Staff ${staff.id}`,
                                                         }))
-                                                        .find((option) => option.value === filters.manage_staff) || null
+                                                        .find((option) => option.value === String(filters.manage_staff)) || null
                                                 }
-                                                onInputChange={(value) => {
-                                                    setStaffSearch(value);
-                                                    fetchStaffs(value);
+                                                onInputChange={(value, actionMeta) => {
+                                                    if (actionMeta.action === "input-change") {
+                                                        setStaffSearch(value);
+                                                        fetchStaffs(value);
+                                                    }
                                                 }}
                                                 onChange={(selected) => {
-                                                    handleChange("manage_staff", selected ? selected.value : "");
+                                                    handleChange("manage_staff", selected ? String(selected.value) : "");
                                                 }}
                                                 options={staffs.map((staff) => ({
-                                                    value: staff.id,
+                                                    value: String(staff.id),
                                                     label:
                                                         staff.name ||
                                                         staff.family_name ||
                                                         staff.username ||
                                                         `Staff ${staff.id}`,
                                                 }))}
+                                                isSearchable
                                                 isClearable
                                                 placeholder="Search staff"
-                                                styles={{
-                                                    control: (base) => ({
-                                                        ...base,
-                                                        minHeight: "48px",
-                                                        borderRadius: "10px",
-                                                        border: "1.5px solid #b8c2d6",
-                                                        fontSize: "14px",
-                                                        fontWeight: "600",
-                                                    }),
-                                                    menu: (base) => ({
-                                                        ...base,
-                                                        zIndex: 9999,
-                                                    }),
-                                                }}
+                                                styles={selectCommonStyles}
                                             />
                                         </Col>
 
-                                        <Col xl={2} md={6}>
+                                        <Col xl={3} md={6}>
                                             <label className="form-label" style={labelStyle}>
                                                 Customer
                                             </label>
@@ -960,27 +956,125 @@ const OrderComparisonReport = () => {
                                                 }))}
                                                 isClearable
                                                 placeholder="Search customer"
-                                                styles={{
-                                                    control: (base) => ({
-                                                        ...base,
-                                                        minHeight: "48px",
-                                                        borderRadius: "10px",
-                                                        border: "1.5px solid #b8c2d6",
-                                                        fontSize: "14px",
-                                                        fontWeight: "600",
-                                                    }),
-                                                    menu: (base) => ({
-                                                        ...base,
-                                                        zIndex: 9999,
-                                                    }),
-                                                }}
+                                                styles={selectCommonStyles}
                                             />
                                         </Col>
 
-                                        {renderInput("State ID", "state", "number")}
-                                        {renderInput("Company ID", "company", "number")}
-                                        {renderInput("Parcel Service ID", "parcel_service", "number")}
-                                        {renderInput("Shipping Mode", "shipping_mode")}
+                                        <Col xl={3} md={6}>
+                                            <label className="form-label" style={labelStyle}>
+                                                State
+                                            </label>
+
+                                            <Select
+                                                value={
+                                                    stateList
+                                                        .map((state) => ({
+                                                            value: state.id,
+                                                            label:
+                                                                state.name ||
+                                                                state.state_name ||
+                                                                `State ${state.id}`,
+                                                        }))
+                                                        .find(
+                                                            (option) =>
+                                                                option.value === Number(filters.state)
+                                                        ) || null
+                                                }
+                                                onChange={(selected) => {
+                                                    handleChange("state", selected ? selected.value : "");
+                                                }}
+                                                options={stateList.map((state) => ({
+                                                    value: state.id,
+                                                    label:
+                                                        state.name ||
+                                                        state.state_name ||
+                                                        `State ${state.id}`,
+                                                }))}
+                                                isSearchable
+                                                isClearable
+                                                placeholder="Search State"
+                                                noOptionsMessage={() => "No states found"}
+                                                styles={selectCommonStyles}
+                                            />
+                                        </Col>
+
+                                        <Col xl={3} md={6}>
+                                            <label className="form-label" style={labelStyle}>
+                                                Parcel Service
+                                            </label>
+
+                                            <Select
+                                                value={
+                                                    parcelServices
+                                                        .map((service) => ({
+                                                            value: service.id,
+                                                            label:
+                                                                service.name ||
+                                                                service.parcel_service_name ||
+                                                                service.service_name ||
+                                                                `Parcel Service ${service.id}`,
+                                                        }))
+                                                        .find(
+                                                            (option) =>
+                                                                option.value === Number(filters.parcel_service)
+                                                        ) || null
+                                                }
+                                                onChange={(selected) => {
+                                                    handleChange("parcel_service", selected ? selected.value : "");
+                                                }}
+                                                options={parcelServices.map((service) => ({
+                                                    value: service.id,
+                                                    label:
+                                                        service.name ||
+                                                        service.parcel_service_name ||
+                                                        service.service_name ||
+                                                        `Parcel Service ${service.id}`,
+                                                }))}
+                                                isSearchable
+                                                isClearable
+                                                placeholder="Search parcel service"
+                                                noOptionsMessage={() => "No parcel services found"}
+                                                styles={selectCommonStyles}
+                                            />
+                                        </Col>
+                                    </Row>
+
+                                    <Row className="g-3 align-items-end mt-3">
+                                        <Col xl={2} md={4}>
+                                            <Button
+                                                color="primary"
+                                                className="w-100"
+                                                onClick={fetchReport}
+                                                disabled={loading}
+                                                style={buttonStyle}
+                                            >
+                                                {loading ? "Loading..." : "Compare"}
+                                            </Button>
+                                        </Col>
+
+                                        <Col xl={2} md={4}>
+                                            <Button
+                                                color="secondary"
+                                                className="w-100"
+                                                onClick={clearFilters}
+                                                style={buttonStyle}
+                                            >
+                                                Clear
+                                            </Button>
+                                        </Col>
+
+                                        {report && (
+                                            <Col xl={2} md={4}>
+                                                <Button
+                                                    color="success"
+                                                    className="w-100"
+                                                    onClick={exportToExcel}
+                                                    style={buttonStyle}
+                                                >
+                                                    Export Excel
+                                                </Button>
+                                            </Col>
+                                        )}
                                     </Row>
                                 </CardBody>
                             </Card>
@@ -1065,7 +1159,10 @@ const OrderComparisonReport = () => {
                                                 </Badge>
                                             </div>
 
-                                            <div className="table-responsive" style={rangeSummaryTableWrapperStyle}>
+                                            <div
+                                                className="table-responsive"
+                                                style={rangeSummaryTableWrapperStyle}
+                                            >
                                                 <Table className="mb-0 align-middle">
                                                     <thead>
                                                         <tr>
@@ -1074,14 +1171,16 @@ const OrderComparisonReport = () => {
                                                             <th style={range1SummaryThStyle}>
                                                                 Range 1 - Base
                                                                 <div style={rangeDateStyle}>
-                                                                    {formatDate(filters.range1_start)} to {formatDate(filters.range1_end)}
+                                                                    {formatDate(filters.range1_start)} to{" "}
+                                                                    {formatDate(filters.range1_end)}
                                                                 </div>
                                                             </th>
 
                                                             <th style={range2SummaryThStyle}>
                                                                 Range 2 - Compare
                                                                 <div style={rangeDateStyle}>
-                                                                    {formatDate(filters.range2_start)} to {formatDate(filters.range2_end)}
+                                                                    {formatDate(filters.range2_start)} to{" "}
+                                                                    {formatDate(filters.range2_end)}
                                                                 </div>
                                                             </th>
 
@@ -1114,7 +1213,11 @@ const OrderComparisonReport = () => {
                                                                     ),
                                                                 }}
                                                             >
-                                                                {Number(report.comparison?.order_count_difference || 0) > 0 ? "+" : ""}
+                                                                {Number(
+                                                                    report.comparison?.order_count_difference || 0
+                                                                ) > 0
+                                                                    ? "+"
+                                                                    : ""}
                                                                 {report.comparison?.order_count_difference || 0}
                                                             </td>
 
@@ -1126,8 +1229,14 @@ const OrderComparisonReport = () => {
                                                                     ),
                                                                 }}
                                                             >
-                                                                {Number(report.comparison?.order_count_percentage || 0) > 0 ? "+" : ""}
-                                                                {formatPercentage(report.comparison?.order_count_percentage)}
+                                                                {Number(
+                                                                    report.comparison?.order_count_percentage || 0
+                                                                ) > 0
+                                                                    ? "+"
+                                                                    : ""}
+                                                                {formatPercentage(
+                                                                    report.comparison?.order_count_percentage
+                                                                )}
                                                             </td>
                                                         </tr>
 
@@ -1150,7 +1259,9 @@ const OrderComparisonReport = () => {
                                                                     ),
                                                                 }}
                                                             >
-                                                                {Number(report.comparison?.amount_difference || 0) > 0 ? "+" : ""}
+                                                                {Number(report.comparison?.amount_difference || 0) > 0
+                                                                    ? "+"
+                                                                    : ""}
                                                                 {formatAmount(report.comparison?.amount_difference)}
                                                             </td>
 
@@ -1162,7 +1273,9 @@ const OrderComparisonReport = () => {
                                                                     ),
                                                                 }}
                                                             >
-                                                                {Number(report.comparison?.amount_percentage || 0) > 0 ? "+" : ""}
+                                                                {Number(report.comparison?.amount_percentage || 0) > 0
+                                                                    ? "+"
+                                                                    : ""}
                                                                 {formatPercentage(report.comparison?.amount_percentage)}
                                                             </td>
                                                         </tr>
@@ -1397,29 +1510,6 @@ const differenceBoxStyle = {
     color: "#111827",
     fontSize: "13px",
     fontWeight: "900",
-};
-
-const summaryCardStyle = (color) => ({
-    borderRadius: "18px",
-    boxShadow: "0 8px 25px rgba(15, 23, 42, 0.10)",
-    borderTop: `5px solid ${color}`,
-});
-
-const summaryTitleStyle = {
-    fontWeight: "900",
-    color: "#111827",
-    fontSize: "18px",
-    marginBottom: "14px",
-};
-
-const summaryRowStyle = {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    fontSize: "14px",
-    fontWeight: "900",
-    color: "#111827",
-    padding: "8px 0",
 };
 
 const rangeSummaryCardStyle = {

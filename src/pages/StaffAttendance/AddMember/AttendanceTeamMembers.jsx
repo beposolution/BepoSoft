@@ -142,7 +142,17 @@ const AttendanceTeamMembers = () => {
         headers: authHeaders,
       });
 
-      setTeams(toArray(res?.data).map(mapTeamItem));
+      const profileRes = await axios.get(buildUrl("profile/"), {
+        headers: authHeaders,
+      });
+
+      const loggedUserId = profileRes?.data?.data?.id;
+
+      const myTeams = toArray(res?.data)
+        .map(mapTeamItem)
+        .filter(team => String(team.team_leader) === String(loggedUserId));
+
+      setTeams(myTeams);
     } catch {
       toast.error("Failed to load teams");
     }
@@ -154,7 +164,11 @@ const AttendanceTeamMembers = () => {
         headers: authHeaders,
       });
 
-      setMembersData(toArray(res?.data).map(mapMemberTeam));
+      const onlyMyLeaderTeams = toArray(res?.data)
+        .map(mapMemberTeam)
+        .filter(team => team.is_team_leader === true);
+
+      setMembersData(onlyMyLeaderTeams);
     } catch {
       toast.error("Failed to load members");
     }

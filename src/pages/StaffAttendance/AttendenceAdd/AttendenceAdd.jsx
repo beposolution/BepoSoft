@@ -104,25 +104,27 @@ const AttendanceAdd = () => {
 
     const fetchStaffs = async (search = "") => {
         try {
-            const res = await axios.get(`${baseUrl}staff/attendance/my/team/details/`, {
+            const res = await axios.get(`${baseUrl}staff/attendance/added/users/`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
                 params: { search },
             });
 
-            const teamsData = res?.data?.data || [];
+            const attendanceList = res?.data?.results?.data || [];
 
-            const members = teamsData.flatMap(team =>
-                team.members?.map(m => ({
-                    id: m.member,
-                    name: m.member_name,
-                    team_id: team.team_id,
-                    team_name: team.team_name,
-                })) || []
+            const members = attendanceList.map(item => ({
+                id: item.staff,
+                name: item.staff_name,
+                team_id: item.team_id,
+                team_name: item.team_name,
+            }));
+
+            const uniqueMembers = Array.from(
+                new Map(members.map(item => [String(item.id), item])).values()
             );
 
-            setStaffs(members);
+            setStaffs(uniqueMembers);
         } catch {
             toast.error("Failed to load staff");
         }
@@ -140,7 +142,7 @@ const AttendanceAdd = () => {
                         team_name: team.team_name,
                         team_leader: team.team_leader,
                         team_leader_name: team.team_leader_name,
-                        members_count: team.members_count,
+                        // members_count: team.members_count,
                         attendance_date:
                             attendance.attendance_date || dateGroup.attendance_date,
                     });
@@ -153,7 +155,7 @@ const AttendanceAdd = () => {
 
     const fetchAttendance = async () => {
         try {
-            const res = await axios.get(`${baseUrl}staff/attendance/my/team/`, {
+            const res = await axios.get(`${baseUrl}staff/attendance/added/users/`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -164,21 +166,21 @@ const AttendanceAdd = () => {
                 },
             });
 
-            // console.log("Attendance Response:", res);
+            const attendanceList = res?.data?.results?.data || [];
 
-            const teamsData = res?.data?.results?.data || [];
-            const firstTeam = teamsData?.[0] || {};
+            const firstRecord = attendanceList?.[0] || {};
 
             setTeamSummary({
-                team_name: firstTeam?.team_name || "-",
-                team_leader_name: firstTeam?.team_leader_name || "-",
-                members_count: firstTeam?.members_count || 0,
+                team_name: firstRecord?.team_name || "-",
+                team_leader_name: firstRecord?.team_leader_name || "-",
+                members_count: attendanceList.length || 0,
             });
 
-            const flattened = flattenAttendanceResponse(teamsData);
-            setAttendanceData(flattened);
-        } catch {
-            toast.error("Failed to load attendance");
+            setAttendanceData(attendanceList);
+        } catch (error) {
+            toast.error(
+                error?.response?.data?.message || "Failed to load attendance"
+            );
         }
     };
 
@@ -228,13 +230,13 @@ const AttendanceAdd = () => {
 
     const formik = useFormik({
         initialValues: {
-            staff: "",
+            // staff: "",
             status: "",
             attendance_time: "",
         },
 
         validationSchema: Yup.object({
-            staff: Yup.string().required("Select Staff"),
+            // staff: Yup.string().required("Select Staff"),
             status: Yup.string().required("Select Status"),
             attendance_time: Yup.string().required("Select Time"),
         }),
@@ -244,7 +246,7 @@ const AttendanceAdd = () => {
                 setSubmitLoading(true);
 
                 const payload = {
-                    staff: Number(values.staff),
+                    // staff: Number(values.staff),
                     attendance_date: todayDate,
                     attendance_time: values.attendance_time,
                     status: values.status,
@@ -256,7 +258,7 @@ const AttendanceAdd = () => {
                     },
                 });
 
-                toast.success("Attendance added successfully");
+                toast.success("Attendance submitted. Waiting for manager approval");
                 resetForm();
                 setAddModal(false);
                 fetchAttendance();
@@ -307,7 +309,7 @@ const AttendanceAdd = () => {
                 await axios.put(
                     `${baseUrl}staff/attendance/edit/${selectedAttendanceId}/`,
                     {
-                        staff: Number(values.staff),
+                        // staff: Number(values.staff),
                         attendance_date: values.attendance_date,
                         attendance_time: values.attendance_time,
                         status: values.status,
@@ -332,7 +334,7 @@ const AttendanceAdd = () => {
         setFilters({
             start_date: todayDate,
             end_date: todayDate,
-            member: "",
+            // member: "",
         });
 
         setTimeout(() => {
@@ -507,14 +509,6 @@ const AttendanceAdd = () => {
                             </Card>
                         </Col>
 
-                        <Col xl={2} lg={4} md={6} className="mb-3">
-                            <Card className="border-0 h-100" style={{ borderRadius: "18px", boxShadow: "0 8px 25px rgba(15, 23, 42, 0.06)" }}>
-                                <CardBody>
-                                    <p className="text-muted mb-1">Team Members</p>
-                                    <h3 className="mb-0 fw-bold">{teamSummary.members_count || 0}</h3>
-                                </CardBody>
-                            </Card>
-                        </Col>
 
                         <Col xl={2} lg={4} md={6} className="mb-3">
                             <Card className="border-0 h-100" style={{ borderRadius: "18px", boxShadow: "0 8px 25px rgba(15, 23, 42, 0.06)" }}>
@@ -572,111 +566,7 @@ const AttendanceAdd = () => {
                             overflow: "visible",
                         }}
                     >
-                        {/* <CardBody className="p-4">
-                            <h5 className="mb-1 fw-bold text-dark">Filters</h5>
-                            <p className="text-muted mb-4">
-                                Filter attendance by date, team, or member.
-                            </p>
 
-                            <Row>
-                                <Col md={2} className="mb-3">
-                                    <Label>Start Date</Label>
-                                    <Input
-                                        type="date"
-                                        value={filters.start_date}
-                                        onChange={e =>
-                                            setFilters({
-                                                ...filters,
-                                                start_date: e.target.value,
-                                            })
-                                        }
-                                        style={{
-                                            borderRadius: "10px",
-                                            minHeight: "44px",
-                                            background: "#f8fafc",
-                                        }}
-                                    />
-                                </Col>
-
-                                <Col md={2} className="mb-3">
-                                    <Label>End Date</Label>
-                                    <Input
-                                        type="date"
-                                        value={filters.end_date}
-                                        onChange={e =>
-                                            setFilters({
-                                                ...filters,
-                                                end_date: e.target.value,
-                                            })
-                                        }
-                                        style={{
-                                            borderRadius: "10px",
-                                            minHeight: "44px",
-                                            background: "#f8fafc",
-                                        }}
-                                    />
-                                </Col>
-
-
-                                <Col md={3} className="mb-3">
-                                    <Label>Member</Label>
-                                    <Select
-                                        options={staffOptions}
-                                        styles={selectStyles}
-                                        menuPortalTarget={document.body}
-                                        menuPosition="fixed"
-                                        value={
-                                            staffOptions.find(
-                                                x => String(x.value) === String(filters.member)
-                                            ) || null
-                                        }
-                                        onChange={e =>
-                                            setFilters({
-                                                ...filters,
-                                                member: e?.value || "",
-                                            })
-                                        }
-                                        placeholder="Select member"
-                                        isSearchable
-                                        onInputChange={(value, meta) => {
-                                            if (meta.action === "input-change") {
-                                                setStaffSearch(value);
-                                            }
-                                        }}
-                                    />
-                                </Col>
-
-                                <Col md={2} className="mb-3">
-                                    <Button
-                                        color="primary"
-                                        className="w-100"
-                                        onClick={fetchAttendance}
-                                        style={{
-                                            marginTop: "28px",
-                                            borderRadius: "10px",
-                                            padding: "10px 14px",
-                                            fontWeight: 600,
-                                        }}
-                                    >
-                                        Search
-                                    </Button>
-                                </Col>
-
-                                <Col md={12}>
-                                    <Button
-                                        color="secondary"
-                                        onClick={resetFilters}
-                                        style={{
-                                            borderRadius: "10px",
-                                            padding: "9px 18px",
-                                            fontWeight: 600,
-                                        }}
-                                    >
-                                        Reset Filters
-                                    </Button>
-                                </Col>
-                            </Row>
-                        </CardBody> */}
                         <CardBody className="p-4">
                             <div className="d-flex justify-content-between align-items-center mb-4">
                                 <div>
@@ -743,33 +633,7 @@ const AttendanceAdd = () => {
                                     />
                                 </Col>
 
-                                <Col xl={4} lg={4} md={8}>
-                                    <Label className="fw-semibold text-dark">Member</Label>
-                                    <Select
-                                        options={staffOptions}
-                                        styles={selectStyles}
-                                        menuPortalTarget={document.body}
-                                        menuPosition="fixed"
-                                        value={
-                                            staffOptions.find(
-                                                x => String(x.value) === String(filters.member)
-                                            ) || null
-                                        }
-                                        onChange={e =>
-                                            setFilters({
-                                                ...filters,
-                                                member: e?.value || "",
-                                            })
-                                        }
-                                        placeholder="Select member"
-                                        isSearchable
-                                        onInputChange={(value, meta) => {
-                                            if (meta.action === "input-change") {
-                                                setStaffSearch(value);
-                                            }
-                                        }}
-                                    />
-                                </Col>
+
 
                                 <Col xl={2} lg={12} md={4}>
                                     <Button

@@ -849,34 +849,6 @@ const AttendanceAdd = () => {
                                     Today&apos;s Date: <strong>{todayDate}</strong>
                                 </p>
 
-                                <Label>Staff</Label>
-                                <Select
-                                    options={staffOptions}
-                                    styles={selectStyles}
-                                    menuPortalTarget={document.body}
-                                    menuPosition="fixed"
-                                    menuShouldBlockScroll={true}
-                                    onInputChange={(value, meta) => {
-                                        if (meta.action === "input-change") {
-                                            setStaffSearch(value);
-                                        }
-                                    }}
-                                    value={
-                                        staffOptions.find(
-                                            x => String(x.value) === String(formik.values.staff)
-                                        ) || null
-                                    }
-                                    onChange={e =>
-                                        formik.setFieldValue("staff", e?.value || "")
-                                    }
-                                    placeholder="Select staff"
-                                />
-                                {formik.touched.staff && formik.errors.staff ? (
-                                    <div className="text-danger mt-1">
-                                        {formik.errors.staff}
-                                    </div>
-                                ) : null}
-
                                 <Label className="mt-3">Reporting Time</Label>
                                 <Input
                                     type="time"
@@ -951,28 +923,6 @@ const AttendanceAdd = () => {
 
                         <Form onSubmit={editFormik.handleSubmit}>
                             <ModalBody style={{ overflow: "visible" }}>
-                                <Label>Staff</Label>
-                                <Select
-                                    options={staffOptions}
-                                    styles={selectStyles}
-                                    menuPortalTarget={document.body}
-                                    menuPosition="fixed"
-                                    menuShouldBlockScroll={true}
-                                    value={
-                                        staffOptions.find(
-                                            x => String(x.value) === String(editFormik.values.staff)
-                                        ) || null
-                                    }
-                                    onChange={e =>
-                                        editFormik.setFieldValue("staff", e?.value || "")
-                                    }
-                                    placeholder="Select staff"
-                                />
-                                {editFormik.touched.staff && editFormik.errors.staff ? (
-                                    <div className="text-danger mt-1">
-                                        {editFormik.errors.staff}
-                                    </div>
-                                ) : null}
 
                                 {/* <Label className="mt-3">Date</Label>
                                 <Input

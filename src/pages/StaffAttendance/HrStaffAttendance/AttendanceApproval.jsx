@@ -37,6 +37,29 @@ const AttendanceApproval = () => {
     const [teamOptions, setTeamOptions] = useState([]);
     const [memberOptions, setMemberOptions] = useState([]);
 
+    const [editModal, setEditModal] = useState(false);
+    const [editLoading, setEditLoading] = useState(false);
+
+    const [editData, setEditData] = useState({
+        id: "",
+        attendance_time: "",
+        status: "",
+        approval_status: "",
+        manager_note: "",
+    });
+
+    const statusOptions = [
+        { value: "present", label: "Present" },
+        { value: "absent", label: "Absent" },
+        { value: "half_day", label: "Half Day" },
+    ];
+
+    const editApprovalOptions = [
+        { value: "pending", label: "Pending" },
+        { value: "approved", label: "Approved" },
+        { value: "rejected", label: "Rejected" },
+    ];
+
     const [filters, setFilters] = useState({
         start_date: todayDate,
         end_date: todayDate,
@@ -331,8 +354,6 @@ const AttendanceApproval = () => {
                 },
             });
 
-            console.log("sdfghjk", res.data)
-
             const teamsData =
                 res?.data?.results?.data ||
                 res?.data?.data ||
@@ -478,6 +499,66 @@ const AttendanceApproval = () => {
         setTimeout(() => {
             fetchAttendance();
         }, 0);
+    };
+
+    const openEditModal = item => {
+        if (!item?.id) {
+            toast.warning("Default absent records cannot be edited");
+            return;
+        }
+
+        setEditData({
+            id: item.id,
+            attendance_time: item.attendance_time ? item.attendance_time.slice(0, 5) : "",
+            status: item.status || "",
+            approval_status: item.approval_status || "pending",
+            manager_note: item.manager_note || "",
+        });
+
+        setEditModal(true);
+    };
+
+    const closeEditModal = () => {
+        setEditModal(false);
+        setEditData({
+            id: "",
+            attendance_time: "",
+            status: "",
+            approval_status: "",
+            manager_note: "",
+        });
+    };
+
+    const submitEditAttendance = async () => {
+        try {
+            setEditLoading(true);
+
+            await axios.put(
+                buildUrl(`staff/attendance/edit/${editData.id}/`),
+                {
+                    attendance_time: editData.attendance_time,
+                    status: editData.status,
+                },
+                { headers: authHeaders }
+            );
+
+            await axios.put(
+                buildUrl(`staff/attendance/approve/${editData.id}/`),
+                {
+                    approval_status: editData.approval_status,
+                    manager_note: editData.manager_note || "",
+                },
+                { headers: authHeaders }
+            );
+
+            toast.success("Attendance updated successfully");
+            closeEditModal();
+            fetchAttendance();
+        } catch (error) {
+            toast.error(error?.response?.data?.message || "Failed to update attendance");
+        } finally {
+            setEditLoading(false);
+        }
     };
 
     return (
@@ -825,8 +906,7 @@ const AttendanceApproval = () => {
                                         Approval List
                                     </h5>
                                     <p className="text-muted mb-0">
-                                        Showing {filteredRows.length} of{" "}
-                                        {allAttendanceRows.length} records
+                                        Showing department-wise attendance records
                                     </p>
                                 </div>
                             </div>
@@ -840,254 +920,113 @@ const AttendanceApproval = () => {
                                         Loading attendance approvals...
                                     </div>
                                 </div>
-                            ) : filteredRows.length > 0 ? (
-                                <div className="table-responsive">
-                                    <Table className="align-middle mb-0">
-                                        <thead>
-                                            <tr
-                                                style={{
-                                                    background: "#f8fafc",
-                                                    borderTop:
-                                                        "1px solid #edf0f4",
-                                                }}
-                                            >
-                                                {[
-                                                    "#",
-                                                    "Team",
-                                                    "Staff",
-                                                    "Date",
-                                                    "Time",
-                                                    "Status",
-                                                    "Approval",
-                                                    "Approved By",
-                                                    "Action",
-                                                ].map(head => (
-                                                    <th
-                                                        key={head}
-                                                        style={{
-                                                            padding:
-                                                                "16px 22px",
-                                                            color: "#64748b",
-                                                            fontSize: "12px",
-                                                            letterSpacing:
-                                                                "0.04em",
-                                                            textTransform:
-                                                                "uppercase",
-                                                            borderBottom:
-                                                                "1px solid #edf0f4",
-                                                            whiteSpace:
-                                                                "nowrap",
-                                                        }}
-                                                    >
-                                                        {head}
-                                                    </th>
-                                                ))}
-                                            </tr>
-                                        </thead>
+                            ) : attendanceTeams.length > 0 ? (
+                                <div className="p-3">
+                                    {attendanceTeams.map(team => (
+                                        <Card key={team.team_id || team.team_name} className="border-0 mb-4">
+                                            <div className="p-3 border-bottom bg-white">
+                                                <h5 className="fw-bold mb-1">{team.team_name || "-"}</h5>
+                                                <small className="text-muted">
+                                                    Leader: {team.team_leader_name || "-"} | Members: {team.members_count || 0}
+                                                </small>
+                                            </div>
 
-                                        <tbody>
-                                            {filteredRows.map((item, index) => (
-                                                <tr
-                                                    key={`${item.staff}-${item.attendance_date}-${item.id || "default"}-${index}`}
-                                                    style={{
-                                                        borderBottom:
-                                                            "1px solid #f1f5f9",
-                                                    }}
-                                                >
-                                                    <td
-                                                        style={{
-                                                            padding:
-                                                                "18px 22px",
-                                                            color: "#64748b",
-                                                            fontWeight: 600,
-                                                        }}
-                                                    >
-                                                        {index + 1}
-                                                    </td>
-
-                                                    <td
-                                                        style={{
-                                                            padding:
-                                                                "18px 22px",
-                                                        }}
-                                                    >
-                                                        <strong>
-                                                            {item.team_name ||
-                                                                "-"}
-                                                        </strong>
-                                                        <div className="text-muted small">
-                                                            Leader:{" "}
-                                                            {item.team_leader_name ||
-                                                                "-"}
-                                                        </div>
-                                                    </td>
-
-                                                    <td
-                                                        style={{
-                                                            padding:
-                                                                "18px 22px",
-                                                        }}
-                                                    >
-                                                        <strong>
-                                                            {item.staff_name ||
-                                                                "-"}
-                                                        </strong>
-                                                    </td>
-
-                                                    <td
-                                                        style={{
-                                                            padding:
-                                                                "18px 22px",
-                                                            whiteSpace:
-                                                                "nowrap",
-                                                        }}
-                                                    >
-                                                        {item.attendance_date ||
-                                                            "-"}
-                                                    </td>
-
-                                                    <td
-                                                        style={{
-                                                            padding:
-                                                                "18px 22px",
-                                                            whiteSpace:
-                                                                "nowrap",
-                                                        }}
-                                                    >
-                                                        {item.attendance_time ||
-                                                            "-"}
-                                                    </td>
-
-                                                    <td
-                                                        style={{
-                                                            padding:
-                                                                "18px 22px",
-                                                        }}
-                                                    >
-                                                        {getStatusBadge(
-                                                            item.status
-                                                        )}
-                                                    </td>
-
-                                                    <td
-                                                        style={{
-                                                            padding:
-                                                                "18px 22px",
-                                                        }}
-                                                    >
-                                                        {getApprovalBadge(
-                                                            item.approval_status ||
-                                                            "pending"
-                                                        )}
-                                                    </td>
-
-                                                    <td
-                                                        style={{
-                                                            padding:
-                                                                "18px 22px",
-                                                        }}
-                                                    >
-                                                        <div>
-                                                            {item.approved_by_name ||
-                                                                "-"}
-                                                        </div>
-                                                        {item.approved_at ? (
-                                                            <small className="text-muted">
-                                                                {formatDateTime(
-                                                                    item.approved_at
-                                                                )}
-                                                            </small>
-                                                        ) : null}
-                                                    </td>
-
-                                                    <td
-                                                        style={{
-                                                            padding:
-                                                                "18px 22px",
-                                                            minWidth: "210px",
-                                                        }}
-                                                    >
-                                                        {String(item.approval_status || "pending").toLowerCase() === "pending" &&
-                                                            !item.is_default_absent &&
-                                                            item.id ? (
-                                                            <div className="d-flex gap-2">
-                                                                <Button
-                                                                    color="success"
-                                                                    size="sm"
-                                                                    onClick={() =>
-                                                                        openConfirmModal(
-                                                                            item,
-                                                                            "approved"
-                                                                        )
-                                                                    }
-                                                                    style={{
-                                                                        borderRadius:
-                                                                            "10px",
-                                                                        padding:
-                                                                            "8px 13px",
-                                                                        fontWeight: 700,
-                                                                    }}
-                                                                >
-                                                                    <i className="bx bx-check me-1"></i>
-                                                                    Approve
-                                                                </Button>
-
-                                                                <Button
-                                                                    color="danger"
-                                                                    size="sm"
-                                                                    onClick={() =>
-                                                                        openConfirmModal(
-                                                                            item,
-                                                                            "rejected"
-                                                                        )
-                                                                    }
-                                                                    style={{
-                                                                        borderRadius:
-                                                                            "10px",
-                                                                        padding:
-                                                                            "8px 13px",
-                                                                        fontWeight: 700,
-                                                                    }}
-                                                                >
-                                                                    <i className="bx bx-x me-1"></i>
-                                                                    Reject
-                                                                </Button>
+                                            <CardBody className="p-0">
+                                                {team.date_wise_attendance?.length > 0 ? (
+                                                    team.date_wise_attendance.map(dateGroup => (
+                                                        <div key={dateGroup.attendance_date}>
+                                                            <div className="px-3 py-2 bg-light fw-bold">
+                                                                {dateGroup.attendance_date}
                                                             </div>
-                                                        ) : (
-                                                            <span className="text-muted">
-                                                                No Action
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </Table>
+
+                                                            <Table responsive className="mb-0 align-middle">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>#</th>
+                                                                        <th>Staff</th>
+                                                                        <th>Time</th>
+                                                                        <th>Status</th>
+                                                                        <th>Approval</th>
+                                                                        <th>Approved By</th>
+                                                                        <th>Action</th>
+                                                                    </tr>
+                                                                </thead>
+
+                                                                <tbody>
+                                                                    {dateGroup.attendance
+                                                                        .filter(item => {
+                                                                            const memberMatch =
+                                                                                !filters.member ||
+                                                                                String(item.staff) === String(filters.member);
+
+                                                                            const approvalMatch =
+                                                                                filters.approval_status === "all" ||
+                                                                                !filters.approval_status ||
+                                                                                String(item.approval_status || "pending") ===
+                                                                                String(filters.approval_status);
+
+                                                                            return memberMatch && approvalMatch;
+                                                                        })
+                                                                        .map((item, index) => (
+                                                                            <tr key={item.id || index}>
+                                                                                <td>{index + 1}</td>
+                                                                                <td>
+                                                                                    <strong>{item.staff_name || "-"}</strong>
+                                                                                </td>
+                                                                                <td>{item.attendance_time || "-"}</td>
+                                                                                <td>{getStatusBadge(item.status)}</td>
+                                                                                <td>{getApprovalBadge(item.approval_status || "pending")}</td>
+                                                                                <td>
+                                                                                    <div>{item.approved_by_name || "-"}</div>
+                                                                                    {item.approved_at ? (
+                                                                                        <small className="text-muted">
+                                                                                            {formatDateTime(item.approved_at)}
+                                                                                        </small>
+                                                                                    ) : null}
+                                                                                </td>
+                                                                                <td>
+                                                                                    {!item.is_default_absent && item.id ? (
+                                                                                        <Button
+                                                                                            color="warning"
+                                                                                            size="sm"
+                                                                                            onClick={() =>
+                                                                                                openEditModal({
+                                                                                                    ...item,
+                                                                                                    team_id: team.team_id,
+                                                                                                    team_name: team.team_name,
+                                                                                                    team_leader_name: team.team_leader_name,
+                                                                                                })
+                                                                                            }
+                                                                                            style={{
+                                                                                                borderRadius: "10px",
+                                                                                                padding: "8px 13px",
+                                                                                                fontWeight: 700,
+                                                                                            }}
+                                                                                        >
+                                                                                            <i className="bx bx-edit me-1"></i>
+                                                                                            Edit
+                                                                                        </Button>
+                                                                                    ) : (
+                                                                                        <span className="text-muted">No Action</span>
+                                                                                    )}
+                                                                                </td>
+                                                                            </tr>
+                                                                        ))}
+                                                                </tbody>
+                                                            </Table>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="text-center text-muted py-4">
+                                                        No attendance found for this department
+                                                    </div>
+                                                )}
+                                            </CardBody>
+                                        </Card>
+                                    ))}
                                 </div>
                             ) : (
-                                <div
-                                    className="text-center"
-                                    style={{
-                                        padding: "70px 20px",
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            width: "82px",
-                                            height: "82px",
-                                            borderRadius: "26px",
-                                            background: "#f1f5f9",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            margin: "0 auto 18px",
-                                            color: "#64748b",
-                                            fontSize: "38px",
-                                        }}
-                                    >
-                                        <i className="bx bx-calendar-x"></i>
-                                    </div>
-
+                                <div className="text-center" style={{ padding: "70px 20px" }}>
                                     <h5 className="fw-bold text-dark mb-2">
                                         No attendance approval records found
                                     </h5>
@@ -1101,102 +1040,87 @@ const AttendanceApproval = () => {
                 </Container>
             </div>
 
-            <Modal isOpen={confirmModal} toggle={closeConfirmModal} centered>
-                <ModalHeader toggle={closeConfirmModal}>
-                    {selectedAction === "approved"
-                        ? "Approve Attendance"
-                        : "Reject Attendance"}
+            <Modal isOpen={editModal} toggle={closeEditModal} centered>
+                <ModalHeader toggle={closeEditModal}>
+                    Edit Attendance
                 </ModalHeader>
 
                 <ModalBody>
-                    <div
-                        style={{
-                            background: "#f8fafc",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "14px",
-                            padding: "14px",
-                            marginBottom: "16px",
-                        }}
-                    >
-                        <div className="mb-1">
-                            <strong>Staff:</strong>{" "}
-                            {selectedAttendance?.staff_name || "-"}
-                        </div>
-                        <div className="mb-1">
-                            <strong>Date:</strong>{" "}
-                            {selectedAttendance?.attendance_date || "-"}
-                        </div>
-                        <div className="mb-1">
-                            <strong>Time:</strong>{" "}
-                            {selectedAttendance?.attendance_time || "-"}
-                        </div>
-                        <div className="mb-1">
-                            <strong>Status:</strong>{" "}
-                            {formatStatusLabel(selectedAttendance?.status)}
-                        </div>
-                        <div>
-                            <strong>Current Approval:</strong>{" "}
-                            {formatApprovalLabel(
-                                selectedAttendance?.approval_status
-                            )}
-                        </div>
-                    </div>
+                    <Label className="fw-semibold">Reporting Time</Label>
+                    <Input
+                        type="time"
+                        value={editData.attendance_time}
+                        onChange={e =>
+                            setEditData({
+                                ...editData,
+                                attendance_time: e.target.value,
+                            })
+                        }
+                    />
 
-                    <Label className="fw-semibold">
-                        Manager Note{" "}
-                        {selectedAction === "rejected" ? (
-                            <span className="text-danger">*</span>
-                        ) : null}
-                    </Label>
+                    <Label className="fw-semibold mt-3">Status</Label>
+                    <Select
+                        options={statusOptions}
+                        styles={selectStyles}
+                        menuPortalTarget={document.body}
+                        menuPosition="fixed"
+                        value={
+                            statusOptions.find(
+                                x => x.value === editData.status
+                            ) || null
+                        }
+                        onChange={selected =>
+                            setEditData({
+                                ...editData,
+                                status: selected?.value || "",
+                            })
+                        }
+                    />
+
+                    <Label className="fw-semibold mt-3">Approval Status</Label>
+                    <Select
+                        options={editApprovalOptions}
+                        styles={selectStyles}
+                        menuPortalTarget={document.body}
+                        menuPosition="fixed"
+                        value={
+                            editApprovalOptions.find(
+                                x => x.value === editData.approval_status
+                            ) || null
+                        }
+                        onChange={selected =>
+                            setEditData({
+                                ...editData,
+                                approval_status: selected?.value || "",
+                            })
+                        }
+                    />
+
+                    <Label className="fw-semibold mt-3">Manager Note</Label>
                     <Input
                         type="textarea"
-                        rows="4"
-                        value={managerNote}
-                        onChange={e => setManagerNote(e.target.value)}
-                        placeholder={
-                            selectedAction === "approved"
-                                ? "Optional note"
-                                : "Enter rejection reason"
+                        rows="3"
+                        value={editData.manager_note}
+                        onChange={e =>
+                            setEditData({
+                                ...editData,
+                                manager_note: e.target.value,
+                            })
                         }
-                        style={{
-                            borderRadius: "12px",
-                            background: "#f8fafc",
-                            border: "1px solid #e5e7eb",
-                        }}
                     />
                 </ModalBody>
 
                 <ModalFooter>
-                    <Button
-                        color="light"
-                        onClick={closeConfirmModal}
-                        disabled={actionLoading}
-                        style={{
-                            borderRadius: "10px",
-                            fontWeight: 600,
-                        }}
-                    >
+                    <Button color="light" onClick={closeEditModal}>
                         Cancel
                     </Button>
 
                     <Button
-                        color={selectedAction === "approved" ? "success" : "danger"}
-                        onClick={submitApprovalAction}
-                        disabled={
-                            actionLoading ||
-                            (selectedAction === "rejected" &&
-                                !managerNote.trim())
-                        }
-                        style={{
-                            borderRadius: "10px",
-                            fontWeight: 700,
-                        }}
+                        color="primary"
+                        onClick={submitEditAttendance}
+                        disabled={editLoading}
                     >
-                        {actionLoading
-                            ? "Saving..."
-                            : selectedAction === "approved"
-                                ? "Approve"
-                                : "Reject"}
+                        {editLoading ? "Updating..." : "Update"}
                     </Button>
                 </ModalFooter>
             </Modal>

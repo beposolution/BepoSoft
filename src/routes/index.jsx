@@ -452,7 +452,6 @@ import ManagerLeaveApplications from "../pages/Staff/ManagerLeaveApplications";
 import HrLeaveApplication from "../pages/Staff/HrLeaveApplication";
 import OrderComparisonReport from "../pages/Resports/OrderComparisonReport";
 import AttendanceApproval from "../pages/StaffAttendance/HrStaffAttendance/AttendanceApproval";
-import AttendanceManagerApproval from "../pages/StaffAttendance/AttendenceAdd/AttendanceManagerApproval";
 
 
 
@@ -700,7 +699,6 @@ const authProtectedRoutes = [
   { path: "/attendance/add/", component: <AttendanceAdd /> },
   { path: "/staff-attendance", component: <StaffAttendance /> },
   { path: "/attendance/approval/", component: <AttendanceApproval /> },
-  { path: "/attendance/manager/approval/", component: <AttendanceManagerApproval /> },
 
 
   //Bank

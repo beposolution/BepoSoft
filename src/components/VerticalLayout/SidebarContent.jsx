@@ -1047,70 +1047,66 @@ const SidebarContent = (props) => {
 
 
 
-            {/* {isManager && role !== 'BDM' && ( */}
-            <li>
-              <Link to="/#" className="has-arrow">
-                <FaUsers size={17} style={{ marginRight: "6px" }} />
-                <span>{props.t("Staff Attendance")}</span>
-              </Link>
+            {isManager && role !== 'BDM' && (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaUsers size={17} style={{ marginRight: "6px" }} />
+                  <span>{props.t("Staff Attendance")}</span>
+                </Link>
 
-              <ul className="sub-menu" aria-expanded="false">
-                {(isManager && (role === "CEO" || role === "COO" || role === "HR")) && (
-                  <>
-                    <li>
-                      <Link to="/attendance/department/">
-                        {props.t("Attendance Department")}
-                      </Link>
-                    </li>
-
-                    <li>
-                      <Link to="/staff-attendance">
-                        {props.t("Staff Attendance")}
-                      </Link>
-                    </li>
-                  </>
-                )}
-
-                {(isManager && (role === "COO")) && (
-                  <li>
-                    <Link to="/attendance/approval/">
-                      {props.t("Attendance Approval")}
-                    </Link>
-                  </li>
-                )}
-
-                <li>
-                  <Link to="/attendance/add/">
-                    {props.t("ADD Attendance")}
-                  </Link>
-                </li>
-
-                {(isManager &&
-                  (
-                    role === "Accounts / Accounting" ||
-                    role === "SD" ||
-                    role === "COO" ||
-                    role === "ADMIN" ||
-                    role === "Warehouse Admin" ||
-                    role === "Marketing"
-                  )) && (
+                <ul className="sub-menu" aria-expanded="false">
+                  {(isManager && (role === "CEO" || role === "COO" || role === "HR")) && (
                     <>
                       <li>
-                        <Link to="/attendance/team-members/">
-                          {props.t("Team Members")}
+                        <Link to="/attendance/department/">
+                          {props.t("Attendance Department")}
                         </Link>
                       </li>
 
                       <li>
-                        <Link to="/attendance/manager/approval/">
-                          {props.t("Manager Attendance Approve")}
+                        <Link to="/staff-attendance">
+                          {props.t("Staff Attendance")}
                         </Link>
                       </li>
                     </>
                   )}
-              </ul>
-            </li>
-            {/* )} */}
+
+                  {(isManager && (role === "COO")) && (
+                    <li>
+                      <Link to="/attendance/approval/">
+                        {props.t("Attendance Approval")}
+                      </Link>
+                    </li>
+                  )}
+
+                  {role !== "HR" && (
+                    <li>
+                      <Link to="/attendance/add/">
+                        {props.t("ADD Attendance")}
+                      </Link>
+                    </li>
+                  )}
+
+                  {(isManager &&
+                    (
+                      role === "Accounts / Accounting" ||
+                      role === "SD" ||
+                      role === "COO" ||
+                      role === "ADMIN" ||
+                      role === "Warehouse Admin" ||
+                      role === "Marketing"
+                    )) && (
+                      <>
+                        <li>
+                          <Link to="/attendance/team-members/">
+                            {props.t("Team Members")}
+                          </Link>
+                        </li>
+                      </>
+                    )}
+                </ul>
+              </li>
+            )}
 
             {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'CSO' || role === 'COO' || role === 'HR' ? (
               <li>

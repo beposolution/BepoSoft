@@ -102,23 +102,24 @@ const AttendanceAdd = () => {
         }
     };
 
-    const fetchStaffs = async (search = "") => {
+    const fetchStaffs = async () => {
         try {
-            const res = await axios.get(`${baseUrl}staff/attendance/added/users/`, {
+            const res = await axios.get(`${baseUrl}staff/attendance/my/team/details/`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
-                params: { search },
             });
 
-            const attendanceList = res?.data?.results?.data || [];
+            const teamsData = res?.data?.data || [];
 
-            const members = attendanceList.map(item => ({
-                id: item.staff,
-                name: item.staff_name,
-                team_id: item.team_id,
-                team_name: item.team_name,
-            }));
+            const members = teamsData.flatMap(team =>
+                team.members?.map(m => ({
+                    id: m.member,
+                    name: m.member_name,
+                    team_id: team.team_id,
+                    team_name: team.team_name,
+                })) || []
+            );
 
             const uniqueMembers = Array.from(
                 new Map(members.map(item => [String(item.id), item])).values()
@@ -155,32 +156,32 @@ const AttendanceAdd = () => {
 
     const fetchAttendance = async () => {
         try {
-            const res = await axios.get(`${baseUrl}staff/attendance/added/users/`, {
+            const res = await axios.get(`${baseUrl}staff/attendance/my/team/`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
                 params: {
                     start_date: filters.start_date || undefined,
                     end_date: filters.end_date || undefined,
-                    member: filters.member || undefined,
+                    // member: filters.member || undefined,
                 },
             });
 
-            const attendanceList = res?.data?.results?.data || [];
+            // console.log("Attendance Response:", res);
 
-            const firstRecord = attendanceList?.[0] || {};
+            const teamsData = res?.data?.results?.data || [];
+            const firstTeam = teamsData?.[0] || {};
 
             setTeamSummary({
-                team_name: firstRecord?.team_name || "-",
-                team_leader_name: firstRecord?.team_leader_name || "-",
-                members_count: attendanceList.length || 0,
+                team_name: firstTeam?.team_name || "-",
+                team_leader_name: firstTeam?.team_leader_name || "-",
+                // members_count: firstTeam?.members_count || 0,
             });
 
-            setAttendanceData(attendanceList);
-        } catch (error) {
-            toast.error(
-                error?.response?.data?.message || "Failed to load attendance"
-            );
+            const flattened = flattenAttendanceResponse(teamsData);
+            setAttendanceData(flattened);
+        } catch {
+            toast.error("Failed to load attendance");
         }
     };
 
@@ -193,14 +194,6 @@ const AttendanceAdd = () => {
 
         init();
     }, []);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            fetchStaffs(staffSearch);
-        }, 500);
-
-        return () => clearTimeout(timer);
-    }, [staffSearch]);
 
     const teamOptions = useMemo(() => {
         return teams.map(item => ({
@@ -230,13 +223,13 @@ const AttendanceAdd = () => {
 
     const formik = useFormik({
         initialValues: {
-            // staff: "",
+            staff: "",
             status: "",
             attendance_time: "",
         },
 
         validationSchema: Yup.object({
-            // staff: Yup.string().required("Select Staff"),
+            staff: Yup.string().required("Select Staff"),
             status: Yup.string().required("Select Status"),
             attendance_time: Yup.string().required("Select Time"),
         }),
@@ -246,7 +239,7 @@ const AttendanceAdd = () => {
                 setSubmitLoading(true);
 
                 const payload = {
-                    // staff: Number(values.staff),
+                    staff: Number(values.staff),
                     attendance_date: todayDate,
                     attendance_time: values.attendance_time,
                     status: values.status,
@@ -258,12 +251,18 @@ const AttendanceAdd = () => {
                     },
                 });
 
-                toast.success("Attendance submitted. Waiting for manager approval");
+                toast.success("Attendance added successfully");
                 resetForm();
                 setAddModal(false);
                 fetchAttendance();
             } catch (error) {
-                toast.error(error?.response?.data?.message || "Failed to add attendance");
+                const message =
+                    error?.response?.data?.message ||
+                    error?.response?.data?.errors?.staff?.[0] ||
+                    error?.response?.data?.errors?.attendance_date?.[0] ||
+                    "Failed to add attendance";
+
+                toast.error(message);
             } finally {
                 setSubmitLoading(false);
             }
@@ -309,7 +308,7 @@ const AttendanceAdd = () => {
                 await axios.put(
                     `${baseUrl}staff/attendance/edit/${selectedAttendanceId}/`,
                     {
-                        // staff: Number(values.staff),
+                        staff: Number(values.staff),
                         attendance_date: values.attendance_date,
                         attendance_time: values.attendance_time,
                         status: values.status,
@@ -849,6 +848,34 @@ const AttendanceAdd = () => {
                                     Today&apos;s Date: <strong>{todayDate}</strong>
                                 </p>
 
+                                <Label>Staff</Label>
+                                <Select
+                                    options={staffOptions}
+                                    styles={selectStyles}
+                                    menuPortalTarget={document.body}
+                                    menuPosition="fixed"
+                                    menuShouldBlockScroll={true}
+                                    onInputChange={(value, meta) => {
+                                        if (meta.action === "input-change") {
+                                            setStaffSearch(value);
+                                        }
+                                    }}
+                                    value={
+                                        staffOptions.find(
+                                            x => String(x.value) === String(formik.values.staff)
+                                        ) || null
+                                    }
+                                    onChange={e =>
+                                        formik.setFieldValue("staff", e?.value || "")
+                                    }
+                                    placeholder="Select staff"
+                                />
+                                {formik.touched.staff && formik.errors.staff ? (
+                                    <div className="text-danger mt-1">
+                                        {formik.errors.staff}
+                                    </div>
+                                ) : null}
+
                                 <Label className="mt-3">Reporting Time</Label>
                                 <Input
                                     type="time"
@@ -923,6 +950,28 @@ const AttendanceAdd = () => {
 
                         <Form onSubmit={editFormik.handleSubmit}>
                             <ModalBody style={{ overflow: "visible" }}>
+                                <Label>Staff</Label>
+                                <Select
+                                    options={staffOptions}
+                                    styles={selectStyles}
+                                    menuPortalTarget={document.body}
+                                    menuPosition="fixed"
+                                    menuShouldBlockScroll={true}
+                                    value={
+                                        staffOptions.find(
+                                            x => String(x.value) === String(editFormik.values.staff)
+                                        ) || null
+                                    }
+                                    onChange={e =>
+                                        editFormik.setFieldValue("staff", e?.value || "")
+                                    }
+                                    placeholder="Select staff"
+                                />
+                                {editFormik.touched.staff && editFormik.errors.staff ? (
+                                    <div className="text-danger mt-1">
+                                        {editFormik.errors.staff}
+                                    </div>
+                                ) : null}
 
                                 {/* <Label className="mt-3">Date</Label>
                                 <Input

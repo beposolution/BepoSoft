@@ -37,6 +37,29 @@ const AttendanceManagerApproval = () => {
     const [teamOptions, setTeamOptions] = useState([]);
     const [memberOptions, setMemberOptions] = useState([]);
 
+    const [editModal, setEditModal] = useState(false);
+    const [editLoading, setEditLoading] = useState(false);
+
+    const [editData, setEditData] = useState({
+        id: "",
+        attendance_time: "",
+        status: "",
+        approval_status: "",
+        manager_note: "",
+    });
+
+    const statusOptions = [
+        { value: "present", label: "Present" },
+        { value: "absent", label: "Absent" },
+        { value: "half_day", label: "Half Day" },
+    ];
+
+    const editApprovalOptions = [
+        { value: "pending", label: "Pending" },
+        { value: "approved", label: "Approved" },
+        { value: "rejected", label: "Rejected" },
+    ];
+
     const [filters, setFilters] = useState({
         start_date: todayDate,
         end_date: todayDate,
@@ -478,6 +501,86 @@ const AttendanceManagerApproval = () => {
         setTimeout(() => {
             fetchAttendance();
         }, 0);
+    };
+
+    const openEditModal = item => {
+        if (!item?.id) {
+            toast.warning("Default absent records cannot be edited");
+            return;
+        }
+
+        setEditData({
+            id: item.id,
+            attendance_time: item.attendance_time
+                ? item.attendance_time.slice(0, 5)
+                : "",
+            status: item.status || "",
+            approval_status: item.approval_status || "pending",
+            manager_note: item.manager_note || "",
+        });
+
+        setEditModal(true);
+    };
+
+    const closeEditModal = () => {
+        setEditModal(false);
+        setEditData({
+            id: "",
+            attendance_time: "",
+            status: "",
+            approval_status: "",
+            manager_note: "",
+        });
+    };
+
+    const submitEditAttendance = async () => {
+        if (!editData.id) {
+            toast.error("Attendance ID missing");
+            return;
+        }
+
+        if (!editData.attendance_time || !editData.status || !editData.approval_status) {
+            toast.error("Time, status and approval status are required");
+            return;
+        }
+
+        try {
+            setEditLoading(true);
+
+            await axios.put(
+                buildUrl(`staff/attendance/edit/${editData.id}/`),
+                {
+                    attendance_time: editData.attendance_time,
+                    status: editData.status,
+                },
+                {
+                    headers: authHeaders,
+                }
+            );
+
+            await axios.put(
+                buildUrl(`staff/attendance/approve/${editData.id}/`),
+                {
+                    approval_status: editData.approval_status,
+                    manager_note: editData.manager_note || "",
+                },
+                {
+                    headers: authHeaders,
+                }
+            );
+
+            toast.success("Attendance updated successfully");
+            closeEditModal();
+            fetchAttendance();
+        } catch (error) {
+            toast.error(
+                error?.response?.data?.message ||
+                error?.response?.data?.detail ||
+                "Failed to update attendance"
+            );
+        } finally {
+            setEditLoading(false);
+        }
     };
 
     return (
@@ -985,61 +1088,29 @@ const AttendanceManagerApproval = () => {
 
                                                     <td
                                                         style={{
-                                                            padding:
-                                                                "18px 22px",
-                                                            minWidth: "210px",
+                                                            padding: "18px 22px",
+                                                            minWidth: "300px",
                                                         }}
                                                     >
-                                                        {String(item.approval_status || "pending").toLowerCase() === "pending" &&
-                                                            !item.is_default_absent &&
-                                                            item.id ? (
-                                                            <div className="d-flex gap-2">
+                                                        {!item.is_default_absent && item.id ? (
+                                                            <div className="d-flex gap-2 flex-wrap">
                                                                 <Button
-                                                                    color="success"
+                                                                    color="warning"
                                                                     size="sm"
-                                                                    onClick={() =>
-                                                                        openConfirmModal(
-                                                                            item,
-                                                                            "approved"
-                                                                        )
-                                                                    }
+                                                                    onClick={() => openEditModal(item)}
                                                                     style={{
-                                                                        borderRadius:
-                                                                            "10px",
-                                                                        padding:
-                                                                            "8px 13px",
+                                                                        borderRadius: "10px",
+                                                                        padding: "8px 13px",
                                                                         fontWeight: 700,
                                                                     }}
                                                                 >
-                                                                    <i className="bx bx-check me-1"></i>
-                                                                    Approve
+                                                                    <i className="bx bx-edit me-1"></i>
+                                                                    Edit
                                                                 </Button>
 
-                                                                <Button
-                                                                    color="danger"
-                                                                    size="sm"
-                                                                    onClick={() =>
-                                                                        openConfirmModal(
-                                                                            item,
-                                                                            "rejected"
-                                                                        )
-                                                                    }
-                                                                    style={{
-                                                                        borderRadius:
-                                                                            "10px",
-                                                                        padding:
-                                                                            "8px 13px",
-                                                                        fontWeight: 700,
-                                                                    }}
-                                                                >
-                                                                    <i className="bx bx-x me-1"></i>
-                                                                    Reject
-                                                                </Button>
                                                             </div>
                                                         ) : (
-                                                            <span className="text-muted">
-                                                                No Action
-                                                            </span>
+                                                            <span className="text-muted">No Action</span>
                                                         )}
                                                     </td>
                                                 </tr>
@@ -1084,63 +1155,82 @@ const AttendanceManagerApproval = () => {
                 </Container>
             </div>
 
-            <Modal isOpen={confirmModal} toggle={closeConfirmModal} centered>
-                <ModalHeader toggle={closeConfirmModal}>
-                    {selectedAction === "approved"
-                        ? "Approve Attendance"
-                        : "Reject Attendance"}
+            <Modal isOpen={editModal} toggle={closeEditModal} centered>
+                <ModalHeader toggle={closeEditModal}>
+                    Edit Attendance
                 </ModalHeader>
 
                 <ModalBody>
-                    <div
+                    <Label className="fw-semibold">Reporting Time</Label>
+                    <Input
+                        type="time"
+                        value={editData.attendance_time}
+                        onChange={e =>
+                            setEditData({
+                                ...editData,
+                                attendance_time: e.target.value,
+                            })
+                        }
                         style={{
+                            borderRadius: "12px",
+                            minHeight: "46px",
                             background: "#f8fafc",
                             border: "1px solid #e5e7eb",
-                            borderRadius: "14px",
-                            padding: "14px",
-                            marginBottom: "16px",
                         }}
-                    >
-                        <div className="mb-1">
-                            <strong>Staff:</strong>{" "}
-                            {selectedAttendance?.staff_name || "-"}
-                        </div>
-                        <div className="mb-1">
-                            <strong>Date:</strong>{" "}
-                            {selectedAttendance?.attendance_date || "-"}
-                        </div>
-                        <div className="mb-1">
-                            <strong>Time:</strong>{" "}
-                            {selectedAttendance?.attendance_time || "-"}
-                        </div>
-                        <div className="mb-1">
-                            <strong>Status:</strong>{" "}
-                            {formatStatusLabel(selectedAttendance?.status)}
-                        </div>
-                        <div>
-                            <strong>Current Approval:</strong>{" "}
-                            {formatApprovalLabel(
-                                selectedAttendance?.approval_status
-                            )}
-                        </div>
-                    </div>
+                    />
 
-                    <Label className="fw-semibold">
-                        Manager Note{" "}
-                        {selectedAction === "rejected" ? (
-                            <span className="text-danger">*</span>
-                        ) : null}
-                    </Label>
+                    <Label className="fw-semibold mt-3">Status</Label>
+                    <Select
+                        options={statusOptions}
+                        styles={selectStyles}
+                        menuPortalTarget={document.body}
+                        menuPosition="fixed"
+                        value={
+                            statusOptions.find(
+                                item => item.value === editData.status
+                            ) || null
+                        }
+                        onChange={selected =>
+                            setEditData({
+                                ...editData,
+                                status: selected?.value || "",
+                            })
+                        }
+                        placeholder="Select status"
+                    />
+
+                    <Label className="fw-semibold mt-3">Approval Status</Label>
+                    <Select
+                        options={editApprovalOptions}
+                        styles={selectStyles}
+                        menuPortalTarget={document.body}
+                        menuPosition="fixed"
+                        value={
+                            editApprovalOptions.find(
+                                item => item.value === editData.approval_status
+                            ) || null
+                        }
+                        onChange={selected =>
+                            setEditData({
+                                ...editData,
+                                approval_status: selected?.value || "",
+                            })
+                        }
+                        placeholder="Select approval status"
+                    />
+
+                    <Label className="fw-semibold mt-3">Manager Note</Label>
                     <Input
                         type="textarea"
-                        rows="4"
-                        value={managerNote}
-                        onChange={e => setManagerNote(e.target.value)}
-                        placeholder={
-                            selectedAction === "approved"
-                                ? "Optional note"
-                                : "Enter rejection reason"
+                        rows="3"
+                        value={editData.manager_note}
+                        onChange={e =>
+                            setEditData({
+                                ...editData,
+                                manager_note: e.target.value,
+                            })
                         }
+                        placeholder="Optional note"
                         style={{
                             borderRadius: "12px",
                             background: "#f8fafc",
@@ -1152,38 +1242,21 @@ const AttendanceManagerApproval = () => {
                 <ModalFooter>
                     <Button
                         color="light"
-                        onClick={closeConfirmModal}
-                        disabled={actionLoading}
-                        style={{
-                            borderRadius: "10px",
-                            fontWeight: 600,
-                        }}
+                        onClick={closeEditModal}
+                        disabled={editLoading}
                     >
                         Cancel
                     </Button>
 
                     <Button
-                        color={selectedAction === "approved" ? "success" : "danger"}
-                        onClick={submitApprovalAction}
-                        disabled={
-                            actionLoading ||
-                            (selectedAction === "rejected" &&
-                                !managerNote.trim())
-                        }
-                        style={{
-                            borderRadius: "10px",
-                            fontWeight: 700,
-                        }}
+                        color="primary"
+                        onClick={submitEditAttendance}
+                        disabled={editLoading}
                     >
-                        {actionLoading
-                            ? "Saving..."
-                            : selectedAction === "approved"
-                                ? "Approve"
-                                : "Reject"}
+                        {editLoading ? "Updating..." : "Update"}
                     </Button>
                 </ModalFooter>
             </Modal>
-
             <ToastContainer closeButton={false} limit={3} />
         </React.Fragment>
     );

@@ -451,6 +451,8 @@ import EmployeeLeaveList from "../pages/Staff/EmployeeLeaveList";
 import ManagerLeaveApplications from "../pages/Staff/ManagerLeaveApplications";
 import HrLeaveApplication from "../pages/Staff/HrLeaveApplication";
 import OrderComparisonReport from "../pages/Resports/OrderComparisonReport";
+import AttendanceApproval from "../pages/StaffAttendance/HrStaffAttendance/AttendanceApproval";
+import AttendanceManagerApproval from "../pages/StaffAttendance/AttendenceAdd/AttendanceManagerApproval";
 
 
 
@@ -504,7 +506,8 @@ const authProtectedRoutes = [
   { path: "/staff/leave/form/", component: <EmployeeLeaveForm /> },
   { path: "/staff/leave/list/", component: <EmployeeLeaveList /> },
   { path: "/manager/leave/applications/", component: <ManagerLeaveApplications /> },
-  { path: "/hr/leave/applications/", component: <HrLeaveApplication />, },
+  { path: "/hr/leave/applications/", component: <HrLeaveApplication /> },
+  { path: "/manager-leave-applications", component: <ManagerLeaveApplications /> },
 
   // Team
   { path: "/sales/team/add/", component: <AddTeam /> },
@@ -692,11 +695,12 @@ const authProtectedRoutes = [
 
   // employee attendance
 
-  { path: "/attendance/department/", component: <AttendanceDepartment />, },
-  { path: "/attendance/team-members/", component: <AttendanceTeamMembers />, },
-  { path: "/attendance/add/", component: <AttendanceAdd />, },
-  { path: "/staff-attendance", component: <StaffAttendance />, },
-  { path: "/manager-leave-applications", component: <ManagerLeaveApplications />, },
+  { path: "/attendance/department/", component: <AttendanceDepartment /> },
+  { path: "/attendance/team-members/", component: <AttendanceTeamMembers /> },
+  { path: "/attendance/add/", component: <AttendanceAdd /> },
+  { path: "/staff-attendance", component: <StaffAttendance /> },
+  { path: "/attendance/approval/", component: <AttendanceApproval /> },
+  { path: "/attendance/manager/approval/", component: <AttendanceManagerApproval /> },
 
 
   //Bank

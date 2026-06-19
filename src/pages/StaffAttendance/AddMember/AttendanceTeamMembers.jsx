@@ -105,6 +105,7 @@ const AttendanceTeamMembers = () => {
     phone: item.phone ?? "",
     designation: item.designation ?? "",
     department_name: item.department_name ?? "",
+    approval_status: item.approval_status ?? "",
   });
 
   const mapMemberTeam = team => ({
@@ -142,17 +143,7 @@ const AttendanceTeamMembers = () => {
         headers: authHeaders,
       });
 
-      const profileRes = await axios.get(buildUrl("profile/"), {
-        headers: authHeaders,
-      });
-
-      const loggedUserId = profileRes?.data?.data?.id;
-
-      const myTeams = toArray(res?.data)
-        .map(mapTeamItem)
-        .filter(team => String(team.team_leader) === String(loggedUserId));
-
-      setTeams(myTeams);
+      setTeams(toArray(res?.data).map(mapTeamItem));
     } catch {
       toast.error("Failed to load teams");
     }
@@ -164,11 +155,7 @@ const AttendanceTeamMembers = () => {
         headers: authHeaders,
       });
 
-      const onlyMyLeaderTeams = toArray(res?.data)
-        .map(mapMemberTeam)
-        .filter(team => team.is_team_leader === true);
-
-      setMembersData(onlyMyLeaderTeams);
+      setMembersData(toArray(res?.data).map(mapMemberTeam));
     } catch {
       toast.error("Failed to load members");
     }
@@ -184,7 +171,9 @@ const AttendanceTeamMembers = () => {
         },
       });
 
-      const data = toArray(res?.data).map(mapStaffItem);
+      const data = toArray(res?.data)
+        .filter(item => item.approval_status === "approved")
+        .map(mapStaffItem);
       setStaffs(prev => mergeUniqueStaffs(prev, data));
 
       return data.map(item => ({

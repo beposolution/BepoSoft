@@ -906,17 +906,17 @@ const SidebarContent = (props) => {
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUserTie size={17} style={{ marginRight: '6px' }} />
-                  <span>{props.t("BDM Report (Attendance)")}</span>
+                  <span>{props.t("BDM Report")}</span>
                 </Link>
 
                 <ul className="sub-menu" aria-expanded="false">
                   {role === 'BDM' && (
                     <>
-                      <li>
+                      {/* <li>
                         <Link to="/bdm/daily/report/">
                           {props.t("BDM Attendance Add")}
                         </Link>
-                      </li>
+                      </li> */}
                       <li>
                         <Link to="/bdm/order/daily/report">
                           {props.t("BDM Order Report Add")}
@@ -1047,7 +1047,7 @@ const SidebarContent = (props) => {
 
 
 
-            {isManager && role !== 'BDM' && (
+            {isManager && (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUsers size={17} style={{ marginRight: "6px" }} />
@@ -1071,22 +1071,6 @@ const SidebarContent = (props) => {
                     </>
                   )}
 
-                  {/* {(isManager && (role === "COO")) && (
-                    <li>
-                      <Link to="/attendance/approval/">
-                        {props.t("Attendance Approval")}
-                      </Link>
-                    </li>
-                  )} */}
-
-                  {role !== "HR" || role !== "CEO" || role !== "COO" && (
-                    <li>
-                      <Link to="/attendance/add/">
-                        {props.t("ADD Attendance")}
-                      </Link>
-                    </li>
-                  )}
-
                   {(role === "COO" || role === "CEO") && (
                     <>
                       <li>
@@ -1107,6 +1091,7 @@ const SidebarContent = (props) => {
                       role === "Accounts / Accounting" ||
                       role === "SD" ||
                       role === "ADMIN" ||
+                      role === "BDM" ||
                       role === "Warehouse Admin" ||
                       role === "Marketing"
                     )) && (
@@ -1114,6 +1099,11 @@ const SidebarContent = (props) => {
                         <li>
                           <Link to="/attendance/team-members/">
                             {props.t("Team Members")}
+                          </Link>
+                        </li>
+                        <li>
+                          <Link to="/attendance/add/">
+                            {props.t("ADD Attendance")}
                           </Link>
                         </li>
                       </>

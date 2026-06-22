@@ -520,7 +520,7 @@ const AllMembers = () => {
                                                                                 fontSize: "12px",
                                                                             }}
                                                                         >
-                                                                            Leader:{" "}
+                                                                            Head:{" "}
                                                                             <strong>{team.team_leader_name || "-"}</strong>
                                                                         </div>
                                                                     </td>
@@ -528,43 +528,13 @@ const AllMembers = () => {
                                                             )}
 
                                                             <td style={tdStyle}>
-                                                                <span
-                                                                    style={{
-                                                                        width: "28px",
-                                                                        height: "28px",
-                                                                        borderRadius: "8px",
-                                                                        background: "#eef2ff",
-                                                                        color: "#4f46e5",
-                                                                        display: "inline-flex",
-                                                                        alignItems: "center",
-                                                                        justifyContent: "center",
-                                                                        fontWeight: 700,
-                                                                    }}
-                                                                >
+                                                                <span>
                                                                     {memberIndex + 1}
                                                                 </span>
                                                             </td>
 
                                                             <td style={tdStyle}>
                                                                 <div className="d-flex align-items-center gap-2">
-                                                                    <div
-                                                                        style={{
-                                                                            width: "34px",
-                                                                            height: "34px",
-                                                                            borderRadius: "50%",
-                                                                            background: "#f1f5f9",
-                                                                            color: "#334155",
-                                                                            display: "flex",
-                                                                            alignItems: "center",
-                                                                            justifyContent: "center",
-                                                                            fontWeight: 800,
-                                                                        }}
-                                                                    >
-                                                                        {(member.member_name || "?")
-                                                                            .charAt(0)
-                                                                            .toUpperCase()}
-                                                                    </div>
-
                                                                     <strong style={{ color: "#1e293b" }}>
                                                                         {member.member_name}
                                                                     </strong>

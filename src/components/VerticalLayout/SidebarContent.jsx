@@ -1106,7 +1106,6 @@ const SidebarContent = (props) => {
                     (
                       role === "Accounts / Accounting" ||
                       role === "SD" ||
-                      role === "COO" ||
                       role === "ADMIN" ||
                       role === "Warehouse Admin" ||
                       role === "Marketing"

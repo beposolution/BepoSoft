@@ -1088,11 +1088,18 @@ const SidebarContent = (props) => {
                   )}
 
                   {(role === "COO" || role === "CEO") && (
-                    <li>
-                      <Link to="/all/attendance/">
-                        {props.t("ADD Attendance")}
-                      </Link>
-                    </li>
+                    <>
+                      <li>
+                        <Link to="/all/attendance/">
+                          {props.t("ADD Attendance")}
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/all/members/">
+                          {props.t("Team Members")}
+                        </Link>
+                      </li>
+                    </>
                   )}
 
                   {(isManager &&

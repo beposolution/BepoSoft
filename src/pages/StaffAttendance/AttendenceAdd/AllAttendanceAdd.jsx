@@ -266,23 +266,24 @@ const AllAttendanceAdd = () => {
         },
     });
 
-    const openEditModal = async id => {
+    const openEditModal = async item => {
         try {
-            const res = await axios.get(`${baseUrl}staff/attendance/edit/${id}/`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            const data = res?.data?.data;
+            const id = item.id;
 
             setSelectedAttendanceId(id);
+
+            const teamId = item.team_id;
+            setSelectedTeam(teamId);
+
+            await fetchStaffs(teamId);
+
             setEditInitialValues({
-                staff: String(data.staff),
-                attendance_date: data.attendance_date,
-                attendance_time: data.attendance_time || "",
-                status: data.status,
+                staff: String(item.staff),
+                attendance_date: item.attendance_date,
+                attendance_time: item.attendance_time || "",
+                status: item.status,
             });
+
             setEditModal(true);
         } catch {
             toast.error("Failed to load attendance");
@@ -652,8 +653,9 @@ const AllAttendanceAdd = () => {
                                             team.date_wise_attendance?.flatMap(dateGroup =>
                                                 dateGroup.attendance?.map(item => ({
                                                     ...item,
-                                                    attendance_date:
-                                                        item.attendance_date || dateGroup.attendance_date,
+                                                    team_id: team.team_id,
+                                                    team_name: team.team_name,
+                                                    attendance_date: item.attendance_date || dateGroup.attendance_date,
                                                 })) || []
                                             ) || [];
 
@@ -746,7 +748,7 @@ const AllAttendanceAdd = () => {
                                                                             <Button
                                                                                 color="warning"
                                                                                 size="sm"
-                                                                                onClick={() => openEditModal(item.id)}
+                                                                                onClick={() => openEditModal(item)}
                                                                                 style={{
                                                                                     borderRadius: "10px",
                                                                                     padding: "7px 14px",
@@ -944,7 +946,7 @@ const AllAttendanceAdd = () => {
                                         const teamId = selected?.value || "";
 
                                         setSelectedTeam(teamId);
-                                        formik.setFieldValue("staff", "");
+                                        editFormik.setFieldValue("staff", "");
 
                                         await fetchStaffs(teamId);
                                     }}

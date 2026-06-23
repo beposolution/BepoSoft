@@ -453,6 +453,8 @@ import HrLeaveApplication from "../pages/Staff/HrLeaveApplication";
 import OrderComparisonReport from "../pages/Resports/OrderComparisonReport";
 import AllAttendanceAdd from "../pages/StaffAttendance/AttendenceAdd/AllAttendanceAdd";
 import AllMembers from "../pages/StaffAttendance/AddMember/AllMembers";
+import SalesAttendanceAdd from "../pages/StaffAttendance/AttendenceAdd/SalesAttendanceAdd";
+import SalesTeamMembers from "../pages/StaffAttendance/AddMember/SalesTeamMembers";
 
 
 
@@ -698,10 +700,11 @@ const authProtectedRoutes = [
   { path: "/attendance/department/", component: <AttendanceDepartment /> },
   { path: "/attendance/team-members/", component: <AttendanceTeamMembers /> },
   { path: "/attendance/add/", component: <AttendanceAdd /> },
-  { path: "/staff-attendance", component: <StaffAttendance /> },
+  { path: "/staff-attendance/", component: <StaffAttendance /> },
   { path: "/all/attendance/", component: <AllAttendanceAdd /> },
   { path: "/all/members/", component: <AllMembers /> },
-
+  { path: "/sales/attendance/", component: <SalesAttendanceAdd /> },
+  { path: "/sales/team/", component: <SalesTeamMembers /> },
 
   //Bank
 

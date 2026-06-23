@@ -1064,7 +1064,7 @@ const SidebarContent = (props) => {
                       </li>
 
                       <li>
-                        <Link to="/staff-attendance">
+                        <Link to="/staff-attendance/">
                           {props.t("Staff Attendance")}
                         </Link>
                       </li>
@@ -1086,10 +1086,24 @@ const SidebarContent = (props) => {
                     </>
                   )}
 
+                  {(isManager && (role === "SD")) && (
+                    <>
+                      <li>
+                        <Link to="/sales/team/">
+                          {props.t("Team Members")}
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/sales/attendance/">
+                          {props.t("Add Attendance")}
+                        </Link>
+                      </li>
+                    </>
+                  )}
+
                   {(isManager &&
                     (
                       role === "Accounts / Accounting" ||
-                      role === "SD" ||
                       role === "ADMIN" ||
                       role === "BDM" ||
                       role === "Warehouse Admin" ||

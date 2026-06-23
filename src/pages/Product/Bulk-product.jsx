@@ -928,6 +928,8 @@ const OrdersComponent = () => {
 
       const excelOrderDate = formatExcelDate(order?.createdAt);
 
+      const currentDate = new Date().toISOString().split("T")[0];
+
       const body = {
         manage_staff: userId,
         company: 5,
@@ -938,6 +940,7 @@ const OrdersComponent = () => {
           userDiv?.toString().toLowerCase() === "bepocart"
             ? excelOrderDate
             : new Date().toISOString().split("T")[0],
+        billing_date: currentDate,
         family: 3,
         state: shippingStateId,
         payment_status: mapPaymentStatus(order?.displayFinancialStatus),

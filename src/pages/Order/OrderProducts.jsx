@@ -475,6 +475,7 @@ const FormLayouts = () => {
             status: "",
             manage_staff: "",
             order_date: "",
+            billing_date:"",
             company: "",
             cod_amount: "",
             shipping_mode: "",
@@ -493,6 +494,7 @@ const FormLayouts = () => {
                     cod_amount: values.cod_amount,
                     shipping_mode: values.shipping_mode,
                     order_date: values.order_date,
+                    billing_date: values.billing_date,
                     payment_status: values.payment_status,
                     family: values.family !== "" ? parseInt(values.family) : null,
                     company: parseInt(values.company),
@@ -515,6 +517,7 @@ const FormLayouts = () => {
                         cod_amount: values.cod_amount,
                         shipping_mode: values.shipping_mode,
                         order_date: values.order_date,
+                        ...(values.billing_date ? { billing_date: values.billing_date } : {}),
                         payment_status: values.payment_status,
                         family: values.family !== "" ? parseInt(values.family) : null,
                         company: values.company,
@@ -706,6 +709,7 @@ const FormLayouts = () => {
                     status: data.order.status || "",
                     manage_staff: data.order.manage_staff || "",
                     order_date: data.order.order_date || "",
+                    billing_date: data.order.billing_date || "",
                     company: data.order.company.id || "",
                     shipping_mode: data.order.shipping_mode || "",
                     cod_amount: data.order.cod_amount || "",
@@ -1495,6 +1499,7 @@ const FormLayouts = () => {
                                                         id="formrow-Inputorder_date"
                                                         placeholder="Enter Your Living order_date"
                                                         value={formik.values.order_date}
+                                                        disabled
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
                                                         invalid={
@@ -1579,26 +1584,31 @@ const FormLayouts = () => {
                                             </Col>
 
                                             <Col lg={3}>
-                                                <Label>COD Advance Amount</Label>
+                                                <Label>Billing Date</Label>
                                                 <Input
-                                                    type="number"
-                                                    name="adv_cod_amount"
+                                                    type="date"
+                                                    name="billing_date"
                                                     className="form-control"
-                                                    value={formik.values.adv_cod_amount}
+                                                    id="formrow-Inputbilling_date"
+                                                    placeholder="Enter Your Living billing_date"
+                                                    disabled
+                                                    value={formik.values.billing_date}
                                                     onChange={formik.handleChange}
                                                     onBlur={formik.handleBlur}
+                                                    invalid={
+                                                        formik.touched.billing_date && formik.errors.billing_date ? true : false
+                                                    }
                                                 />
-
-                                                {formik.touched.adv_cod_amount && formik.errors.adv_cod_amount && (
-                                                    <FormFeedback type="invalid">
-                                                        {formik.errors.adv_cod_amount}
-                                                    </FormFeedback>
-                                                )}
+                                                {
+                                                    formik.errors.billing_date && formik.touched.billing_date ? (
+                                                        <FormFeedback type="invalid">{formik.errors.billing_date}</FormFeedback>
+                                                    ) : null
+                                                }
                                             </Col>
 
                                         </Row>
                                         <Row>
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Inputcompany">COMPANY</Label>
                                                     <select
@@ -1622,7 +1632,7 @@ const FormLayouts = () => {
                                                     )}
                                                 </div>
                                             </Col>
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-InputZip">SHIPING MODE</Label>
                                                     <Input
@@ -1645,7 +1655,7 @@ const FormLayouts = () => {
                                                     }
                                                 </div>
                                             </Col>
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-InputZip">COD CHARGE</Label>
                                                     <Input
@@ -1667,6 +1677,23 @@ const FormLayouts = () => {
                                                         ) : null
                                                     }
                                                 </div>
+                                            </Col>
+                                            <Col lg={3}>
+                                                <Label>COD Advance Amount</Label>
+                                                <Input
+                                                    type="number"
+                                                    name="adv_cod_amount"
+                                                    className="form-control"
+                                                    value={formik.values.adv_cod_amount}
+                                                    onChange={formik.handleChange}
+                                                    onBlur={formik.handleBlur}
+                                                />
+
+                                                {formik.touched.adv_cod_amount && formik.errors.adv_cod_amount && (
+                                                    <FormFeedback type="invalid">
+                                                        {formik.errors.adv_cod_amount}
+                                                    </FormFeedback>
+                                                )}
                                             </Col>
                                         </Row>
                                         <div className="mb-3">

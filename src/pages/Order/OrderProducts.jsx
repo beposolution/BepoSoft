@@ -517,7 +517,7 @@ const FormLayouts = () => {
                         cod_amount: values.cod_amount,
                         shipping_mode: values.shipping_mode,
                         order_date: values.order_date,
-                        billing_date: values.billing_date,
+                        ...(values.billing_date ? { billing_date: values.billing_date } : {}),
                         payment_status: values.payment_status,
                         family: values.family !== "" ? parseInt(values.family) : null,
                         company: values.company,

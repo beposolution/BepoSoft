@@ -108,19 +108,18 @@ const BasicTable = () => {
         fetchStates();
     }, []);
 
-    const fetchData = async (page = 1) => {
+    const fetchData = async (page = 1, append = false) => {
+        if (append && (!nextPage || loading)) return;
+
         try {
             setLoading(true);
 
             const params = new URLSearchParams();
-
             params.append("page", page);
 
             if (search.trim()) params.append("search", search.trim());
             if (selectedStaff?.value) params.append("staff_id", selectedStaff.value);
-            if (selectedState?.value) {
-                params.append("state_id", selectedState.value);
-            }
+            if (selectedState?.value) params.append("state_id", selectedState.value);
             if (startDate) params.append("start_date", startDate);
             if (endDate) params.append("end_date", endDate);
 
@@ -135,26 +134,21 @@ const BasicTable = () => {
                 }
             );
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
             const res = await response.json();
 
             setCurrentPage(page);
             setTotalCount(res.count || 0);
             setNextPage(res.next);
             setPreviousPage(res.previous);
-
             setSummary(res.results?.summary || null);
-            setTableData(res.results?.data || []);
+
+            const newData = res.results?.data || [];
+
+            setTableData((prev) =>
+                append ? [...prev, ...newData] : newData
+            );
         } catch (error) {
             toast.error("Error fetching product sales report");
-            setTableData([]);
-            setSummary(null);
-            setTotalCount(0);
-            setNextPage(null);
-            setPreviousPage(null);
         } finally {
             setLoading(false);
         }
@@ -164,8 +158,31 @@ const BasicTable = () => {
         fetchData(1);
     }, [selectedStaff, selectedState, startDate, endDate]);
 
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollTop = window.scrollY;
+            const windowHeight = window.innerHeight;
+            const fullHeight = document.documentElement.scrollHeight;
+
+            if (
+                scrollTop + windowHeight >= fullHeight - 300 &&
+                nextPage &&
+                !loading
+            ) {
+                fetchData(currentPage + 1, true);
+            }
+        };
+
+        window.addEventListener("scroll", handleScroll);
+
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+        };
+    }, [nextPage, loading, currentPage]);
+
     const handleSearch = () => {
-        fetchData(1);
+        setCurrentPage(1);
+        fetchData(1, false);
     };
 
     const resetFilters = () => {
@@ -298,11 +315,27 @@ const BasicTable = () => {
                                             <Button color="secondary" className="me-2" onClick={resetFilters}>
                                                 Reset
                                             </Button>
-                                            <Button color="success" onClick={exportToExcel}>
+                                            {/* <Button color="success" onClick={exportToExcel}>
                                                 Export to Excel
-                                            </Button>
+                                            </Button> */}
                                         </Col>
                                     </Row>
+                                    <Button
+                                        color="success"
+                                        onClick={exportToExcel}
+                                        style={{
+                                            position: "fixed",
+                                            right: "25px",
+                                            bottom: "25px",
+                                            zIndex: 9999,
+                                            borderRadius: "50px",
+                                            padding: "12px 22px",
+                                            boxShadow: "0 6px 18px rgba(0,0,0,0.25)",
+                                            fontWeight: "600",
+                                        }}
+                                    >
+                                        Export to Excel
+                                    </Button>
 
                                     {summary && (
                                         <Row className="mb-4">
@@ -352,6 +385,7 @@ const BasicTable = () => {
                                                     <th>Manage Staff</th>
                                                     <th>Family</th>
                                                     <th>Customer</th>
+                                                    <th>State</th>
                                                     <th>Status</th>
                                                     <th>Total Sold</th>
                                                     <th>Total Amount</th>
@@ -360,9 +394,9 @@ const BasicTable = () => {
                                             </thead>
 
                                             <tbody>
-                                                {loading ? (
+                                                {loading && tableData.length === 0 ? (
                                                     <tr>
-                                                        <td colSpan="11" className="text-center">
+                                                        <td colSpan="12" className="text-center">
                                                             Loading...
                                                         </td>
                                                     </tr>
@@ -370,7 +404,7 @@ const BasicTable = () => {
                                                     tableData.map((item, index) => (
                                                         <tr key={index}>
                                                             <th scope="row">
-                                                                {(currentPage - 1) * tableData.length + index + 1}
+                                                                {index + 1}
                                                             </th>
                                                             <td>{item.date}</td>
                                                             <td>{item.product}</td>
@@ -378,6 +412,7 @@ const BasicTable = () => {
                                                             <td>{item.manage_staff}</td>
                                                             <td>{item.family}</td>
                                                             <td>{item.customer}</td>
+                                                            <td>{item?.state}</td>
                                                             <td>{item.status}</td>
                                                             <td>{item.total_sold}</td>
                                                             <td>{item.total_amount}</td>
@@ -386,7 +421,7 @@ const BasicTable = () => {
                                                     ))
                                                 ) : (
                                                     <tr>
-                                                        <td colSpan="11" className="text-center">
+                                                        <td colSpan="12" className="text-center">
                                                             No records found
                                                         </td>
                                                     </tr>
@@ -395,31 +430,20 @@ const BasicTable = () => {
                                         </Table>
                                     </div>
                                     <Row className="mt-3 align-items-center">
-                                        <Col md={6}>
+                                        <Col md={12} className="text-center">
                                             <strong>Total Records: {totalCount}</strong>
-                                        </Col>
 
-                                        <Col md={6} className="text-end">
-                                            <Button
-                                                color="secondary"
-                                                className="me-2"
-                                                disabled={!previousPage || loading}
-                                                onClick={() => fetchData(currentPage - 1)}
-                                            >
-                                                Previous
-                                            </Button>
+                                            {loading && (
+                                                <div className="mt-2">
+                                                    Loading...
+                                                </div>
+                                            )}
 
-                                            <span className="mx-2">
-                                                Page {currentPage}
-                                            </span>
-
-                                            <Button
-                                                color="secondary"
-                                                disabled={!nextPage || loading}
-                                                onClick={() => fetchData(currentPage + 1)}
-                                            >
-                                                Next
-                                            </Button>
+                                            {!nextPage && tableData.length > 0 && (
+                                                <div className="mt-2 text-muted">
+                                                    No more records
+                                                </div>
+                                            )}
                                         </Col>
                                     </Row>
                                 </CardBody>

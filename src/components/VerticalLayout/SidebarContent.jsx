@@ -1047,7 +1047,7 @@ const SidebarContent = (props) => {
 
 
 
-            {isManager && (
+            {isManager && role !== "CSO" && (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUsers size={17} style={{ marginRight: "6px" }} />
@@ -1126,7 +1126,7 @@ const SidebarContent = (props) => {
               </li>
             )}
 
-            {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'CSO' || role === 'COO' || role === 'HR' ? (
+            {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' || role === 'HR' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUserTie size={17} style={{ marginRight: '6px' }} />
@@ -1179,7 +1179,7 @@ const SidebarContent = (props) => {
                   </>
                 )}
 
-                {isManager && role !== 'HR' && (
+                {isManager && role !== 'HR' && role !== 'CSO' && (
                   <li>
                     <Link to="/manager/leave/applications/">
                       {props.t("Leave Applications For Approval")}

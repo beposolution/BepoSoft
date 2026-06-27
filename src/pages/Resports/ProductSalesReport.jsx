@@ -16,163 +16,225 @@ import * as XLSX from "xlsx";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Paginations from "../../components/Common/Pagination";
+import Select from "react-select";
 
 const BasicTable = () => {
     document.title = "Beposoft | Product Sold Report";
 
+    const token = localStorage.getItem("token");
+
     const [tableData, setTableData] = useState([]);
-    const [filteredData, setFilteredData] = useState([]);
-    const [staffs, setStaffs] = useState([]);
-    const [selectedStaff, setSelectedStaff] = useState("");
+    const [summary, setSummary] = useState(null);
+
+    const [search, setSearch] = useState("");
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
-    const token = localStorage.getItem("token");
-    const [role, setRole] = useState(null)
-    const [currentPage, setCurrentPage] = useState(1);
-    const perPageData = 15;
+    const [staffs, setStaffs] = useState([]);
+    const [staffSearch, setStaffSearch] = useState("");
+    const [selectedStaff, setSelectedStaff] = useState(null);
 
-    const indexOfLastItem = currentPage * perPageData;
-    const indexOfFirstItem = indexOfLastItem - perPageData;
+    const [loading, setLoading] = useState(false);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const [nextPage, setNextPage] = useState(null);
+    const [previousPage, setPreviousPage] = useState(null);
+
+    const fetchStaffs = async (searchText = "") => {
+        try {
+            const params = new URLSearchParams();
+            params.append("page", 1);
+
+            if (searchText.trim()) {
+                params.append("search", searchText.trim());
+            }
+
+            const response = await fetch(
+                `${import.meta.env.VITE_APP_KEY}get/staffs/?${params.toString()}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            const res = await response.json();
+            const staffList = res.results?.data || [];
+
+            setStaffs(
+                staffList
+                    .filter((item) => item.approval_status === "approved")
+                    .map((item) => ({
+                        value: item.id,
+                        label: item.name,
+                    }))
+            );
+        } catch {
+            toast.error("Failed to load staff");
+        }
+    };
 
     useEffect(() => {
-        const role = localStorage.getItem("active");
-        setRole(role);
+        fetchStaffs();
     }, []);
 
-    const fetchData = async () => {
+    const fetchData = async (page = 1) => {
         try {
-            const response = await fetch(`${import.meta.env.VITE_APP_KEY}sold/products/`, {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            });
+            setLoading(true);
+
+            const params = new URLSearchParams();
+
+            params.append("page", page);
+
+            if (search.trim()) params.append("search", search.trim());
+            if (selectedStaff?.value) params.append("staff_id", selectedStaff.value);
+            if (startDate) params.append("start_date", startDate);
+            if (endDate) params.append("end_date", endDate);
+
+            const response = await fetch(
+                `${import.meta.env.VITE_APP_KEY}sold/products/?${params.toString()}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
 
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
 
-            const data = await response.json();
-            setTableData(data);
-            setFilteredData(data);
+            const res = await response.json();
 
-            // Extract unique staff names
-            const uniqueStaffs = Array.from(
-                new Set(data.flatMap((group) => group.data.map((item) => item.manage_staff)))
-            );
-            setStaffs(uniqueStaffs);
+            setCurrentPage(page);
+            setTotalCount(res.count || 0);
+            setNextPage(res.next);
+            setPreviousPage(res.previous);
+
+            setSummary(res.results?.summary || null);
+            setTableData(res.results?.data || []);
         } catch (error) {
-            toast.error("Error fetching data");
+            toast.error("Error fetching product sales report");
+            setTableData([]);
+            setSummary(null);
+            setTotalCount(0);
+            setNextPage(null);
+            setPreviousPage(null);
+        } finally {
+            setLoading(false);
         }
     };
 
     useEffect(() => {
-        const filtered = tableData
-            .map((group) => ({
-                ...group,
-                data: group.data.filter((item) => {
-                    const isStaffMatch =
-                        !selectedStaff || item.manage_staff === selectedStaff;
-                    const isDateMatch =
-                        (!startDate || new Date(group.date) >= new Date(startDate)) &&
-                        (!endDate || new Date(group.date) <= new Date(endDate));
+        fetchData(1);
+    }, [selectedStaff, startDate, endDate]);
 
-                    // Exclude family === 'bepocart' only if role === 'CSO'
-                    const isFamilyAllowed = !(role === "CSO" && item.family === "bepocart");
+    const handleSearch = () => {
+        fetchData(1);
+    };
 
-                    return isStaffMatch && isDateMatch && isFamilyAllowed;
-                }),
-            }))
-            .filter((group) => group.data.length > 0);
-
-        setFilteredData(filtered);
-    }, [selectedStaff, startDate, endDate, tableData, role]);
-
-    // Fetch data on component mount
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
-
-    // Function to export table data to Excel
+    const resetFilters = () => {
+        setSearch("");
+        setSelectedStaff(null);
+        setStartDate("");
+        setEndDate("");
+        fetchData(1);
+    };
     const exportToExcel = () => {
-        // Prepare data for export
-        const exportData = filteredData.flatMap((group) =>
-            group.data.map((item) => ({
-                Date: group.date,
-                Product: group.product,
-                "Manage Staff": item.manage_staff,
-                "Total Orders": group.data.length,
-                "Total Sold Products": item.total_sold,
-                "Total Amount": item.total_amount,
-                Stock: group.stock || 0, // Add stock from group
-            }))
-        );
+        const exportData = tableData.map((item) => ({
+            Date: item.date,
+            Product: item.product,
+            Order: item.order,
+            "Manage Staff": item.manage_staff,
+            Family: item.family,
+            Customer: item.customer,
+            Status: item.status,
+            "Total Sold": item.total_sold,
+            "Total Amount": item.total_amount,
+            Stock: item.stock || 0,
+        }));
 
-        // Create worksheet and workbook
         const worksheet = XLSX.utils.json_to_sheet(exportData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Product Sales");
-
-        // Save workbook
         XLSX.writeFile(workbook, "Product_Sales_Summary.xlsx");
     };
-
 
     return (
         <React.Fragment>
             <div className="page-content">
                 <div className="container-fluid">
-                    <Breadcrumbs title="Tables" breadcrumbItem="Filtered Tables" />
+                    <Breadcrumbs title="Tables" breadcrumbItem="Product Sold Report" />
+
+                    <ToastContainer />
+
                     <Row>
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
-                                    <CardTitle className="h4">Product Sales Summary with Filters</CardTitle>
+                                    <CardTitle className="h4">
+                                        Product Sales Summary with Filters
+                                    </CardTitle>
                                     <CardSubtitle className="card-title-desc">
-                                        Filter data by staff and date range.
+                                        Filter product sold report by search, staff and date range.
                                     </CardSubtitle>
 
-                                    {/* Filters Section */}
                                     <Row className="mb-4">
-                                        <Col md={4}>
+                                        <Col md={3}>
                                             <FormGroup>
-                                                <Label for="staffSelect">Manage Staff</Label>
+                                                <Label>Search</Label>
                                                 <Input
-                                                    type="select"
-                                                    id="staffSelect"
-                                                    value={selectedStaff}
-                                                    onChange={(e) => setSelectedStaff(e.target.value)}
-                                                >
-                                                    <option value="">All Staff</option>
-                                                    {staffs.map((staff, index) => (
-                                                        <option key={index} value={staff}>
-                                                            {staff}
-                                                        </option>
-                                                    ))}
-                                                </Input>
+                                                    type="text"
+                                                    placeholder="Search product, invoice, staff"
+                                                    value={search}
+                                                    onChange={(e) => setSearch(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter") handleSearch();
+                                                    }}
+                                                />
                                             </FormGroup>
                                         </Col>
-                                        <Col md={4}>
+
+                                        <Col md={3}>
                                             <FormGroup>
-                                                <Label for="startDate">Start Date</Label>
+                                                <Label>Manage Staff</Label>
+                                                <Select
+                                                    options={staffs}
+                                                    value={selectedStaff}
+                                                    onChange={setSelectedStaff}
+                                                    isClearable
+                                                    isSearchable
+                                                    placeholder="All Staff..."
+                                                    onMenuOpen={() => fetchStaffs()}
+                                                    onInputChange={(inputValue, actionMeta) => {
+                                                        if (actionMeta.action === "input-change") {
+                                                            fetchStaffs(inputValue);
+                                                        }
+                                                    }}
+                                                    noOptionsMessage={() => "No staff found"}
+                                                />
+                                            </FormGroup>
+                                        </Col>
+
+                                        <Col md={3}>
+                                            <FormGroup>
+                                                <Label>Start Date</Label>
                                                 <Input
                                                     type="date"
-                                                    id="startDate"
                                                     value={startDate}
                                                     onChange={(e) => setStartDate(e.target.value)}
                                                 />
                                             </FormGroup>
                                         </Col>
-                                        <Col md={4}>
+
+                                        <Col md={3}>
                                             <FormGroup>
-                                                <Label for="endDate">End Date</Label>
+                                                <Label>End Date</Label>
                                                 <Input
                                                     type="date"
-                                                    id="endDate"
                                                     value={endDate}
                                                     onChange={(e) => setEndDate(e.target.value)}
                                                 />
@@ -180,16 +242,57 @@ const BasicTable = () => {
                                         </Col>
                                     </Row>
 
-                                    {/* Export Button */}
                                     <Row className="mb-4">
                                         <Col md={12} className="text-end">
+                                            <Button color="primary" className="me-2" onClick={handleSearch}>
+                                                Search
+                                            </Button>
+                                            <Button color="secondary" className="me-2" onClick={resetFilters}>
+                                                Reset
+                                            </Button>
                                             <Button color="success" onClick={exportToExcel}>
                                                 Export to Excel
                                             </Button>
                                         </Col>
                                     </Row>
 
-                                    {/* Table Section */}
+                                    {summary && (
+                                        <Row className="mb-4">
+                                            <Col md={3}>
+                                                <Card className="border">
+                                                    <CardBody>
+                                                        <h6>Total Orders</h6>
+                                                        <h4>{summary.total_orders || 0}</h4>
+                                                    </CardBody>
+                                                </Card>
+                                            </Col>
+                                            <Col md={3}>
+                                                <Card className="border">
+                                                    <CardBody>
+                                                        <h6>Total Items</h6>
+                                                        <h4>{summary.total_items || 0}</h4>
+                                                    </CardBody>
+                                                </Card>
+                                            </Col>
+                                            <Col md={3}>
+                                                <Card className="border">
+                                                    <CardBody>
+                                                        <h6>Total Quantity</h6>
+                                                        <h4>{summary.total_quantity || 0}</h4>
+                                                    </CardBody>
+                                                </Card>
+                                            </Col>
+                                            <Col md={3}>
+                                                <Card className="border">
+                                                    <CardBody>
+                                                        <h6>Total Amount</h6>
+                                                        <h4>₹{summary.total_amount || 0}</h4>
+                                                    </CardBody>
+                                                </Card>
+                                            </Col>
+                                        </Row>
+                                    )}
+
                                     <div className="table-responsive">
                                         <Table className="table table-bordered mb-0">
                                             <thead>
@@ -197,58 +300,84 @@ const BasicTable = () => {
                                                     <th>#</th>
                                                     <th>Date</th>
                                                     <th>Product Name</th>
-                                                    <th>Total Orders</th>
-                                                    <th>Total Sold Products</th>
+                                                    <th>Order</th>
+                                                    <th>Manage Staff</th>
+                                                    <th>Family</th>
+                                                    <th>Customer</th>
+                                                    <th>Status</th>
+                                                    <th>Total Sold</th>
                                                     <th>Total Amount</th>
                                                     <th>Remaining Stock</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>
-                                                {currentItems.map((group, index) => {
-                                                    const totalOrders = group.data.length;
-                                                    const totalSoldProducts = group.data.reduce(
-                                                        (sum, item) => sum + item.total_sold,
-                                                        0
-                                                    );
-                                                    const totalAmount = group.data.reduce(
-                                                        (sum, item) => sum + item.total_amount,
-                                                        0
-                                                    );
-                                                    const remainingStock = group.data.reduce(
-                                                        (sum, item) => sum + item.remaining_stock,
-                                                        0
-                                                    );
 
-                                                    return (
+                                            <tbody>
+                                                {loading ? (
+                                                    <tr>
+                                                        <td colSpan="11" className="text-center">
+                                                            Loading...
+                                                        </td>
+                                                    </tr>
+                                                ) : tableData.length > 0 ? (
+                                                    tableData.map((item, index) => (
                                                         <tr key={index}>
-                                                            <th scope="row">{indexOfFirstItem + index + 1}</th>
-                                                            <td>{group.date}</td>
-                                                            <td>{group.product}</td>
-                                                            <td>{totalOrders}</td>
-                                                            <td>{totalSoldProducts}</td>
-                                                            <td>{totalAmount}</td>
-                                                            <td>{group.stock}</td>
+                                                            <th scope="row">
+                                                                {(currentPage - 1) * tableData.length + index + 1}
+                                                            </th>
+                                                            <td>{item.date}</td>
+                                                            <td>{item.product}</td>
+                                                            <td>{item.order}</td>
+                                                            <td>{item.manage_staff}</td>
+                                                            <td>{item.family}</td>
+                                                            <td>{item.customer}</td>
+                                                            <td>{item.status}</td>
+                                                            <td>{item.total_sold}</td>
+                                                            <td>{item.total_amount}</td>
+                                                            <td>{item.stock}</td>
                                                         </tr>
-                                                    );
-                                                })}
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan="11" className="text-center">
+                                                            No records found
+                                                        </td>
+                                                    </tr>
+                                                )}
                                             </tbody>
                                         </Table>
                                     </div>
+                                    <Row className="mt-3 align-items-center">
+                                        <Col md={6}>
+                                            <strong>Total Records: {totalCount}</strong>
+                                        </Col>
+
+                                        <Col md={6} className="text-end">
+                                            <Button
+                                                color="secondary"
+                                                className="me-2"
+                                                disabled={!previousPage || loading}
+                                                onClick={() => fetchData(currentPage - 1)}
+                                            >
+                                                Previous
+                                            </Button>
+
+                                            <span className="mx-2">
+                                                Page {currentPage}
+                                            </span>
+
+                                            <Button
+                                                color="secondary"
+                                                disabled={!nextPage || loading}
+                                                onClick={() => fetchData(currentPage + 1)}
+                                            >
+                                                Next
+                                            </Button>
+                                        </Col>
+                                    </Row>
                                 </CardBody>
                             </Card>
                         </Col>
                     </Row>
-                    <Paginations
-                        perPageData={perPageData}
-                        data={filteredData}
-                        currentPage={currentPage}
-                        setCurrentPage={setCurrentPage}
-                        isShowingPageLength={true}
-                        paginationDiv="col-auto"
-                        paginationClass="pagination-rounded"
-                        indexOfFirstItem={indexOfFirstItem}
-                        indexOfLastItem={indexOfLastItem}
-                    />
                 </div>
             </div>
         </React.Fragment>

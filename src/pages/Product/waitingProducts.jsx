@@ -70,7 +70,7 @@ const WaitingProducts = () => {
     const handleApprove = async (productId) => {
         try {
             await axios.put(
-                `${apiBaseUrl}product/update/${productId}/`,
+                `${apiBaseUrl}product/confirmation/${productId}/`,
                 { approval_status: "Approved" },
                 {
                     headers: {
@@ -95,7 +95,7 @@ const WaitingProducts = () => {
     const handleVariantApprove = async (variantId) => {
         try {
             await axios.put(
-                `${apiBaseUrl}product/update/${variantId}/`,
+                `${apiBaseUrl}product/confirmation/${variantId}/`,
                 { approval_status: "Approved" },
                 {
                     headers: {

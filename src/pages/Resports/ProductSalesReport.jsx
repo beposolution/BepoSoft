@@ -201,6 +201,7 @@ const BasicTable = () => {
             Order: item.order,
             "Manage Staff": item.manage_staff,
             Family: item.family,
+            State: item.state,
             Customer: item.customer,
             Status: item.status,
             "Total Sold": item.total_sold,

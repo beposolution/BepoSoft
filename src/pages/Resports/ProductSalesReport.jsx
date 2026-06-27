@@ -17,6 +17,7 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Select from "react-select";
+import axios from "axios";
 
 const BasicTable = () => {
     document.title = "Beposoft | Product Sold Report";
@@ -32,6 +33,8 @@ const BasicTable = () => {
     const [staffs, setStaffs] = useState([]);
     const [staffSearch, setStaffSearch] = useState("");
     const [selectedStaff, setSelectedStaff] = useState(null);
+    const [stateList, setStateList] = useState([]);
+    const [selectedState, setSelectedState] = useState(null);
 
     const [loading, setLoading] = useState(false);
 
@@ -79,6 +82,32 @@ const BasicTable = () => {
         fetchStaffs();
     }, []);
 
+    const fetchStates = async () => {
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}states/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            setStateList(
+                (response?.data?.data || []).map((item) => ({
+                    value: item.id,
+                    label: item.name,
+                }))
+            );
+        } catch (error) {
+            toast.error("Failed to load States");
+        }
+    };
+
+    useEffect(() => {
+        fetchStates();
+    }, []);
+
     const fetchData = async (page = 1) => {
         try {
             setLoading(true);
@@ -89,6 +118,9 @@ const BasicTable = () => {
 
             if (search.trim()) params.append("search", search.trim());
             if (selectedStaff?.value) params.append("staff_id", selectedStaff.value);
+            if (selectedState?.value) {
+                params.append("state_id", selectedState.value);
+            }
             if (startDate) params.append("start_date", startDate);
             if (endDate) params.append("end_date", endDate);
 
@@ -130,7 +162,7 @@ const BasicTable = () => {
 
     useEffect(() => {
         fetchData(1);
-    }, [selectedStaff, startDate, endDate]);
+    }, [selectedStaff, selectedState, startDate, endDate]);
 
     const handleSearch = () => {
         fetchData(1);
@@ -139,10 +171,12 @@ const BasicTable = () => {
     const resetFilters = () => {
         setSearch("");
         setSelectedStaff(null);
+        setSelectedState(null);
         setStartDate("");
         setEndDate("");
         fetchData(1);
     };
+
     const exportToExcel = () => {
         const exportData = tableData.map((item) => ({
             Date: item.date,
@@ -219,7 +253,21 @@ const BasicTable = () => {
                                             </FormGroup>
                                         </Col>
 
-                                        <Col md={3}>
+                                        <Col md={2}>
+                                            <FormGroup>
+                                                <Label>State</Label>
+                                                <Select
+                                                    options={stateList}
+                                                    value={selectedState}
+                                                    onChange={setSelectedState}
+                                                    isClearable
+                                                    isSearchable
+                                                    placeholder="All States..."
+                                                />
+                                            </FormGroup>
+                                        </Col>
+
+                                        <Col md={2}>
                                             <FormGroup>
                                                 <Label>Start Date</Label>
                                                 <Input
@@ -230,7 +278,7 @@ const BasicTable = () => {
                                             </FormGroup>
                                         </Col>
 
-                                        <Col md={3}>
+                                        <Col md={2}>
                                             <FormGroup>
                                                 <Label>End Date</Label>
                                                 <Input

@@ -765,9 +765,7 @@ const SidebarContent = (props) => {
                       <Link to="/monthly/sales/report/">{props.t("Monthly Sales Report")}</Link>
                     </li>
                   )}
-                  <li>
-                    <Link to="/Delivery/report/">{props.t("Delivery Report")}</Link>
-                  </li>
+
                   <li>
                     <Link to="/product/sold/report/">{props.t("Product Sold Report")}</Link>
                   </li>
@@ -775,41 +773,47 @@ const SidebarContent = (props) => {
                     <Link to="/product/stock/report/">{props.t("Product Stock Report")}</Link>
                   </li>
                   {role !== 'CSO' && (
-                    <li>
-                      <Link to="/order/postoffice/">{props.t("Post Office Report")}</Link>
-                    </li>
+                    <>
+                      <li>
+                        <Link to="/Delivery/report/">{props.t("Delivery Report")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/order/postoffice/">{props.t("Post Office Report")}</Link>
+                      </li>
+
+                      <li>
+                        <Link to="/state/wise/billing/wise/report/">{props.t("State & Billing Wise Report")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/orders/tracking/report/">{props.t("Order Tracking Report")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/gst/report/">{props.t("GST Report")}</Link>
+                      </li>
+
+                      <li>
+                        <Link to="/product/stock/export/report/">{props.t("Product Stock Export Report")}</Link>
+                      </li>
+
+                      <li>
+                        <Link to="/order/items/excel/export/report/">{props.t("Order Items Excel Export Report")}</Link>
+                      </li>
+
+                      <li>
+                        <Link to="/shipping/address/excel/export/report/">{props.t("Shipping Address Excel Export Report")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/order/comparison/report/">{props.t("Order Comparison Report")}</Link>
+                      </li>
+
+                      <li>
+                        <Link to="/date/product/report/">{props.t("Date-wise Product Report")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/calllog/reports/">{props.t("Call Log Report")}</Link>
+                      </li>
+                    </>
                   )}
-                  <li>
-                    <Link to="/state/wise/billing/wise/report/">{props.t("State & Billing Wise Report")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/orders/tracking/report/">{props.t("Order Tracking Report")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/gst/report/">{props.t("GST Report")}</Link>
-                  </li>
-
-                  <li>
-                    <Link to="/product/stock/export/report/">{props.t("Product Stock Export Report")}</Link>
-                  </li>
-
-                  <li>
-                    <Link to="/order/items/excel/export/report/">{props.t("Order Items Excel Export Report")}</Link>
-                  </li>
-
-                  <li>
-                    <Link to="/shipping/address/excel/export/report/">{props.t("Shipping Address Excel Export Report")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/order/comparison/report/">{props.t("Order Comparison Report")}</Link>
-                  </li>
-
-                  <li>
-                    <Link to="/date/product/report/">{props.t("Date-wise Product Report")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/calllog/reports/">{props.t("Call Log Report")}</Link>
-                  </li>
                 </ul>
               </li>
             )}

@@ -10,15 +10,15 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 const BankModule = () => {
     const [banklist, setBankList] = useState([]);
     const [bankmodule, setBankModule] = useState([]);
-    const [selectedDate, setSelectedDate] = useState(new Date()); // For single date
-    const [dateRange, setDateRange] = useState([null, null]); // For date range
+    const [startDate, setStartDate] = useState(new Date());
+    const [endDate, setEndDate] = useState(new Date());
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
     // console.log("baaank: ", bankmodule)
 
 
-    const [startDate, endDate] = dateRange;
+    // const [startDate, endDate] = dateRange;
     const currentDate = new Date().toISOString().split('T')[0];
 
     useEffect(() => {
@@ -58,7 +58,9 @@ const BankModule = () => {
                 setLoading(false);
 
                 const today = new Date();
-                applyFilters(fullBankData, today);
+                setStartDate(today);
+                setEndDate(today);
+                applyFilters(fullBankData, today, today);
             })
             .catch((err) => {
                 if (err.response && err.response.status === 401) {
@@ -113,39 +115,41 @@ const BankModule = () => {
         return parseFloat(openBalance) + credit - debit;
     };
 
-    const applyFilters = (rawData = bankmodule, filterDate = selectedDate, range = dateRange) => {
-        const [start, end] = range && range[0] && range[1] ? range : [null, null];
-
+    const applyFilters = (
+        rawData = bankmodule,
+        start = startDate,
+        end = endDate
+    ) => {
         const formatDate = (d) => new Date(d).toISOString().split("T")[0];
-        const selectedDay = filterDate ? formatDate(filterDate) : null;
+
         const selectedStart = start ? formatDate(start) : null;
         const selectedEnd = end ? formatDate(end) : null;
 
-        const dateFilter = {};
-        if (selectedStart && selectedEnd) {
-            dateFilter.start = selectedStart;
-            dateFilter.end = selectedEnd;
-        } else if (selectedDay) {
-            dateFilter.date = selectedDay;
+        if (!selectedStart || !selectedEnd) {
+            alert("Please select both start date and end date");
+            return;
         }
 
+        const dateFilter = {
+            start: selectedStart,
+            end: selectedEnd,
+        };
+
         const filtered = rawData.map((customer) => {
-            // Step 1: Get all credit/debit BEFORE the selected date or start of range
             const priorCredit = calculateCredit(customer.payments, {
-                before: selectedStart || selectedDay,
+                before: selectedStart,
             });
+
             const priorDebit = calculateDebit(customer.banks, {
-                before: selectedStart || selectedDay,
+                before: selectedStart,
             });
 
-            // Step 2: Calculate correct OPB
-            const openingBalance = parseFloat(customer.open_balance || 0) + priorCredit - priorDebit;
+            const openingBalance =
+                parseFloat(customer.open_balance || 0) + priorCredit - priorDebit;
 
-            // Step 3: Get credit & debit for selected day or range
             const credit = calculateCredit(customer.payments, dateFilter);
             const debit = calculateDebit(customer.banks, dateFilter);
 
-            // Step 4: Calculate CLB
             const closingBalance = openingBalance + credit - debit;
 
             return {
@@ -207,39 +211,39 @@ const BankModule = () => {
                         <Row>
                             <Col md={4}>
                                 <div className="mb-3">
-                                    <Label>Select a Single Date:</Label>
+                                    <Label>Start Date:</Label>
                                     <DatePicker
-                                        selected={selectedDate}
-                                        onChange={(date) => setSelectedDate(date)}
+                                        selected={startDate}
+                                        onChange={(date) => setStartDate(date)}
                                         dateFormat="yyyy-MM-dd"
                                         className="form-control"
                                     />
                                 </div>
                             </Col>
+
                             <Col md={4}>
                                 <div className="mb-3">
-                                    <Label>Select a Date Range:</Label>
+                                    <Label>End Date:</Label>
                                     <DatePicker
-                                        selectsRange={true}
-                                        startDate={startDate}
-                                        endDate={endDate}
-                                        onChange={(update) => setDateRange(update)}
+                                        selected={endDate}
+                                        onChange={(date) => setEndDate(date)}
                                         dateFormat="yyyy-MM-dd"
                                         className="form-control"
                                     />
                                 </div>
                             </Col>
+
                             <Col md={4}>
                                 <div className="mb-3">
                                     <Button
                                         type="button"
                                         className="btn btn-primary mt-4"
-                                        onClick={() => applyFilters(bankmodule, selectedDate, dateRange)}
+                                        onClick={() => applyFilters(bankmodule, startDate, endDate)}
                                     >
                                         Apply Filters
                                     </Button>
-
                                 </div>
+
                                 <Button color="success" onClick={exportToExcel}>
                                     Export to Excel
                                 </Button>

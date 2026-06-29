@@ -14,6 +14,7 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Paginations from "../../components/Common/Pagination";
+import Select from "react-select";
 
 const BasicTable = () => {
     const [salesData, setSalesData] = useState([]);
@@ -151,18 +152,32 @@ const BasicTable = () => {
         }
     };
 
-    const fetchStaffs = async () => {
+    const fetchStaffs = async (searchText = "") => {
         try {
             const token = localStorage.getItem("token");
 
             const response = await axios.get(
-                `${import.meta.env.VITE_APP_KEY}staffs/`,
+                `${import.meta.env.VITE_APP_KEY}get/staffs/`,
                 {
                     headers: { Authorization: `Bearer ${token}` },
+                    params: {
+                        page: 1,
+                        ...(searchText?.trim()
+                            ? { search: searchText.trim() }
+                            : {}),
+                    },
                 }
             );
 
-            setStaffs(response.data.data || []);
+            const data = (response.data?.results?.data || [])
+                .filter((item) => item.approval_status === "approved")
+                .map((item) => ({
+                    id: item.id,
+                    name: item.name,
+                    ...item,
+                }));
+
+            setStaffs(data);
         } catch (error) {
             toast.error("Error fetching staffs");
         }
@@ -174,7 +189,7 @@ const BasicTable = () => {
         if (startDate) params.start_date = startDate;
         if (endDate) params.end_date = endDate;
         if (familyFilter) params.family = familyFilter;
-        if (staffFilter) params.manage_staff = staffFilter;
+        if (staffFilter) params.staff = staffFilter;
 
         try {
             const token = localStorage.getItem("token");
@@ -329,27 +344,28 @@ const BasicTable = () => {
                                         </Col>
 
                                         <Col md={2}>
-                                            <Input
-                                                type="select"
-                                                value={stateFilter}
-                                                onChange={(e) =>
-                                                    setStateFilter(
-                                                        e.target.value
-                                                    )
+                                            <Select
+                                                value={
+                                                    stateFilter
+                                                        ? states
+                                                            .map((state) => ({
+                                                                value: state.name,
+                                                                label: state.name,
+                                                            }))
+                                                            .find((item) => item.value === stateFilter)
+                                                        : null
                                                 }
-                                            >
-                                                <option value="">
-                                                    All States
-                                                </option>
-                                                {states.map((state) => (
-                                                    <option
-                                                        key={state.id}
-                                                        value={state.name}
-                                                    >
-                                                        {state.name}
-                                                    </option>
-                                                ))}
-                                            </Input>
+                                                onChange={(selected) => {
+                                                    setStateFilter(selected ? selected.value : "");
+                                                }}
+                                                options={states.map((state) => ({
+                                                    value: state.name,
+                                                    label: state.name,
+                                                }))}
+                                                isClearable
+                                                isSearchable
+                                                placeholder="All States"
+                                            />
                                         </Col>
 
                                         <Col md={2}>
@@ -377,27 +393,31 @@ const BasicTable = () => {
                                         </Col>
 
                                         <Col md={2}>
-                                            <Input
-                                                type="select"
-                                                value={staffFilter}
-                                                onChange={(e) =>
-                                                    setStaffFilter(
-                                                        e.target.value
-                                                    )
+                                            <Select
+                                                value={
+                                                    staffFilter
+                                                        ? staffs
+                                                            .map((staff) => ({
+                                                                value: staff.id,
+                                                                label: staff.name,
+                                                            }))
+                                                            .find((item) => item.value === staffFilter)
+                                                        : null
                                                 }
-                                            >
-                                                <option value="">
-                                                    All Staff
-                                                </option>
-                                                {staffs.map((staff) => (
-                                                    <option
-                                                        key={staff.id}
-                                                        value={staff.id}
-                                                    >
-                                                        {staff.name}
-                                                    </option>
-                                                ))}
-                                            </Input>
+                                                onChange={(selected) => {
+                                                    setStaffFilter(selected ? selected.value : "");
+                                                }}
+                                                onInputChange={(inputValue) => {
+                                                    fetchStaffs(inputValue);
+                                                }}
+                                                options={staffs.map((staff) => ({
+                                                    value: staff.id,
+                                                    label: staff.name,
+                                                }))}
+                                                isClearable
+                                                isSearchable
+                                                placeholder="All Staff"
+                                            />
                                         </Col>
 
                                         <Col md={2}>
@@ -551,7 +571,7 @@ const BasicTable = () => {
 
                                             <tbody>
                                                 {filteredSalesData.length >
-                                                0 ? (
+                                                    0 ? (
                                                     currentData.map(
                                                         (sale, index) => {
                                                             const approved =
@@ -569,7 +589,7 @@ const BasicTable = () => {
                                                                         backgroundColor:
                                                                             index %
                                                                                 2 ===
-                                                                            0
+                                                                                0
                                                                                 ? "#f8f9fa"
                                                                                 : "#ffffff",
                                                                     }}

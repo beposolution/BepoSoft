@@ -20,6 +20,9 @@ const BasicTable = () => {
     const token = localStorage.getItem("token");
     const apiBase = import.meta.env.VITE_APP_KEY;
 
+    const [role, setRole] = useState(null);
+
+
     const [tableData, setTableData] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -51,6 +54,11 @@ const BasicTable = () => {
     const [orderLoading, setOrderLoading] = useState(false);
     const [staffLoading, setStaffLoading] = useState(false);
     const [customerLoading, setCustomerLoading] = useState(false);
+
+    useEffect(() => {
+        const role = localStorage.getItem("active");
+        setRole(role);
+    }, []);
 
     const fetchOrderData = useCallback(async (search = "") => {
         try {
@@ -161,7 +169,12 @@ const BasicTable = () => {
             if (remarkFilter) params.remark = remarkFilter;
             if (returnReasonFilter) params.returnreason = returnReasonFilter;
 
-            const response = await axios.get(`${apiBase}get/grv/data/`, {
+            const grvApiUrl =
+                role === "CSO"
+                    ? `${apiBase}grv/cycling/skating/`
+                    : `${apiBase}get/grv/data/`;
+
+            const response = await axios.get(grvApiUrl, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

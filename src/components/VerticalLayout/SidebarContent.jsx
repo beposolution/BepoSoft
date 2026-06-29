@@ -334,33 +334,37 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/Orders/">{props.t("View Order List")}</Link>
                   </li>
-                  <li>
-                    <Link to="/orders/invoicecreated">{props.t("Invoice Created List")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/orders/invoiceapproved">{props.t("Invoice Approved List")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/orders/waitingforconfirmation">{props.t("Waiting For Confirmation List")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/orders/toprint">{props.t("To Print List")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/orders/packingunderprogress">{props.t("Packing Under Progress List")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/orders/packed">{props.t("Packed List")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/orders/readytoship">{props.t("Ready to Ship List")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/orders/shipped">{props.t("Shipped List")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/orders/invoicerejected">{props.t("Invoice Rejected List")}</Link>
-                  </li>
+                  {role !== 'CSO' && (
+                    <>
+                      <li>
+                        <Link to="/orders/invoicecreated">{props.t("Invoice Created List")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/orders/invoiceapproved">{props.t("Invoice Approved List")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/orders/waitingforconfirmation">{props.t("Waiting For Confirmation List")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/orders/toprint">{props.t("To Print List")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/orders/packingunderprogress">{props.t("Packing Under Progress List")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/orders/packed">{props.t("Packed List")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/orders/readytoship">{props.t("Ready to Ship List")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/orders/shipped">{props.t("Shipped List")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/orders/invoicerejected">{props.t("Invoice Rejected List")}</Link>
+                      </li>
+                    </>
+                  )}
                 </ul>
               </li>
             ) : null}

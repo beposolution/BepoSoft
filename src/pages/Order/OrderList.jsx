@@ -100,6 +100,10 @@ const BasicTable = () => {
             return `${baseUrl}family/bdm/bdo/orders/?${params.toString()}`;
         }
 
+        if (role === "CSO") {
+            return `${baseUrl}orders/cycling/skating/?${params.toString()}`;
+        }
+
         return `${baseUrl}orders/?${params.toString()}`;
     };
 

@@ -169,12 +169,17 @@ const BasicTable = () => {
             if (remarkFilter) params.remark = remarkFilter;
             if (returnReasonFilter) params.returnreason = returnReasonFilter;
 
-            const grvApiUrl =
-                role === "CSO"
-                    ? `${apiBase}grv/cycling/skating/`
-                    : `${apiBase}get/grv/data/`;
+            const getGrvApiUrl = () => {
+                const activeRole = localStorage.getItem("active");
 
-            const response = await axios.get(grvApiUrl, {
+                if (activeRole === "CSO") {
+                    return `${apiBase}grv/cycling/skating/`;
+                }
+
+                return `${apiBase}get/grv/data/`;
+            };
+
+            const response = await axios.get(getGrvApiUrl(), {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

@@ -13,7 +13,6 @@ import {
     Spinner,
 } from "reactstrap";
 import * as XLSX from "xlsx";
-import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Paginations from "../../components/Common/Pagination";
@@ -22,10 +21,7 @@ const useDebounce = (value, delay) => {
     const [debouncedValue, setDebouncedValue] = useState(value);
 
     useEffect(() => {
-        const handler = setTimeout(() => {
-            setDebouncedValue(value);
-        }, delay);
-
+        const handler = setTimeout(() => setDebouncedValue(value), delay);
         return () => clearTimeout(handler);
     }, [value, delay]);
 
@@ -34,6 +30,7 @@ const useDebounce = (value, delay) => {
 
 const BasicTable = () => {
     const [data, setData] = useState([]);
+    const [reportSummary, setReportSummary] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const [staffFilter, setStaffFilter] = useState("");
@@ -65,11 +62,9 @@ const BasicTable = () => {
 
     const formatAmount = (value) => {
         const num = Number(value || 0);
-
         if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
         if (num >= 100000) return `₹${(num / 100000).toFixed(2)} Lakh`;
         if (num >= 1000) return `₹${(num / 1000).toFixed(2)}k`;
-
         return `₹${num.toFixed(2)}`;
     };
 
@@ -103,9 +98,7 @@ const BasicTable = () => {
             .then((response) => {
                 setAllStaffs(response.data.data || []);
             })
-            .catch(() => {
-                toast.error("There was an error fetching staff data!");
-            });
+            .catch(() => toast.error("There was an error fetching staff data!"));
     };
 
     const fetchFamilies = () => {
@@ -116,9 +109,7 @@ const BasicTable = () => {
             .then((response) => {
                 setAllFamilies(response.data.data || []);
             })
-            .catch(() => {
-                toast.error("There was an error fetching family data!");
-            });
+            .catch(() => toast.error("There was an error fetching family data!"));
     };
 
     const fetchStates = async () => {
@@ -128,12 +119,7 @@ const BasicTable = () => {
             });
 
             const result = await response.json();
-
-            if (result.message === "State list successfully retrieved") {
-                setStates(result.data || []);
-            } else {
-                toast.error("Failed to fetch states");
-            }
+            setStates(result.data || []);
         } catch (error) {
             toast.error("Error fetching states");
         }
@@ -159,10 +145,14 @@ const BasicTable = () => {
                 },
             })
             .then((response) => {
-                setData(response.data || []);
+                const apiData = response.data || {};
+                setData(Array.isArray(apiData.data) ? apiData.data : []);
+                setReportSummary(apiData.summary || null);
                 setLoading(false);
             })
             .catch(() => {
+                setData([]);
+                setReportSummary(null);
                 toast.error("There was an error fetching the data!");
                 setLoading(false);
             });
@@ -183,13 +173,20 @@ const BasicTable = () => {
     };
 
     const filteredData = useMemo(() => {
+        if (!Array.isArray(data)) return [];
+
         return data
             .map((item) => {
-                const filteredOrders = item.orders.filter((order) => {
-                    return !(role === "CSO" && order.family_name === "bepocart");
+                const orders = Array.isArray(item.orders) ? item.orders : [];
+
+                const filteredOrders = orders.filter((order) => {
+                    return !(
+                        role === "CSO" &&
+                        order.family_name?.toLowerCase() === "bepocart"
+                    );
                 });
 
-                return filteredOrders.length > 0
+                return filteredOrders.length
                     ? { ...item, orders: filteredOrders }
                     : null;
             })
@@ -197,62 +194,59 @@ const BasicTable = () => {
     }, [data, role]);
 
     const totals = useMemo(() => {
-        const totalOrders = filteredData.reduce(
-            (sum, item) => sum + item.orders.length,
-            0
-        );
+        if (reportSummary && role !== "CSO") {
+            return {
+                totalOrders: reportSummary.total_orders || 0,
+                totalAmount: Number(reportSummary.total_amount || 0),
+                totalPaid: Number(reportSummary.paid_amount || 0),
+                totalPending: Number(reportSummary.balance_amount || 0),
+            };
+        }
 
-        const totalAmount = filteredData.reduce(
-            (sum, item) =>
-                sum +
-                item.orders.reduce(
-                    (acc, order) => acc + Number(order.total_amount || 0),
+        return filteredData.reduce(
+            (acc, item) => {
+                const orders = Array.isArray(item.orders) ? item.orders : [];
+
+                acc.totalOrders += orders.length;
+                acc.totalAmount += orders.reduce(
+                    (sum, order) => sum + Number(order.total_amount || 0),
                     0
-                ),
-            0
-        );
-
-        const totalPaid = filteredData.reduce(
-            (sum, item) =>
-                sum +
-                item.orders.reduce(
-                    (acc, order) => acc + Number(order.total_paid_amount || 0),
+                );
+                acc.totalPaid += orders.reduce(
+                    (sum, order) => sum + Number(order.total_paid_amount || 0),
                     0
-                ),
-            0
-        );
-
-        const totalPending = filteredData.reduce(
-            (sum, item) =>
-                sum +
-                item.orders.reduce(
-                    (acc, order) => acc + Number(order.balance_amount || 0),
+                );
+                acc.totalPending += orders.reduce(
+                    (sum, order) => sum + Number(order.balance_amount || 0),
                     0
-                ),
-            0
-        );
+                );
 
-        return {
-            totalOrders,
-            totalAmount,
-            totalPaid,
-            totalPending,
-        };
-    }, [filteredData]);
+                return acc;
+            },
+            {
+                totalOrders: 0,
+                totalAmount: 0,
+                totalPaid: 0,
+                totalPending: 0,
+            }
+        );
+    }, [filteredData, reportSummary, role]);
 
     const exportToExcel = () => {
         const excelData = filteredData.map((item, index) => {
-            const totalAmount = item.orders.reduce(
+            const orders = Array.isArray(item.orders) ? item.orders : [];
+
+            const totalAmount = orders.reduce(
                 (sum, order) => sum + Number(order.total_amount || 0),
                 0
             );
 
-            const paidAmount = item.orders.reduce(
+            const paidAmount = orders.reduce(
                 (sum, order) => sum + Number(order.total_paid_amount || 0),
                 0
             );
 
-            const pendingAmount = item.orders.reduce(
+            const pendingAmount = orders.reduce(
                 (sum, order) => sum + Number(order.balance_amount || 0),
                 0
             );
@@ -260,7 +254,7 @@ const BasicTable = () => {
             return {
                 No: index + 1,
                 Date: item.date,
-                "Total Orders": item.orders.length,
+                "Total Orders": orders.length,
                 "Total Amount": totalAmount.toFixed(2),
                 "Paid Amount": paidAmount.toFixed(2),
                 "Pending Amount": pendingAmount.toFixed(2),
@@ -285,170 +279,134 @@ const BasicTable = () => {
             String(staff.family_id) === String(familyFilter)
     );
 
-    const KpiCard = ({ title, value, subtitle, icon, className }) => (
-        <Card className={`border-0 shadow-sm h-100 ${className}`}>
-            <CardBody>
-                <div className="d-flex justify-content-between align-items-start">
-                    <div>
-                        <p className="text-muted mb-1 fw-semibold">{title}</p>
-                        <h3 className="mb-1 fw-bold">{value}</h3>
-                        <small className="text-muted">{subtitle}</small>
-                    </div>
-                    <div className="cod-icon-box">{icon}</div>
-                </div>
-            </CardBody>
-        </Card>
-    );
-
     return (
         <React.Fragment>
             <style>
                 {`
-          .cod-page {
-            background: #f4f7fb;
-            min-height: 100vh;
-          }
+                    .cod-page {
+                        background: #f4f7fb;
+                        min-height: 100vh;
+                    }
 
-          .cod-header-card {
-            border: 0;
-            border-radius: 18px;
-            background: linear-gradient(135deg, #0f172a, #1e293b);
-            color: #fff;
-            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
-          }
+                    .cod-header-card {
+                        border: 0;
+                        border-radius: 18px;
+                        background: linear-gradient(135deg, #0f172a, #1e293b);
+                        color: #fff;
+                        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+                    }
 
-          .cod-header-card p {
-            color: rgba(255,255,255,.75);
-          }
+                    .cod-header-card p {
+                        color: rgba(255,255,255,.75);
+                    }
 
-          .cod-kpi-card {
-            border-radius: 18px;
-            transition: all .2s ease;
-          }
+                    .cod-filter-card,
+                    .cod-table-card,
+                    .cod-summary-card {
+                        border: 0;
+                        border-radius: 18px;
+                        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+                    }
 
-          .cod-kpi-card:hover {
-            transform: translateY(-3px);
-          }
+                    .cod-filter-card label {
+                        font-size: 12px;
+                        color: #64748b;
+                        font-weight: 700;
+                        text-transform: uppercase;
+                        letter-spacing: .04em;
+                    }
 
-          .cod-icon-box {
-            width: 46px;
-            height: 46px;
-            border-radius: 14px;
-            background: #eef2ff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-          }
+                    .cod-filter-card .form-control,
+                    .cod-filter-card .form-select {
+                        border-radius: 12px;
+                        border: 1px solid #e2e8f0;
+                        min-height: 42px;
+                    }
 
-          .cod-filter-card,
-          .cod-table-card {
-            border: 0;
-            border-radius: 18px;
-            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
-          }
+                    .cod-summary-box {
+                        background: #0f172a;
+                        color: #fff;
+                        border-radius: 16px;
+                        padding: 18px;
+                        height: 100%;
+                    }
 
-          .cod-filter-card label {
-            font-size: 12px;
-            color: #64748b;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .04em;
-          }
+                    .cod-summary-box small {
+                        color: #cbd5e1;
+                        display: block;
+                        margin-bottom: 6px;
+                    }
 
-          .cod-filter-card .form-control,
-          .cod-filter-card .form-select {
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-            min-height: 42px;
-          }
+                    .cod-table {
+                        border-collapse: separate;
+                        border-spacing: 0 10px;
+                    }
 
-          .cod-table {
-            border-collapse: separate;
-            border-spacing: 0 10px;
-          }
+                    .cod-table thead tr th {
+                        background: #0f172a;
+                        color: #fff;
+                        border: 0;
+                        font-size: 12px;
+                        text-transform: uppercase;
+                        letter-spacing: .04em;
+                        padding: 14px;
+                    }
 
-          .cod-table thead tr th {
-            background: #0f172a;
-            color: #fff;
-            border: 0;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: .04em;
-            padding: 14px;
-          }
+                    .cod-table thead tr th:first-child {
+                        border-top-left-radius: 14px;
+                        border-bottom-left-radius: 14px;
+                    }
 
-          .cod-table thead tr th:first-child {
-            border-top-left-radius: 14px;
-            border-bottom-left-radius: 14px;
-          }
+                    .cod-table thead tr th:last-child {
+                        border-top-right-radius: 14px;
+                        border-bottom-right-radius: 14px;
+                    }
 
-          .cod-table thead tr th:last-child {
-            border-top-right-radius: 14px;
-            border-bottom-right-radius: 14px;
-          }
+                    .cod-table tbody tr {
+                        background: #fff;
+                        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+                    }
 
-          .cod-table tbody tr {
-            background: #fff;
-            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
-          }
+                    .cod-table tbody tr td,
+                    .cod-table tbody tr th {
+                        border: 0;
+                        padding: 16px 14px;
+                        vertical-align: middle;
+                    }
 
-          .cod-table tbody tr td,
-          .cod-table tbody tr th {
-            border: 0;
-            padding: 16px 14px;
-            vertical-align: middle;
-          }
+                    .cod-total-bar {
+                        background: #0f172a;
+                        color: #fff;
+                        border-radius: 16px;
+                        padding: 16px;
+                    }
 
-          .cod-table tbody tr th:first-child,
-          .cod-table tbody tr td:first-child {
-            border-top-left-radius: 14px;
-            border-bottom-left-radius: 14px;
-          }
+                    .cod-total-bar small {
+                        color: #cbd5e1;
+                    }
 
-          .cod-table tbody tr td:last-child {
-            border-top-right-radius: 14px;
-            border-bottom-right-radius: 14px;
-          }
+                    .cod-empty {
+                        background: #fff;
+                        border-radius: 18px;
+                        padding: 40px;
+                        text-align: center;
+                        color: #64748b;
+                    }
 
-          .cod-total-bar {
-            background: #0f172a;
-            color: #fff;
-            border-radius: 16px;
-            padding: 16px;
-          }
+                    .btn {
+                        border-radius: 12px;
+                    }
 
-          .cod-total-bar small {
-            color: #cbd5e1;
-          }
-
-          .cod-empty {
-            background: #fff;
-            border-radius: 18px;
-            padding: 40px;
-            text-align: center;
-            color: #64748b;
-          }
-
-          .btn {
-            border-radius: 12px;
-          }
-
-          @media (max-width: 768px) {
-            .cod-header-card h3 {
-              font-size: 20px;
-            }
-
-            .cod-table {
-              min-width: 850px;
-            }
-          }
-        `}
+                    @media (max-width: 768px) {
+                        .cod-table {
+                            min-width: 850px;
+                        }
+                    }
+                `}
             </style>
 
             <div className="page-content cod-page">
                 <div className="container-fluid">
-
                     <Card className="cod-header-card mb-4">
                         <CardBody>
                             <Row className="align-items-center">
@@ -630,9 +588,7 @@ const BasicTable = () => {
                                             <Input
                                                 type="select"
                                                 value={paymentMethodFilter}
-                                                onChange={(e) =>
-                                                    setPaymentMethodFilter(e.target.value)
-                                                }
+                                                onChange={(e) => setPaymentMethodFilter(e.target.value)}
                                             >
                                                 <option value="">All Payment Method</option>
                                                 <option value="Cash on Delivery (COD)">
@@ -687,19 +643,49 @@ const BasicTable = () => {
                                     </Button>
                                 </Col>
 
-                                <Col lg={3} md={3} className="mt-3 mt-md-0">
+                                {/* <Col lg={3} md={3} className="mt-3 mt-md-0">
                                     <Button color="success" className="w-100" onClick={exportToExcel}>
                                         <i className="bx bx-file me-1"></i>
                                         Export Excel
                                     </Button>
-                                </Col>
+                                </Col> */}
                             </Row>
                         </CardBody>
                     </Card>
 
+                    <Row className="mb-4">
+                        <Col md={3} xs={6} className="mb-3">
+                            <div className="cod-summary-box">
+                                <small>Total Orders</small>
+                                <h4 className="mb-0 text-white">{totals.totalOrders}</h4>
+                            </div>
+                        </Col>
+
+                        <Col md={3} xs={6} className="mb-3">
+                            <div className="cod-summary-box">
+                                <small>Total Amount</small>
+                                <h4 className="mb-0 text-white">{formatAmount(totals.totalAmount)}</h4>
+                            </div>
+                        </Col>
+
+                        <Col md={3} xs={6} className="mb-3">
+                            <div className="cod-summary-box">
+                                <small>Paid Amount</small>
+                                <h4 className="mb-0 text-white">{formatAmount(totals.totalPaid)}</h4>
+                            </div>
+                        </Col>
+
+                        <Col md={3} xs={6} className="mb-3">
+                            <div className="cod-summary-box">
+                                <small>Balance Amount</small>
+                                <h4 className="mb-0 text-white">{formatAmount(totals.totalPending)}</h4>
+                            </div>
+                        </Col>
+                    </Row>
+
                     <Card className="cod-table-card">
                         <CardBody>
-                            <div className="d-flex justify-content-between align-items-center mb-3">
+                            {/* <div className="d-flex justify-content-between align-items-center mb-3">
                                 <div>
                                     <h5 className="mb-1 fw-bold">Daily COD Summary</h5>
                                     <small className="text-muted">
@@ -710,7 +696,7 @@ const BasicTable = () => {
                                 <Badge color="primary" pill>
                                     {startDate} to {endDate}
                                 </Badge>
-                            </div>
+                            </div> */}
 
                             {loading ? (
                                 <div className="text-center py-5">
@@ -735,26 +721,42 @@ const BasicTable = () => {
 
                                             <tbody>
                                                 {currentData.map((item, index) => {
-                                                    const rowTotalAmount = item.orders.reduce(
-                                                        (acc, order) =>
-                                                            acc + Number(order.total_amount || 0),
-                                                        0
-                                                    );
+                                                    const orders = Array.isArray(item.orders)
+                                                        ? item.orders
+                                                        : [];
 
-                                                    const rowPaidAmount = item.orders.reduce(
-                                                        (acc, order) =>
-                                                            acc + Number(order.total_paid_amount || 0),
-                                                        0
-                                                    );
+                                                    const rowSummary = item.summary || {};
 
-                                                    const rowPendingAmount = item.orders.reduce(
-                                                        (acc, order) =>
-                                                            acc + Number(order.balance_amount || 0),
-                                                        0
-                                                    );
+                                                    const rowTotalOrders =
+                                                        rowSummary.total_orders || orders.length;
+
+                                                    const rowTotalAmount =
+                                                        rowSummary.total_amount ??
+                                                        orders.reduce(
+                                                            (acc, order) =>
+                                                                acc + Number(order.total_amount || 0),
+                                                            0
+                                                        );
+
+                                                    const rowPaidAmount =
+                                                        rowSummary.paid_amount ??
+                                                        orders.reduce(
+                                                            (acc, order) =>
+                                                                acc +
+                                                                Number(order.total_paid_amount || 0),
+                                                            0
+                                                        );
+
+                                                    const rowPendingAmount =
+                                                        rowSummary.balance_amount ??
+                                                        orders.reduce(
+                                                            (acc, order) =>
+                                                                acc + Number(order.balance_amount || 0),
+                                                            0
+                                                        );
 
                                                     return (
-                                                        <tr key={index}>
+                                                        <tr key={item.date || index}>
                                                             <th>{indexOfFirstItem + index + 1}</th>
 
                                                             <td>
@@ -764,7 +766,7 @@ const BasicTable = () => {
 
                                                             <td>
                                                                 <Badge color="info" pill>
-                                                                    {item.orders.length} Orders
+                                                                    {rowTotalOrders} Orders
                                                                 </Badge>
                                                             </td>
 
@@ -772,7 +774,7 @@ const BasicTable = () => {
                                                                 {formatAmount(rowTotalAmount)}
                                                                 <div>
                                                                     <small className="text-muted">
-                                                                        ₹{rowTotalAmount.toFixed(2)}
+                                                                        ₹{Number(rowTotalAmount || 0).toFixed(2)}
                                                                     </small>
                                                                 </div>
                                                             </td>
@@ -781,7 +783,7 @@ const BasicTable = () => {
                                                                 {formatAmount(rowPaidAmount)}
                                                                 <div>
                                                                     <small className="text-muted">
-                                                                        ₹{rowPaidAmount.toFixed(2)}
+                                                                        ₹{Number(rowPaidAmount || 0).toFixed(2)}
                                                                     </small>
                                                                 </div>
                                                             </td>
@@ -790,7 +792,7 @@ const BasicTable = () => {
                                                                 {formatAmount(rowPendingAmount)}
                                                                 <div>
                                                                     <small className="text-muted">
-                                                                        ₹{rowPendingAmount.toFixed(2)}
+                                                                        ₹{Number(rowPendingAmount || 0).toFixed(2)}
                                                                     </small>
                                                                 </div>
                                                             </td>
@@ -814,7 +816,7 @@ const BasicTable = () => {
                                         </Table>
                                     </div>
 
-                                    <div className="cod-total-bar mt-4">
+                                    {/* <div className="cod-total-bar mt-4">
                                         <Row>
                                             <Col md={3} xs={6} className="mb-3 mb-md-0">
                                                 <small>Total Orders</small>
@@ -836,13 +838,13 @@ const BasicTable = () => {
                                             </Col>
 
                                             <Col md={3} xs={6}>
-                                                <small>Pending Amount</small>
+                                                <small>Balance Amount</small>
                                                 <h5 className="mb-0 text-white">
                                                     {formatAmount(totals.totalPending)}
                                                 </h5>
                                             </Col>
                                         </Row>
-                                    </div>
+                                    </div> */}
 
                                     <div className="mt-4">
                                         <Paginations

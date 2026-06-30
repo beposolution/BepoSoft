@@ -1154,18 +1154,7 @@ const WaitingProducts = () => {
                                                             >
                                                                 Name
                                                             </th>
-                                                            <th
-                                                                style={{
-                                                                    padding: "16px 18px",
-                                                                    color: "#64748b",
-                                                                    fontSize: "12px",
-                                                                    letterSpacing: "0.04em",
-                                                                    textTransform: "uppercase",
-                                                                    borderBottom: "1px solid #edf0f4",
-                                                                }}
-                                                            >
-                                                                Color
-                                                            </th>
+                                                           
                                                             <th
                                                                 style={{
                                                                     padding: "16px 18px",
@@ -1270,19 +1259,7 @@ const WaitingProducts = () => {
                                                                     </span>
                                                                 </td>
 
-                                                                <td style={{ padding: "16px 18px" }}>
-                                                                    <span
-                                                                        className="badge"
-                                                                        style={{
-                                                                            background: "#f1f5f9",
-                                                                            color: "#334155",
-                                                                            borderRadius: "999px",
-                                                                            padding: "8px 12px",
-                                                                        }}
-                                                                    >
-                                                                        {variant.color || "N/A"}
-                                                                    </span>
-                                                                </td>
+                                                                
 
                                                                 <td style={{ padding: "16px 18px" }}>
                                                                     <strong>{variant?.stock ?? 0}</strong>

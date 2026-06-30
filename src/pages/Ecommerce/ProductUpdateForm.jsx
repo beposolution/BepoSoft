@@ -9,7 +9,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const EcommerenceAddProduct = () => {
-    document.title = "Add Product | Skote - Vite React Admin & Dashboard Template";
+    document.title = "Edit Product | Skote - Vite React Admin & Dashboard Template";
 
     const { id } = useParams();
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -118,6 +118,7 @@ const EcommerenceAddProduct = () => {
                 );
 
                 const data = await response.json();
+                // console.log("data", data)
                 if (!response.ok) {
                     throw new Error(data.message || 'Error updating product');
                 }
@@ -246,6 +247,8 @@ const EcommerenceAddProduct = () => {
                         unit: productData.data.unit || '',
                         selling_price: productData.data.selling_price || '',
                         stock: productData.data.stock || '',
+                        partially_damaged_stock: productData.data.partially_damaged_stock || '',
+                        damaged_stock: productData.data.damaged_stock || '',
                         color: productData.data.color || '',
                         size: productData.data.size || '',
                         groupID: productData.data.groupID || '',
@@ -339,6 +342,8 @@ const EcommerenceAddProduct = () => {
         unit: values.unit || "",
         selling_price: Number(values.selling_price ?? 0),
         stock: Number(values.stock ?? 0),
+        partially_damaged_stock: Number(values.partially_damaged_stock ?? 0),
+        damaged_stock: Number(values.damaged_stock ?? 0),
         color: values.color ?? "",
         size: values.size ?? "",
         groupID: values.groupID || "",
@@ -362,6 +367,8 @@ const EcommerenceAddProduct = () => {
             unit: raw.unit || "",
             selling_price: Number(raw.selling_price ?? 0),
             stock: Number(raw.stock ?? 0),
+            partially_damaged_stock: Number(raw.partially_damaged_stock ?? 0),
+            damaged_stock: Number(raw.damaged_stock ?? 0),
             color: raw.color ?? "",
             size: raw.size ?? "",
             groupID: raw.groupID || "",
@@ -751,9 +758,6 @@ const EcommerenceAddProduct = () => {
                                                 </div>
                                             </Col>
 
-                                        </Row>
-
-                                        <Row>
                                             <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Inputpurchase_rate">Size</Label>
@@ -777,6 +781,11 @@ const EcommerenceAddProduct = () => {
                                                     }
                                                 </div>
                                             </Col>
+
+                                        </Row>
+
+                                        <Row>
+
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -802,9 +811,34 @@ const EcommerenceAddProduct = () => {
                                                     }
                                                 </div>
                                             </Col>
+
                                             <Col lg={3}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-InputCity">Stock</Label>
+                                                    <Label htmlFor="formrow-InputCity">Color</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="color"
+                                                        className="form-control"
+                                                        id="formrow-Inputtax"
+                                                        placeholder="Enter Your Color"
+                                                        value={formik.values.color}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={
+                                                            formik.touched.color && formik.errors.color ? true : false
+                                                        }
+                                                    />
+                                                    {
+                                                        formik.errors.color && formik.touched.color ? (
+                                                            <FormFeedback type="invalid">{formik.errors.color}</FormFeedback>
+                                                        ) : null
+                                                    }
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-InputCity">Usable Stock</Label>
                                                     <Input
                                                         type="text"
                                                         name="stock"
@@ -827,26 +861,26 @@ const EcommerenceAddProduct = () => {
                                                 </div>
                                             </Col>
 
-
                                             <Col lg={3}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-InputCity">Color</Label>
+                                                    <Label htmlFor="formrow-InputCity">Partially Damaged Stock</Label>
                                                     <Input
                                                         type="text"
-                                                        name="color"
+                                                        name="partially_damaged_stock"
                                                         className="form-control"
                                                         id="formrow-Inputtax"
-                                                        placeholder="Enter Your Color"
-                                                        value={formik.values.color}
+                                                        placeholder="Partially Damaged Stock"
+                                                        value={formik.values.partially_damaged_stock}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
+                                                        readOnly
                                                         invalid={
-                                                            formik.touched.color && formik.errors.color ? true : false
+                                                            formik.touched.partially_damaged_stock && formik.errors.partially_damaged_stock ? true : false
                                                         }
                                                     />
                                                     {
-                                                        formik.errors.color && formik.touched.color ? (
-                                                            <FormFeedback type="invalid">{formik.errors.color}</FormFeedback>
+                                                        formik.errors.partially_damaged_stock && formik.touched.partially_damaged_stock ? (
+                                                            <FormFeedback type="invalid">{formik.errors.partially_damaged_stock}</FormFeedback>
                                                         ) : null
                                                     }
                                                 </div>
@@ -948,6 +982,31 @@ const EcommerenceAddProduct = () => {
                                                     {formik.touched.product_category && formik.errors.product_category && (
                                                         <FormFeedback className="d-block">{formik.errors.product_category}</FormFeedback>
                                                     )}
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-InputCity">Damaged Stock</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="damaged_stock"
+                                                        className="form-control"
+                                                        id="formrow-Inputtax"
+                                                        placeholder="Damaged Stock"
+                                                        value={formik.values.damaged_stock}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        readOnly
+                                                        invalid={
+                                                            formik.touched.damaged_stock && formik.errors.damaged_stock ? true : false
+                                                        }
+                                                    />
+                                                    {
+                                                        formik.errors.damaged_stock && formik.touched.damaged_stock ? (
+                                                            <FormFeedback type="invalid">{formik.errors.damaged_stock}</FormFeedback>
+                                                        ) : null
+                                                    }
                                                 </div>
                                             </Col>
                                         </Row>

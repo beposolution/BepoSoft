@@ -55,6 +55,7 @@ const WaitingProducts = () => {
             });
 
             const productsData = response.data?.results?.data || [];
+            console.log("data", productsData)
 
             setWaitingProducts(productsData);
             setCount(response.data?.count || 0);
@@ -576,18 +577,7 @@ const WaitingProducts = () => {
                                                             >
                                                                 Product
                                                             </th>
-                                                            <th
-                                                                style={{
-                                                                    padding: "16px 22px",
-                                                                    color: "#64748b",
-                                                                    fontSize: "12px",
-                                                                    letterSpacing: "0.04em",
-                                                                    textTransform: "uppercase",
-                                                                    borderBottom: "1px solid #edf0f4",
-                                                                }}
-                                                            >
-                                                                Stock
-                                                            </th>
+
                                                             <th
                                                                 style={{
                                                                     padding: "16px 22px",
@@ -599,6 +589,44 @@ const WaitingProducts = () => {
                                                                 }}
                                                             >
                                                                 Variants
+                                                            </th>
+
+                                                            <th
+                                                                style={{
+                                                                    padding: "16px 22px",
+                                                                    color: "#64748b",
+                                                                    fontSize: "12px",
+                                                                    letterSpacing: "0.04em",
+                                                                    textTransform: "uppercase",
+                                                                    borderBottom: "1px solid #edf0f4",
+                                                                }}
+                                                            >
+                                                                Usable Stock
+                                                            </th>
+
+                                                            <th
+                                                                style={{
+                                                                    padding: "16px 22px",
+                                                                    color: "#64748b",
+                                                                    fontSize: "12px",
+                                                                    letterSpacing: "0.04em",
+                                                                    textTransform: "uppercase",
+                                                                    borderBottom: "1px solid #edf0f4",
+                                                                }}
+                                                            >
+                                                                Partially Damaged Stock
+                                                            </th>
+                                                            <th
+                                                                style={{
+                                                                    padding: "16px 22px",
+                                                                    color: "#64748b",
+                                                                    fontSize: "12px",
+                                                                    letterSpacing: "0.04em",
+                                                                    textTransform: "uppercase",
+                                                                    borderBottom: "1px solid #edf0f4",
+                                                                }}
+                                                            >
+                                                                Damaged Stock
                                                             </th>
                                                             <th
                                                                 style={{
@@ -684,20 +712,6 @@ const WaitingProducts = () => {
                                                                     </div>
                                                                 </td>
 
-                                                                <td style={{ padding: "18px 22px" }}>
-                                                                    <span
-                                                                        className="badge"
-                                                                        style={{
-                                                                            background: "#f1f5f9",
-                                                                            color: "#334155",
-                                                                            borderRadius: "999px",
-                                                                            padding: "8px 12px",
-                                                                            fontSize: "13px",
-                                                                        }}
-                                                                    >
-                                                                        {product.stock ?? 0}
-                                                                    </span>
-                                                                </td>
 
                                                                 <td style={{ padding: "18px 22px" }}>
                                                                     <span
@@ -709,6 +723,52 @@ const WaitingProducts = () => {
                                                                         {product.variantIDs
                                                                             ? product.variantIDs.length
                                                                             : 0}
+                                                                    </span>
+                                                                </td>
+
+                                                                <td style={{ padding: "18px 22px" }}>
+                                                                    <span
+                                                                        className="badge"
+                                                                        style={{
+                                                                            background: "#f1f5f9",
+                                                                            color: "#334155",
+                                                                            borderRadius: "999px",
+                                                                            padding: "8px 12px",
+                                                                            fontSize: "13px",
+                                                                        }}
+                                                                    >
+                                                                        {product?.stock ?? 0}
+                                                                    </span>
+                                                                </td>
+
+
+                                                                <td style={{ padding: "18px 22px" }}>
+                                                                    <span
+                                                                        className="badge"
+                                                                        style={{
+                                                                            background: "#f1f5f9",
+                                                                            color: "#334155",
+                                                                            borderRadius: "999px",
+                                                                            padding: "8px 12px",
+                                                                            fontSize: "13px",
+                                                                        }}
+                                                                    >
+                                                                        {product?.partially_damaged_stock ?? 0}
+                                                                    </span>
+                                                                </td>
+
+                                                                <td style={{ padding: "18px 22px" }}>
+                                                                    <span
+                                                                        className="badge"
+                                                                        style={{
+                                                                            background: "#f1f5f9",
+                                                                            color: "#334155",
+                                                                            borderRadius: "999px",
+                                                                            padding: "8px 12px",
+                                                                            fontSize: "13px",
+                                                                        }}
+                                                                    >
+                                                                        {product?.damaged_stock ?? 0}
                                                                     </span>
                                                                 </td>
 
@@ -1116,7 +1176,33 @@ const WaitingProducts = () => {
                                                                     borderBottom: "1px solid #edf0f4",
                                                                 }}
                                                             >
-                                                                Stock
+                                                                Usable Stock
+                                                            </th>
+
+                                                            <th
+                                                                style={{
+                                                                    padding: "16px 18px",
+                                                                    color: "#64748b",
+                                                                    fontSize: "12px",
+                                                                    letterSpacing: "0.04em",
+                                                                    textTransform: "uppercase",
+                                                                    borderBottom: "1px solid #edf0f4",
+                                                                }}
+                                                            >
+                                                                Partially Damaged Stock
+                                                            </th>
+
+                                                            <th
+                                                                style={{
+                                                                    padding: "16px 18px",
+                                                                    color: "#64748b",
+                                                                    fontSize: "12px",
+                                                                    letterSpacing: "0.04em",
+                                                                    textTransform: "uppercase",
+                                                                    borderBottom: "1px solid #edf0f4",
+                                                                }}
+                                                            >
+                                                                Damaged Stock
                                                             </th>
                                                             <th
                                                                 style={{
@@ -1199,7 +1285,15 @@ const WaitingProducts = () => {
                                                                 </td>
 
                                                                 <td style={{ padding: "16px 18px" }}>
-                                                                    <strong>{variant.stock ?? 0}</strong>
+                                                                    <strong>{variant?.stock ?? 0}</strong>
+                                                                </td>
+
+                                                                <td style={{ padding: "16px 18px" }}>
+                                                                    <strong>{variant.partially_damaged_stock ?? 0}</strong>
+                                                                </td>
+
+                                                                <td style={{ padding: "16px 18px" }}>
+                                                                    <strong>{variant.damaged_stock ?? 0}</strong>
                                                                 </td>
 
                                                                 <td style={{ padding: "16px 18px" }}>

@@ -1024,6 +1024,8 @@ const BasicTable = () => {
                                                                 "Type",
                                                                 "Unit",
                                                                 "Stock",
+                                                                "Partially\nDamaged\nStock",
+                                                                "Damaged\nStock",
                                                                 "Purchase\nRate",
                                                                 "Tax %",
                                                                 "Landing\nCost",
@@ -1186,6 +1188,14 @@ const BasicTable = () => {
                                                                                 )}
                                                                             </small>
                                                                         </div>
+                                                                    </td>
+
+                                                                    <td style={{ padding: "18px" }}>
+                                                                        {product?.partially_damaged_stock}
+                                                                    </td>
+
+                                                                    <td style={{ padding: "18px" }}>
+                                                                        {product?.damaged_stock}
                                                                     </td>
 
                                                                     <td style={{ padding: "18px" }}>

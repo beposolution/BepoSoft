@@ -142,12 +142,28 @@ const BasicTable = () => {
                 throw new Error(backendMessage);
             }
 
+            // const productList = data?.results?.data || [];
+            // const apiSummary = data?.results?.summary || {};
+
+            // setProducts((prevProducts) => {
+            //     if (append) {
+            //         return [...prevProducts, ...productList];
+            //     }
+
+            //     return productList;
+            // });
             const productList = data?.results?.data || [];
             const apiSummary = data?.results?.summary || {};
 
             setProducts((prevProducts) => {
                 if (append) {
-                    return [...prevProducts, ...productList];
+                    const productMap = new Map();
+
+                    [...prevProducts, ...productList].forEach((product) => {
+                        productMap.set(product.id, product);
+                    });
+
+                    return Array.from(productMap.values());
                 }
 
                 return productList;

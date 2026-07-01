@@ -1053,7 +1053,7 @@ const BasicTable = () => {
                                                                 "Category",
                                                                 "Type",
                                                                 "Unit",
-                                                                "Stock",
+                                                                "Usable\nStock",
                                                                 "Partially\nDamaged\nStock",
                                                                 "Damaged\nStock",
                                                                 "Purchase\nRate",

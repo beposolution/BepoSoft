@@ -248,6 +248,7 @@ const EcommerenceAddProduct = () => {
                         selling_price: productData.data.selling_price || '',
                         stock: productData.data.stock || '',
                         partially_damaged_stock: productData.data.partially_damaged_stock || '',
+                        liquidation_stock: productData.data.liquidation_stock || '',
                         damaged_stock: productData.data.damaged_stock || '',
                         color: productData.data.color || '',
                         size: productData.data.size || '',
@@ -344,6 +345,7 @@ const EcommerenceAddProduct = () => {
         stock: Number(values.stock ?? 0),
         partially_damaged_stock: Number(values.partially_damaged_stock ?? 0),
         damaged_stock: Number(values.damaged_stock ?? 0),
+        liquidation_stock: Number(values.liquidation_stock ?? 0),
         color: values.color ?? "",
         size: values.size ?? "",
         groupID: values.groupID || "",
@@ -368,6 +370,7 @@ const EcommerenceAddProduct = () => {
             selling_price: Number(raw.selling_price ?? 0),
             stock: Number(raw.stock ?? 0),
             partially_damaged_stock: Number(raw.partially_damaged_stock ?? 0),
+            liquidation_stock: Number(raw.liquidation_stock ?? 0),
             damaged_stock: Number(raw.damaged_stock ?? 0),
             color: raw.color ?? "",
             size: raw.size ?? "",
@@ -473,7 +476,7 @@ const EcommerenceAddProduct = () => {
         <React.Fragment>
             <div className="page-content">
                 <Container fluid>
-                    <Breadcrumbs title="Ecommerce" breadcrumbItem="Add Product" />
+                    <Breadcrumbs title="Ecommerce" breadcrumbItem="Update Product" />
 
                     <Row>
                         <Col xs="12">
@@ -488,28 +491,31 @@ const EcommerenceAddProduct = () => {
 
                                     <Form onSubmit={formik.handleSubmit} autoComplete="off">
 
-                                        <div className="mb-3">
-                                            <Label htmlFor="formrow-name-Input">Product Name</Label>
-                                            <Input
-                                                type="text"
-                                                name="name"
-                                                className="form-control"
-                                                id="formrow-name-Input"
-                                                placeholder="Enter Your First Name"
-                                                value={formik.values.name}
-                                                onChange={formik.handleChange}
-                                                onBlur={formik.handleBlur}
-                                                invalid={
-                                                    formik.touched.name && formik.errors.name ? true : false
-                                                }
-                                            />
-                                            {
-                                                formik.errors.name && formik.touched.name ? (
-                                                    <FormFeedback type="invalid">{formik.errors.name}</FormFeedback>
-                                                ) : null
-                                            }
-                                        </div>
                                         <Row>
+                                            <Col md={9}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-name-Input">Product Name</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="name"
+                                                        className="form-control"
+                                                        id="formrow-name-Input"
+                                                        placeholder="Enter Your First Name"
+                                                        value={formik.values.name}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={
+                                                            formik.touched.name && formik.errors.name ? true : false
+                                                        }
+                                                    />
+                                                    {
+                                                        formik.errors.name && formik.touched.name ? (
+                                                            <FormFeedback type="invalid">{formik.errors.name}</FormFeedback>
+                                                        ) : null
+                                                    }
+                                                </div>
+                                            </Col>
+
                                             <Col md={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-hsn_code-Input">Product HSN code</Label>
@@ -533,6 +539,9 @@ const EcommerenceAddProduct = () => {
                                                     }
                                                 </div>
                                             </Col>
+
+                                        </Row>
+                                        <Row>
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -608,11 +617,6 @@ const EcommerenceAddProduct = () => {
                                                 </div>
                                             </Col>
 
-                                        </Row>
-
-                                        <Row>
-
-
                                             <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label>Duty Charge</Label>
@@ -626,6 +630,9 @@ const EcommerenceAddProduct = () => {
                                                     />
                                                 </div>
                                             </Col>
+                                        </Row>
+
+                                        <Row>
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -691,9 +698,6 @@ const EcommerenceAddProduct = () => {
                                                 </div>
                                             </Col>
 
-                                        </Row>
-
-                                        <Row>
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -708,6 +712,10 @@ const EcommerenceAddProduct = () => {
                                                     />
                                                 </div>
                                             </Col>
+
+                                        </Row>
+
+                                        <Row>
 
 
                                             <Col lg={3}>
@@ -782,6 +790,30 @@ const EcommerenceAddProduct = () => {
                                                 </div>
                                             </Col>
 
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-InputCity">Color</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="color"
+                                                        className="form-control"
+                                                        id="formrow-Inputtax"
+                                                        placeholder="Enter Your Color"
+                                                        value={formik.values.color}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={
+                                                            formik.touched.color && formik.errors.color ? true : false
+                                                        }
+                                                    />
+                                                    {
+                                                        formik.errors.color && formik.touched.color ? (
+                                                            <FormFeedback type="invalid">{formik.errors.color}</FormFeedback>
+                                                        ) : null
+                                                    }
+                                                </div>
+                                            </Col>
+
                                         </Row>
 
                                         <Row>
@@ -814,25 +846,23 @@ const EcommerenceAddProduct = () => {
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-InputCity">Color</Label>
-                                                    <Input
-                                                        type="text"
-                                                        name="color"
+                                                    <Label htmlFor="formrow-category-Input">Category</Label>
+                                                    <select
+                                                        name="product_category"
                                                         className="form-control"
-                                                        id="formrow-Inputtax"
-                                                        placeholder="Enter Your Color"
-                                                        value={formik.values.color}
+                                                        value={formik.values.product_category}
                                                         onChange={formik.handleChange}
-                                                        onBlur={formik.handleBlur}
-                                                        invalid={
-                                                            formik.touched.color && formik.errors.color ? true : false
-                                                        }
-                                                    />
-                                                    {
-                                                        formik.errors.color && formik.touched.color ? (
-                                                            <FormFeedback type="invalid">{formik.errors.color}</FormFeedback>
-                                                        ) : null
-                                                    }
+                                                    >
+                                                        <option value="">Choose...</option>
+                                                        {categories.map(cat => (
+                                                            <option key={cat.id} value={String(cat.id)}>
+                                                                {cat.category_name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {formik.touched.product_category && formik.errors.product_category && (
+                                                        <FormFeedback className="d-block">{formik.errors.product_category}</FormFeedback>
+                                                    )}
                                                 </div>
                                             </Col>
 
@@ -963,27 +993,7 @@ const EcommerenceAddProduct = () => {
                                                 )}
 
                                             </Col>
-                                            <Col lg={3}>
-                                                <div className="mb-3">
-                                                    <Label htmlFor="formrow-category-Input">Category</Label>
-                                                    <select
-                                                        name="product_category"
-                                                        className="form-control"
-                                                        value={formik.values.product_category}
-                                                        onChange={formik.handleChange}
-                                                    >
-                                                        <option value="">Choose...</option>
-                                                        {categories.map(cat => (
-                                                            <option key={cat.id} value={String(cat.id)}>
-                                                                {cat.category_name}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    {formik.touched.product_category && formik.errors.product_category && (
-                                                        <FormFeedback className="d-block">{formik.errors.product_category}</FormFeedback>
-                                                    )}
-                                                </div>
-                                            </Col>
+
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -1005,6 +1015,31 @@ const EcommerenceAddProduct = () => {
                                                     {
                                                         formik.errors.damaged_stock && formik.touched.damaged_stock ? (
                                                             <FormFeedback type="invalid">{formik.errors.damaged_stock}</FormFeedback>
+                                                        ) : null
+                                                    }
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-InputCity">Liquidation Stock</Label>
+                                                    <Input
+                                                        type="text"
+                                                        name="liquidation_stock"
+                                                        className="form-control"
+                                                        id="formrow-Inputtax"
+                                                        placeholder="Liquidation Stock"
+                                                        value={formik.values.liquidation_stock}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        readOnly
+                                                        invalid={
+                                                            formik.touched.liquidation_stock && formik.errors.liquidation_stock ? true : false
+                                                        }
+                                                    />
+                                                    {
+                                                        formik.errors.liquidation_stock && formik.touched.liquidation_stock ? (
+                                                            <FormFeedback type="invalid">{formik.errors.liquidation_stock}</FormFeedback>
                                                         ) : null
                                                     }
                                                 </div>
@@ -1076,6 +1111,7 @@ const EcommerenceAddProduct = () => {
                                                                     <option value="usable">Usable</option>
                                                                     <option value="damaged">Damaged</option>
                                                                     <option value="partially_damaged">Partially Damaged</option>
+                                                                    <option value="liquidation_stock">Liquidation Stock</option>
                                                                 </Input>
                                                             </Col>
                                                             <Col md={2}>

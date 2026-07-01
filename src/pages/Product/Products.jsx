@@ -436,6 +436,22 @@ const BasicTable = () => {
         return Number(product?.partially_damaged_stock || 0);
     };
 
+
+    const getCalculatedLiquidationStock = (product) => {
+        if (
+            product?.type === "variant" &&
+            Array.isArray(product?.variantIDs) &&
+            product.variantIDs.length > 0
+        ) {
+            return product.variantIDs.reduce(
+                (total, variant) => total + Number(variant?.liquidation_stock || 0),
+                0
+            );
+        }
+
+        return Number(product?.liquidation_stock || 0);
+    };
+
     const exportToExcel = () => {
         const exportData = [];
 
@@ -1072,6 +1088,7 @@ const BasicTable = () => {
                                                                 "Usable\nStock",
                                                                 "Partially\nDamaged\nStock",
                                                                 "Damaged\nStock",
+                                                                "Liquidation\nStock",
                                                                 "Purchase\nRate",
                                                                 "Tax %",
                                                                 "Landing\nCost",
@@ -1242,6 +1259,10 @@ const BasicTable = () => {
 
                                                                     <td style={{ padding: "18px" }}>
                                                                         {getCalculatedDamagedStock(product)}
+                                                                    </td>
+
+                                                                    <td style={{ padding: "18px" }}>
+                                                                        {getCalculatedLiquidationStock(product)}
                                                                     </td>
 
                                                                     <td style={{ padding: "18px" }}>

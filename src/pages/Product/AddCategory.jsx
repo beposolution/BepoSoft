@@ -11,8 +11,9 @@ const AddCategory = () => {
     const [categoryName, setCategoryName] = useState("");
     const [loading, setLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const perPageData = 10;
+    const perPageData = 50;
     const token = localStorage.getItem("token");
+    const [searchTerm, setSearchTerm] = useState("");
 
     // Fetch all categories
     const fetchCategories = async () => {
@@ -67,10 +68,14 @@ const AddCategory = () => {
         }
     };
 
+    const filteredCategories = categories.filter((cat) =>
+        cat.category_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     // Pagination logic
     const indexOfLastItem = currentPage * perPageData;
     const indexOfFirstItem = indexOfLastItem - perPageData;
-    const currentData = categories.slice(indexOfFirstItem, indexOfLastItem);
+    const currentData = filteredCategories.slice(indexOfFirstItem, indexOfLastItem);
 
     return (
         <React.Fragment>
@@ -105,6 +110,16 @@ const AddCategory = () => {
                             <Card>
                                 <CardBody>
                                     <h4 className="mb-3">Category List</h4>
+                                    <Input
+                                        type="text"
+                                        placeholder="Search category..."
+                                        value={searchTerm}
+                                        onChange={(e) => {
+                                            setSearchTerm(e.target.value);
+                                            setCurrentPage(1);
+                                        }}
+                                        className="mb-3"
+                                    />
                                     <Table bordered>
                                         <thead>
                                             <tr>
@@ -129,7 +144,7 @@ const AddCategory = () => {
                                     </Table>
                                     <Paginations
                                         perPageData={perPageData}
-                                        data={categories}
+                                        data={filteredCategories}
                                         currentPage={currentPage}
                                         setCurrentPage={setCurrentPage}
                                         isShowingPageLength={true}

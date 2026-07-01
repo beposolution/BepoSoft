@@ -46,7 +46,6 @@ const VariantProductCreateForm = () => {
                     }
                 });
                 const data = await response.json();
-
                 const productObj = data.products; // This is your product
                 const products = productObj ? [productObj] : []; // Wrap in array for dropdown
                 setProducts(products);
@@ -413,7 +412,9 @@ const VariantProductCreateForm = () => {
                                                         <th>IMAGE</th>
                                                         <th>PRICE</th>
                                                         <th>VARIATION</th>
-                                                        <th>STOCK</th>
+                                                        <th>USABLE STOCK</th>
+                                                        <th>PARTIALLY DAMAGEDSTOCK</th>
+                                                        <th>DAMAGED STOCK</th>
                                                         <th>CREATED USER</th>
                                                         {/* <th>DELETE</th> */}
                                                         <th>EDIT</th>
@@ -442,8 +443,10 @@ const VariantProductCreateForm = () => {
 
                                                                 <td>{item.price}</td>
                                                                 <td>{item.size || 'N/A'} - {item.color || 'N/A'}</td>
-                                                                <td>{item.stock}</td>
-                                                                <td>{item.created_user}</td>
+                                                                <td>{item?.stock}</td>
+                                                                <td>{item?.partially_damaged_stock}</td>
+                                                                <td>{item?.damaged_stock}</td>
+                                                                <td>{item?.created_user}</td>
                                                                 {/* <td>
                                                                     <button
                                                                         type="button"

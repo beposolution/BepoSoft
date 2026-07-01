@@ -415,6 +415,7 @@ const VariantProductCreateForm = () => {
                                                         <th>USABLE STOCK</th>
                                                         <th>PARTIALLY DAMAGEDSTOCK</th>
                                                         <th>DAMAGED STOCK</th>
+                                                        <th>LIQUIDATION STOCK</th>
                                                         <th>CREATED USER</th>
                                                         {/* <th>DELETE</th> */}
                                                         <th>EDIT</th>
@@ -446,6 +447,7 @@ const VariantProductCreateForm = () => {
                                                                 <td>{item?.stock}</td>
                                                                 <td>{item?.partially_damaged_stock}</td>
                                                                 <td>{item?.damaged_stock}</td>
+                                                                <td>{item?.liquidation_stock}</td>
                                                                 <td>{item?.created_user}</td>
                                                                 {/* <td>
                                                                     <button

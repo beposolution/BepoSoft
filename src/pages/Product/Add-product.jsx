@@ -790,6 +790,7 @@ const FormLayouts = () => {
                                                                     <option value="usable">Usable</option>
                                                                     <option value="damaged">Damaged</option>
                                                                     <option value="partially_damaged">Partially Damaged</option>
+                                                                    <option value="liquidation_stock">Liquidation</option>
                                                                 </Input>
                                                             </Col>
                                                             <Col md={2}>

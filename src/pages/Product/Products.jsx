@@ -390,6 +390,36 @@ const BasicTable = () => {
         })}`;
     };
 
+    const getCalculatedDamagedStock = (product) => {
+        if (
+            product?.type === "variant" &&
+            Array.isArray(product?.variantIDs) &&
+            product.variantIDs.length > 0
+        ) {
+            return product.variantIDs.reduce(
+                (total, variant) => total + Number(variant?.damaged_stock || 0),
+                0
+            );
+        }
+
+        return Number(product?.damaged_stock || 0);
+    };
+
+    const getCalculatedPartiallyDamagedStock = (product) => {
+        if (
+            product?.type === "variant" &&
+            Array.isArray(product?.variantIDs) &&
+            product.variantIDs.length > 0
+        ) {
+            return product.variantIDs.reduce(
+                (total, variant) => total + Number(variant?.partially_damaged_stock || 0),
+                0
+            );
+        }
+
+        return Number(product?.partially_damaged_stock || 0);
+    };
+
     const exportToExcel = () => {
         const exportData = [];
 
@@ -1191,11 +1221,11 @@ const BasicTable = () => {
                                                                     </td>
 
                                                                     <td style={{ padding: "18px" }}>
-                                                                        {product?.partially_damaged_stock}
+                                                                        {getCalculatedPartiallyDamagedStock(product)}
                                                                     </td>
 
                                                                     <td style={{ padding: "18px" }}>
-                                                                        {product?.damaged_stock}
+                                                                        {getCalculatedDamagedStock(product)}
                                                                     </td>
 
                                                                     <td style={{ padding: "18px" }}>

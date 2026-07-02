@@ -33,6 +33,8 @@ const BasicTable = () => {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("ALL");
+    const [selectedStockType, setSelectedStockType] = useState("ALL");
+    const [selectedPurchaseType, setSelectedPurchaseType] = useState("ALL");
     const [categories, setCategories] = useState([]);
     const [warehouseID, setWarehouseID] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
@@ -78,7 +80,9 @@ const BasicTable = () => {
     const buildProductsUrl = (
         page = 1,
         search = searchTerm,
-        category = selectedCategory
+        category = selectedCategory,
+        stockType = selectedStockType,
+        purchaseType = selectedPurchaseType
     ) => {
         let url = `${import.meta.env.VITE_APP_KEY}warehouse/products/gets/${warehouseID}/?page=${page}`;
 
@@ -90,6 +94,14 @@ const BasicTable = () => {
             url += `&category_id=${category}`;
         }
 
+        if (stockType && stockType !== "ALL") {
+            url += `&stock_type=${stockType}`;
+        }
+
+        if (purchaseType && purchaseType !== "ALL") {
+            url += `&purchase_type=${purchaseType}`;
+        }
+
         return url;
     };
 
@@ -97,6 +109,8 @@ const BasicTable = () => {
         page = currentPage,
         search = searchTerm,
         category = selectedCategory,
+        stockType = selectedStockType,
+        purchaseType = selectedPurchaseType,
         append = false
     ) => {
         try {
@@ -113,7 +127,7 @@ const BasicTable = () => {
 
             setError(null);
 
-            const response = await fetch(buildProductsUrl(page, search, category), {
+            const response = await fetch(buildProductsUrl(page, search, category, stockType, purchaseType), {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -220,7 +234,14 @@ const BasicTable = () => {
         setSearchTerm("");
         setSelectedCategory("ALL");
 
-        fetchProducts(1, "", "ALL", false);
+        fetchProducts(
+            1,
+            "",
+            "ALL",
+            "ALL",
+            "ALL",
+            false
+        );
     }, [token, warehouseID]);
 
     useEffect(() => {
@@ -234,7 +255,7 @@ const BasicTable = () => {
             const isNearBottom = scrollTop + windowHeight >= fullHeight - 300;
 
             if (isNearBottom) {
-                fetchProducts(currentPage + 1, searchTerm, selectedCategory, true);
+                fetchProducts(currentPage + 1, searchTerm, selectedCategory, selectedStockType, selectedPurchaseType, true);
             }
         };
 
@@ -250,9 +271,27 @@ const BasicTable = () => {
         currentPage,
         searchTerm,
         selectedCategory,
+        selectedStockType,
+        selectedPurchaseType,
         token,
         warehouseID,
     ]);
+
+    const handleStockTypeChange = (e) => {
+        const value = e.target.value;
+
+        setSelectedStockType(value);
+        setCurrentPage(1);
+
+        fetchProducts(
+            1,
+            searchTerm,
+            selectedCategory,
+            value,
+            selectedPurchaseType,
+            false
+        );
+    };
 
     const handleCategoryChange = (e) => {
         const value = e.target.value;
@@ -260,7 +299,7 @@ const BasicTable = () => {
         setSelectedCategory(value);
         setCurrentPage(1);
 
-        fetchProducts(1, searchTerm, value, false);
+        fetchProducts(1, searchTerm, value, selectedStockType, selectedPurchaseType, false);
     };
 
     const handleSearchChange = (e) => {
@@ -272,15 +311,33 @@ const BasicTable = () => {
 
         setCurrentPage(1);
 
-        fetchProducts(1, searchTerm, selectedCategory, false);
+        fetchProducts(1, searchTerm, selectedCategory, selectedStockType, selectedPurchaseType, false);
     };
 
     const handleClearFilters = () => {
         setSearchTerm("");
         setSelectedCategory("ALL");
+        setSelectedStockType("ALL");
+        setSelectedPurchaseType("ALL");
         setCurrentPage(1);
 
-        fetchProducts(1, "", "ALL", false);
+        fetchProducts(1, "", "ALL", "ALL", "ALL", false);
+    };
+
+    const handlePurchaseTypeChange = (e) => {
+        const value = e.target.value;
+
+        setSelectedPurchaseType(value);
+        setCurrentPage(1);
+
+        fetchProducts(
+            1,
+            searchTerm,
+            selectedCategory,
+            selectedStockType,
+            value,
+            false
+        );
     };
 
     const totalPages = Math.ceil(totalCount / pageSize);
@@ -886,7 +943,7 @@ const BasicTable = () => {
                                         }}
                                     >
                                         <Row className="align-items-center">
-                                            <Col lg={5}>
+                                            <Col lg={3}>
                                                 <h5 className="mb-1 fw-bold text-dark">
                                                     Product Table
                                                 </h5>
@@ -897,7 +954,7 @@ const BasicTable = () => {
                                                 </p>
                                             </Col>
 
-                                            <Col lg={7} className="mt-3 mt-lg-0">
+                                            <Col lg={9} className="mt-3 mt-lg-0">
                                                 <form onSubmit={handleSearchSubmit}>
                                                     <div className="d-flex gap-2 flex-wrap justify-content-lg-end">
                                                         <div
@@ -951,6 +1008,46 @@ const BasicTable = () => {
                                                                     {cat.name}
                                                                 </option>
                                                             ))}
+                                                        </Input>
+
+                                                        <Input
+                                                            type="select"
+                                                            value={selectedStockType}
+                                                            onChange={handleStockTypeChange}
+                                                            style={{
+                                                                maxWidth: "220px",
+                                                                borderRadius: "14px",
+                                                                padding: "12px 14px",
+                                                                border: "1px solid #e5e7eb",
+                                                                background: "#f8fafc",
+                                                            }}
+                                                        >
+                                                            <option value="ALL">All Stock</option>
+                                                            <option value="usable">Usable Stock</option>
+                                                            <option value="damaged">Damaged Stock</option>
+                                                            <option value="partially_damaged">
+                                                                Partially Damaged
+                                                            </option>
+                                                            <option value="liquidation_stock">
+                                                                Liquidation Stock
+                                                            </option>
+                                                        </Input>
+
+                                                        <Input
+                                                            type="select"
+                                                            value={selectedPurchaseType}
+                                                            onChange={handlePurchaseTypeChange}
+                                                            style={{
+                                                                maxWidth: "190px",
+                                                                borderRadius: "14px",
+                                                                padding: "12px 14px",
+                                                                border: "1px solid #e5e7eb",
+                                                                background: "#f8fafc",
+                                                            }}
+                                                        >
+                                                            <option value="ALL">All Purchase</option>
+                                                            <option value="Local">Local</option>
+                                                            <option value="International">International</option>
                                                         </Input>
 
                                                         <Button

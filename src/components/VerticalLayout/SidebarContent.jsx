@@ -776,6 +776,9 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/product/stock/report/">{props.t("Product Stock Report")}</Link>
                   </li>
+                  <li>
+                    <Link to="/order/comparison/report/">{props.t("Order Comparison Report")}</Link>
+                  </li>
                   {role !== 'CSO' && (
                     <>
                       <li>
@@ -806,10 +809,6 @@ const SidebarContent = (props) => {
                       <li>
                         <Link to="/shipping/address/excel/export/report/">{props.t("Shipping Address Excel Export Report")}</Link>
                       </li>
-                      <li>
-                        <Link to="/order/comparison/report/">{props.t("Order Comparison Report")}</Link>
-                      </li>
-
                       <li>
                         <Link to="/date/product/report/">{props.t("Date-wise Product Report")}</Link>
                       </li>

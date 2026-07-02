@@ -36,12 +36,15 @@ const BasicTable = () => {
     const [selectedStockType, setSelectedStockType] = useState("ALL");
     const [selectedPurchaseType, setSelectedPurchaseType] = useState("ALL");
     const [categories, setCategories] = useState([]);
+    const [categorySearch, setCategorySearch] = useState("");
+    const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
     const [warehouseID, setWarehouseID] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const [nextPageUrl, setNextPageUrl] = useState(null);
     const [previousPageUrl, setPreviousPageUrl] = useState(null);
     const [loadingMore, setLoadingMore] = useState(false);
+    const categoryDropdownRef = useRef(null);
 
     const isFetchingRef = useRef(false);
     const pageSize = 50;
@@ -76,6 +79,61 @@ const BasicTable = () => {
 
         fetchUserData();
     }, [token, navigate]);
+
+    const fetchCategories = async () => {
+        try {
+            if (!token) return;
+
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}product/category/add/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            const categoryList = response?.data?.data || response?.data || [];
+
+            setCategories([
+                { id: "ALL", name: "ALL" },
+                ...categoryList.map((cat) => ({
+                    id: String(cat.id),
+                    name: cat.category_name,
+                })),
+            ]);
+        } catch (error) {
+            toast.error("Error fetching categories");
+        }
+    };
+
+    useEffect(() => {
+        if (!token) return;
+
+        fetchCategories();
+    }, [token]);
+
+    const filteredCategories = categories.filter((cat) =>
+        cat.name?.toLowerCase().includes(categorySearch.toLowerCase())
+    );
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (
+                categoryDropdownRef.current &&
+                !categoryDropdownRef.current.contains(event.target)
+            ) {
+                setShowCategoryDropdown(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     const buildProductsUrl = (
         page = 1,
@@ -190,33 +248,6 @@ const BasicTable = () => {
             setPreviousPageUrl(data?.previous || null);
             setCurrentPage(page);
 
-            setCategories((prevCategories) => {
-                const categoryMap = new Map();
-
-                categoryMap.set("ALL", "ALL");
-
-                prevCategories.forEach((cat) => {
-                    const id = String(cat.id);
-
-                    if (id !== "ALL" && cat.name) {
-                        categoryMap.set(id, cat.name);
-                    }
-                });
-
-                productList.forEach((product) => {
-                    const id = String(product?.product_category || "");
-                    const name = product?.product_category_name;
-
-                    if (id && name) {
-                        categoryMap.set(id, name);
-                    }
-                });
-
-                return Array.from(categoryMap.entries()).map(([id, name]) => ({
-                    id,
-                    name,
-                }));
-            });
         } catch (err) {
             setError(err.message || "Unknown error occurred");
         } finally {
@@ -320,6 +351,9 @@ const BasicTable = () => {
         setSelectedStockType("ALL");
         setSelectedPurchaseType("ALL");
         setCurrentPage(1);
+
+        setCategorySearch("");
+        setShowCategoryDropdown(false);
 
         fetchProducts(1, "", "ALL", "ALL", "ALL", false);
     };
@@ -991,24 +1025,121 @@ const BasicTable = () => {
                                                             />
                                                         </div>
 
-                                                        <Input
-                                                            type="select"
-                                                            value={selectedCategory}
-                                                            onChange={handleCategoryChange}
+                                                        <div
+                                                            ref={categoryDropdownRef}
                                                             style={{
-                                                                maxWidth: "190px",
-                                                                borderRadius: "14px",
-                                                                padding: "12px 14px",
-                                                                border: "1px solid #e5e7eb",
-                                                                background: "#f8fafc",
+                                                                position: "relative",
+                                                                width: "220px",
                                                             }}
                                                         >
-                                                            {categories.map((cat) => (
-                                                                <option key={cat.id} value={cat.id}>
-                                                                    {cat.name}
-                                                                </option>
-                                                            ))}
-                                                        </Input>
+                                                            <Input
+                                                                type="text"
+                                                                placeholder="Search Category..."
+                                                                value={categorySearch}
+                                                                onFocus={() => setShowCategoryDropdown(true)}
+                                                                onChange={(e) => {
+                                                                    setCategorySearch(e.target.value);
+                                                                    setShowCategoryDropdown(true);
+                                                                }}
+                                                                style={{
+                                                                    borderRadius: "14px",
+                                                                    padding: "12px 14px",
+                                                                    border: "1px solid #e5e7eb",
+                                                                    background: "#f8fafc",
+                                                                }}
+                                                            />
+
+                                                            {showCategoryDropdown && (
+                                                                <div
+                                                                    style={{
+                                                                        position: "absolute",
+                                                                        top: "100%",
+                                                                        left: 0,
+                                                                        right: 0,
+                                                                        background: "#fff",
+                                                                        border: "1px solid #e5e7eb",
+                                                                        borderRadius: "12px",
+                                                                        marginTop: "4px",
+                                                                        maxHeight: "280px",
+                                                                        overflowY: "auto",
+                                                                        zIndex: 9999,
+                                                                        boxShadow: "0 10px 30px rgba(15,23,42,.15)",
+                                                                    }}
+                                                                >
+                                                                    <div
+                                                                        onClick={() => {
+                                                                            setSelectedCategory("ALL");
+                                                                            setCategorySearch("");
+                                                                            setShowCategoryDropdown(false);
+
+                                                                            fetchProducts(
+                                                                                1,
+                                                                                searchTerm,
+                                                                                "ALL",
+                                                                                selectedStockType,
+                                                                                selectedPurchaseType,
+                                                                                false
+                                                                            );
+                                                                        }}
+                                                                        style={{
+                                                                            padding: "10px 14px",
+                                                                            cursor: "pointer",
+                                                                            fontWeight: 600,
+                                                                            borderBottom: "1px solid #f1f5f9",
+                                                                        }}
+                                                                    >
+                                                                        ALL
+                                                                    </div>
+
+                                                                    {filteredCategories
+                                                                        .filter((cat) => cat.id !== "ALL")
+                                                                        .map((cat) => (
+                                                                            <div
+                                                                                key={cat.id}
+                                                                                onClick={() => {
+                                                                                    setSelectedCategory(cat.id);
+                                                                                    setCategorySearch(cat.name);
+                                                                                    setShowCategoryDropdown(false);
+
+                                                                                    fetchProducts(
+                                                                                        1,
+                                                                                        searchTerm,
+                                                                                        cat.id,
+                                                                                        selectedStockType,
+                                                                                        selectedPurchaseType,
+                                                                                        false
+                                                                                    );
+                                                                                }}
+                                                                                style={{
+                                                                                    padding: "10px 14px",
+                                                                                    cursor: "pointer",
+                                                                                    borderBottom: "1px solid #f8fafc",
+                                                                                }}
+                                                                                onMouseEnter={(e) =>
+                                                                                    (e.currentTarget.style.background = "#f8fafc")
+                                                                                }
+                                                                                onMouseLeave={(e) =>
+                                                                                    (e.currentTarget.style.background = "#fff")
+                                                                                }
+                                                                            >
+                                                                                {cat.name}
+                                                                            </div>
+                                                                        ))}
+
+                                                                    {filteredCategories.filter((cat) => cat.id !== "ALL").length === 0 && (
+                                                                        <div
+                                                                            style={{
+                                                                                padding: "12px",
+                                                                                textAlign: "center",
+                                                                                color: "#64748b",
+                                                                            }}
+                                                                        >
+                                                                            No category found
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
 
                                                         <Input
                                                             type="select"

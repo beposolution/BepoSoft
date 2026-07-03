@@ -1054,7 +1054,7 @@ const SidebarContent = (props) => {
 
 
 
-            {isManager && role !== "CSO" && (
+            {isManager && (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUsers size={17} style={{ marginRight: "6px" }} />
@@ -1072,13 +1072,13 @@ const SidebarContent = (props) => {
 
                       <li>
                         <Link to="/staff-attendance/">
-                          {props.t("Staff Attendance")}
+                          {props.t("View Staff Attendance")}
                         </Link>
                       </li>
                     </>
                   )}
 
-                  {(role === "COO" || role === "CEO") && (
+                  {(role === "COO" || role === "CEO" || role === "HR") && (
                     <>
                       <li>
                         <Link to="/all/attendance/">
@@ -1093,7 +1093,7 @@ const SidebarContent = (props) => {
                     </>
                   )}
 
-                  {(isManager && (role === "SD")) && (
+                  {(isManager && (role === "SD" || role === "CSO")) && (
                     <>
                       <li>
                         <Link to="/sales/team/">

@@ -1062,13 +1062,15 @@ const SidebarContent = (props) => {
                 </Link>
 
                 <ul className="sub-menu" aria-expanded="false">
-                  {(isManager && (role === "CEO" || role === "COO" || role === "HR")) && (
+                  {(isManager && (role === "CEO" || role === "COO" || role === "HR" || role === "CSO")) && (
                     <>
-                      <li>
-                        <Link to="/attendance/department/">
-                          {props.t("Attendance Department")}
-                        </Link>
-                      </li>
+                      {role !== "CSO" && (
+                        <li>
+                          <Link to="/attendance/department/">
+                            {props.t("Attendance Department")}
+                          </Link>
+                        </li>
+                      )}
 
                       <li>
                         <Link to="/staff-attendance/">

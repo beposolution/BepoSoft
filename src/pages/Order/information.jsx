@@ -100,6 +100,24 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                 return;
             }
 
+            const restrictedStatusesWhenUnallocated = [
+                "Waiting For Confirmation",
+                "To Print",
+                "Packing under progress",
+                "Packed",
+                "Ready to ship",
+                "Shipped",
+            ];
+
+            if (
+                hasUnallocated &&
+                payload.status &&
+                restrictedStatusesWhenUnallocated.includes(payload.status)
+            ) {
+                toast.error("Complete rack allocation before moving to this status.");
+                return;
+            }
+
             // build delta snapshots for the log
             const beforeDelta = {};
             const afterDelta = {};
@@ -212,6 +230,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
             setStatusOptions([
                 "Invoice Created",
                 "Invoice Approved",
+                "Pre Booked",
                 "Waiting For Confirmation",
                 "To Print",
                 'Packing under progress',
@@ -275,9 +294,16 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
         fetchOrderAndCustomerData();
     }, [id, token]);
 
+    // const allowedWhenUnallocated = [
+    //     "Invoice Created",
+    //     "Invoice Approved",
+    // ];
+
     const allowedWhenUnallocated = [
         "Invoice Created",
         "Invoice Approved",
+        "Pre Booked",
+        // "Waiting For Confirmation",
     ];
 
     const isBlockedTransition =
@@ -311,7 +337,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                         disabled={isBlockedTransition}
                                                     >
                                                         <option value="">Select Status</option>
-                                                        {(() => {
+                                                        {/* {(() => {
                                                             // CEO & COO → see ALL statuses always
                                                             if (role === "CEO" || role === "COO") {
                                                                 return statusOptions.map((option, index) => (
@@ -331,12 +357,110 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
 
                                                                 if (baseIndex !== -1) {
                                                                     // current + next only
-                                                                    filteredOptions = statusOptions.slice(baseIndex, baseIndex + 2);
+                                                                    // filteredOptions = statusOptions.slice(baseIndex, baseIndex + 2);
+                                                                    if (baseStatus === "Invoice Approved") {
+                                                                        filteredOptions = [
+                                                                            "Invoice Approved",
+                                                                            "Waiting For Confirmation",
+                                                                            "Pre Booked",
+                                                                        ];
+                                                                    } else if (baseStatus === "Pre Booked") {
+                                                                        filteredOptions = [
+                                                                            "Pre Booked",
+                                                                            "Waiting For Confirmation",
+                                                                        ];
+                                                                    } else {
+                                                                        filteredOptions = statusOptions.slice(baseIndex, baseIndex + 2);
+                                                                    }
                                                                 } else {
                                                                     filteredOptions = statusOptions.slice(0, 2);
                                                                 }
 
                                                                 // Always allow rejection
+                                                                if (!filteredOptions.includes("Invoice Rejected")) {
+                                                                    filteredOptions.push("Invoice Rejected");
+                                                                }
+                                                            }
+
+                                                            return filteredOptions.map((option, index) => (
+                                                                <option key={index} value={option}>
+                                                                    {option}
+                                                                </option>
+                                                            ));
+                                                        })()} */}
+
+                                                        {(() => {
+                                                            const normalizedRole = role?.trim().toUpperCase();
+
+                                                            // BDM → only these three statuses
+                                                            if (normalizedRole === "BDM") {
+                                                                let bdmOptions = [];
+
+                                                                if (persistedStatus === "Invoice Created") {
+                                                                    bdmOptions = [
+                                                                        "Invoice Created",
+                                                                        "Invoice Approved",
+                                                                        "Invoice Rejected",
+                                                                    ];
+                                                                } else if (persistedStatus === "Invoice Approved") {
+                                                                    bdmOptions = [
+                                                                        "Invoice Approved",
+                                                                        "Invoice Rejected",
+                                                                    ];
+                                                                } else if (persistedStatus === "Invoice Rejected") {
+                                                                    bdmOptions = [
+                                                                        "Invoice Rejected",
+                                                                    ];
+                                                                } else {
+                                                                    bdmOptions = [
+                                                                        persistedStatus,
+                                                                        "Invoice Rejected",
+                                                                    ].filter(Boolean);
+                                                                }
+
+                                                                return bdmOptions.map((option, index) => (
+                                                                    <option key={index} value={option}>
+                                                                        {option}
+                                                                    </option>
+                                                                ));
+                                                            }
+
+                                                            // CEO & COO → all statuses
+                                                            if (normalizedRole === "CEO" || normalizedRole === "COO") {
+                                                                return statusOptions.map((option, index) => (
+                                                                    <option key={index} value={option}>
+                                                                        {option}
+                                                                    </option>
+                                                                ));
+                                                            }
+
+                                                            let filteredOptions = [];
+                                                            const baseStatus = persistedStatus;
+
+                                                            if (baseStatus === "Invoice Rejected") {
+                                                                filteredOptions = [...statusOptions];
+                                                            } else {
+                                                                const baseIndex = statusOptions.indexOf(baseStatus);
+
+                                                                if (baseIndex !== -1) {
+                                                                    if (baseStatus === "Invoice Approved") {
+                                                                        filteredOptions = [
+                                                                            "Invoice Approved",
+                                                                            "Waiting For Confirmation",
+                                                                            "Pre Booked",
+                                                                        ];
+                                                                    } else if (baseStatus === "Pre Booked") {
+                                                                        filteredOptions = [
+                                                                            "Pre Booked",
+                                                                            "Waiting For Confirmation",
+                                                                        ];
+                                                                    } else {
+                                                                        filteredOptions = statusOptions.slice(baseIndex, baseIndex + 2);
+                                                                    }
+                                                                } else {
+                                                                    filteredOptions = statusOptions.slice(0, 2);
+                                                                }
+
                                                                 if (!filteredOptions.includes("Invoice Rejected")) {
                                                                     filteredOptions.push("Invoice Rejected");
                                                                 }

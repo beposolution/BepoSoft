@@ -343,6 +343,9 @@ const SidebarContent = (props) => {
                         <Link to="/orders/invoiceapproved">{props.t("Invoice Approved List")}</Link>
                       </li>
                       <li>
+                        <Link to="/orders/prebooked">{props.t("Pre Booked List")}</Link>
+                      </li>
+                      <li>
                         <Link to="/orders/waitingforconfirmation">{props.t("Waiting For Confirmation List")}</Link>
                       </li>
                       <li>

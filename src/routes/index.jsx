@@ -455,6 +455,7 @@ import AllAttendanceAdd from "../pages/StaffAttendance/AttendenceAdd/AllAttendan
 import AllMembers from "../pages/StaffAttendance/AddMember/AllMembers";
 import SalesAttendanceAdd from "../pages/StaffAttendance/AttendenceAdd/SalesAttendanceAdd";
 import SalesTeamMembers from "../pages/StaffAttendance/AddMember/SalesTeamMembers";
+import PreBookedOrders from "../pages/Order/PreBookedOrders";
 
 
 
@@ -600,6 +601,7 @@ const authProtectedRoutes = [
   { path: "/warehouseorder/:id/items", component: <OrderwarehouseConform /> },
   { path: "/orders/invoicecreated", component: <InvoiceCreated /> },
   { path: "/orders/invoiceapproved", component: <InvoiceApproved /> },
+  { path: "/orders/prebooked", component: <PreBookedOrders /> },
   { path: "/orders/waitingforconfirmation", component: <WaitingForConfirmation /> },
   { path: "/orders/toprint", component: <ToPrint /> },
   { path: "/orders/packingunderprogress", component: <PackingUnderProgress /> },

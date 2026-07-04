@@ -462,6 +462,10 @@ const StaffAddAttendance = () => {
 
     };
 
+    const showActionColumn = attendanceData.some(
+        item => item.approval_status !== "approved"
+    );
+
     if (loading) {
         return (
             <div
@@ -726,7 +730,7 @@ const StaffAddAttendance = () => {
                                                 <th>Date</th>
                                                 <th>Status</th>
                                                 <th>Approval Status</th>
-                                                <th className="text-end">Action</th>
+                                                {showActionColumn && <th className="text-end">Action</th>}
                                             </tr>
                                         </thead>
 
@@ -743,23 +747,25 @@ const StaffAddAttendance = () => {
                                                     <td>{item.attendance_date || "-"}</td>
                                                     <td>{getStatusBadge(item.status)}</td>
                                                     <td>{getApprovalStatusBadge(item.approval_status)}</td>
-                                                    <td className="text-end">
-                                                        {["pending", "approved"].includes(item.approval_status) && (
-                                                            <Button
-                                                                color="warning"
-                                                                size="sm"
-                                                                onClick={() => openEditModal(item)}
-                                                                style={{
-                                                                    borderRadius: "10px",
-                                                                    padding: "7px 14px",
-                                                                    fontWeight: 600,
-                                                                }}
-                                                            >
-                                                                <i className="bx bx-edit me-1"></i>
-                                                                Edit
-                                                            </Button>
-                                                        )}
-                                                    </td>
+                                                    {showActionColumn && (
+                                                        <td className="text-end">
+                                                            {item.approval_status !== "approved" && (
+                                                                <Button
+                                                                    color="warning"
+                                                                    size="sm"
+                                                                    onClick={() => openEditModal(item)}
+                                                                    style={{
+                                                                        borderRadius: "10px",
+                                                                        padding: "7px 14px",
+                                                                        fontWeight: 600,
+                                                                    }}
+                                                                >
+                                                                    <i className="bx bx-edit me-1"></i>
+                                                                    Edit
+                                                                </Button>
+                                                            )}
+                                                        </td>
+                                                    )}
                                                 </tr>
                                             ))}
                                         </tbody>

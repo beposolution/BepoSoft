@@ -1064,11 +1064,13 @@ const SidebarContent = (props) => {
 
               <ul className="sub-menu" aria-expanded="false">
                 <>
-                  <li>
-                    <Link to="/staff/attendance/add/">
-                      {props.t("My Attendance")}
-                    </Link>
-                  </li>
+                  {role !== 'CEO' && (
+                    <li>
+                      <Link to="/staff/attendance/add/">
+                        {props.t("My Attendance")}
+                      </Link>
+                    </li>
+                  )}
                   {isManager && (
                     <>
                       {(isManager && (role === "CEO" || role === "COO" || role === "HR" || role === "CSO")) && (
@@ -1093,12 +1095,12 @@ const SidebarContent = (props) => {
                         <>
                           <li>
                             <Link to="/all/attendance/">
-                              {props.t("Mark Attendance")}
+                              {props.t("Mark All Attendance")}
                             </Link>
                           </li>
                           <li>
                             <Link to="/all/members/">
-                              {props.t("Team Members")}
+                              {props.t("All Team Members")}
                             </Link>
                           </li>
                         </>
@@ -1125,17 +1127,18 @@ const SidebarContent = (props) => {
                           role === "ADMIN" ||
                           role === "BDM" ||
                           role === "Warehouse Admin" ||
+                          role === "HR" ||
                           role === "Marketing"
                         )) && (
                           <>
                             <li>
                               <Link to="/attendance/team-members/">
-                                {props.t("Team Members")}
+                                {props.t("My Team Members")}
                               </Link>
                             </li>
                             <li>
                               <Link to="/attendance/add/">
-                                {props.t("Team Attendance")}
+                                {props.t("My Team Attendance")}
                               </Link>
                             </li>
                           </>

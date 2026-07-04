@@ -62,12 +62,19 @@ const AttendanceAdd = () => {
         attendance_date: "",
         attendance_time: "",
         status: "",
+        approval_status: "pending",
     });
 
     const statusOptions = [
         { value: "present", label: "Present" },
         { value: "absent", label: "Absent" },
         { value: "half_day", label: "Half Day" },
+    ];
+
+    const approvalStatusOptions = [
+        { value: "pending", label: "Pending" },
+        { value: "approved", label: "Approved" },
+        { value: "rejected", label: "Rejected" },
     ];
 
     const selectStyles = {
@@ -226,6 +233,7 @@ const AttendanceAdd = () => {
             staff: "",
             status: "",
             attendance_time: "",
+            approval_status: "pending",
         },
 
         validationSchema: Yup.object({
@@ -243,6 +251,7 @@ const AttendanceAdd = () => {
                     attendance_date: todayDate,
                     attendance_time: values.attendance_time,
                     status: values.status,
+                    approval_status: "pending",
                 };
 
                 await axios.post(`${baseUrl}staff/attendance/`, payload, {
@@ -285,6 +294,7 @@ const AttendanceAdd = () => {
                 attendance_date: data.attendance_date,
                 attendance_time: data.attendance_time || "",
                 status: data.status,
+                approval_status: data.approval_status,
             });
             setEditModal(true);
         } catch {
@@ -301,6 +311,7 @@ const AttendanceAdd = () => {
             attendance_date: Yup.string().required("Select Date"),
             attendance_time: Yup.string().required("Select Time"),
             status: Yup.string().required("Select Status"),
+            approval_status: Yup.string().required("Select Approval Status"),
         }),
 
         onSubmit: async values => {
@@ -312,6 +323,7 @@ const AttendanceAdd = () => {
                         attendance_date: values.attendance_date,
                         attendance_time: values.attendance_time,
                         status: values.status,
+                        approval_status: values.approval_status,
                     },
                     {
                         headers: {
@@ -391,6 +403,52 @@ const AttendanceAdd = () => {
             >
                 <i className="bx bx-time-five me-1"></i>
                 Half Day
+            </span>
+        );
+    };
+
+    const getApprovalStatusBadge = status => {
+        const value = status || "pending";
+
+        const styles = {
+            pending: {
+                background: "#e8e413",
+                color: "#1919f9",
+                border: "1px solid #fed7aa",
+            },
+            approved: {
+                background: "#09cc19",
+                color: "#fbfbfb",
+                border: "1px solid #bbf7d0",
+            },
+            rejected: {
+                background: "#f70505",
+                color: "#faf6f6",
+                border: "1px solid #fecaca",
+            },
+        };
+
+        const labels = {
+            pending: "Pending",
+            approved: "Approved",
+            rejected: "Rejected",
+        };
+
+        return (
+            <span
+                style={{
+                    ...styles[value],
+                    borderRadius: "999px",
+                    padding: "7px 12px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: "82px",
+                }}
+            >
+                {labels[value] || "Pending"}
             </span>
         );
     };
@@ -714,6 +772,7 @@ const AttendanceAdd = () => {
                                                     "Reporting Time",
                                                     "Date",
                                                     "Status",
+                                                    "Approval Status",
                                                     "Action",
                                                 ].map(head => (
                                                     <th
@@ -775,6 +834,10 @@ const AttendanceAdd = () => {
 
                                                     <td style={{ padding: "18px 22px" }}>
                                                         {getStatusBadge(item.status)}
+                                                    </td>
+
+                                                    <td style={{ padding: "18px 22px" }}>
+                                                        {getApprovalStatusBadge(item?.approval_status)}
                                                     </td>
 
                                                     <td style={{ padding: "18px 22px" }}>
@@ -1026,6 +1089,29 @@ const AttendanceAdd = () => {
                                 {editFormik.touched.status && editFormik.errors.status ? (
                                     <div className="text-danger mt-1">
                                         {editFormik.errors.status}
+                                    </div>
+                                ) : null}
+
+                                <Label className="mt-3">Approval Status</Label>
+                                <Select
+                                    options={approvalStatusOptions}
+                                    styles={selectStyles}
+                                    menuPortalTarget={document.body}
+                                    menuPosition="fixed"
+                                    menuShouldBlockScroll={true}
+                                    value={
+                                        approvalStatusOptions.find(
+                                            x => x.value === editFormik.values.approval_status
+                                        ) || null
+                                    }
+                                    onChange={e =>
+                                        editFormik.setFieldValue("approval_status", e?.value || "")
+                                    }
+                                    placeholder="Select approval status"
+                                />
+                                {editFormik.touched.approval_status && editFormik.errors.approval_status ? (
+                                    <div className="text-danger mt-1">
+                                        {editFormik.errors.approval_status}
                                     </div>
                                 ) : null}
                             </ModalBody>

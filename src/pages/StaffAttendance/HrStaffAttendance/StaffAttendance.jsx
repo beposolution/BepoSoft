@@ -11,7 +11,6 @@ import {
     Spinner,
     Button,
     Input,
-    Collapse,
 } from "reactstrap";
 import Select from "react-select";
 import Breadcrumbs from "../../../components/Common/Breadcrumb";
@@ -25,7 +24,6 @@ const StaffAttendance = () => {
     const baseUrl = import.meta.env.VITE_APP_KEY;
 
     const [loading, setLoading] = useState(false);
-
     const [attendanceData, setAttendanceData] = useState([]);
 
     const [pagination, setPagination] = useState({
@@ -35,7 +33,6 @@ const StaffAttendance = () => {
         page: 1,
     });
 
-    const [expandedRows, setExpandedRows] = useState({});
     const today = new Date().toISOString().split("T")[0];
 
     const [filters, setFilters] = useState({
@@ -48,28 +45,24 @@ const StaffAttendance = () => {
     const [teams, setTeams] = useState([]);
     const [members, setMembers] = useState([]);
 
-    const fetchAttendance = async (page = 1) => {
+    const fetchAttendance = async (page = 1, customFilters = filters) => {
         try {
             setLoading(true);
 
-            const res = await axios.get(
-                `${baseUrl}staff/attendance/`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                    params: {
-                        page,
-                        start_date: filters.start_date || undefined,
-                        end_date: filters.end_date || undefined,
-                        team: filters.team || undefined,
-                        member: filters.member || undefined,
-                    },
-                }
-            );
+            const res = await axios.get(`${baseUrl}staff/attendance/`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                params: {
+                    page,
+                    start_date: customFilters.start_date || undefined,
+                    end_date: customFilters.end_date || undefined,
+                    team: customFilters.team || undefined,
+                    member: customFilters.member || undefined,
+                },
+            });
 
             const result = res?.data;
-            // console.log("results", res.data)
 
             setAttendanceData(result?.results?.data || []);
 
@@ -80,7 +73,6 @@ const StaffAttendance = () => {
                 page,
             });
 
-            // Build team dropdown
             const teamsData =
                 result?.results?.data?.map((team) => ({
                     value: team.team_id,
@@ -89,7 +81,6 @@ const StaffAttendance = () => {
 
             setTeams(teamsData);
 
-            // Build member dropdown
             const allMembers = [];
 
             result?.results?.data?.forEach((team) => {
@@ -104,16 +95,13 @@ const StaffAttendance = () => {
             });
 
             const uniqueMembers = Array.from(
-                new Map(
-                    allMembers.map((item) => [item.value, item])
-                ).values()
+                new Map(allMembers.map((item) => [item.value, item])).values()
             );
 
             setMembers(uniqueMembers);
         } catch (error) {
             toast.error(
-                error?.response?.data?.message ||
-                "Failed to load attendance"
+                error?.response?.data?.message || "Failed to load attendance"
             );
         } finally {
             setLoading(false);
@@ -129,23 +117,15 @@ const StaffAttendance = () => {
     };
 
     const resetFilters = () => {
-        setFilters({
+        const resetData = {
             start_date: today,
             end_date: today,
             team: "",
             member: "",
-        });
+        };
 
-        setTimeout(() => {
-            fetchAttendance(1);
-        }, 100);
-    };
-
-    const toggleExpand = (key) => {
-        setExpandedRows((prev) => ({
-            ...prev,
-            [key]: !prev[key],
-        }));
+        setFilters(resetData);
+        fetchAttendance(1, resetData);
     };
 
     return (
@@ -157,8 +137,6 @@ const StaffAttendance = () => {
                         breadcrumbItem="Staff Attendance"
                     />
 
-                    {/* FILTERS */}
-
                     <Card className="mb-4">
                         <CardBody>
                             <CardTitle>Filters</CardTitle>
@@ -166,7 +144,6 @@ const StaffAttendance = () => {
                             <Row>
                                 <Col md={3}>
                                     <label>Start Date</label>
-
                                     <Input
                                         type="date"
                                         value={filters.start_date}
@@ -181,7 +158,6 @@ const StaffAttendance = () => {
 
                                 <Col md={3}>
                                     <label>End Date</label>
-
                                     <Input
                                         type="date"
                                         value={filters.end_date}
@@ -196,7 +172,6 @@ const StaffAttendance = () => {
 
                                 <Col md={3}>
                                     <label>Team</label>
-
                                     <Select
                                         options={teams}
                                         value={
@@ -208,17 +183,16 @@ const StaffAttendance = () => {
                                         onChange={(selected) =>
                                             setFilters({
                                                 ...filters,
-                                                team:
-                                                    selected?.value || "",
+                                                team: selected?.value || "",
                                             })
                                         }
                                         placeholder="Select Team"
+                                        isClearable
                                     />
                                 </Col>
 
                                 <Col md={3}>
                                     <label>Member</label>
-
                                     <Select
                                         options={members}
                                         value={
@@ -230,20 +204,17 @@ const StaffAttendance = () => {
                                         onChange={(selected) =>
                                             setFilters({
                                                 ...filters,
-                                                member:
-                                                    selected?.value || "",
+                                                member: selected?.value || "",
                                             })
                                         }
                                         placeholder="Select Member"
+                                        isClearable
                                     />
                                 </Col>
                             </Row>
 
                             <div className="mt-3">
-                                <Button
-                                    color="primary"
-                                    onClick={handleSearch}
-                                >
+                                <Button color="primary" onClick={handleSearch}>
                                     Search
                                 </Button>
 
@@ -258,8 +229,6 @@ const StaffAttendance = () => {
                         </CardBody>
                     </Card>
 
-                    {/* ATTENDANCE LIST */}
-
                     {loading ? (
                         <div className="text-center py-5">
                             <Spinner />
@@ -268,164 +237,227 @@ const StaffAttendance = () => {
                         <>
                             <Row>
                                 {attendanceData?.length > 0 ? (
-                                    attendanceData.map((team) => {
-                                        const todayAttendance =
-                                            team?.date_wise_attendance?.[0];
-
-                                        return (
-                                            <Col
-                                                xs={12}
-                                                key={team.team_id}
-                                                className="mb-3"
+                                    attendanceData.map((team) => (
+                                        <Col
+                                            xs={12}
+                                            key={team.team_id}
+                                            className="mb-3"
+                                        >
+                                            <Card
+                                                className="shadow-sm border-0"
+                                                style={{
+                                                    borderRadius: "12px",
+                                                }}
                                             >
-                                                <Card
-                                                    className="shadow-sm border-0"
-                                                    style={{
-                                                        borderRadius: "12px",
-                                                    }}
-                                                >
-                                                    <CardBody>
-                                                        <div className="d-flex justify-content-between align-items-center flex-wrap mb-3">
-                                                            <div>
-                                                                <h5 className="mb-1 fw-bold">
-                                                                    {
-                                                                        team.team_name
-                                                                    }
-                                                                </h5>
+                                                <CardBody>
+                                                    <div className="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                                                        <div>
+                                                            <h5 className="mb-1 fw-bold">
+                                                                {team.team_name}
+                                                            </h5>
 
-                                                                <small className="text-muted">
-                                                                    Team Leader :
-                                                                    {" "}
-                                                                    {
-                                                                        team.team_leader_name
-                                                                    }
-                                                                </small>
-                                                            </div>
-
-                                                            <div className="d-flex gap-2 flex-wrap">
-                                                                <span className="badge bg-success">
-                                                                    Present :
-                                                                    {" "}
-                                                                    {todayAttendance?.present_count ||
-                                                                        0}
-                                                                </span>
-
-                                                                <span className="badge bg-warning">
-                                                                    Half Day :
-                                                                    {" "}
-                                                                    {todayAttendance?.half_day_count ||
-                                                                        0}
-                                                                </span>
-
-                                                                <span className="badge bg-danger">
-                                                                    Absent :
-                                                                    {" "}
-                                                                    {todayAttendance?.absent_count ||
-                                                                        0}
-                                                                </span>
-
-                                                                <span className="badge bg-primary">
-                                                                    Members :
-                                                                    {" "}
-                                                                    {team.members_count ||
-                                                                        0}
-                                                                </span>
-                                                            </div>
+                                                            <small className="text-muted">
+                                                                Team Leader :{" "}
+                                                                {
+                                                                    team.team_leader_name
+                                                                }
+                                                            </small>
                                                         </div>
 
-                                                        <Table
-                                                            bordered
-                                                            responsive
-                                                            size="sm"
-                                                            className="mb-0"
-                                                        >
-                                                            <thead>
-                                                                <tr>
-                                                                    <th
-                                                                        width="5%"
+                                                        <div>
+                                                            <span className="badge bg-primary">
+                                                                Members :{" "}
+                                                                {team.members_count ||
+                                                                    0}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {team?.date_wise_attendance
+                                                        ?.length > 0 ? (
+                                                        team.date_wise_attendance.map(
+                                                            (dateItem) => (
+                                                                <div
+                                                                    key={
+                                                                        dateItem.attendance_date
+                                                                    }
+                                                                    className="mb-4"
+                                                                >
+                                                                    <div className="d-flex justify-content-between align-items-center flex-wrap mb-2">
+                                                                        <h6 className="fw-bold mb-0">
+                                                                            Date :{" "}
+                                                                            {
+                                                                                dateItem.attendance_date
+                                                                            }
+                                                                        </h6>
+
+                                                                        <div className="d-flex gap-2 flex-wrap">
+                                                                            <span className="badge bg-success">
+                                                                                Present
+                                                                                :{" "}
+                                                                                {dateItem.present_count ||
+                                                                                    0}
+                                                                            </span>
+
+                                                                            <span className="badge bg-warning">
+                                                                                Half
+                                                                                Day
+                                                                                :{" "}
+                                                                                {dateItem.half_day_count ||
+                                                                                    0}
+                                                                            </span>
+
+                                                                            <span className="badge bg-danger">
+                                                                                Absent
+                                                                                :{" "}
+                                                                                {dateItem.absent_count ||
+                                                                                    0}
+                                                                            </span>
+
+                                                                            <span className="badge bg-secondary">
+                                                                                Pending
+                                                                                :{" "}
+                                                                                {dateItem.pending_count ||
+                                                                                    0}
+                                                                            </span>
+
+                                                                            <span className="badge bg-dark">
+                                                                                Rejected
+                                                                                :{" "}
+                                                                                {dateItem.rejected_count ||
+                                                                                    0}
+                                                                            </span>
+
+                                                                            <span className="badge bg-primary">
+                                                                                Total
+                                                                                :{" "}
+                                                                                {dateItem.total_count ||
+                                                                                    0}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <Table
+                                                                        bordered
+                                                                        responsive
+                                                                        size="sm"
+                                                                        className="mb-0"
                                                                     >
-                                                                        #
-                                                                    </th>
-                                                                    <th>
-                                                                        Staff Name
-                                                                    </th>
-                                                                    <th>
-                                                                        Reporting Time
-                                                                    </th>
-                                                                    <th
-                                                                        width="15%"
-                                                                    >
-                                                                        Status
-                                                                    </th>
-                                                                </tr>
-                                                            </thead>
-
-                                                            <tbody>
-                                                                {todayAttendance?.attendance
-                                                                    ?.length >
-                                                                    0 ? (
-                                                                    todayAttendance.attendance.map(
-                                                                        (
-                                                                            staff,
-                                                                            index
-                                                                        ) => (
-                                                                            <tr
-                                                                                key={
-                                                                                    staff.id
-                                                                                }
-                                                                            >
-                                                                                <td>
-                                                                                    {index +
-                                                                                        1}
-                                                                                </td>
-
-                                                                                <td>
-                                                                                    {
-                                                                                        staff.staff_name
-                                                                                    }
-                                                                                </td>
-                                                                                <td>
-                                                                                    {
-                                                                                        staff.attendance_time || "--:--:--"
-                                                                                    }
-                                                                                </td>
-
-                                                                                <td>
-                                                                                    <span
-                                                                                        className={`badge ${staff.status ===
-                                                                                            "present"
-                                                                                            ? "bg-success"
-                                                                                            : staff.status ===
-                                                                                                "absent"
-                                                                                                ? "bg-danger"
-                                                                                                : "bg-warning"
-                                                                                            }`}
-                                                                                    >
-                                                                                        {
-                                                                                            staff.status
-                                                                                        }
-                                                                                    </span>
-                                                                                </td>
+                                                                        <thead>
+                                                                            <tr>
+                                                                                <th width="5%">
+                                                                                    #
+                                                                                </th>
+                                                                                <th>
+                                                                                    Staff
+                                                                                    Name
+                                                                                </th>
+                                                                                <th>
+                                                                                    Reporting
+                                                                                    Time
+                                                                                </th>
+                                                                                <th width="15%">
+                                                                                    Status
+                                                                                </th>
+                                                                                <th width="15%">
+                                                                                    Approval
+                                                                                </th>
                                                                             </tr>
-                                                                        )
-                                                                    )
-                                                                ) : (
-                                                                    <tr>
-                                                                        <td
-                                                                            colSpan="3"
-                                                                            className="text-center"
-                                                                        >
-                                                                            No Attendance
-                                                                        </td>
-                                                                    </tr>
-                                                                )}
-                                                            </tbody>
-                                                        </Table>
-                                                    </CardBody>
-                                                </Card>
-                                            </Col>
-                                        );
-                                    })
+                                                                        </thead>
+
+                                                                        <tbody>
+                                                                            {dateItem
+                                                                                ?.attendance
+                                                                                ?.length >
+                                                                            0 ? (
+                                                                                dateItem.attendance.map(
+                                                                                    (
+                                                                                        staff,
+                                                                                        index
+                                                                                    ) => (
+                                                                                        <tr
+                                                                                            key={
+                                                                                                staff.id
+                                                                                            }
+                                                                                        >
+                                                                                            <td>
+                                                                                                {index +
+                                                                                                    1}
+                                                                                            </td>
+
+                                                                                            <td>
+                                                                                                {
+                                                                                                    staff.staff_name
+                                                                                                }
+                                                                                            </td>
+
+                                                                                            <td>
+                                                                                                {staff.attendance_time ||
+                                                                                                    "--:--:--"}
+                                                                                            </td>
+
+                                                                                            <td>
+                                                                                                <span
+                                                                                                    className={`badge ${
+                                                                                                        staff.status ===
+                                                                                                        "present"
+                                                                                                            ? "bg-success"
+                                                                                                            : staff.status ===
+                                                                                                              "absent"
+                                                                                                            ? "bg-danger"
+                                                                                                            : "bg-warning"
+                                                                                                    }`}
+                                                                                                >
+                                                                                                    {
+                                                                                                        staff.status
+                                                                                                    }
+                                                                                                </span>
+                                                                                            </td>
+
+                                                                                            <td>
+                                                                                                <span
+                                                                                                    className={`badge ${
+                                                                                                        staff.approval_status ===
+                                                                                                        "approved"
+                                                                                                            ? "bg-success"
+                                                                                                            : staff.approval_status ===
+                                                                                                              "rejected"
+                                                                                                            ? "bg-danger"
+                                                                                                            : "bg-warning"
+                                                                                                    }`}
+                                                                                                >
+                                                                                                    {staff.approval_status ||
+                                                                                                        "pending"}
+                                                                                                </span>
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                    )
+                                                                                )
+                                                                            ) : (
+                                                                                <tr>
+                                                                                    <td
+                                                                                        colSpan="5"
+                                                                                        className="text-center"
+                                                                                    >
+                                                                                        No
+                                                                                        Attendance
+                                                                                    </td>
+                                                                                </tr>
+                                                                            )}
+                                                                        </tbody>
+                                                                    </Table>
+                                                                </div>
+                                                            )
+                                                        )
+                                                    ) : (
+                                                        <div className="text-center py-3">
+                                                            No Attendance
+                                                        </div>
+                                                    )}
+                                                </CardBody>
+                                            </Card>
+                                        </Col>
+                                    ))
                                 ) : (
                                     <Col md={12}>
                                         <Card>
@@ -442,9 +474,7 @@ const StaffAttendance = () => {
                                     <div className="d-flex justify-content-between align-items-center">
                                         <Button
                                             color="secondary"
-                                            disabled={
-                                                !pagination.previous
-                                            }
+                                            disabled={!pagination.previous}
                                             onClick={() =>
                                                 fetchAttendance(
                                                     pagination.page - 1
@@ -454,9 +484,7 @@ const StaffAttendance = () => {
                                             Previous
                                         </Button>
 
-                                        <span>
-                                            Page {pagination.page}
-                                        </span>
+                                        <span>Page {pagination.page}</span>
 
                                         <Button
                                             color="secondary"

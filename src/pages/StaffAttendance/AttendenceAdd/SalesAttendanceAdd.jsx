@@ -403,6 +403,63 @@ const SalesAttendanceAdd = () => {
         );
     };
 
+    const getApprovalStatusBadge = approval_status => {
+        if (approval_status === "pending") {
+            return (
+                <span
+                    className="badge"
+                    style={{
+                        background: "#cce010",
+                        color: "#0e0f0e",
+                        borderRadius: "999px",
+                        padding: "8px 12px",
+                        fontSize: "12px",
+                    }}
+                >
+                    <i className="bx bx-check me-1"></i>
+                    Pending
+                </span>
+            );
+        }
+
+        if (approval_status === "approved") {
+            return (
+                <span
+                    className="badge"
+                    style={{
+                        background: "#33e60b",
+                        color: "#060606",
+                        borderRadius: "999px",
+                        padding: "8px 12px",
+                        fontSize: "12px",
+                    }}
+                >
+                    <i className="bx bx-check me-1"></i>
+                    Approved
+                </span>
+            );
+        }
+
+        if (approval_status === "rejected") {
+            return (
+                <span
+                    className="badge"
+                    style={{
+                        background: "#bd0505",
+                        color: "#060606",
+                        borderRadius: "999px",
+                        padding: "8px 12px",
+                        fontSize: "12px",
+                    }}
+                >
+                    <i className="bx bx-x me-1"></i>
+                    Rejected
+                </span>
+            );
+        }
+
+    };
+
     if (loading) {
         return (
             <div
@@ -732,6 +789,7 @@ const SalesAttendanceAdd = () => {
                                                                 <th>Reporting Time</th>
                                                                 <th>Date</th>
                                                                 <th>Status</th>
+                                                                <th>Approval Status</th>
                                                                 <th className="text-end">Action</th>
                                                             </tr>
                                                         </thead>
@@ -757,6 +815,7 @@ const SalesAttendanceAdd = () => {
                                                                         <td>{item.attendance_date || "-"}</td>
 
                                                                         <td>{getStatusBadge(item.status)}</td>
+                                                                        <td>{getApprovalStatusBadge(item.approval_status)}</td>
 
                                                                         <td className="text-end">
                                                                             <Button

@@ -456,6 +456,7 @@ import AllMembers from "../pages/StaffAttendance/AddMember/AllMembers";
 import SalesAttendanceAdd from "../pages/StaffAttendance/AttendenceAdd/SalesAttendanceAdd";
 import SalesTeamMembers from "../pages/StaffAttendance/AddMember/SalesTeamMembers";
 import PreBookedOrders from "../pages/Order/PreBookedOrders";
+import StaffAddAttendance from "../pages/StaffAttendance/AttendenceAdd/StaffAddAttendance";
 
 
 
@@ -704,6 +705,7 @@ const authProtectedRoutes = [
   { path: "/attendance/add/", component: <AttendanceAdd /> },
   { path: "/staff-attendance/", component: <StaffAttendance /> },
   { path: "/all/attendance/", component: <AllAttendanceAdd /> },
+  { path: "/staff/attendance/add/", component: <StaffAddAttendance /> },
   { path: "/all/members/", component: <AllMembers /> },
   { path: "/sales/attendance/", component: <SalesAttendanceAdd /> },
   { path: "/sales/team/", component: <SalesTeamMembers /> },

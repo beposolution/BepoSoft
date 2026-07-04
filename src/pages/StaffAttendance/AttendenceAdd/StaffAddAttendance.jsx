@@ -23,7 +23,7 @@ import * as Yup from "yup";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const SalesAttendanceAdd = () => {
+const StaffAddAttendance = () => {
     document.title = "Attendance | Beposoft";
 
     const token = localStorage.getItem("token");
@@ -91,27 +91,8 @@ const SalesAttendanceAdd = () => {
 
     const fetchTeams = async () => {
         try {
-            const res = await axios.get(`${baseUrl}staff/attendance/teams/`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            setTeams(res?.data?.data || []);
-        } catch {
-            toast.error("Failed to load teams");
-        }
-    };
-
-    const fetchStaffs = async teamId => {
-        if (!teamId) {
-            setStaffs([]);
-            return;
-        }
-
-        try {
             const res = await axios.get(
-                `${baseUrl}staff/attendance/team/members/${teamId}/`,
+                `${baseUrl}staff/attendance/my/team/details/`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -119,18 +100,37 @@ const SalesAttendanceAdd = () => {
                 }
             );
 
-            const members = res?.data?.data?.members || [];
-
-            setStaffs(
-                members.map(item => ({
-                    id: item.member,
-                    name: item.member_name,
-                    team_id: item.team,
-                    team_name: item.team_name,
-                }))
-            );
+            setTeams(res?.data?.data || []);
         } catch {
-            toast.error("Failed to load team members");
+            toast.error("Failed to load teams");
+        }
+    };
+
+    const fetchStaffs = async () => {
+        try {
+            const res = await axios.get(`${baseUrl}profile/`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const user = res?.data?.data;
+
+            if (!user?.id) {
+                setStaffs([]);
+                return;
+            }
+
+            setStaffs([
+                {
+                    id: user.id,
+                    name: user.name,
+                },
+            ]);
+
+            formik.setFieldValue("staff", String(user.id));
+        } catch {
+            toast.error("Failed to load staff profile");
         }
     };
 
@@ -159,7 +159,7 @@ const SalesAttendanceAdd = () => {
 
     const fetchAttendance = async () => {
         try {
-            const res = await axios.get(`${baseUrl}staff/attendance/sales/data/`, {
+            const res = await axios.get(`${baseUrl}staff/attendance/my/details/`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -169,13 +169,11 @@ const SalesAttendanceAdd = () => {
                 },
             });
 
-            const teamsData = res?.data?.data || [];
-
-            setAttendanceData(teamsData);
+            setAttendanceData(res?.data?.data || []);
 
             setTeamSummary({
-                team_name: "All Teams",
-                team_leader_name: "All Team Leaders",
+                team_name: "My Attendance",
+                team_leader_name: res?.data?.user?.name || "-",
             });
         } catch {
             toast.error("Failed to load attendance");
@@ -193,16 +191,10 @@ const SalesAttendanceAdd = () => {
     }, []);
 
     const teamOptions = useMemo(() => {
-        return teams
-            .filter(item =>
-                (item.team_name ?? item.name ?? "")
-                    .toLowerCase()
-                    .includes("sales department")
-            )
-            .map(item => ({
-                value: item.id ?? item.team_id,
-                label: item.team_name ?? item.name ?? "-",
-            }));
+        return teams.map(item => ({
+            value: item.id ?? item.team_id,
+            label: item.team_name ?? item.name ?? "-",
+        }));
     }, [teams]);
 
     const staffOptions = useMemo(() => {
@@ -212,19 +204,15 @@ const SalesAttendanceAdd = () => {
         }));
     }, [staffs]);
 
-    const allAttendance = attendanceData.flatMap(
-        team => team.attendance || []
-    );
-
-    const presentCount = allAttendance.filter(
+    const presentCount = attendanceData.filter(
         item => item.status === "present"
     ).length;
 
-    const halfDayCount = allAttendance.filter(
+    const halfDayCount = attendanceData.filter(
         item => item.status === "half_day"
     ).length;
 
-    const absentCount = allAttendance.filter(
+    const absentCount = attendanceData.filter(
         item => item.status === "absent"
     ).length;
 
@@ -298,6 +286,20 @@ const SalesAttendanceAdd = () => {
         } catch {
             toast.error("Failed to load attendance");
         }
+    };
+
+    const openAddModal = async () => {
+        formik.resetForm();
+
+        const firstTeam = teams?.[0];
+
+        if (firstTeam) {
+            setSelectedTeam(firstTeam.id ?? firstTeam.team_id);
+        }
+
+        await fetchStaffs();
+
+        setAddModal(true);
     };
 
     const editFormik = useFormik({
@@ -460,6 +462,10 @@ const SalesAttendanceAdd = () => {
 
     };
 
+    const showActionColumn = attendanceData.some(
+        item => item.approval_status !== "approved"
+    );
+
     if (loading) {
         return (
             <div
@@ -474,12 +480,6 @@ const SalesAttendanceAdd = () => {
             </div>
         );
     }
-
-    const sortedAttendanceData = [...attendanceData].sort((a, b) => {
-        if (a.team_name === "SALES DEPARTMENT (SHAMI)") return -1;
-        if (b.team_name === "SALES DEPARTMENT (SHAMI)") return 1;
-        return 0;
-    });
 
     return (
         <React.Fragment>
@@ -704,7 +704,7 @@ const SalesAttendanceAdd = () => {
                                 <div className="col-lg-4 mt-3 mt-lg-0 text-lg-end">
                                     <Button
                                         color="primary"
-                                        onClick={() => setAddModal(true)}
+                                        onClick={openAddModal}
                                         style={{
                                             borderRadius: "10px",
                                             padding: "10px 18px",
@@ -720,142 +720,62 @@ const SalesAttendanceAdd = () => {
 
                         <CardBody className="p-3">
                             {attendanceData?.length > 0 ? (
-                                <div>
-                                    {sortedAttendanceData.map(team => {
-                                        const teamRows =
-                                            team.attendance?.map(item => ({
-                                                ...item,
-                                                team_id: team.team_id,
-                                                team_name: team.team_name,
-                                                team_leader_name: team.team_leader_name,
-                                            })) || [];
+                                <div className="table-responsive">
+                                    <Table className="table align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Staff Name</th>
+                                                <th>Reporting Time</th>
+                                                <th>Date</th>
+                                                <th>Status</th>
+                                                <th>Approval Status</th>
+                                                {showActionColumn && <th className="text-end">Action</th>}
+                                            </tr>
+                                        </thead>
 
-                                        return (
-                                            <Card
-                                                key={team.team_id}
-                                                className="border-0 mb-4"
-                                                style={{
-                                                    borderRadius: "18px",
-                                                    overflow: "hidden",
-                                                    boxShadow: "0 8px 24px rgba(15,23,42,0.07)",
-                                                }}
-                                            >
-                                                <div
-                                                    style={{
-                                                        background: "#f8fafc",
-                                                        padding: "18px 22px",
-                                                        borderBottom: "1px solid #e5e7eb",
-                                                    }}
-                                                >
-                                                    <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                                        <div>
-                                                            <h5 className="mb-1 fw-bold text-dark">
-                                                                {team.team_name}
-                                                            </h5>
-                                                            <p className="mb-0 text-muted">
-                                                                Team Leader: {team.team_leader_name || "-"}
-                                                            </p>
+                                        <tbody>
+                                            {attendanceData.map((item, index) => (
+                                                <tr key={item.id}>
+                                                    <td>{index + 1}</td>
+                                                    <td>
+                                                        <div className="fw-bold text-dark">
+                                                            {item.staff_name || "-"}
                                                         </div>
-
-                                                        <div className="d-flex gap-2 flex-wrap">
-                                                            <span className="badge bg-success">
-                                                                Present: {
-                                                                    teamRows.filter(x => x.status === "present").length
-                                                                }
-                                                            </span>
-                                                            <span className="badge bg-warning">
-                                                                Half Day: {
-                                                                    teamRows.filter(x => x.status === "half_day").length
-                                                                }
-                                                            </span>
-                                                            <span className="badge bg-danger">
-                                                                Absent: {
-                                                                    teamRows.filter(x => x.status === "absent").length
-                                                                }
-                                                            </span>
-                                                            <span className="badge bg-primary">
-                                                                Total: {teamRows.length}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="table-responsive">
-                                                    <Table className="table align-middle mb-0">
-                                                        <thead style={{ background: "#ffffff" }}>
-                                                            <tr>
-                                                                <th>#</th>
-                                                                <th>Staff Name</th>
-                                                                <th>Reporting Time</th>
-                                                                <th>Date</th>
-                                                                <th>Status</th>
-                                                                <th>Approval Status</th>
-                                                                <th className="text-end">Action</th>
-                                                            </tr>
-                                                        </thead>
-
-                                                        <tbody>
-                                                            {teamRows.length > 0 ? (
-                                                                teamRows.map((item, index) => (
-                                                                    <tr key={item.id}>
-                                                                        <td>{index + 1}</td>
-
-                                                                        <td>
-                                                                            <div className="fw-bold text-dark">
-                                                                                {item.staff_name || "-"}
-                                                                            </div>
-                                                                        </td>
-
-                                                                        <td>
-                                                                            <span className="fw-semibold">
-                                                                                {item.attendance_time || "--:--"}
-                                                                            </span>
-                                                                        </td>
-
-                                                                        <td>{item.attendance_date || "-"}</td>
-
-                                                                        <td>{getStatusBadge(item.status)}</td>
-                                                                        <td>{getApprovalStatusBadge(item.approval_status)}</td>
-
-                                                                        <td className="text-end">
-                                                                            <Button
-                                                                                color="warning"
-                                                                                size="sm"
-                                                                                onClick={() => openEditModal(item)}
-                                                                                style={{
-                                                                                    borderRadius: "10px",
-                                                                                    padding: "7px 14px",
-                                                                                    fontWeight: 600,
-                                                                                }}
-                                                                            >
-                                                                                <i className="bx bx-edit me-1"></i>
-                                                                                Edit
-                                                                            </Button>
-                                                                        </td>
-                                                                    </tr>
-                                                                ))
-                                                            ) : (
-                                                                <tr>
-                                                                    <td colSpan="6" className="text-center text-muted py-4">
-                                                                        No attendance added for this team.
-                                                                    </td>
-                                                                </tr>
+                                                    </td>
+                                                    <td>{item.attendance_time || "--:--"}</td>
+                                                    <td>{item.attendance_date || "-"}</td>
+                                                    <td>{getStatusBadge(item.status)}</td>
+                                                    <td>{getApprovalStatusBadge(item.approval_status)}</td>
+                                                    {showActionColumn && (
+                                                        <td className="text-end">
+                                                            {item.approval_status !== "approved" && (
+                                                                <Button
+                                                                    color="warning"
+                                                                    size="sm"
+                                                                    onClick={() => openEditModal(item)}
+                                                                    style={{
+                                                                        borderRadius: "10px",
+                                                                        padding: "7px 14px",
+                                                                        fontWeight: 600,
+                                                                    }}
+                                                                >
+                                                                    <i className="bx bx-edit me-1"></i>
+                                                                    Edit
+                                                                </Button>
                                                             )}
-                                                        </tbody>
-                                                    </Table>
-                                                </div>
-                                            </Card>
-                                        );
-                                    })}
+                                                        </td>
+                                                    )}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </Table>
                                 </div>
                             ) : (
                                 <div className="text-center" style={{ padding: "70px 20px" }}>
                                     <h5 className="fw-bold text-dark mb-2">
                                         No attendance records found
                                     </h5>
-                                    <p className="text-muted mb-0">
-                                        No attendance data is available for the selected filters.
-                                    </p>
                                 </div>
                             )}
                         </CardBody>
@@ -878,50 +798,39 @@ const SalesAttendanceAdd = () => {
                                 </p>
 
                                 <Label>Team</Label>
-                                <Select
-                                    options={teamOptions}
-                                    styles={selectStyles}
-                                    menuPortalTarget={document.body}
-                                    menuPosition="fixed"
-                                    menuShouldBlockScroll={true}
+                                <Input
+                                    type="text"
                                     value={
-                                        teamOptions.find(
-                                            x => String(x.value) === String(selectedTeam)
-                                        ) || null
+                                        teamOptions.find(x => String(x.value) === String(selectedTeam))?.label ||
+                                        teams?.[0]?.team_name ||
+                                        "-"
                                     }
-                                    onChange={async selected => {
-                                        const teamId = selected?.value || "";
-
-                                        setSelectedTeam(teamId);
-                                        formik.setFieldValue("staff", "");
-
-                                        await fetchStaffs(teamId);
+                                    disabled
+                                    style={{
+                                        borderRadius: "10px",
+                                        minHeight: "44px",
+                                        background: "#f8fafc",
+                                        fontWeight: 600,
                                     }}
-                                    placeholder="Select team"
                                 />
 
-                                <Label>Staff</Label>
-                                <Select
-                                    options={staffOptions}
-                                    styles={selectStyles}
-                                    menuPortalTarget={document.body}
-                                    menuPosition="fixed"
-                                    menuShouldBlockScroll={true}
-                                    onInputChange={(value, meta) => {
-                                        if (meta.action === "input-change") {
-                                            setStaffSearch(value);
-                                        }
-                                    }}
+                                <Label className="mt-3">Staff</Label>
+                                <Input
+                                    type="text"
                                     value={
                                         staffOptions.find(
                                             x => String(x.value) === String(formik.values.staff)
-                                        ) || null
+                                        )?.label ||
+                                        staffs?.[0]?.name ||
+                                        "-"
                                     }
-                                    onChange={e =>
-                                        formik.setFieldValue("staff", e?.value || "")
-                                    }
-                                    placeholder={selectedTeam ? "Select staff" : "Select team first"}
-                                    isDisabled={!selectedTeam}
+                                    disabled
+                                    style={{
+                                        borderRadius: "10px",
+                                        minHeight: "44px",
+                                        background: "#f8fafc",
+                                        fontWeight: 600,
+                                    }}
                                 />
                                 {formik.touched.staff && formik.errors.staff ? (
                                     <div className="text-danger mt-1">
@@ -1124,4 +1033,4 @@ const SalesAttendanceAdd = () => {
     );
 };
 
-export default SalesAttendanceAdd;
+export default StaffAddAttendance;

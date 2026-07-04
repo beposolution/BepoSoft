@@ -1056,87 +1056,98 @@ const SidebarContent = (props) => {
             ) : null}
 
 
+            <li>
+              <Link to="/#" className="has-arrow">
+                <FaUsers size={17} style={{ marginRight: "6px" }} />
+                <span>{props.t("Staff Attendance")}</span>
+              </Link>
 
-            {isManager && (
-              <li>
-                <Link to="/#" className="has-arrow">
-                  <FaUsers size={17} style={{ marginRight: "6px" }} />
-                  <span>{props.t("Staff Attendance")}</span>
-                </Link>
-
-                <ul className="sub-menu" aria-expanded="false">
-                  {(isManager && (role === "CEO" || role === "COO" || role === "HR" || role === "CSO")) && (
+              <ul className="sub-menu" aria-expanded="false">
+                <>
+                  {role !== 'CEO' && (
+                    <li>
+                      <Link to="/staff/attendance/add/">
+                        {props.t("My Attendance")}
+                      </Link>
+                    </li>
+                  )}
+                  {isManager && (
                     <>
-                      {role !== "CSO" && (
-                        <li>
-                          <Link to="/attendance/department/">
-                            {props.t("Attendance Department")}
-                          </Link>
-                        </li>
+                      {(isManager && (role === "CEO" || role === "COO" || role === "HR" || role === "CSO")) && (
+                        <>
+                          {role !== "CSO" && (
+                            <li>
+                              <Link to="/attendance/department/">
+                                {props.t("Attendance Department")}
+                              </Link>
+                            </li>
+                          )}
+
+                          <li>
+                            <Link to="/staff-attendance/">
+                              {props.t("View Staff Attendance")}
+                            </Link>
+                          </li>
+                        </>
                       )}
 
-                      <li>
-                        <Link to="/staff-attendance/">
-                          {props.t("View Staff Attendance")}
-                        </Link>
-                      </li>
+                      {(role === "COO" || role === "CEO" || role === "HR") && (
+                        <>
+                          <li>
+                            <Link to="/all/attendance/">
+                              {props.t("Mark All Attendance")}
+                            </Link>
+                          </li>
+                          <li>
+                            <Link to="/all/members/">
+                              {props.t("All Team Members")}
+                            </Link>
+                          </li>
+                        </>
+                      )}
+
+                      {(isManager && (role === "SD" || role === "CSO")) && (
+                        <>
+                          <li>
+                            <Link to="/sales/team/">
+                              {props.t("Sales Team Members")}
+                            </Link>
+                          </li>
+                          <li>
+                            <Link to="/sales/attendance/">
+                              {props.t("Sales Attendance")}
+                            </Link>
+                          </li>
+                        </>
+                      )}
+
+                      {(isManager &&
+                        (
+                          role === "Accounts / Accounting" ||
+                          role === "ADMIN" ||
+                          role === "BDM" ||
+                          role === "Warehouse Admin" ||
+                          role === "HR" ||
+                          role === "Marketing"
+                        )) && (
+                          <>
+                            <li>
+                              <Link to="/attendance/team-members/">
+                                {props.t("My Team Members")}
+                              </Link>
+                            </li>
+                            <li>
+                              <Link to="/attendance/add/">
+                                {props.t("My Team Attendance")}
+                              </Link>
+                            </li>
+                          </>
+                        )}
                     </>
                   )}
-
-                  {(role === "COO" || role === "CEO" || role === "HR") && (
-                    <>
-                      <li>
-                        <Link to="/all/attendance/">
-                          {props.t("ADD Attendance")}
-                        </Link>
-                      </li>
-                      <li>
-                        <Link to="/all/members/">
-                          {props.t("Team Members")}
-                        </Link>
-                      </li>
-                    </>
-                  )}
-
-                  {(isManager && (role === "SD" || role === "CSO")) && (
-                    <>
-                      <li>
-                        <Link to="/sales/team/">
-                          {props.t("Team Members")}
-                        </Link>
-                      </li>
-                      <li>
-                        <Link to="/sales/attendance/">
-                          {props.t("Add Attendance")}
-                        </Link>
-                      </li>
-                    </>
-                  )}
-
-                  {(isManager &&
-                    (
-                      role === "Accounts / Accounting" ||
-                      role === "ADMIN" ||
-                      role === "BDM" ||
-                      role === "Warehouse Admin" ||
-                      role === "Marketing"
-                    )) && (
-                      <>
-                        <li>
-                          <Link to="/attendance/team-members/">
-                            {props.t("Team Members")}
-                          </Link>
-                        </li>
-                        <li>
-                          <Link to="/attendance/add/">
-                            {props.t("ADD Attendance")}
-                          </Link>
-                        </li>
-                      </>
-                    )}
-                </ul>
-              </li>
-            )}
+                </>
+              </ul>
+            </li>
 
             {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' || role === 'HR' ? (
               <li>

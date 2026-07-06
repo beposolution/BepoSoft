@@ -63,12 +63,19 @@ const AllAttendanceAdd = () => {
         attendance_date: "",
         attendance_time: "",
         status: "",
+        approval_status: "",
     });
 
     const statusOptions = [
         { value: "present", label: "Present" },
         { value: "absent", label: "Absent" },
         { value: "half_day", label: "Half Day" },
+    ];
+
+    const approvalStatusOptions = [
+        { value: "pending", label: "Pending" },
+        { value: "approved", label: "Approved" },
+        { value: "rejected", label: "Rejected" },
     ];
 
     const selectStyles = {
@@ -229,6 +236,7 @@ const AllAttendanceAdd = () => {
             staff: Yup.string().required("Select Staff"),
             status: Yup.string().required("Select Status"),
             attendance_time: Yup.string().required("Select Time"),
+            approval_status: Yup.string().required("Select Approval Status"),
         }),
 
         onSubmit: async (values, { resetForm }) => {
@@ -282,6 +290,7 @@ const AllAttendanceAdd = () => {
                 attendance_date: item.attendance_date,
                 attendance_time: item.attendance_time || "",
                 status: item.status,
+                approval_status: item.approval_status,
             });
 
             setEditModal(true);
@@ -310,6 +319,7 @@ const AllAttendanceAdd = () => {
                         attendance_date: values.attendance_date,
                         attendance_time: values.attendance_time,
                         status: values.status,
+                        approval_status: values.approval_status,
                     },
                     {
                         headers: {
@@ -389,6 +399,52 @@ const AllAttendanceAdd = () => {
             >
                 <i className="bx bx-time-five me-1"></i>
                 Half Day
+            </span>
+        );
+    };
+
+    const getApprovalStatusBadge = status => {
+        const value = status || "pending";
+
+        const styles = {
+            pending: {
+                background: "#e8e413",
+                color: "#1919f9",
+                border: "1px solid #fed7aa",
+            },
+            approved: {
+                background: "#09cc19",
+                color: "#fbfbfb",
+                border: "1px solid #bbf7d0",
+            },
+            rejected: {
+                background: "#f70505",
+                color: "#faf6f6",
+                border: "1px solid #fecaca",
+            },
+        };
+
+        const labels = {
+            pending: "Pending",
+            approved: "Approved",
+            rejected: "Rejected",
+        };
+
+        return (
+            <span
+                style={{
+                    ...styles[value],
+                    borderRadius: "999px",
+                    padding: "7px 12px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: "82px",
+                }}
+            >
+                {labels[value] || "Pending"}
             </span>
         );
     };
@@ -718,6 +774,7 @@ const AllAttendanceAdd = () => {
                                                                 <th>Reporting Time</th>
                                                                 <th>Date</th>
                                                                 <th>Status</th>
+                                                                <th>Approval Status</th>
                                                                 <th className="text-end">Action</th>
                                                             </tr>
                                                         </thead>
@@ -743,6 +800,7 @@ const AllAttendanceAdd = () => {
                                                                         <td>{item.attendance_date || "-"}</td>
 
                                                                         <td>{getStatusBadge(item.status)}</td>
+                                                                        <td>{getApprovalStatusBadge(item.approval_status)}</td>
 
                                                                         <td className="text-end">
                                                                             <Button
@@ -1029,6 +1087,35 @@ const AllAttendanceAdd = () => {
                                 {editFormik.touched.status && editFormik.errors.status ? (
                                     <div className="text-danger mt-1">
                                         {editFormik.errors.status}
+                                    </div>
+                                ) : null}
+
+                                <Label className="mt-3">Approval Status</Label>
+
+                                <Select
+                                    options={approvalStatusOptions}
+                                    styles={selectStyles}
+                                    menuPortalTarget={document.body}
+                                    menuPosition="fixed"
+                                    menuShouldBlockScroll={true}
+                                    value={
+                                        approvalStatusOptions.find(
+                                            x => x.value === editFormik.values.approval_status
+                                        ) || null
+                                    }
+                                    onChange={e =>
+                                        editFormik.setFieldValue(
+                                            "approval_status",
+                                            e?.value || ""
+                                        )
+                                    }
+                                    placeholder="Select Approval Status"
+                                />
+
+                                {editFormik.touched.approval_status &&
+                                    editFormik.errors.approval_status ? (
+                                    <div className="text-danger mt-1">
+                                        {editFormik.errors.approval_status}
                                     </div>
                                 ) : null}
                             </ModalBody>

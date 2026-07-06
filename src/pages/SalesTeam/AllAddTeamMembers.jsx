@@ -24,7 +24,7 @@ import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import Select from "react-select";
 
-const AddTeamMembers = () => {
+const AllAddTeamMembers = () => {
     document.title = "Sales Team Members | Beposoft";
 
     const token = localStorage.getItem("token");
@@ -51,11 +51,10 @@ const AddTeamMembers = () => {
 
     const fetchMyTeams = async () => {
         try {
-            setTableLoading(true);
             setTeamsLoading(true);
             setPageError("");
 
-            const response = await axios.get(`${baseUrl}my/sales/team/`, {
+            const response = await axios.get(`${baseUrl}sales/teams/add/`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json",
@@ -68,26 +67,8 @@ const AddTeamMembers = () => {
                     : [];
 
                 setTeams(teamsData);
-
-                const allMembers = teamsData.flatMap((team) =>
-                    (team.members || []).map((member) => ({
-                        ...member,
-                        team: team.id,
-                        team_name: team.name,
-                        team_leader: team.team_leader,
-                        team_leader_name: team.team_leader_name,
-                        division: team.division,
-                        division_name: team.division_name,
-                        created_by: team.created_by,
-                        created_by_name:
-                            member.created_by_name || team.created_by_name || "",
-                    }))
-                );
-
-                setMembers(allMembers);
             } else {
                 setTeams([]);
-                setMembers([]);
                 throw new Error("Failed to fetch my sales teams");
             }
         } catch (error) {
@@ -96,13 +77,50 @@ const AddTeamMembers = () => {
                 error?.response?.data?.message ||
                 error?.message ||
                 "Failed to fetch my sales teams";
+
             setPageError(message);
             toast.error(message);
             setTeams([]);
+        } finally {
+            setTeamsLoading(false);
+        }
+    };
+
+
+    const fetchTeamMembers = async () => {
+        try {
+            setTableLoading(true);
+            setPageError("");
+
+            const response = await axios.get(`${baseUrl}sales/team/members/add/`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
+
+            if (response.status === 200) {
+                const membersData = Array.isArray(response?.data?.data)
+                    ? response.data.data
+                    : [];
+
+                setMembers(membersData);
+            } else {
+                setMembers([]);
+                throw new Error("Failed to fetch sales team members");
+            }
+        } catch (error) {
+            const message =
+                error?.response?.data?.error ||
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to fetch sales team members";
+
+            setPageError(message);
+            toast.error(message);
             setMembers([]);
         } finally {
             setTableLoading(false);
-            setTeamsLoading(false);
         }
     };
 
@@ -144,7 +162,7 @@ const AddTeamMembers = () => {
 
         const init = async () => {
             setLoading(true);
-            await Promise.all([fetchMyTeams(), fetchStaffs()]);
+            await Promise.all([fetchMyTeams(), fetchTeamMembers(), fetchStaffs()]);
             setLoading(false);
         };
 
@@ -227,7 +245,7 @@ const AddTeamMembers = () => {
                     resetForm();
                     setIsEditMode(false);
                     setSelectedMemberId(null);
-                    await fetchMyTeams();
+                    await Promise.all([fetchMyTeams(), fetchTeamMembers()]);
                 } else {
                     toast.error(
                         isEditMode
@@ -350,7 +368,7 @@ const AddTeamMembers = () => {
                     clearFormAndMode();
                 }
 
-                await fetchMyTeams();
+                await Promise.all([fetchMyTeams(), fetchTeamMembers()]);
             } else {
                 toast.error("Failed to delete sales team member");
             }
@@ -412,7 +430,7 @@ const AddTeamMembers = () => {
         <React.Fragment>
             <div className="page-content">
                 <Container fluid>
-                    <Breadcrumbs title="Sales" breadcrumbItem="My Team Members" />
+                    <Breadcrumbs title="Sales" breadcrumbItem="Sales Team Members" />
 
                     {loading ? (
                         <Row>
@@ -577,7 +595,7 @@ const AddTeamMembers = () => {
                                     <CardBody>
                                         <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
                                             <CardTitle className="mb-0">
-                                                My Team Members
+                                                Sales Team Members
                                             </CardTitle>
 
                                             <div
@@ -601,7 +619,9 @@ const AddTeamMembers = () => {
                                                 <Button
                                                     color="primary"
                                                     outline
-                                                    onClick={fetchMyTeams}
+                                                    onClick={async () => {
+                                                        await Promise.all([fetchMyTeams(), fetchTeamMembers()]);
+                                                    }}
                                                     disabled={tableLoading}
                                                 >
                                                     {tableLoading ? "Refreshing..." : "Refresh"}
@@ -750,4 +770,4 @@ const AddTeamMembers = () => {
     );
 };
 
-export default AddTeamMembers;
+export default AllAddTeamMembers;

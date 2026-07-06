@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import withRouter from "../../components/Common/withRouter";
@@ -35,6 +35,9 @@ import lightlogo from "../../assets/images/logo-light.svg";
 const Login = (props) => {
   document.title = "Beposoft | Authentication";
   const dispatch = useDispatch();
+
+  const [showPassword, setShowPassword] = useState(false);
+
   const validation = useFormik({
     enableReinitialize: true,
 
@@ -438,7 +441,7 @@ const Login = (props) => {
                           >
                             Password
                           </Label>
-                          <Input
+                          {/* <Input
                             name="password"
                             autoComplete="off"
                             value={validation.values.password}
@@ -457,7 +460,49 @@ const Login = (props) => {
                               border: "1px solid #dbeafe",
                               paddingLeft: "15px",
                             }}
-                          />
+                          /> */}
+                          <div style={{ position: "relative" }}>
+                            <Input
+                              name="password"
+                              autoComplete="off"
+                              value={validation.values.password}
+                              type={showPassword ? "text" : "password"}
+                              placeholder="Enter Password"
+                              onChange={validation.handleChange}
+                              onBlur={validation.handleBlur}
+                              invalid={
+                                validation.touched.password &&
+                                validation.errors.password
+                              }
+                              style={{
+                                height: "48px",
+                                borderRadius: "14px",
+                                backgroundColor: "#f8fbff",
+                                border: "1px solid #dbeafe",
+                                paddingLeft: "15px",
+                                paddingRight: "45px",
+                              }}
+                            />
+
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              style={{
+                                position: "absolute",
+                                right: "14px",
+                                top: "50%",
+                                transform: "translateY(-50%)",
+                                border: "none",
+                                background: "transparent",
+                                cursor: "pointer",
+                                color: "#74788d",
+                                fontSize: "18px",
+                                zIndex: 5,
+                              }}
+                            >
+                              <i className={showPassword ? "bx bx-hide" : "bx bx-show"} />
+                            </button>
+                          </div>
                           {validation.touched.password &&
                             validation.errors.password ? (
                             <FormFeedback type="invalid">

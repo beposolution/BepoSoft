@@ -982,6 +982,7 @@ const SidebarContent = (props) => {
             {[
               'ADMIN',
               'SD',
+              'CSO',
               'IT',
               'BDM',
               'BDO',
@@ -1000,9 +1001,15 @@ const SidebarContent = (props) => {
                     </li>
                   )}
 
-                  {(role === 'SD' || role === 'BDM') && (
+                  {(role === 'BDM') && (
                     <li>
                       <Link to="/sales/team/members/add/">{props.t("Add Team Members")}</Link>
+                    </li>
+                  )}
+
+                  {(role === 'SD' || role === 'CSO') && (
+                    <li>
+                      <Link to="/sales/all/team/members/add/">{props.t("Add Team Members")}</Link>
                     </li>
                   )}
 
@@ -1039,18 +1046,20 @@ const SidebarContent = (props) => {
                     </li>
                   )}
 
-                  {(role === 'BDM' || role === 'SD') && (
+                  {(role === 'BDM' || role === 'SD' || role === 'CSO') && (
                     <li>
                       <Link to="/sales/team/division/cd/report/">
                         {props.t("Division Daily Report")}
                       </Link>
                     </li>
                   )}
-                  <li>
-                    <Link to="/sales/team/leader/report/view/">
-                      {props.t("Team Leader Sales Detailed Summary Report")}
-                    </Link>
-                  </li>
+                  {(role !== 'CSO') && (
+                    <li>
+                      <Link to="/sales/team/leader/report/view/">
+                        {props.t("Team Leader Sales Detailed Summary Report")}
+                      </Link>
+                    </li>
+                  )}
                 </ul>
               </li>
             ) : null}

@@ -182,7 +182,7 @@ const FormLayouts = () => {
                 }
 
                 for (let pair of formData.entries()) {
-                    console.log(pair[0], pair[1]);
+                    // console.log(pair[0], pair[1]);
                 }
 
                 const response = await axios.post(
@@ -222,9 +222,29 @@ const FormLayouts = () => {
                 }
             } catch (error) {
 
-                const message =
-                    error.response?.data?.message || "Something went wrong. Please try again.";
-                toast.error(message);
+                const data = error.response?.data;
+
+                let message = data?.message || "Something went wrong. Please try again.";
+
+                if (data?.errors) {
+                    message = Object.entries(data.errors)
+                        .map(([field, value]) => {
+                            const text = Array.isArray(value) ? value.join(", ") : value;
+                            return `${field}: ${text}`;
+                        })
+                        .join("\n");
+                }
+
+                toast.error(
+                    <div style={{ whiteSpace: "pre-line" }}>
+                        {message}
+                    </div>,
+                    {
+                        position: "top-right",
+                        autoClose: 6000,
+                        theme: "colored",
+                    }
+                );
             }
         }
     });

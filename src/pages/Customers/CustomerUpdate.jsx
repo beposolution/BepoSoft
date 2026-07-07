@@ -272,8 +272,22 @@ const FormLayouts = () => {
                 await writeCustomerUpdateLog(id, before, after, payload.name || customerData?.name);
 
                 toast.success("Customer data updated successfully!");
+
             } catch (error) {
-                toast.error("Failed to save customer data.");
+
+                const errors = error?.response?.data;
+
+                if (errors && typeof errors === "object") {
+                    Object.entries(errors).forEach(([field, messages]) => {
+                        if (Array.isArray(messages)) {
+                            messages.forEach(msg => toast.error(msg));
+                        } else {
+                            toast.error(messages);
+                        }
+                    });
+                } else {
+                    toast.error("Failed to save customer data.");
+                }
             }
         },
     });

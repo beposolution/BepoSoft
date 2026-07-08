@@ -1158,6 +1158,23 @@ const SidebarContent = (props) => {
               </ul>
             </li>
 
+            <li>
+              <Link to="/#" className="has-arrow">
+                <FaUsers size={17} style={{ marginRight: "6px" }} />
+                <span>{props.t("Mail Box")}</span>
+              </Link>
+
+              <ul className="sub-menu" aria-expanded="false">
+                <>
+                  <li>
+                    <Link to="/mail/box/">
+                      {props.t("Mail")}
+                    </Link>
+                  </li>
+                </>
+              </ul>
+            </li>
+
             {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' || role === 'HR' ? (
               <li>
                 <Link to="/#" className="has-arrow">

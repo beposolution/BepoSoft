@@ -458,6 +458,7 @@ import SalesTeamMembers from "../pages/StaffAttendance/AddMember/SalesTeamMember
 import PreBookedOrders from "../pages/Order/PreBookedOrders";
 import StaffAddAttendance from "../pages/StaffAttendance/AttendenceAdd/StaffAddAttendance";
 import AllAddTeamMembers from "../pages/SalesTeam/AllAddTeamMembers";
+import MailBox from "../pages/MailBox/MailBox";
 
 
 
@@ -583,6 +584,9 @@ const authProtectedRoutes = [
   { path: "/order/packing/:id/progress/", component: < ParcelDetails /> }, ,
   { path: "/daily/good/movment/", component: < Dailygoodmovment /> },
   { path: "/parcel/report/datewise/details/", component: <ParcelServiceData /> },
+
+  // mail Box
+  { path: "/mail/box/", component: <MailBox /> },
 
 
   ///warehouse....,

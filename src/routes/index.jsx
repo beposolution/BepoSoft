@@ -459,6 +459,7 @@ import PreBookedOrders from "../pages/Order/PreBookedOrders";
 import StaffAddAttendance from "../pages/StaffAttendance/AttendenceAdd/StaffAddAttendance";
 import AllAddTeamMembers from "../pages/SalesTeam/AllAddTeamMembers";
 import MailBox from "../pages/MailBox/MailBox";
+import MyProfile from "../pages/Profile/MyProfile";
 
 
 
@@ -636,6 +637,9 @@ const authProtectedRoutes = [
   { path: "/perfoma/order/:invoice/", component: <PerfomaOrder /> },
 
 
+
+  // profile
+  { path: "/my/profile/", component: <MyProfile /> },
 
 
   { path: "/all/staff/customers/", component: <StaffBasedCustomers /> },

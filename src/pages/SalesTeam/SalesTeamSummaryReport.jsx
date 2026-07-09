@@ -226,7 +226,7 @@ const SalesTeamSummaryReport = () => {
                 },
             });
 
-            console.log("Report API Response:", response);
+            // console.log("Report API Response:", response);
             const apiData = response?.data?.results?.data || [];
             const apiTotals = response?.data?.results?.totals || null;
 

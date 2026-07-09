@@ -55,7 +55,7 @@ const WaitingProducts = () => {
             });
 
             const productsData = response.data?.results?.data || [];
-            console.log("data", productsData)
+            // console.log("data", productsData)
 
             setWaitingProducts(productsData);
             setCount(response.data?.count || 0);

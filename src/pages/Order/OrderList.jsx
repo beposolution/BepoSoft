@@ -271,6 +271,7 @@ const BasicTable = () => {
                                     <option value="">All Status</option>
                                     {[
                                         "Invoice Approved",
+                                        "Pre Booked",
                                         "Waiting For Confirmation",
                                         "To Print",
                                         "Packing under progress",

@@ -78,7 +78,7 @@ const AddParcelService = () => {
         after_data: afterData,
       };
 
-      console.log("POST datalog/create/ payload:", payload);
+      // console.log("POST datalog/create/ payload:", payload);
       await axios.post(`${apiBase}datalog/create/`, payload, axiosCfg);
     } catch (err) {
       console.error("Failed to write datalog:", err);

@@ -59,7 +59,7 @@ const EmiDetails = () => {
             setEditData(response.data.data);
             setEditId(id);
             setEditModal(true);
-            console.log("Fetched Loan Data:", response.data);
+            // console.log("Fetched Loan Data:", response.data);
         } catch (error) {
             toast.error("Failed to fetch loan details");
         }

@@ -74,7 +74,7 @@ const Currency = () => {
 
             if (response.status === 200) {
                 setCountry(response.data.data);
-                console.log("Countries fetched", response.data.data);
+                // console.log("Countries fetched", response.data.data);
             }
         } catch (error) {
             console.log("State fetch error", error);

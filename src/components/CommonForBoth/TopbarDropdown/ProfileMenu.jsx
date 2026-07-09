@@ -101,6 +101,11 @@ const ProfileMenu = (props) => {
             className="rounded-circle header-profile-user"
             src={userImage || user1}
             alt="Header Avatar"
+            style={{ cursor: "pointer" }}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevents opening the dropdown
+              navigate("/my/profile/");
+            }}
             onError={(e) => {
               e.currentTarget.src = user1;
             }}
@@ -113,11 +118,6 @@ const ProfileMenu = (props) => {
           <i className="mdi mdi-chevron-down d-none d-xl-inline-block" />
         </DropdownToggle>
         <DropdownMenu className="dropdown-menu-end">
-          <Link to="/my/profile/" className="dropdown-item">
-            <i className="bx bx-user font-size-16 align-middle me-1 text-primary" />
-            <span>My Profile</span>
-          </Link>
-
           <Link onClick={logout} className="dropdown-item">
             <i className="bx bx-power-off font-size-16 align-middle me-1 text-danger" />
             <span>{props.t("Logout")}</span>

@@ -9,11 +9,11 @@ import { useCallback } from "react";
 import { FaUsers, FaUserTie, FaWarehouse, FaBlogger } from 'react-icons/fa';
 import { AiFillProduct } from "react-icons/ai";
 import { BiCheckDouble, BiSolidBank } from "react-icons/bi";
-import { BsArrowRightSquareFill } from "react-icons/bs";
+import { BsArrowRightSquareFill, BsCurrencyExchange } from "react-icons/bs";
 import { LuCircleCheckBig } from "react-icons/lu";
 import { GiBassetHoundHead, GiExpense, GiPostOffice } from "react-icons/gi";
 import { TbReportSearch } from "react-icons/tb";
-import { MdOutlineVideogameAsset, MdLocalFireDepartment, MdAssignmentReturn, MdDetails } from "react-icons/md";
+import { MdOutlineVideogameAsset, MdLocalFireDepartment, MdAssignmentReturn, MdDetails, MdOutlineMarkEmailUnread } from "react-icons/md";
 import { IoMdInformationCircleOutline } from "react-icons/io";
 import { FaReceipt, FaEarthAmericas } from "react-icons/fa6";
 import { GrOrganization } from "react-icons/gr";
@@ -1160,7 +1160,7 @@ const SidebarContent = (props) => {
 
             <li>
               <Link to="/#" className="has-arrow">
-                <FaUsers size={17} style={{ marginRight: "6px" }} />
+                <MdOutlineMarkEmailUnread size={17} style={{ marginRight: "6px" }} />
                 <span>{props.t("Mail Box")}</span>
               </Link>
 
@@ -1293,7 +1293,7 @@ const SidebarContent = (props) => {
                 </li>
                 <li>
                   <Link to="/#" className="has-arrow">
-                    <FaEarthAmericas size={20} style={{ marginRight: '8px' }} />
+                    <BsCurrencyExchange size={20} style={{ marginRight: '8px' }} />
                     <span>{props.t("Currency")}</span>
                   </Link>
                   <ul className="sub-menu" aria-expanded="false">

@@ -7,7 +7,7 @@ import withRouter from "../Common/withRouter";
 import { withTranslation } from "react-i18next";
 import { useCallback } from "react";
 import { FaUsers, FaUserTie, FaWarehouse, FaBlogger } from 'react-icons/fa';
-import { AiFillProduct } from "react-icons/ai";
+import { AiFillProduct, AiFillEnvironment } from "react-icons/ai";
 import { BiCheckDouble, BiSolidBank } from "react-icons/bi";
 import { BsArrowRightSquareFill, BsCurrencyExchange } from "react-icons/bs";
 import { LuCircleCheckBig } from "react-icons/lu";
@@ -1270,7 +1270,7 @@ const SidebarContent = (props) => {
 
                 <li>
                   <Link to="/#" className="has-arrow">
-                    <FaUsers size={20} style={{ marginRight: '8px' }} />
+                    <AiFillEnvironment size={20} style={{ marginRight: '8px' }} />
                     <span>{props.t("States")}</span>
                   </Link>
                   <ul className="sub-menu" aria-expanded="false">

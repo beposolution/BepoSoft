@@ -34,6 +34,15 @@ const MailBox = () => {
     const [loadingAllUsers, setLoadingAllUsers] = useState(false);
     const [allRecipientsSelected, setAllRecipientsSelected] = useState(false);
 
+    // Reply/thread state
+    const [mailThread, setMailThread] = useState([]);
+    const [replyRecipients, setReplyRecipients] = useState([]);
+    const [replyRecipientUsers, setReplyRecipientUsers] = useState([]);
+    const [replyUserSearch, setReplyUserSearch] = useState("");
+    const [replyMessage, setReplyMessage] = useState("");
+    const [replyDocuments, setReplyDocuments] = useState([]);
+    const [replySending, setReplySending] = useState(false);
+
     document.title = "Internal Mail | Bepositive";
 
     const headers = {
@@ -275,6 +284,8 @@ const MailBox = () => {
     useEffect(() => {
         fetchMails();
         setSelectedMail(null);
+        setMailThread([]);
+        resetReplyForm();
     }, [mailType]);
 
     const formik = useFormik({
@@ -360,6 +371,50 @@ const MailBox = () => {
         formik.setFieldValue("documents", files);
     };
 
+    const resetReplyForm = () => {
+        setReplyRecipients([]);
+        setReplyRecipientUsers([]);
+        setReplyUserSearch("");
+        setReplyMessage("");
+        setReplyDocuments([]);
+    };
+
+    const prepareDefaultReplyRecipients = (mailData) => {
+        if (!mailData) return;
+
+        const currentUserId = Number(localStorage.getItem("user_id"));
+        const defaultUsers = [];
+        const seenIds = new Set();
+
+        const addUser = (user) => {
+            const id = Number(user?.id);
+
+            if (
+                Number.isInteger(id) &&
+                id > 0 &&
+                id !== currentUserId &&
+                !seenIds.has(id)
+            ) {
+                seenIds.add(id);
+                defaultUsers.push(user);
+            }
+        };
+
+        // Reply to the original sender.
+        if (mailData.sender) {
+            addUser({
+                id: Number(mailData.sender),
+                name: mailData.sender_name || "Sender",
+            });
+        }
+
+        // Also keep the other conversation participants available by default.
+        (mailData.recipients_data || []).forEach(addUser);
+
+        setReplyRecipientUsers(defaultUsers);
+        setReplyRecipients(defaultUsers.map((user) => Number(user.id)));
+    };
+
     const openMail = async (mailId) => {
         try {
             const response = await axios.get(
@@ -367,9 +422,89 @@ const MailBox = () => {
                 { headers }
             );
 
-            setSelectedMail(response?.data?.data);
+            const mailData = response?.data?.data || null;
+            const threadData = response?.data?.thread || (mailData ? [mailData] : []);
+
+            setSelectedMail(mailData);
+            setMailThread(threadData);
+            resetReplyForm();
+            prepareDefaultReplyRecipients(mailData);
         } catch (error) {
-            toast.error("Failed to open mail");
+            toast.error(
+                error?.response?.data?.message || "Failed to open mail"
+            );
+        }
+    };
+
+    const handleReplyFiles = (e) => {
+        const files = Array.from(e.target.files || []);
+        const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+
+        if (totalSize > 1024 * 1024) {
+            toast.error("Maximum 1 MB total attachments can be uploaded");
+            e.target.value = "";
+            setReplyDocuments([]);
+            return;
+        }
+
+        setReplyDocuments(files);
+    };
+
+    const sendReply = async () => {
+        if (!selectedMail?.id) {
+            toast.error("Select a mail first");
+            return;
+        }
+
+        if (replyRecipients.length === 0) {
+            toast.error("Select at least one reply recipient");
+            return;
+        }
+
+        if (!replyMessage.trim() && replyDocuments.length === 0) {
+            toast.error("Reply message or attachment is required");
+            return;
+        }
+
+        const formData = new FormData();
+
+        replyRecipients.forEach((id) => {
+            formData.append("recipients", id);
+        });
+
+        formData.append("message", replyMessage.trim());
+
+        replyDocuments.forEach((file) => {
+            formData.append("documents", file);
+        });
+
+        try {
+            setReplySending(true);
+
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}internal/mails/${selectedMail.id}/reply/`,
+                formData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "multipart/form-data",
+                    },
+                }
+            );
+
+            toast.success("Reply sent successfully");
+            setReplyMessage("");
+            setReplyDocuments([]);
+
+            // Reload both the thread and current mailbox list.
+            await openMail(selectedMail.id);
+            await fetchMails();
+        } catch (error) {
+            toast.error(
+                error?.response?.data?.message || "Failed to send reply"
+            );
+        } finally {
+            setReplySending(false);
         }
     };
 
@@ -402,6 +537,19 @@ const MailBox = () => {
             isApprovedRecipient(user) &&
             !formik.values.recipients.includes(recipientId) &&
             userName.toLowerCase().includes(userSearch.toLowerCase())
+        );
+    });
+
+    const filteredReplyUsers = users.filter((user) => {
+        const recipientId = getRecipientId(user);
+        const userName = String(user?.name || "");
+
+        return (
+            Number.isInteger(recipientId) &&
+            recipientId > 0 &&
+            isApprovedRecipient(user) &&
+            !replyRecipients.includes(recipientId) &&
+            userName.toLowerCase().includes(replyUserSearch.toLowerCase())
         );
     });
 
@@ -721,7 +869,22 @@ const MailBox = () => {
                                                             onClick={() => openMail(mail.id)}
                                                         >
                                                             <CardBody className="p-3">
-                                                                <h6 className="mb-1">{mail.subject}</h6>
+                                                                <div className="d-flex align-items-center justify-content-between gap-2">
+                                                                    <h6 className="mb-1 text-truncate">
+                                                                        {mail.subject}
+                                                                    </h6>
+
+                                                                    {Number(mail.reply_count) > 0 && (
+                                                                        <Badge
+                                                                            color="primary"
+                                                                            pill
+                                                                            title={`${mail.reply_count} replies`}
+                                                                            className="d-flex align-items-center gap-1"
+                                                                        >
+                                                                            ↩ {mail.reply_count}
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
 
                                                                 <p className="mb-1 text-muted small">
                                                                     From: {mail.sender_name || "Unknown"}
@@ -751,67 +914,285 @@ const MailBox = () => {
 
                                         <Col md={7}>
                                             {selectedMail ? (
-                                                <Card className="border">
-                                                    <CardBody>
-                                                        <div className="d-flex justify-content-between align-items-start">
-                                                            <h5>{selectedMail.subject}</h5>
+                                                <div>
+                                                    <Card className="border mb-3">
+                                                        <CardBody>
+                                                            <div className="d-flex justify-content-between align-items-start">
+                                                                <div>
+                                                                    <h5 className="mb-1">
+                                                                        {selectedMail.subject}
+                                                                    </h5>
+                                                                    <small className="text-muted">
+                                                                        Conversation thread
+                                                                    </small>
+                                                                </div>
+
+                                                                <Button
+                                                                    color="danger"
+                                                                    size="sm"
+                                                                    onClick={() => deleteMail(selectedMail.id)}
+                                                                >
+                                                                    Delete
+                                                                </Button>
+                                                            </div>
+                                                        </CardBody>
+                                                    </Card>
+
+                                                    <div
+                                                        style={{
+                                                            maxHeight: "430px",
+                                                            overflowY: "auto",
+                                                            paddingRight: "4px",
+                                                        }}
+                                                    >
+                                                        {(mailThread.length > 0
+                                                            ? mailThread
+                                                            : [selectedMail]
+                                                        ).map((threadMail) => (
+                                                            <Card
+                                                                key={threadMail.id}
+                                                                className="border mb-3"
+                                                            >
+                                                                <CardBody>
+                                                                    <div className="d-flex justify-content-between gap-3">
+                                                                        <div>
+                                                                            <div className="fw-semibold">
+                                                                                {threadMail.sender_name || "Unknown"}
+                                                                            </div>
+
+                                                                            <small className="text-muted">
+                                                                                To:{" "}
+                                                                                {threadMail.recipients_data
+                                                                                    ?.map((user) => user.name)
+                                                                                    .join(", ") || "Unknown"}
+                                                                            </small>
+                                                                        </div>
+
+                                                                        <small className="text-muted text-nowrap">
+                                                                            {new Date(
+                                                                                threadMail.created_at
+                                                                            ).toLocaleString()}
+                                                                        </small>
+                                                                    </div>
+
+                                                                    <hr />
+
+                                                                    <p
+                                                                        className="mb-2"
+                                                                        style={{ whiteSpace: "pre-wrap" }}
+                                                                    >
+                                                                        {threadMail.message || "No message"}
+                                                                    </p>
+
+                                                                    {threadMail.attachments?.length > 0 && (
+                                                                        <div className="mt-3">
+                                                                            <h6 className="small fw-semibold">
+                                                                                Attachments
+                                                                            </h6>
+
+                                                                            {threadMail.attachments.map((file) => (
+                                                                                <a
+                                                                                    key={file.id}
+                                                                                    href={file.document_url}
+                                                                                    target="_blank"
+                                                                                    rel="noreferrer"
+                                                                                    className="btn btn-light btn-sm me-2 mb-2"
+                                                                                >
+                                                                                    View Attachment
+                                                                                </a>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </CardBody>
+                                                            </Card>
+                                                        ))}
+                                                    </div>
+
+                                                    <Card className="border mt-3">
+                                                        <CardBody>
+                                                            <h6 className="fw-semibold mb-3">
+                                                                Reply
+                                                            </h6>
+
+                                                            <div className="mb-3 position-relative">
+                                                                <Label className="fw-medium">
+                                                                    Reply recipients
+                                                                </Label>
+
+                                                                <Input
+                                                                    type="text"
+                                                                    placeholder="Search and add recipients..."
+                                                                    value={replyUserSearch}
+                                                                    onChange={(e) => {
+                                                                        setReplyUserSearch(e.target.value);
+                                                                        fetchUsers(e.target.value);
+                                                                    }}
+                                                                    style={{
+                                                                        borderRadius: "10px",
+                                                                        height: "40px",
+                                                                    }}
+                                                                />
+
+                                                                {replyUserSearch &&
+                                                                    filteredReplyUsers.length > 0 && (
+                                                                        <Card
+                                                                            className="shadow-sm border position-absolute w-100 mt-1"
+                                                                            style={{
+                                                                                zIndex: 1000,
+                                                                                maxHeight: 180,
+                                                                                overflowY: "auto",
+                                                                                borderRadius: 10,
+                                                                            }}
+                                                                        >
+                                                                            <CardBody className="p-0">
+                                                                                {filteredReplyUsers.map((user) => {
+                                                                                    const userId =
+                                                                                        getRecipientId(user);
+
+                                                                                    return (
+                                                                                        <div
+                                                                                            key={userId}
+                                                                                            onClick={() => {
+                                                                                                setReplyRecipients(
+                                                                                                    (previous) => [
+                                                                                                        ...previous,
+                                                                                                        userId,
+                                                                                                    ]
+                                                                                                );
+
+                                                                                                setReplyRecipientUsers(
+                                                                                                    (previous) => [
+                                                                                                        ...previous,
+                                                                                                        {
+                                                                                                            ...user,
+                                                                                                            id: userId,
+                                                                                                        },
+                                                                                                    ]
+                                                                                                );
+
+                                                                                                setReplyUserSearch("");
+                                                                                            }}
+                                                                                            style={{
+                                                                                                padding: "10px 14px",
+                                                                                                cursor: "pointer",
+                                                                                                borderBottom:
+                                                                                                    "1px solid #f2f2f2",
+                                                                                            }}
+                                                                                        >
+                                                                                            <div className="fw-semibold">
+                                                                                                {user.name}
+                                                                                            </div>
+                                                                                            <small className="text-muted">
+                                                                                                {user.department_name ||
+                                                                                                    user.department}
+                                                                                            </small>
+                                                                                        </div>
+                                                                                    );
+                                                                                })}
+                                                                            </CardBody>
+                                                                        </Card>
+                                                                    )}
+
+                                                                {replyRecipientUsers.length > 0 && (
+                                                                    <div className="d-flex flex-wrap gap-2 mt-2">
+                                                                        {replyRecipientUsers.map((user) => (
+                                                                            <Badge
+                                                                                key={Number(user.id)}
+                                                                                color="primary"
+                                                                                pill
+                                                                                className="px-3 py-2"
+                                                                            >
+                                                                                {user.name}
+
+                                                                                <span
+                                                                                    onClick={() => {
+                                                                                        const id = Number(user.id);
+
+                                                                                        setReplyRecipients(
+                                                                                            (previous) =>
+                                                                                                previous.filter(
+                                                                                                    (item) =>
+                                                                                                        Number(item) !== id
+                                                                                                )
+                                                                                        );
+
+                                                                                        setReplyRecipientUsers(
+                                                                                            (previous) =>
+                                                                                                previous.filter(
+                                                                                                    (item) =>
+                                                                                                        Number(item.id) !== id
+                                                                                                )
+                                                                                        );
+                                                                                    }}
+                                                                                    style={{
+                                                                                        marginLeft: 8,
+                                                                                        cursor: "pointer",
+                                                                                        fontWeight: "bold",
+                                                                                    }}
+                                                                                >
+                                                                                    ×
+                                                                                </span>
+                                                                            </Badge>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="mb-3">
+                                                                <Label className="fw-medium">
+                                                                    Message
+                                                                </Label>
+
+                                                                <Input
+                                                                    type="textarea"
+                                                                    rows="4"
+                                                                    value={replyMessage}
+                                                                    onChange={(e) =>
+                                                                        setReplyMessage(e.target.value)
+                                                                    }
+                                                                    placeholder="Write your reply..."
+                                                                    style={{
+                                                                        borderRadius: "10px",
+                                                                        resize: "none",
+                                                                    }}
+                                                                />
+                                                            </div>
+
+                                                            <div className="mb-3">
+                                                                <Label className="fw-medium">
+                                                                    Attachments
+                                                                </Label>
+
+                                                                <Input
+                                                                    type="file"
+                                                                    multiple
+                                                                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                                                                    onChange={handleReplyFiles}
+                                                                    style={{ borderRadius: "10px" }}
+                                                                />
+
+                                                                <small className="text-muted">
+                                                                    Maximum total upload size: 1 MB.
+                                                                </small>
+                                                            </div>
 
                                                             <Button
-                                                                color="danger"
-                                                                size="sm"
-                                                                onClick={() => deleteMail(selectedMail.id)}
+                                                                color="primary"
+                                                                onClick={sendReply}
+                                                                disabled={replySending}
+                                                                className="w-100"
+                                                                style={{
+                                                                    height: "42px",
+                                                                    borderRadius: "10px",
+                                                                }}
                                                             >
-                                                                Delete
+                                                                {replySending
+                                                                    ? "Sending..."
+                                                                    : "Send Reply"}
                                                             </Button>
-                                                        </div>
-
-                                                        <hr />
-
-                                                        <p>
-                                                            <strong>From:</strong>{" "}
-                                                            {selectedMail.sender_name || "Unknown"}
-                                                        </p>
-
-                                                        <p>
-                                                            <strong>To:</strong>{" "}
-                                                            {selectedMail.recipients_data
-                                                                ?.map((user) => user.name)
-                                                                .join(", ")}
-                                                        </p>
-
-                                                        <p>
-                                                            <strong>Date:</strong>{" "}
-                                                            {new Date(
-                                                                selectedMail.created_at
-                                                            ).toLocaleString()}
-                                                        </p>
-
-                                                        <hr />
-
-                                                        <p style={{ whiteSpace: "pre-wrap" }}>
-                                                            {selectedMail.message || "No message"}
-                                                        </p>
-
-                                                        {selectedMail.attachments?.length > 0 && (
-                                                            <>
-                                                                <hr />
-                                                                <h6>Attachments</h6>
-
-                                                                {selectedMail.attachments.map((file) => (
-                                                                    <a
-                                                                        key={file.id}
-                                                                        href={file.document_url}
-                                                                        target="_blank"
-                                                                        rel="noreferrer"
-                                                                        className="btn btn-light btn-sm me-2 mb-2"
-                                                                    >
-                                                                        View Attachment
-                                                                    </a>
-                                                                ))}
-                                                            </>
-                                                        )}
-                                                    </CardBody>
-                                                </Card>
+                                                        </CardBody>
+                                                    </Card>
+                                                </div>
                                             ) : (
                                                 <div className="text-center text-muted mt-5">
                                                     Select a mail to view details

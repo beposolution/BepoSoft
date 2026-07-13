@@ -226,7 +226,12 @@ const StaffAddAttendance = () => {
         validationSchema: Yup.object({
             staff: Yup.string().required("Select Staff"),
             status: Yup.string().required("Select Status"),
-            attendance_time: Yup.string().required("Select Time"),
+            // attendance_time: Yup.string().required("Select Time"),
+            attendance_time: Yup.string().when("status", {
+                is: "absent",
+                then: schema => schema.nullable().notRequired(),
+                otherwise: schema => schema.required("Select Reporting Time"),
+            }),
         }),
 
         onSubmit: async (values, { resetForm }) => {
@@ -236,7 +241,11 @@ const StaffAddAttendance = () => {
                 const payload = {
                     staff: Number(values.staff),
                     attendance_date: todayDate,
-                    attendance_time: values.attendance_time,
+                    // attendance_time: values.attendance_time,
+                    attendance_time:
+                        values.status === "absent"
+                            ? null
+                            : values.attendance_time,
                     status: values.status,
                 };
 
@@ -309,7 +318,12 @@ const StaffAddAttendance = () => {
         validationSchema: Yup.object({
             staff: Yup.string().required("Select Staff"),
             attendance_date: Yup.string().required("Select Date"),
-            attendance_time: Yup.string().required("Select Time"),
+            // attendance_time: Yup.string().required("Select Time"),
+            attendance_time: Yup.string().when("status", {
+                is: "absent",
+                then: schema => schema.nullable().notRequired(),
+                otherwise: schema => schema.required("Select Reporting Time"),
+            }),
             status: Yup.string().required("Select Status"),
         }),
 
@@ -320,7 +334,11 @@ const StaffAddAttendance = () => {
                     {
                         staff: Number(values.staff),
                         attendance_date: values.attendance_date,
-                        attendance_time: values.attendance_time,
+                        // attendance_time: values.attendance_time,
+                        attendance_time:
+                            values.status === "absent"
+                                ? null
+                                : values.attendance_time,
                         status: values.status,
                     },
                     {
@@ -838,23 +856,7 @@ const StaffAddAttendance = () => {
                                     </div>
                                 ) : null}
 
-                                <Label className="mt-3">Reporting Time</Label>
-                                <Input
-                                    type="time"
-                                    name="attendance_time"
-                                    value={formik.values.attendance_time}
-                                    onChange={formik.handleChange}
-                                    style={{
-                                        borderRadius: "10px",
-                                        minHeight: "44px",
-                                        background: "#f8fafc",
-                                    }}
-                                />
-                                {formik.touched.attendance_time && formik.errors.attendance_time ? (
-                                    <div className="text-danger mt-1">
-                                        {formik.errors.attendance_time}
-                                    </div>
-                                ) : null}
+
 
                                 <Label className="mt-3">Status</Label>
                                 <Select
@@ -868,14 +870,56 @@ const StaffAddAttendance = () => {
                                             x => x.value === formik.values.status
                                         ) || null
                                     }
-                                    onChange={e =>
-                                        formik.setFieldValue("status", e?.value || "")
-                                    }
+                                    onChange={selected => {
+                                        const selectedStatus = selected?.value || "";
+
+                                        formik.setFieldValue("status", selectedStatus, true);
+
+                                        if (selectedStatus === "absent") {
+                                            formik.setFieldValue("attendance_time", "");
+                                            formik.setFieldError("attendance_time", undefined);
+                                        }
+                                    }}
                                     placeholder="Select status"
                                 />
                                 {formik.touched.status && formik.errors.status ? (
                                     <div className="text-danger mt-1">
                                         {formik.errors.status}
+                                    </div>
+                                ) : null}
+
+                                <Label className="mt-3">
+                                    Reporting Time
+                                    {formik.values.status !== "absent" && (
+                                        <span className="text-danger"> *</span>
+                                    )}
+                                </Label>
+
+                                <Input
+                                    type="time"
+                                    name="attendance_time"
+                                    value={formik.values.attendance_time}
+                                    onChange={formik.handleChange}
+                                    onBlur={formik.handleBlur}
+                                    disabled={formik.values.status === "absent"}
+                                    style={{
+                                        borderRadius: "10px",
+                                        minHeight: "44px",
+                                        background:
+                                            formik.values.status === "absent"
+                                                ? "#e5e7eb"
+                                                : "#f8fafc",
+                                        cursor:
+                                            formik.values.status === "absent"
+                                                ? "not-allowed"
+                                                : "default",
+                                    }}
+                                />
+
+                                {formik.touched.attendance_time &&
+                                    formik.errors.attendance_time ? (
+                                    <div className="text-danger mt-1">
+                                        {formik.errors.attendance_time}
                                     </div>
                                 ) : null}
                             </ModalBody>
@@ -972,24 +1016,7 @@ const StaffAddAttendance = () => {
                                     </div>
                                 ) : null} */}
 
-                                <Label className="mt-3">Reporting Time</Label>
-                                <Input
-                                    type="time"
-                                    name="attendance_time"
-                                    value={editFormik.values.attendance_time}
-                                    onChange={editFormik.handleChange}
-                                    style={{
-                                        borderRadius: "10px",
-                                        minHeight: "44px",
-                                        background: "#f8fafc",
-                                    }}
-                                />
-                                {editFormik.touched.attendance_time &&
-                                    editFormik.errors.attendance_time ? (
-                                    <div className="text-danger mt-1">
-                                        {editFormik.errors.attendance_time}
-                                    </div>
-                                ) : null}
+
 
                                 <Label className="mt-3">Status</Label>
                                 <Select
@@ -1003,14 +1030,54 @@ const StaffAddAttendance = () => {
                                             x => x.value === editFormik.values.status
                                         ) || null
                                     }
-                                    onChange={e =>
-                                        editFormik.setFieldValue("status", e?.value || "")
-                                    }
+                                    onChange={selected => {
+                                        const selectedStatus = selected?.value || "";
+
+                                        editFormik.setFieldValue("status", selectedStatus, true);
+
+                                        if (selectedStatus === "absent") {
+                                            editFormik.setFieldValue("attendance_time", "");
+                                            editFormik.setFieldError("attendance_time", undefined);
+                                        }
+                                    }}
                                     placeholder="Select status"
                                 />
                                 {editFormik.touched.status && editFormik.errors.status ? (
                                     <div className="text-danger mt-1">
                                         {editFormik.errors.status}
+                                    </div>
+                                ) : null}
+
+                                <Label className="mt-3">
+                                    Reporting Time
+                                    {editFormik.values.status !== "absent" && (
+                                        <span className="text-danger"> *</span>
+                                    )}
+                                </Label>
+                                <Input
+                                    type="time"
+                                    name="attendance_time"
+                                    value={editFormik.values.attendance_time}
+                                    onChange={editFormik.handleChange}
+                                    onBlur={editFormik.handleBlur}
+                                    disabled={editFormik.values.status === "absent"}
+                                    style={{
+                                        borderRadius: "10px",
+                                        minHeight: "44px",
+                                        background:
+                                            editFormik.values.status === "absent"
+                                                ? "#e5e7eb"
+                                                : "#f8fafc",
+                                        cursor:
+                                            editFormik.values.status === "absent"
+                                                ? "not-allowed"
+                                                : "default",
+                                    }}
+                                />
+                                {editFormik.touched.attendance_time &&
+                                    editFormik.errors.attendance_time ? (
+                                    <div className="text-danger mt-1">
+                                        {editFormik.errors.attendance_time}
                                     </div>
                                 ) : null}
                             </ModalBody>

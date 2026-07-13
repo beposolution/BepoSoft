@@ -235,7 +235,12 @@ const AllAttendanceAdd = () => {
         validationSchema: Yup.object({
             staff: Yup.string().required("Select Staff"),
             status: Yup.string().required("Select Status"),
-            attendance_time: Yup.string().required("Select Time"),
+            // attendance_time: Yup.string().required("Select Time"),
+            attendance_time: Yup.string().when("status", {
+                is: status => status !== "absent",
+                then: schema => schema.required("Select Time"),
+                otherwise: schema => schema.notRequired(),
+            }),
             approval_status: Yup.string().required("Select Approval Status"),
         }),
 
@@ -246,7 +251,11 @@ const AllAttendanceAdd = () => {
                 const payload = {
                     staff: Number(values.staff),
                     attendance_date: todayDate,
-                    attendance_time: values.attendance_time,
+                    // attendance_time: values.attendance_time,
+                    attendance_time:
+                        values.status === "absent"
+                            ? null
+                            : values.attendance_time,
                     status: values.status,
                 };
 
@@ -306,7 +315,12 @@ const AllAttendanceAdd = () => {
         validationSchema: Yup.object({
             staff: Yup.string().required("Select Staff"),
             attendance_date: Yup.string().required("Select Date"),
-            attendance_time: Yup.string().required("Select Time"),
+            // attendance_time: Yup.string().required("Select Time"),
+            attendance_time: Yup.string().when("status", {
+                is: "absent",
+                then: schema => schema.nullable().notRequired(),
+                otherwise: schema => schema.required("Select Reporting Time"),
+            }),
             status: Yup.string().required("Select Status"),
         }),
 
@@ -317,7 +331,11 @@ const AllAttendanceAdd = () => {
                     {
                         staff: Number(values.staff),
                         attendance_date: values.attendance_date,
-                        attendance_time: values.attendance_time,
+                        // attendance_time: values.attendance_time,
+                        attendance_time:
+                            values.status === "absent"
+                                ? null
+                                : values.attendance_time,
                         status: values.status,
                         approval_status: values.approval_status,
                     },
@@ -920,10 +938,19 @@ const AllAttendanceAdd = () => {
                                     name="attendance_time"
                                     value={formik.values.attendance_time}
                                     onChange={formik.handleChange}
+                                    onBlur={formik.handleBlur}
+                                    disabled={formik.values.status === "absent"}
                                     style={{
                                         borderRadius: "10px",
                                         minHeight: "44px",
-                                        background: "#f8fafc",
+                                        background:
+                                            formik.values.status === "absent"
+                                                ? "#e5e7eb"
+                                                : "#f8fafc",
+                                        cursor:
+                                            formik.values.status === "absent"
+                                                ? "not-allowed"
+                                                : "default",
                                     }}
                                 />
                                 {formik.touched.attendance_time && formik.errors.attendance_time ? (
@@ -944,9 +971,19 @@ const AllAttendanceAdd = () => {
                                             x => x.value === formik.values.status
                                         ) || null
                                     }
-                                    onChange={e =>
-                                        formik.setFieldValue("status", e?.value || "")
-                                    }
+                                    // onChange={e =>
+                                    //     formik.setFieldValue("status", e?.value || "")
+                                    // }
+                                    onChange={selected => {
+                                        const selectedStatus = selected?.value || "";
+
+                                        formik.setFieldValue("status", selectedStatus);
+
+                                        if (selectedStatus === "absent") {
+                                            formik.setFieldValue("attendance_time", "");
+                                            formik.setFieldError("attendance_time", undefined);
+                                        }
+                                    }}
                                     placeholder="Select status"
                                 />
                                 {formik.touched.status && formik.errors.status ? (
@@ -1048,16 +1085,30 @@ const AllAttendanceAdd = () => {
                                     </div>
                                 ) : null} */}
 
-                                <Label className="mt-3">Reporting Time</Label>
+                                <Label className="mt-3">
+                                    Reporting Time
+                                    {formik.values.status !== "absent" && (
+                                        <span className="text-danger"> *</span>
+                                    )}
+                                </Label>
                                 <Input
                                     type="time"
                                     name="attendance_time"
                                     value={editFormik.values.attendance_time}
                                     onChange={editFormik.handleChange}
+                                    onBlur={editFormik.handleBlur}
+                                    disabled={editFormik.values.status === "absent"}
                                     style={{
                                         borderRadius: "10px",
                                         minHeight: "44px",
-                                        background: "#f8fafc",
+                                        background:
+                                            editFormik.values.status === "absent"
+                                                ? "#e5e7eb"
+                                                : "#f8fafc",
+                                        cursor:
+                                            editFormik.values.status === "absent"
+                                                ? "not-allowed"
+                                                : "default",
                                     }}
                                 />
                                 {editFormik.touched.attendance_time &&
@@ -1079,9 +1130,19 @@ const AllAttendanceAdd = () => {
                                             x => x.value === editFormik.values.status
                                         ) || null
                                     }
-                                    onChange={e =>
-                                        editFormik.setFieldValue("status", e?.value || "")
-                                    }
+                                    // onChange={e =>
+                                    //     editFormik.setFieldValue("status", e?.value || "")
+                                    // }
+                                    onChange={selected => {
+                                        const selectedStatus = selected?.value || "";
+
+                                        editFormik.setFieldValue("status", selectedStatus);
+
+                                        if (selectedStatus === "absent") {
+                                            editFormik.setFieldValue("attendance_time", "");
+                                            editFormik.setFieldError("attendance_time", undefined);
+                                        }
+                                    }}
                                     placeholder="Select status"
                                 />
                                 {editFormik.touched.status && editFormik.errors.status ? (

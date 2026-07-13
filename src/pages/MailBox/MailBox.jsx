@@ -30,6 +30,10 @@ const MailBox = () => {
     const [userSearch, setUserSearch] = useState("");
     const [selectedRecipientUsers, setSelectedRecipientUsers] = useState([]);
 
+    const [allUsers, setAllUsers] = useState([]);
+    const [loadingAllUsers, setLoadingAllUsers] = useState(false);
+    const [allRecipientsSelected, setAllRecipientsSelected] = useState(false);
+
     document.title = "Internal Mail | Bepositive";
 
     const headers = {
@@ -53,6 +57,193 @@ const MailBox = () => {
         } catch (error) {
             toast.error("Error fetching users");
         }
+    };
+
+    const getRecipientId = (user) => {
+        // Supports different staff API response structures.
+        return Number(
+            user?.user_id ??
+            user?.user?.id ??
+            user?.id
+        );
+    };
+
+    const isApprovedRecipient = (user) => {
+        /*
+         * When approval_status is returned, allow only approved users.
+         * When the field is absent, keep the user because the API may already
+         * return only approved staff.
+         */
+        if (user?.approval_status === undefined || user?.approval_status === null) {
+            return true;
+        }
+
+        return String(user.approval_status).toLowerCase() === "approved";
+    };
+
+    const fetchAllUsers = async () => {
+        try {
+            setLoadingAllUsers(true);
+
+            let page = 1;
+            let hasNextPage = true;
+            let completeUserList = [];
+
+            while (hasNextPage) {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}get/staffs/`,
+                    {
+                        headers,
+                        params: {
+                            page,
+                            approval_status: "approved",
+                        },
+                    }
+                );
+
+                const responseData = response?.data;
+
+                const currentPageUsers =
+                    responseData?.results?.data ||
+                    responseData?.data ||
+                    [];
+
+                completeUserList = [
+                    ...completeUserList,
+                    ...currentPageUsers,
+                ];
+
+                const nextPageUrl =
+                    responseData?.next ||
+                    responseData?.results?.next ||
+                    responseData?.links?.next ||
+                    null;
+
+                const totalCount =
+                    responseData?.count ||
+                    responseData?.results?.count ||
+                    responseData?.total ||
+                    responseData?.results?.total ||
+                    null;
+
+                if (nextPageUrl) {
+                    page += 1;
+                } else if (
+                    totalCount !== null &&
+                    completeUserList.length < Number(totalCount)
+                ) {
+                    page += 1;
+                } else {
+                    /*
+                     * Stop when there is no confirmed next page.
+                     *
+                     * Do not use:
+                     * currentPageUsers.length === 50
+                     *
+                     * because if the API ignores the page parameter, it may
+                     * repeatedly return the same first 50 users.
+                     */
+                    hasNextPage = false;
+                }
+            }
+
+            const validUsers = completeUserList.filter((user) => {
+                const recipientId = getRecipientId(user);
+
+                return (
+                    Number.isInteger(recipientId) &&
+                    recipientId > 0 &&
+                    isApprovedRecipient(user)
+                );
+            });
+
+            /*
+             * Remove duplicates according to the actual User ID expected
+             * by InternalMailView.
+             */
+            const uniqueUsers = Array.from(
+                new Map(
+                    validUsers.map((user) => [
+                        getRecipientId(user),
+                        user,
+                    ])
+                ).values()
+            );
+
+            setAllUsers(uniqueUsers);
+
+            return uniqueUsers;
+        } catch (error) {
+            console.error("Error fetching all recipients:", error);
+
+            toast.error(
+                error?.response?.data?.message ||
+                "Failed to fetch all recipients"
+            );
+
+            return [];
+        } finally {
+            setLoadingAllUsers(false);
+        }
+    };
+
+    const handleSelectAllRecipients = async () => {
+        try {
+            let completeUserList = allUsers;
+
+            if (completeUserList.length === 0) {
+                completeUserList = await fetchAllUsers();
+            }
+
+            const recipientUsers = completeUserList.filter((user) => {
+                const recipientId = getRecipientId(user);
+
+                return (
+                    Number.isInteger(recipientId) &&
+                    recipientId > 0 &&
+                    isApprovedRecipient(user)
+                );
+            });
+
+            const uniqueRecipientUsers = Array.from(
+                new Map(
+                    recipientUsers.map((user) => [
+                        getRecipientId(user),
+                        user,
+                    ])
+                ).values()
+            );
+
+            const recipientIds = uniqueRecipientUsers.map((user) =>
+                getRecipientId(user)
+            );
+
+            if (recipientIds.length === 0) {
+                toast.error("No approved recipients found");
+                return;
+            }
+
+            formik.setFieldValue("recipients", recipientIds);
+            formik.setFieldTouched("recipients", true, false);
+
+            setSelectedRecipientUsers(uniqueRecipientUsers);
+            setAllRecipientsSelected(true);
+            setUserSearch("");
+
+            toast.success(
+                `${recipientIds.length} approved recipients selected`
+            );
+        } catch (error) {
+            console.error("Select all recipients error:", error);
+            toast.error("Failed to select all recipients");
+        }
+    };
+
+    const handleClearAllRecipients = () => {
+        formik.setFieldValue("recipients", []);
+        setSelectedRecipientUsers([]);
+        setAllRecipientsSelected(false);
+        setUserSearch("");
     };
 
     const fetchMails = async () => {
@@ -133,8 +324,12 @@ const MailBox = () => {
 
                 toast.success("Mail sent successfully");
                 resetForm();
+
                 setSelectedRecipientUsers([]);
+                setAllRecipientsSelected(false);
                 setUserSearch("");
+
+                formik.setFieldValue("recipients", []);
                 setMailType("sent");
                 fetchMails();
             } catch (error) {
@@ -197,11 +392,18 @@ const MailBox = () => {
 
     const selectedUsers = selectedRecipientUsers;
 
-    const filteredUsers = users.filter(
-        (user) =>
-            !formik.values.recipients.includes(Number(user.id)) &&
-            user.name.toLowerCase().includes(userSearch.toLowerCase())
-    );
+    const filteredUsers = users.filter((user) => {
+        const recipientId = getRecipientId(user);
+        const userName = String(user?.name || "");
+
+        return (
+            Number.isInteger(recipientId) &&
+            recipientId > 0 &&
+            isApprovedRecipient(user) &&
+            !formik.values.recipients.includes(recipientId) &&
+            userName.toLowerCase().includes(userSearch.toLowerCase())
+        );
+    });
 
     return (
         <React.Fragment>
@@ -233,7 +435,38 @@ const MailBox = () => {
 
                                     <Form onSubmit={formik.handleSubmit}>
                                         <div className="mb-3 position-relative">
-                                            <Label className="fw-medium mb-2">Recipients</Label>
+                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                <Label className="fw-medium mb-0">
+                                                    Recipients
+                                                </Label>
+
+                                                <div className="d-flex gap-2">
+                                                    <Button
+                                                        type="button"
+                                                        color="primary"
+                                                        size="sm"
+                                                        outline
+                                                        disabled={loadingAllUsers}
+                                                        onClick={handleSelectAllRecipients}
+                                                    >
+                                                        {loadingAllUsers
+                                                            ? "Loading..."
+                                                            : "Select All"}
+                                                    </Button>
+
+                                                    {formik.values.recipients.length > 0 && (
+                                                        <Button
+                                                            type="button"
+                                                            color="danger"
+                                                            size="sm"
+                                                            outline
+                                                            onClick={handleClearAllRecipients}
+                                                        >
+                                                            Clear
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
 
                                             <Input
                                                 type="text"
@@ -261,18 +494,34 @@ const MailBox = () => {
                                                             <div
                                                                 key={user.id}
                                                                 onClick={() => {
-                                                                    const userId = Number(user.id);
+                                                                    const userId = getRecipientId(user);
+
+                                                                    if (!Number.isInteger(userId) || userId <= 0) {
+                                                                        toast.error("This employee does not have a valid user ID");
+                                                                        return;
+                                                                    }
+
+                                                                    if (!isApprovedRecipient(user)) {
+                                                                        toast.error("This employee is not approved");
+                                                                        return;
+                                                                    }
+
+                                                                    if (formik.values.recipients.includes(userId)) {
+                                                                        setUserSearch("");
+                                                                        return;
+                                                                    }
 
                                                                     formik.setFieldValue("recipients", [
                                                                         ...formik.values.recipients,
                                                                         userId,
                                                                     ]);
 
-                                                                    setSelectedRecipientUsers((prev) => [
-                                                                        ...prev,
+                                                                    setSelectedRecipientUsers((previousUsers) => [
+                                                                        ...previousUsers,
                                                                         user,
                                                                     ]);
 
+                                                                    setAllRecipientsSelected(false);
                                                                     setUserSearch("");
                                                                 }}
                                                                 style={{
@@ -314,7 +563,7 @@ const MailBox = () => {
 
                                                             <span
                                                                 onClick={() => {
-                                                                    const userId = Number(user.id);
+                                                                    const userId = getRecipientId(user);
 
                                                                     formik.setFieldValue(
                                                                         "recipients",
@@ -326,6 +575,8 @@ const MailBox = () => {
                                                                     setSelectedRecipientUsers((prev) =>
                                                                         prev.filter((item) => Number(item.id) !== userId)
                                                                     );
+
+                                                                    setAllRecipientsSelected(false);
                                                                 }}
                                                                 style={{
                                                                     marginLeft: 8,

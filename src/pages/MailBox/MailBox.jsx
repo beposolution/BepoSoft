@@ -26,6 +26,9 @@ const MailBox = () => {
     const [mails, setMails] = useState([]);
     const [selectedMail, setSelectedMail] = useState(null);
     const [mailType, setMailType] = useState("inbox");
+    const [readStatusFilter, setReadStatusFilter] = useState("");
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [updatingReadStatus, setUpdatingReadStatus] = useState(false);
     const [loading, setLoading] = useState(false);
     const [userSearch, setUserSearch] = useState("");
     const [selectedRecipientUsers, setSelectedRecipientUsers] = useState([]);
@@ -259,15 +262,44 @@ const MailBox = () => {
         try {
             setLoading(true);
 
+            const params = {
+                type: mailType,
+            };
+
+            if (mailType === "inbox" && readStatusFilter) {
+                params.read_status = readStatusFilter;
+            }
+
             const response = await axios.get(
-                `${import.meta.env.VITE_APP_KEY}internal/mails/?type=${mailType}`,
-                { headers }
+                `${import.meta.env.VITE_APP_KEY}internal/mails/`,
+                {
+                    headers,
+                    params,
+                }
             );
 
-            const data = response?.data?.results?.data || response?.data?.data || [];
-            setMails(data);
+            const responsePayload =
+                response?.data?.results ||
+                response?.data ||
+                {};
+
+            const data =
+                responsePayload?.data ||
+                response?.data?.data ||
+                [];
+
+            const count =
+                responsePayload?.unread_count ??
+                response?.data?.unread_count ??
+                0;
+
+            setMails(Array.isArray(data) ? data : []);
+            setUnreadCount(Number(count) || 0);
         } catch (error) {
-            toast.error("Error fetching mails");
+            toast.error(
+                error?.response?.data?.message ||
+                "Error fetching mails"
+            );
         } finally {
             setLoading(false);
         }
@@ -286,7 +318,7 @@ const MailBox = () => {
         setSelectedMail(null);
         setMailThread([]);
         resetReplyForm();
-    }, [mailType]);
+    }, [mailType, readStatusFilter]);
 
     const formik = useFormik({
         initialValues: {
@@ -417,18 +449,48 @@ const MailBox = () => {
 
     const openMail = async (mailId) => {
         try {
+            const wasUnread = mails.some(
+                (mail) => Number(mail.id) === Number(mailId) && !mail.is_read
+            );
+
             const response = await axios.get(
                 `${import.meta.env.VITE_APP_KEY}internal/mails/${mailId}/`,
                 { headers }
             );
 
             const mailData = response?.data?.data || null;
-            const threadData = response?.data?.thread || (mailData ? [mailData] : []);
+            const threadData =
+                response?.data?.thread ||
+                (mailData ? [mailData] : []);
 
             setSelectedMail(mailData);
             setMailThread(threadData);
             resetReplyForm();
             prepareDefaultReplyRecipients(mailData);
+
+            setMails((previousMails) =>
+                previousMails.map((mail) =>
+                    Number(mail.id) === Number(mailId)
+                        ? {
+                            ...mail,
+                            is_read: true,
+                            read_at: mailData?.read_at || new Date().toISOString(),
+                        }
+                        : mail
+                )
+            );
+
+            if (mailType === "inbox" && wasUnread) {
+                setUnreadCount((previous) => Math.max(0, previous - 1));
+
+                if (readStatusFilter === "unread") {
+                    setMails((previousMails) =>
+                        previousMails.filter(
+                            (mail) => Number(mail.id) !== Number(mailId)
+                        )
+                    );
+                }
+            }
         } catch (error) {
             toast.error(
                 error?.response?.data?.message || "Failed to open mail"
@@ -505,6 +567,59 @@ const MailBox = () => {
             );
         } finally {
             setReplySending(false);
+        }
+    };
+
+    const updateMailReadStatus = async (mailId, isRead) => {
+        try {
+            setUpdatingReadStatus(true);
+
+            const response = await axios.patch(
+                `${import.meta.env.VITE_APP_KEY}internal/mails/${mailId}/read/status/`,
+                {
+                    is_read: isRead,
+                },
+                { headers }
+            );
+
+            const updatedStatus = response?.data?.data;
+
+            setSelectedMail((previous) =>
+                previous && Number(previous.id) === Number(mailId)
+                    ? {
+                        ...previous,
+                        is_read: Boolean(updatedStatus?.is_read),
+                        read_at: updatedStatus?.read_at || null,
+                    }
+                    : previous
+            );
+
+            setMails((previousMails) =>
+                previousMails.map((mail) =>
+                    Number(mail.id) === Number(mailId)
+                        ? {
+                            ...mail,
+                            is_read: Boolean(updatedStatus?.is_read),
+                            read_at: updatedStatus?.read_at || null,
+                        }
+                        : mail
+                )
+            );
+
+            toast.success(
+                isRead
+                    ? "Mail marked as read"
+                    : "Mail marked as unread"
+            );
+
+            await fetchMails();
+        } catch (error) {
+            toast.error(
+                error?.response?.data?.message ||
+                "Failed to update read status"
+            );
+        } finally {
+            setUpdatingReadStatus(false);
         }
     };
 
@@ -838,11 +953,23 @@ const MailBox = () => {
                                                 onClick={() => setMailType("inbox")}
                                             >
                                                 Inbox
+                                                {unreadCount > 0 && (
+                                                    <Badge
+                                                        color="danger"
+                                                        pill
+                                                        className="ms-2"
+                                                    >
+                                                        {unreadCount > 99 ? "99+" : unreadCount}
+                                                    </Badge>
+                                                )}
                                             </Button>
 
                                             <Button
                                                 color={mailType === "sent" ? "primary" : "light"}
-                                                onClick={() => setMailType("sent")}
+                                                onClick={() => {
+                                                    setMailType("sent");
+                                                    setReadStatusFilter("");
+                                                }}
                                             >
                                                 Sent
                                             </Button>
@@ -852,6 +979,39 @@ const MailBox = () => {
                                             Refresh
                                         </Button>
                                     </div>
+
+                                    {mailType === "inbox" && (
+                                        <div className="d-flex flex-wrap gap-2 mb-3">
+                                            <Button
+                                                size="sm"
+                                                color={readStatusFilter === "" ? "primary" : "light"}
+                                                onClick={() => setReadStatusFilter("")}
+                                            >
+                                                All
+                                            </Button>
+
+                                            <Button
+                                                size="sm"
+                                                color={readStatusFilter === "unread" ? "primary" : "light"}
+                                                onClick={() => setReadStatusFilter("unread")}
+                                            >
+                                                Unread
+                                                {unreadCount > 0 && (
+                                                    <Badge color="danger" pill className="ms-2">
+                                                        {unreadCount > 99 ? "99+" : unreadCount}
+                                                    </Badge>
+                                                )}
+                                            </Button>
+
+                                            <Button
+                                                size="sm"
+                                                color={readStatusFilter === "read" ? "primary" : "light"}
+                                                onClick={() => setReadStatusFilter("read")}
+                                            >
+                                                Read
+                                            </Button>
+                                        </div>
+                                    )}
 
                                     <Row>
                                         <Col md={5}>
@@ -864,15 +1024,50 @@ const MailBox = () => {
                                                     mails.map((mail) => (
                                                         <Card
                                                             key={mail.id}
-                                                            className="mb-2"
-                                                            style={{ cursor: "pointer" }}
+                                                            className={`mb-2 border ${
+                                                                !mail.is_read && mailType === "inbox"
+                                                                    ? "border-primary"
+                                                                    : ""
+                                                            }`}
+                                                            style={{
+                                                                cursor: "pointer",
+                                                                background:
+                                                                    !mail.is_read && mailType === "inbox"
+                                                                        ? "rgba(85, 110, 230, 0.06)"
+                                                                        : "#fff",
+                                                                boxShadow:
+                                                                    Number(selectedMail?.id) === Number(mail.id)
+                                                                        ? "0 0 0 2px rgba(85, 110, 230, 0.18)"
+                                                                        : "none",
+                                                            }}
                                                             onClick={() => openMail(mail.id)}
                                                         >
                                                             <CardBody className="p-3">
                                                                 <div className="d-flex align-items-center justify-content-between gap-2">
-                                                                    <h6 className="mb-1 text-truncate">
-                                                                        {mail.subject}
-                                                                    </h6>
+                                                                    <div className="d-flex align-items-center gap-2 min-w-0">
+                                                                        {mailType === "inbox" && !mail.is_read && (
+                                                                            <span
+                                                                                title="Unread"
+                                                                                style={{
+                                                                                    width: 9,
+                                                                                    height: 9,
+                                                                                    borderRadius: "50%",
+                                                                                    background: "#556ee6",
+                                                                                    flexShrink: 0,
+                                                                                }}
+                                                                            />
+                                                                        )}
+
+                                                                        <h6
+                                                                            className={`mb-1 text-truncate ${
+                                                                                !mail.is_read && mailType === "inbox"
+                                                                                    ? "fw-bold"
+                                                                                    : "fw-medium"
+                                                                            }`}
+                                                                        >
+                                                                            {mail.subject}
+                                                                        </h6>
+                                                                    </div>
 
                                                                     {Number(mail.reply_count) > 0 && (
                                                                         <Badge
@@ -902,8 +1097,20 @@ const MailBox = () => {
                                                                     </Badge>
                                                                 )}
 
-                                                                <div className="text-muted small mt-1">
-                                                                    {new Date(mail.created_at).toLocaleString()}
+                                                                <div className="d-flex justify-content-between align-items-center gap-2 mt-2">
+                                                                    <div className="text-muted small">
+                                                                        {new Date(mail.created_at).toLocaleString()}
+                                                                    </div>
+
+                                                                    {mailType === "inbox" && (
+                                                                        <Badge
+                                                                            color={mail.is_read ? "light" : "primary"}
+                                                                            className={mail.is_read ? "text-muted" : ""}
+                                                                            pill
+                                                                        >
+                                                                            {mail.is_read ? "Read" : "Unread"}
+                                                                        </Badge>
+                                                                    )}
                                                                 </div>
                                                             </CardBody>
                                                         </Card>
@@ -927,13 +1134,36 @@ const MailBox = () => {
                                                                     </small>
                                                                 </div>
 
-                                                                <Button
-                                                                    color="danger"
-                                                                    size="sm"
-                                                                    onClick={() => deleteMail(selectedMail.id)}
-                                                                >
-                                                                    Delete
-                                                                </Button>
+                                                                <div className="d-flex gap-2">
+                                                                    {/* {mailType === "inbox" && (
+                                                                        <Button
+                                                                            color={selectedMail.is_read ? "secondary" : "success"}
+                                                                            outline
+                                                                            size="sm"
+                                                                            disabled={updatingReadStatus}
+                                                                            onClick={() =>
+                                                                                updateMailReadStatus(
+                                                                                    selectedMail.id,
+                                                                                    !selectedMail.is_read
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            {updatingReadStatus
+                                                                                ? "Updating..."
+                                                                                : selectedMail.is_read
+                                                                                    ? "Mark Unread"
+                                                                                    : "Mark Read"}
+                                                                        </Button>
+                                                                    )} */}
+
+                                                                    <Button
+                                                                        color="danger"
+                                                                        size="sm"
+                                                                        onClick={() => deleteMail(selectedMail.id)}
+                                                                    >
+                                                                        Delete
+                                                                    </Button>
+                                                                </div>
                                                             </div>
                                                         </CardBody>
                                                     </Card>
@@ -968,11 +1198,27 @@ const MailBox = () => {
                                                                             </small>
                                                                         </div>
 
-                                                                        <small className="text-muted text-nowrap">
-                                                                            {new Date(
-                                                                                threadMail.created_at
-                                                                            ).toLocaleString()}
-                                                                        </small>
+                                                                        <div className="text-end">
+                                                                            <small className="text-muted text-nowrap d-block">
+                                                                                {new Date(
+                                                                                    threadMail.created_at
+                                                                                ).toLocaleString()}
+                                                                            </small>
+
+                                                                            {mailType === "inbox" && (
+                                                                                <small
+                                                                                    className={
+                                                                                        threadMail.is_read
+                                                                                            ? "text-success"
+                                                                                            : "text-muted"
+                                                                                    }
+                                                                                >
+                                                                                    {threadMail.is_read
+                                                                                        ? "Read"
+                                                                                        : "Unread"}
+                                                                                </small>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
 
                                                                     <hr />

@@ -426,6 +426,9 @@ const SidebarContent = (props) => {
                     <Link to="/product/add-excel/">{props.t("Excel upload products")}</Link>
                   </li>
                   <li>
+                    <Link to="/main/category/">{props.t("Main Category")}</Link>
+                  </li>
+                  <li>
                     <Link to="/product/category/">{props.t("Product Category Details")}</Link>
                   </li>
                 </ul>

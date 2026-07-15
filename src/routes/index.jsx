@@ -460,6 +460,7 @@ import StaffAddAttendance from "../pages/StaffAttendance/AttendenceAdd/StaffAddA
 import AllAddTeamMembers from "../pages/SalesTeam/AllAddTeamMembers";
 import MailBox from "../pages/MailBox/MailBox";
 import MyProfile from "../pages/Profile/MyProfile";
+import MainCategoryPage from "../pages/Product/MainCategoryPage";
 
 
 
@@ -550,6 +551,7 @@ const authProtectedRoutes = [
   { path: "/add/products/bulk/", component: <BulkProduct /> },
   { path: "/warehouse/waitingproducts/", component: <WaitingProducts /> },
   { path: "/product/category/", component: <AddCategory /> },
+  { path: "/main/category/", component: <MainCategoryPage /> },
 
   // Receipts
   { path: "/advance/receipt/", component: <AdvanceReceipt /> },

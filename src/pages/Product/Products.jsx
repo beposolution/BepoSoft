@@ -33,9 +33,11 @@ const BasicTable = () => {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("ALL");
+    const [selectedMainCategory, setSelectedMainCategory] = useState("ALL");
     const [selectedStockType, setSelectedStockType] = useState("ALL");
     const [selectedPurchaseType, setSelectedPurchaseType] = useState("ALL");
     const [categories, setCategories] = useState([]);
+    const [mainCategories, setMainCategories] = useState([]);
     const [categorySearch, setCategorySearch] = useState("");
     const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
     const [warehouseID, setWarehouseID] = useState(null);
@@ -108,10 +110,42 @@ const BasicTable = () => {
         }
     };
 
+    const fetchMainCategories = async () => {
+        try {
+            if (!token) return;
+
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}main/categories/add/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            const mainCategoryList = response?.data?.data || [];
+
+            setMainCategories([
+                { id: "ALL", name: "ALL MAIN CATEGORIES" },
+                ...mainCategoryList.map((item) => ({
+                    id: String(item.id),
+                    name: item.name,
+                })),
+            ]);
+        } catch (error) {
+            toast.error(
+                error?.response?.data?.message ||
+                "Error fetching main categories"
+            );
+        }
+    };
+
     useEffect(() => {
         if (!token) return;
 
         fetchCategories();
+        fetchMainCategories();
     }, [token]);
 
     const filteredCategories = categories.filter((cat) =>
@@ -139,6 +173,7 @@ const BasicTable = () => {
         page = 1,
         search = searchTerm,
         category = selectedCategory,
+        mainCategory = selectedMainCategory,
         stockType = selectedStockType,
         purchaseType = selectedPurchaseType
     ) => {
@@ -150,6 +185,10 @@ const BasicTable = () => {
 
         if (category && category !== "ALL") {
             url += `&category_id=${category}`;
+        }
+
+        if (mainCategory && mainCategory !== "ALL") {
+            url += `&main_category_id=${mainCategory}`;
         }
 
         if (stockType && stockType !== "ALL") {
@@ -167,6 +206,7 @@ const BasicTable = () => {
         page = currentPage,
         search = searchTerm,
         category = selectedCategory,
+        mainCategory = selectedMainCategory,
         stockType = selectedStockType,
         purchaseType = selectedPurchaseType,
         append = false
@@ -185,7 +225,7 @@ const BasicTable = () => {
 
             setError(null);
 
-            const response = await fetch(buildProductsUrl(page, search, category, stockType, purchaseType), {
+            const response = await fetch(buildProductsUrl(page, search, category, mainCategory, stockType, purchaseType), {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -264,10 +304,14 @@ const BasicTable = () => {
         setCurrentPage(1);
         setSearchTerm("");
         setSelectedCategory("ALL");
+        setSelectedMainCategory("ALL");
+        setSelectedStockType("ALL");
+        setSelectedPurchaseType("ALL");
 
         fetchProducts(
             1,
             "",
+            "ALL",
             "ALL",
             "ALL",
             "ALL",
@@ -286,7 +330,7 @@ const BasicTable = () => {
             const isNearBottom = scrollTop + windowHeight >= fullHeight - 300;
 
             if (isNearBottom) {
-                fetchProducts(currentPage + 1, searchTerm, selectedCategory, selectedStockType, selectedPurchaseType, true);
+                fetchProducts(currentPage + 1, searchTerm, selectedCategory, selectedMainCategory, selectedStockType, selectedPurchaseType, true);
             }
         };
 
@@ -302,6 +346,7 @@ const BasicTable = () => {
         currentPage,
         searchTerm,
         selectedCategory,
+        selectedMainCategory,
         selectedStockType,
         selectedPurchaseType,
         token,
@@ -318,6 +363,7 @@ const BasicTable = () => {
             1,
             searchTerm,
             selectedCategory,
+            selectedMainCategory,
             value,
             selectedPurchaseType,
             false
@@ -330,7 +376,30 @@ const BasicTable = () => {
         setSelectedCategory(value);
         setCurrentPage(1);
 
-        fetchProducts(1, searchTerm, value, selectedStockType, selectedPurchaseType, false);
+        fetchProducts(1, searchTerm, value, selectedMainCategory, selectedStockType, selectedPurchaseType, false);
+    };
+
+    const handleMainCategoryChange = (e) => {
+        const value = e.target.value;
+
+        setSelectedMainCategory(value);
+
+        // Reset category
+        setSelectedCategory("ALL");
+        setCategorySearch("");
+
+        setCurrentPage(1);
+        setProducts([]);
+
+        fetchProducts(
+            1,
+            searchTerm,
+            "ALL",
+            value,
+            selectedStockType,
+            selectedPurchaseType,
+            false
+        );
     };
 
     const handleSearchChange = (e) => {
@@ -342,12 +411,13 @@ const BasicTable = () => {
 
         setCurrentPage(1);
 
-        fetchProducts(1, searchTerm, selectedCategory, selectedStockType, selectedPurchaseType, false);
+        fetchProducts(1, searchTerm, selectedCategory, selectedMainCategory, selectedStockType, selectedPurchaseType, false);
     };
 
     const handleClearFilters = () => {
         setSearchTerm("");
         setSelectedCategory("ALL");
+        setSelectedMainCategory("ALL");
         setSelectedStockType("ALL");
         setSelectedPurchaseType("ALL");
         setCurrentPage(1);
@@ -355,7 +425,7 @@ const BasicTable = () => {
         setCategorySearch("");
         setShowCategoryDropdown(false);
 
-        fetchProducts(1, "", "ALL", "ALL", "ALL", false);
+        fetchProducts(1, "", "ALL", "ALL", "ALL", "ALL", false);
     };
 
     const handlePurchaseTypeChange = (e) => {
@@ -368,6 +438,7 @@ const BasicTable = () => {
             1,
             searchTerm,
             selectedCategory,
+            selectedMainCategory,
             selectedStockType,
             value,
             false
@@ -1025,6 +1096,30 @@ const BasicTable = () => {
                                                             />
                                                         </div>
 
+                                                        <div>
+                                                            <Input
+                                                                type="select"
+                                                                value={selectedMainCategory}
+                                                                onChange={handleMainCategoryChange}
+                                                                style={{
+                                                                    maxWidth: "220px",
+                                                                    borderRadius: "14px",
+                                                                    padding: "12px 14px",
+                                                                    border: "1px solid #e5e7eb",
+                                                                    background: "#f8fafc",
+                                                                }}
+                                                            >
+                                                                {mainCategories.map((mainCategory) => (
+                                                                    <option
+                                                                        key={mainCategory.id}
+                                                                        value={mainCategory.id}
+                                                                    >
+                                                                        {mainCategory.name}
+                                                                    </option>
+                                                                ))}
+                                                            </Input>
+                                                        </div>
+
                                                         <div
                                                             ref={categoryDropdownRef}
                                                             style={{
@@ -1076,6 +1171,7 @@ const BasicTable = () => {
                                                                                 1,
                                                                                 searchTerm,
                                                                                 "ALL",
+                                                                                selectedMainCategory,
                                                                                 selectedStockType,
                                                                                 selectedPurchaseType,
                                                                                 false
@@ -1105,6 +1201,7 @@ const BasicTable = () => {
                                                                                         1,
                                                                                         searchTerm,
                                                                                         cat.id,
+                                                                                        selectedMainCategory,
                                                                                         selectedStockType,
                                                                                         selectedPurchaseType,
                                                                                         false

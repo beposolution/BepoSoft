@@ -1484,49 +1484,54 @@ const MailBox = () => {
                                 <CardBody>
                                   <div className="d-flex justify-content-between gap-3">
                                     <div>
-                                      <div className="fw-semibold">
+                                      <div className="fw-semibold mb-1">
                                         {threadMail.sender_name || "Unknown"}
                                       </div>
 
-                                      <div>
+                                      <small className="text-muted d-block">
+                                        From: {threadMail.sender_name || "Unknown"}
+                                      </small>
+
+                                      <small className="text-muted d-block">
+                                        To:{" "}
+                                        {threadMail.recipients_data?.length > 0
+                                          ? threadMail.recipients_data
+                                              .map((user) => user.name)
+                                              .filter(Boolean)
+                                              .join(", ")
+                                          : "—"}
+                                      </small>
+
+                                      {threadMail.cc_recipients_data?.length > 0 && (
                                         <small className="text-muted d-block">
-                                          To:{" "}
-                                          {threadMail.recipients_data
-                                            ?.map((user) => user.name)
-                                            .join(", ") || "—"}
+                                          CC:{" "}
+                                          {threadMail.cc_recipients_data
+                                            .map((user) => user.name)
+                                            .filter(Boolean)
+                                            .join(", ")}
                                         </small>
+                                      )}
 
-                                        {threadMail.cc_recipients_data?.length >
-                                          0 && (
-                                          <small className="text-muted d-block">
-                                            CC:{" "}
-                                            {threadMail.cc_recipients_data
-                                              .map((user) => user.name)
-                                              .join(", ")}
-                                          </small>
-                                        )}
+                                      {threadMail.bcc_recipients_data?.length > 0 && (
+                                        <small className="text-muted d-block">
+                                          BCC:{" "}
+                                          {threadMail.bcc_recipients_data
+                                            .map((user) => user.name)
+                                            .filter(Boolean)
+                                            .join(", ")}
+                                        </small>
+                                      )}
 
-                                        {threadMail.bcc_recipients_data
-                                          ?.length > 0 && (
-                                          <small className="text-muted d-block">
-                                            BCC:{" "}
-                                            {threadMail.bcc_recipients_data
-                                              .map((user) => user.name)
-                                              .join(", ")}
-                                          </small>
-                                        )}
-
-                                        {threadMail.current_user_recipient_type ===
-                                          "bcc" && (
-                                          <Badge
-                                            color="secondary"
-                                            pill
-                                            className="mt-1"
-                                          >
-                                            You received this mail as BCC
-                                          </Badge>
-                                        )}
-                                      </div>
+                                      {threadMail.current_user_recipient_type ===
+                                        "bcc" && (
+                                        <Badge
+                                          color="secondary"
+                                          pill
+                                          className="mt-1"
+                                        >
+                                          You received this mail as BCC
+                                        </Badge>
+                                      )}
                                     </div>
 
                                     <div className="text-end">

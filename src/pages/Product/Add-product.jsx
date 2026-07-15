@@ -21,6 +21,7 @@ const FormLayouts = () => {
     const [categories, setCategories] = useState([]);
     const [rackList, setRackList] = useState([]);
     const [rackDetails, setRackDetails] = useState([]);
+    const [mainCategories, setMainCategories] = useState([]);
 
     const UNIT_TYPES = [
         { value: 'NOS', label: 'NOS' },
@@ -50,6 +51,7 @@ const FormLayouts = () => {
             final_price: "",
             type: "",
             groupID: "",
+            main_category: "",
             product_category: "",
             warehouse: "",
             duty_charge: "",
@@ -72,6 +74,7 @@ const FormLayouts = () => {
             warehouse: Yup.string().required("This field is required"),
             duty_charge: Yup.string().required("This field is required"),
             product_category: Yup.string().required("This field is required"),
+            main_category: Yup.string().required("This field is required"),
         }),
 
         onSubmit: async (values, { resetForm }) => {
@@ -99,7 +102,11 @@ const FormLayouts = () => {
                     value.forEach(item => formData.append('family', item));
                 } else if (key === 'image' && value) {
                     formData.append('image', value);
-                } else if (key === 'warehouse' || key === 'product_category') {
+                } else if (
+                    key === "warehouse" ||
+                    key === "main_category" ||
+                    key === "product_category"
+                ) {
                     formData.append(key, Number(value));
                 } else {
                     formData.append(key, value);
@@ -205,6 +212,27 @@ const FormLayouts = () => {
     }, []);
 
     useEffect(() => {
+        const fetchMainCategories = async () => {
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}main/categories/add/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                setMainCategories(response.data.data);
+            } catch (error) {
+                toast.error("Error fetching main categories.");
+            }
+        };
+
+        fetchMainCategories();
+    }, [token]);
+
+    useEffect(() => {
         const fetchCategories = async () => {
             try {
                 const response = await axios.get(`${import.meta.env.VITE_APP_KEY}product/category/add/`, {
@@ -223,6 +251,11 @@ const FormLayouts = () => {
     const categoryOptions = categories.map(cat => ({
         value: cat.id,
         label: cat.category_name,
+    }));
+
+    const mainCategoryOptions = mainCategories.map((item) => ({
+        value: item.id,
+        label: item.category_name || item.name,
     }));
 
     useEffect(() => {
@@ -319,7 +352,7 @@ const FormLayouts = () => {
                                     {errorMessage && <Alert color="danger">{errorMessage}</Alert>}
                                     <Form onSubmit={formik.handleSubmit}>
                                         <Row>
-                                            <Col md={8}>
+                                            <Col md={6}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-name-Input">NAME</Label>
                                                     <Input
@@ -338,7 +371,7 @@ const FormLayouts = () => {
                                                     )}
                                                 </div>
                                             </Col>
-                                            <Col md={4}>
+                                            <Col md={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-name-Input">PURCHASE TYPE</Label>
                                                     <select
@@ -359,9 +392,7 @@ const FormLayouts = () => {
                                                     )}
                                                 </div>
                                             </Col>
-                                        </Row>
 
-                                        <Row>
                                             <Col md={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-hsn_code-Input">HSN CODE</Label>
@@ -381,6 +412,9 @@ const FormLayouts = () => {
                                                     )}
                                                 </div>
                                             </Col>
+                                        </Row>
+
+                                        <Row>
                                             <Col md={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-purchase_rate-Input">PURCHASE RATE</Label>
@@ -435,9 +469,7 @@ const FormLayouts = () => {
                                                     )}
                                                 </div>
                                             </Col>
-                                        </Row>
 
-                                        <Row>
                                             <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-tax-Input">TAX (%)</Label>
@@ -454,74 +486,6 @@ const FormLayouts = () => {
                                                     />
                                                     {formik.errors.tax && formik.touched.tax && (
                                                         <FormFeedback>{formik.errors.tax}</FormFeedback>
-                                                    )}
-                                                </div>
-                                            </Col>
-
-                                            <Col md={3}>
-                                                <div className="mb-3">
-                                                    <Label htmlFor="formrow-unit-Input">CHOOSE WAREHOUSE</Label>
-                                                    <select
-                                                        name="warehouse"
-                                                        id="formrow-unit-Input"
-                                                        className="form-control"
-                                                        value={formik.values.warehouse}
-                                                        onChange={formik.handleChange}
-                                                        onBlur={formik.handleBlur}
-                                                        invalid={formik.touched.warehouse && formik.errors.warehouse}
-                                                    >
-                                                        <option value="">Choose...</option>
-                                                        {warehouseDetails.map((unit) => (
-                                                            <option key={unit.id} value={unit.id}>{unit.name}</option>
-                                                        ))}
-                                                    </select>
-                                                    {formik.errors.unit && formik.touched.unit && (
-                                                        <FormFeedback>{formik.errors.unit}</FormFeedback>
-                                                    )}
-                                                </div>
-                                            </Col>
-                                            <Col lg={3}>
-                                                <div className="mb-3">
-                                                    <Label htmlFor="formrow-family-Input">DIVISION</Label>
-                                                    <select
-                                                        name="family"
-                                                        id="formrow-family-Input"
-                                                        className="form-control"
-                                                        value={formik.values.family}
-                                                        onChange={formik.handleChange}
-                                                        onBlur={formik.handleBlur}
-                                                        multiple
-                                                        invalid={formik.touched.family && formik.errors.family}
-                                                    >
-                                                        <option value="">Choose...</option>
-                                                        {family.map((item) => (
-                                                            <option key={item.id} value={item.id}>{item.name}</option>
-                                                        ))}
-                                                    </select>
-                                                    {formik.errors.family && formik.touched.family && (
-                                                        <FormFeedback>{formik.errors.family}</FormFeedback>
-                                                    )}
-                                                </div>
-                                            </Col>
-                                            <Col lg={3}>
-                                                <div className="mb-3">
-                                                    <Label htmlFor="formrow-unit-Input">UNIT</Label>
-                                                    <select
-                                                        name="unit"
-                                                        id="formrow-unit-Input"
-                                                        className="form-control"
-                                                        value={formik.values.unit}
-                                                        onChange={formik.handleChange}
-                                                        onBlur={formik.handleBlur}
-                                                        invalid={formik.touched.unit && formik.errors.unit}
-                                                    >
-                                                        <option value="">Choose...</option>
-                                                        {UNIT_TYPES.map((unit) => (
-                                                            <option key={unit.value} value={unit.value}>{unit.label}</option>
-                                                        ))}
-                                                    </select>
-                                                    {formik.errors.unit && formik.touched.unit && (
-                                                        <FormFeedback>{formik.errors.unit}</FormFeedback>
                                                     )}
                                                 </div>
                                             </Col>
@@ -661,6 +625,46 @@ const FormLayouts = () => {
                                                     )}
                                                 </div>
                                             </Col> */}
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-main-category-Input">
+                                                        MAIN CATEGORY
+                                                    </Label>
+
+                                                    <Select
+                                                        name="main_category"
+                                                        id="formrow-main-category-Input"
+                                                        options={mainCategoryOptions}
+                                                        value={
+                                                            mainCategoryOptions.find(
+                                                                (option) =>
+                                                                    String(option.value) ===
+                                                                    String(formik.values.main_category)
+                                                            ) || null
+                                                        }
+                                                        onChange={(option) =>
+                                                            formik.setFieldValue(
+                                                                "main_category",
+                                                                option ? option.value : ""
+                                                            )
+                                                        }
+                                                        onBlur={() =>
+                                                            formik.setFieldTouched("main_category", true)
+                                                        }
+                                                        placeholder="Search or choose main category"
+                                                        isClearable
+                                                    />
+
+                                                    {formik.touched.main_category &&
+                                                        formik.errors.main_category && (
+                                                            <div className="text-danger mt-1">
+                                                                {formik.errors.main_category}
+                                                            </div>
+                                                        )}
+                                                </div>
+                                            </Col>
+
                                             <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-category-Input">CATEGORY</Label>
@@ -679,6 +683,11 @@ const FormLayouts = () => {
                                                     )}
                                                 </div>
                                             </Col>
+
+                                        </Row>
+
+                                        <Row>
+
                                             <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-InputImage">UPLOAD IMAGE (File size should be less than 100kb)</Label>
@@ -724,7 +733,77 @@ const FormLayouts = () => {
                                                 )}
 
                                             </Col>
+
+                                            <Col md={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-unit-Input">CHOOSE WAREHOUSE</Label>
+                                                    <select
+                                                        name="warehouse"
+                                                        id="formrow-unit-Input"
+                                                        className="form-control"
+                                                        value={formik.values.warehouse}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.warehouse && formik.errors.warehouse}
+                                                    >
+                                                        <option value="">Choose...</option>
+                                                        {warehouseDetails.map((unit) => (
+                                                            <option key={unit.id} value={unit.id}>{unit.name}</option>
+                                                        ))}
+                                                    </select>
+                                                    {formik.errors.unit && formik.touched.unit && (
+                                                        <FormFeedback>{formik.errors.unit}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-family-Input">DIVISION</Label>
+                                                    <select
+                                                        name="family"
+                                                        id="formrow-family-Input"
+                                                        className="form-control"
+                                                        value={formik.values.family}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        multiple
+                                                        invalid={formik.touched.family && formik.errors.family}
+                                                    >
+                                                        <option value="">Choose...</option>
+                                                        {family.map((item) => (
+                                                            <option key={item.id} value={item.id}>{item.name}</option>
+                                                        ))}
+                                                    </select>
+                                                    {formik.errors.family && formik.touched.family && (
+                                                        <FormFeedback>{formik.errors.family}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-unit-Input">UNIT</Label>
+                                                    <select
+                                                        name="unit"
+                                                        id="formrow-unit-Input"
+                                                        className="form-control"
+                                                        value={formik.values.unit}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.unit && formik.errors.unit}
+                                                    >
+                                                        <option value="">Choose...</option>
+                                                        {UNIT_TYPES.map((unit) => (
+                                                            <option key={unit.value} value={unit.value}>{unit.label}</option>
+                                                        ))}
+                                                    </select>
+                                                    {formik.errors.unit && formik.touched.unit && (
+                                                        <FormFeedback>{formik.errors.unit}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
                                         </Row>
+
+
                                         <Row>
                                             <Col md={12}>
                                                 <Label>Rack Details</Label>

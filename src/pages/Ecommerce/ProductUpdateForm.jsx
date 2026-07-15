@@ -20,6 +20,7 @@ const EcommerenceAddProduct = () => {
     const [rackList, setRackList] = useState([]);
     const [rackDetails, setRackDetails] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [mainCategories, setMainCategories] = useState([]);
     const [selectedWarehouse, setSelectedWarehouse] = useState(null);
     const [selectedWarehouseName, setSelectedWarehouseName] = useState("");
     const [beforeData, setBeforeData] = useState(null);
@@ -42,6 +43,7 @@ const EcommerenceAddProduct = () => {
             image: null,
             groupID: '',
             landing_cost: '',
+            main_category: '',
             product_category: '',
             rack_details: [],
             final_price: '',
@@ -59,7 +61,7 @@ const EcommerenceAddProduct = () => {
             // stock: yup.number().required('Please Enter Stock Quantity'),
             // color: yup.string().required('Please Enter Color'),
             // size: yup.string().required('Please Enter Size'),
-
+            main_category: yup.string().required('Please select a Main Category'),
             groupID: yup.string().required('Please Enter groupID')
 
         }),
@@ -177,6 +179,37 @@ const EcommerenceAddProduct = () => {
     ];
 
     useEffect(() => {
+        const fetchMainCategories = async () => {
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}main/categories/add/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (
+                    response.data?.status === "success" &&
+                    Array.isArray(response.data?.data)
+                ) {
+                    setMainCategories(response.data.data);
+                } else {
+                    setMainCategories([]);
+                    toast.error("Unexpected main category data format.");
+                }
+            } catch (error) {
+                console.error("Main category fetch error:", error);
+                setMainCategories([]);
+                toast.error("Error fetching main categories.");
+            }
+        };
+
+        fetchMainCategories();
+    }, [token]);
+
+    useEffect(() => {
         const fetchCategories = async () => {
             try {
                 const response = await axios.get(`${import.meta.env.VITE_APP_KEY}product/category/add/`, {
@@ -259,6 +292,11 @@ const EcommerenceAddProduct = () => {
                         product_category: productData.data.product_category !== undefined && productData.data.product_category !== null
                             ? String(productData.data.product_category)
                             : "",
+                        main_category:
+                            productData.data.main_category !== undefined &&
+                                productData.data.main_category !== null
+                                ? String(productData.data.main_category)
+                                : "",
                         rack_details: productData.data.rack_details || [],
                         retail_price: productData.data.retail_price || ''
                     });
@@ -333,6 +371,16 @@ const EcommerenceAddProduct = () => {
         return c ? c.category_name : null;   // fallback handled below
     };
 
+    const getMainCategoryName = (id) => {
+        if (id == null || id === "") return null;
+
+        const category = mainCategories.find(
+            item => String(item.id) === String(id)
+        );
+
+        return category ? category.name : null;
+    };
+
     const buildAfterSnapshot = (values, rackDetailsLocal) => ({
         name: values.name || "",
         hsn_code: values.hsn_code || "",
@@ -351,6 +399,9 @@ const EcommerenceAddProduct = () => {
         groupID: values.groupID || "",
         landing_cost: Number(values.landing_cost ?? 0),
         product_category: getCategoryName(values.product_category) ?? values.product_category,
+        main_category:
+            getMainCategoryName(values.main_category) ??
+            values.main_category,
         rack_details: normalizeRackDetails(rackDetailsLocal),
         retail_price: Number(values.retail_price ?? 0),
         final_price: Number(values.final_price ?? 0),
@@ -377,6 +428,9 @@ const EcommerenceAddProduct = () => {
             groupID: raw.groupID || "",
             landing_cost: Number(raw.landing_cost ?? 0),
             product_category: getCategoryName(raw.product_category) ?? raw.product_category,
+            main_category:
+                getMainCategoryName(raw.main_category) ??
+                raw.main_category,
             rack_details: normalizeRackDetails(raw.rack_details),
             retail_price: Number(raw.retail_price ?? 0),
             final_price: Number(raw.final_price ?? 0),
@@ -841,6 +895,45 @@ const EcommerenceAddProduct = () => {
                                                             <FormFeedback type="invalid">{formik.errors.groupID}</FormFeedback>
                                                         ) : null
                                                     }
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-main-category-Input">
+                                                        Main Category
+                                                    </Label>
+
+                                                    <select
+                                                        name="main_category"
+                                                        id="formrow-main-category-Input"
+                                                        className={`form-control ${formik.touched.main_category &&
+                                                            formik.errors.main_category
+                                                            ? "is-invalid"
+                                                            : ""
+                                                            }`}
+                                                        value={formik.values.main_category}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                    >
+                                                        <option value="">Choose Main Category...</option>
+
+                                                        {mainCategories.map((category) => (
+                                                            <option
+                                                                key={category.id}
+                                                                value={String(category.id)}
+                                                            >
+                                                                {category.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+
+                                                    {formik.touched.main_category &&
+                                                        formik.errors.main_category && (
+                                                            <FormFeedback className="d-block">
+                                                                {formik.errors.main_category}
+                                                            </FormFeedback>
+                                                        )}
                                                 </div>
                                             </Col>
 

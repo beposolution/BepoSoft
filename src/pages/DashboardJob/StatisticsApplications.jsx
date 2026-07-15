@@ -51,6 +51,8 @@ const StatisticsApplications = () => {
     const [teamSummary, setTeamSummary] = useState(null);
     const [teamLoading, setTeamLoading] = useState(false);
     const [orderSummary, setOrderSummary] = useState([]);
+    const [mainCategorySummary, setMainCategorySummary] = useState([]);
+    const [mainCategoryLoading, setMainCategoryLoading] = useState(false);
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -251,6 +253,42 @@ const StatisticsApplications = () => {
 
         if (token) {
             fetchCallDurationData();
+        }
+    }, [token]);
+
+
+    useEffect(() => {
+        const fetchMainCategorySummary = async () => {
+            try {
+                setMainCategoryLoading(true);
+
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}products/main/category/wise/summary/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                const filteredResults = Array.isArray(response?.data?.results)
+                    ? response.data.results.filter(
+                        (item) =>
+                            item?.main_category_name?.trim().toUpperCase() !== "BEPOCART"
+                    )
+                    : [];
+
+                setMainCategorySummary(filteredResults);
+            } catch (error) {
+                setMainCategorySummary([]);
+                toast.error("Failed to fetch main category product summary");
+            } finally {
+                setMainCategoryLoading(false);
+            }
+        };
+
+        if (token) {
+            fetchMainCategorySummary();
         }
     }, [token]);
 
@@ -1516,6 +1554,95 @@ const StatisticsApplications = () => {
                                 </div>
 
                                 <div className="col-md-4">
+
+                                    {/* Main Category Product Summary */}
+                                    <div className="p-3 border rounded-4 shadow-sm bg-white mb-2">
+                                        <h5 className="text-center text-primary mb-3">
+                                            📦 Main Category Product Summary
+                                        </h5>
+
+                                        {mainCategoryLoading ? (
+                                            <div className="text-center py-4">
+                                                <div
+                                                    className="spinner-border spinner-border-sm text-primary"
+                                                    role="status"
+                                                />
+
+                                                <div className="text-muted mt-2">
+                                                    Loading product summary...
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <Table
+                                                bordered
+                                                responsive
+                                                size="sm"
+                                                className="mb-0 text-center align-middle"
+                                            >
+                                                <thead>
+                                                    <tr>
+                                                        <th>Category</th>
+                                                        <th>Total Stock</th>
+                                                        <th>Wholesale Rate</th>
+                                                    </tr>
+                                                </thead>
+
+                                                <tbody>
+                                                    {mainCategorySummary.length > 0 ? (
+                                                        mainCategorySummary.map((item, index) => (
+                                                            <tr key={item.main_category_id || index}>
+                                                                <td className="fw-bold">
+                                                                    {item.main_category_name || "-"}
+                                                                </td>
+
+                                                                <td className="fw-bold text-primary">
+                                                                    {Number(item.total_stock || 0)}
+                                                                </td>
+
+                                                                <td className="fw-bold text-success">
+                                                                    ₹ {fmtINR(item.total_selling_value)}
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan="3" className="text-muted py-3">
+                                                                No product summary available
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+
+                                                {mainCategorySummary.length > 0 && (
+                                                    <tfoot>
+                                                        <tr className="table-primary fw-bold">
+                                                            <td>GRAND TOTAL</td>
+
+                                                            <td>
+                                                                {mainCategorySummary.reduce(
+                                                                    (sum, item) =>
+                                                                        sum + Number(item.total_stock || 0),
+                                                                    0
+                                                                )}
+                                                            </td>
+
+                                                            <td>
+                                                                ₹ {fmtINR(
+                                                                    mainCategorySummary.reduce(
+                                                                        (sum, item) =>
+                                                                            sum +
+                                                                            Number(item.total_selling_value || 0),
+                                                                        0
+                                                                    )
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    </tfoot>
+                                                )}
+                                            </Table>
+                                        )}
+                                    </div>
+
                                     <div className="p-3 border rounded-4 shadow-sm bg-white">
                                         <h5 className="text-center text-secondary mb-2">💰 Expense Summary</h5>
                                         <p className="text-center text-muted mb-1">

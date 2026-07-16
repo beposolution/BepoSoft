@@ -104,6 +104,10 @@ const BasicTable = () => {
             return `${baseUrl}orders/cycling/skating/?${params.toString()}`;
         }
 
+        if (role === "Marketing") {
+            return `${baseUrl}orders/my/family/?${params.toString()}`;
+        }
+
         return `${baseUrl}orders/?${params.toString()}`;
     };
 

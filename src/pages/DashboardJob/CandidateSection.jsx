@@ -862,7 +862,7 @@ const CandidateSection = () => {
                                             </Row>
                                         </div>
 
-                                        <div
+                                        {/* <div
                                             style={{
                                                 marginTop: "28px",
                                                 background: "#ffffff",
@@ -999,7 +999,7 @@ const CandidateSection = () => {
                                                     </tbody>
                                                 </table>
                                             </div>
-                                        </div>
+                                        </div> */}
                                     </>
                                 )}
                             </CardBody>

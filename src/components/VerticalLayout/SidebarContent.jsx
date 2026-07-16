@@ -334,7 +334,7 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/Orders/">{props.t("View Order List")}</Link>
                   </li>
-                  {role !== 'CSO' && (
+                  {role !== 'CSO' && role !== 'Marketing' && (
                     <>
                       <li>
                         <Link to="/orders/invoicecreated">{props.t("Invoice Created List")}</Link>

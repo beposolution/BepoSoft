@@ -40,6 +40,7 @@ const AllMembers = () => {
     const [addModal, setAddModal] = useState(false);
     const [editModal, setEditModal] = useState(false);
     const [selectedMemberId, setSelectedMemberId] = useState(null);
+    const [deleteLoadingId, setDeleteLoadingId] = useState(null);
 
     const [editInitialValues, setEditInitialValues] = useState({
         team: "",
@@ -316,6 +317,47 @@ const AllMembers = () => {
         },
     });
 
+    const handleDeleteMember = async memberId => {
+        if (!memberId) {
+            toast.error("Member id missing");
+            return;
+        }
+
+        const confirmed = window.confirm(
+            "Are you sure you want to delete this team member?"
+        );
+
+        if (!confirmed) return;
+
+        try {
+            setDeleteLoadingId(memberId);
+
+            const res = await axios.delete(
+                buildUrl(`staff/attendance/team/members/edit/${memberId}/`),
+                {
+                    headers: authHeaders,
+                }
+            );
+
+            if (
+                res.status === 200 ||
+                res.status === 202 ||
+                res.status === 204
+            ) {
+                toast.success("Team member deleted successfully");
+                await fetchMembers();
+            }
+        } catch (error) {
+            toast.error(
+                error?.response?.data?.message ||
+                error?.response?.data?.detail ||
+                "Delete failed"
+            );
+        } finally {
+            setDeleteLoadingId(null);
+        }
+    };
+
     if (loading) {
         return (
             <div className="page-content" style={{ background: "#f5f7fb", minHeight: "100vh" }}>
@@ -542,20 +584,48 @@ const AllMembers = () => {
                                                             </td>
 
                                                             <td style={tdStyle}>
-                                                                <Button
-                                                                    size="sm"
-                                                                    onClick={() => openEditModal(member)}
-                                                                    style={{
-                                                                        borderRadius: "10px",
-                                                                        padding: "7px 14px",
-                                                                        fontWeight: 700,
-                                                                        background: "#f59e0b",
-                                                                        border: "none",
-                                                                    }}
-                                                                >
-                                                                    <i className="bx bx-edit me-1"></i>
-                                                                    Edit
-                                                                </Button>
+                                                                <div className="d-flex align-items-center gap-2">
+                                                                    <Button
+                                                                        size="sm"
+                                                                        onClick={() => openEditModal(member)}
+                                                                        disabled={deleteLoadingId === member.id}
+                                                                        style={{
+                                                                            borderRadius: "10px",
+                                                                            padding: "7px 14px",
+                                                                            fontWeight: 700,
+                                                                            background: "#f59e0b",
+                                                                            border: "none",
+                                                                        }}
+                                                                    >
+                                                                        <i className="bx bx-edit me-1"></i>
+                                                                        Edit
+                                                                    </Button>
+
+                                                                    <Button
+                                                                        size="sm"
+                                                                        color="danger"
+                                                                        onClick={() => handleDeleteMember(member.id)}
+                                                                        disabled={deleteLoadingId === member.id}
+                                                                        style={{
+                                                                            borderRadius: "10px",
+                                                                            padding: "7px 14px",
+                                                                            fontWeight: 700,
+                                                                            border: "none",
+                                                                        }}
+                                                                    >
+                                                                        {deleteLoadingId === member.id ? (
+                                                                            <>
+                                                                                <Spinner size="sm" className="me-1" />
+                                                                                Deleting
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <i className="bx bx-trash me-1"></i>
+                                                                                Delete
+                                                                            </>
+                                                                        )}
+                                                                    </Button>
+                                                                </div>
                                                             </td>
 
                                                             {memberIndex === 0 && (

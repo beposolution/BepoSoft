@@ -465,6 +465,8 @@ import AddLPO from "../pages/LocalPurchase/AddLPO";
 import MyLPO from "../pages/LocalPurchase/MyLPO";
 import AllLPO from "../pages/LocalPurchase/AllLPO";
 import LPODetail from "../pages/JobPages/LPODetail";
+import CommissionReceipt from "../pages/Receipts/CommissionReceipt";
+import CommissionReceiptList from "../pages/Receipts/CommissionReceiptList";
 
 
 
@@ -573,6 +575,8 @@ const authProtectedRoutes = [
   { path: "/advance/transfer/list/", component: <AmountTransferList /> },
   { path: "/cod/bank/transfer/", component: <CODTransfer /> },
   { path: "/cod/bank/transfer/view/", component: <CODTransferList /> },
+  { path: "/commission/receipts/", component: <CommissionReceipt /> },
+  { path: "/commision/receipts/list/", component: <CommissionReceiptList /> },
 
   // company
 

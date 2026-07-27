@@ -410,7 +410,7 @@ const SidebarContent = (props) => {
               <li>
                 <Link to="/#" className="has-arrow">
                   <AiFillProduct size={17} style={{ marginRight: '6px' }} />
-                  <span>{props.t("purchase")}</span>
+                  <span>{props.t("Purchase")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
                   <li>
@@ -435,11 +435,51 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
+            {role === 'Warehouse Admin' || role === 'warehouse' ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <AiFillProduct size={17} style={{ marginRight: '6px' }} />
+                  <span>{props.t("Purchase")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+
+                  <li>
+                    <Link to="/add/products/">{props.t("Purchase")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/product/list/">{props.t("Purchase List")}</Link>
+                  </li>
+
+                </ul>
+              </li>
+            ) : null}
+
+
+            <li>
+              <Link to="/#" className="has-arrow">
+                <AiFillProduct size={17} style={{ marginRight: '6px' }} />
+                <span>{props.t("Local Purchase")}</span>
+              </Link>
+              <ul className="sub-menu" aria-expanded="false">
+                <li>
+                  <Link to="/lpo/create">{props.t("Create Purchase")}</Link>
+                </li>
+                <li>
+                  <Link to="/lpo">{props.t("My Purchase List")}</Link>
+                </li>
+                {role === 'ADMIN' || role === 'CMO' || role === 'HR' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
+                  <li>
+                    <Link to="/lpo/all">{props.t("All Purchase List")}</Link>
+                  </li>
+                ) : null}
+              </ul>
+            </li>
+
             {role === 'Marketing' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <AiFillProduct size={17} style={{ marginRight: '6px' }} />
-                  <span>{props.t("purchase")}</span>
+                  <span>{props.t("Purchase")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
 
@@ -823,6 +863,25 @@ const SidebarContent = (props) => {
                       </li>
                     </>
                   )}
+                </ul>
+              </li>
+            )}
+
+            {['warehouse', 'Warehouse Admin'].includes(role) && (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <TbReportSearch size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("Reports")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+              
+                  <li>
+                    <Link to="/product/sold/report/">{props.t("Product Sold Report")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/product/stock/report/">{props.t("Product Stock Report")}</Link>
+                  </li>
+                 
                 </ul>
               </li>
             )}

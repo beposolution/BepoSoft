@@ -461,6 +461,10 @@ import AllAddTeamMembers from "../pages/SalesTeam/AllAddTeamMembers";
 import MailBox from "../pages/MailBox/MailBox";
 import MyProfile from "../pages/Profile/MyProfile";
 import MainCategoryPage from "../pages/Product/MainCategoryPage";
+import AddLPO from "../pages/LocalPurchase/AddLPO";
+import MyLPO from "../pages/LocalPurchase/MyLPO";
+import AllLPO from "../pages/LocalPurchase/AllLPO";
+import LPODetail from "../pages/JobPages/LPODetail";
 
 
 
@@ -780,6 +784,12 @@ const authProtectedRoutes = [
   { path: "/admin/category/report/view/", component: <CategoryReport /> },
   { path: "/admin/sales/cd/report/view/", component: <SalesCDReport /> },
 
+
+  // LPO
+  { path: "/lpo/create", component: <AddLPO /> },
+  { path: "/lpo", component: <MyLPO /> },
+  { path: "/lpo/all", component: <AllLPO /> },
+  { path: "/lpo/edit/:id", component: <LPODetail /> },
 
 
 

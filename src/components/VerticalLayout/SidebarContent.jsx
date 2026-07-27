@@ -538,6 +538,9 @@ const SidebarContent = (props) => {
                     <Link to="/advance/transfer/">{props.t("Advance Amount Transfer")}</Link>
                   </li>
                   <li>
+                    <Link to="/commission/receipts/">{props.t("Dealer Commission Receipt")}</Link>
+                  </li>
+                  <li>
                     <Link to="/internal/bank/transfer/view/">{props.t("Bank Transfer Details")}</Link>
                   </li>
                   <li>
@@ -560,6 +563,9 @@ const SidebarContent = (props) => {
                   </li>
                   <li>
                     <Link to="/advance/transfer/list/">{props.t("Advance Amount Transfer View")}</Link>
+                  </li>
+                  <li>
+                    <Link to="/commision/receipts/list/">{props.t("Dealer Commission Receipts List")}</Link>
                   </li>
                 </ul>
               </li>

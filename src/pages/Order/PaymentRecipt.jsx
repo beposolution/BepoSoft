@@ -11,6 +11,7 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
     const { id } = useParams();
     const [packing, setPacking] = useState([]);
     const [paymentRecipts, setPaymentRecipts] = useState([]);
+    const [commissionReceipts, setCommissionReceipts] = useState([]);
     const [totalAmount, setTotalAmount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -272,10 +273,15 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                 { headers }
             );
 
-            const { order } = orderItemsResponse.data;
+            const { order, commission_receipts } = orderItemsResponse.data;
 
             // FIXED
             setPaymentRecipts(order.recived_payment || []);
+            setCommissionReceipts(
+                Array.isArray(commission_receipts)
+                    ? commission_receipts
+                    : []
+            );
             setTotalAmount(order.total_amount || 0);
 
             // CRITICAL FIX
@@ -634,6 +640,74 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                                             ) : (
                                                 <tr>
                                                     <td colSpan="6" style={{ textAlign: 'center', color: 'gray' }}>No receipts available</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </Table>
+                                </div>
+                            </CardBody>
+                            {/* Display commission receipts linked to this order. */}
+                            <CardBody>
+                                <CardTitle className="h4">COMMISSION RECEIPT DETAILS</CardTitle>
+
+                                <div className="table-responsive">
+                                    <Table className="table table-bordered mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>RECEIPT NO</th>
+                                                <th>AMOUNT</th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody>
+                                            {commissionReceipts?.length > 0 ? (
+                                                <>
+                                                    {commissionReceipts?.map((receipt, index) => (
+                                                        <tr key={`${receipt?.payment_receipt}-${index}`}>
+                                                            <th scope="row">{index + 1}</th>
+
+                                                            <td>
+                                                                {receipt?.payment_receipt || "N/A"}
+                                                            </td>
+
+                                                            <td>
+                                                                ₹{Number(receipt?.amount || 0).toFixed(2)}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+
+                                                    <tr>
+                                                        <td
+                                                            colSpan="2"
+                                                            className="text-end fw-bold"
+                                                        >
+                                                            TOTAL COMMISSION AMOUNT
+                                                        </td>
+
+                                                        <td className="fw-bold">
+                                                            ₹
+                                                            {commissionReceipts
+                                                                .reduce(
+                                                                    (total, receipt) =>
+                                                                        total + Number(receipt?.amount || 0),
+                                                                    0
+                                                                )
+                                                                .toFixed(2)}
+                                                        </td>
+                                                    </tr>
+                                                </>
+                                            ) : (
+                                                <tr>
+                                                    <td
+                                                        colSpan="3"
+                                                        style={{
+                                                            textAlign: "center",
+                                                            color: "gray"
+                                                        }}
+                                                    >
+                                                        No commission receipts available
+                                                    </td>
                                                 </tr>
                                             )}
                                         </tbody>

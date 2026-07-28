@@ -36,6 +36,7 @@ const BasicTable = () => {
     const [companys, setCompany] = useState([]);
     const [banks, setBanks] = useState([]);
     const [paymentReceipts, setPaymentReceipts] = useState([]);
+    const [commissionReceipts, setCommissionReceipts] = useState([]);
     const [grvList, setGrvList] = useState([]);
     const [refundReceipts, setRefundReceipts] = useState([]);
     const [advanceTransfers, setAdvanceTransfers] = useState([]);
@@ -89,6 +90,7 @@ const BasicTable = () => {
 
                 setAdvanceReceipts(ledgerResponse.data.data.advance_receipts || []);
                 setPaymentReceipts(ledgerResponse.data.data.payment_receipts || []);
+                setCommissionReceipts(ledgerResponse.data.data.commission_receipts || []);
                 setGrvList(ledgerResponse.data.data.grv || []);
                 setRefundReceipts(ledgerResponse.data.data.refund_receipts || []);
                 setAdvanceTransfers(ledgerResponse.data.data.advance_transfers || []);
@@ -183,6 +185,25 @@ const BasicTable = () => {
             });
         });
 
+        // ===== COMMISSION RECEIPTS =====
+        commissionReceipts.forEach((receipt) => {
+            rows.push({
+                key: `COM-${receipt.id}`,
+                date: receipt.received_at,
+                invoice:
+                    receipt.order_name ||
+                    receipt.payment_receipt ||
+                    "-",
+                particular: `Commission Receipt${receipt.payment_receipt
+                    ? ` (${receipt.payment_receipt})`
+                    : ""
+                    }`,
+                particularColor: "#20c997",
+                debit: null,
+                credit: Number(receipt.amount || 0),
+            });
+        });
+
         // ===== REFUNDS =====
         refundReceipts.forEach((refund) => {
             rows.push({
@@ -246,6 +267,7 @@ const BasicTable = () => {
         filteredOrders,
         advanceReceipts,
         paymentReceipts,
+        commissionReceipts,
         refundReceipts,
         grvList,
         advanceTransfers,
@@ -342,6 +364,8 @@ const BasicTable = () => {
                 return { rgb: "FFD1ECF1" };
             case "#6f42c1":
                 return { rgb: "FFD6E4FF" };
+            case "#20c997":
+                return { rgb: "FFD1F2EB" };
             case "#fd7e14":
                 return { rgb: "FFFFE5D0" };
             case "#dc3545":
@@ -550,14 +574,15 @@ const BasicTable = () => {
                 credit: row.credit !== null ? row.credit.toFixed(2) : "-",
                 _particularColor:
                     row.particularColor === "red" ? [220, 53, 69] :
-                    row.particularColor === "green" ? [40, 167, 69] :
-                    row.particularColor === "blue" ? [0, 123, 255] :
-                    row.particularColor === "#6f42c1" ? [111, 66, 193] :
-                    row.particularColor === "#fd7e14" ? [253, 126, 20] :
-                    row.particularColor === "#dc3545" ? [220, 53, 69] :
-                    row.particularColor === "#0d6efd" ? [13, 110, 253] :
-                    row.particularColor === "#198754" ? [25, 135, 84] :
-                    [0, 0, 0],
+                        row.particularColor === "green" ? [40, 167, 69] :
+                            row.particularColor === "blue" ? [0, 123, 255] :
+                                row.particularColor === "#6f42c1" ? [111, 66, 193] :
+                                    row.particularColor === "#20c997" ? [32, 201, 151] :
+                                        row.particularColor === "#fd7e14" ? [253, 126, 20] :
+                                            row.particularColor === "#dc3545" ? [220, 53, 69] :
+                                                row.particularColor === "#0d6efd" ? [13, 110, 253] :
+                                                    row.particularColor === "#198754" ? [25, 135, 84] :
+                                                        [0, 0, 0],
                 _bold: false,
             })),
         ];

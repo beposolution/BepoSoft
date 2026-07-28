@@ -167,6 +167,12 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
             0
         );
 
+        // Commission Receipts
+        totalCredit += (ledgerData.commission_receipts || []).reduce(
+            (sum, receipt) => sum + Number(receipt.amount || 0),
+            0
+        );
+
         // Advance Receipts
         totalCredit += (ledgerData.advance_receipts || []).reduce(
             (sum, r) => sum + Number(r.amount || 0),
@@ -389,6 +395,13 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
     const codReturnAmount = getCodReturnTotal(ledgerData?.grv || []);
     const returnExchangeAmount = getGrvTotal(ledgerData?.grv || []);
     const refundIssuedAmount = getRefundTotal(ledgerData?.refund_receipts || []);
+    const commissionReceiptAmount = (
+        ledgerData?.commission_receipts || []
+    ).reduce(
+        (sum, receipt) =>
+            sum + Number(receipt.amount || 0),
+        0
+    );
 
     // --- Invoice-level balance (display only) ---
     const invoiceBalance =
@@ -510,6 +523,16 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                                     Customer Ledger Credit: <span>₹0.00</span>
                                     <br />
                                     Ledger Debited: <span>₹0.00</span>
+                                </>
+                            )}
+
+                            {commissionReceiptAmount > 0 && (
+                                <>
+                                    <br />
+                                    Commission Receipt:{" "}
+                                    <span style={{ color: "#20c997" }}>
+                                        ₹{commissionReceiptAmount.toFixed(2)}
+                                    </span>
                                 </>
                             )}
 

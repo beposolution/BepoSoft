@@ -467,6 +467,7 @@ import AllLPO from "../pages/LocalPurchase/AllLPO";
 import LPODetail from "../pages/JobPages/LPODetail";
 import CommissionReceipt from "../pages/Receipts/CommissionReceipt";
 import CommissionReceiptList from "../pages/Receipts/CommissionReceiptList";
+import ProductRackUsabilityReport from "../pages/Resports/ProductRackUsabilityReport";
 
 
 
@@ -744,6 +745,8 @@ const authProtectedRoutes = [
 
   // comparison report
   { path: "/order/comparison/report/", component: <OrderComparisonReport /> },
+
+  { path: "/product/rack/usability/report/", component: <ProductRackUsabilityReport /> },
 
 
   { path: "/sales/reports/", component: <Salesreport /> },

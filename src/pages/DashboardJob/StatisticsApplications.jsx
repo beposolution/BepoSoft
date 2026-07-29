@@ -1132,8 +1132,25 @@ const StatisticsApplications = () => {
                                         ) : (
                                             <Row className="g-3">
 
+                                                <Col md={3}>
+                                                    <div className="bg-light rounded p-3 text-center">
+                                                        <small className="text-muted">Attendance %</small>
+                                                        <h4 className="mb-0 text-success">
+                                                            {teamSummary?.attendance_percentage || 0}
+                                                        </h4>
+                                                    </div>
+                                                </Col>
 
-                                                <Col md={4}>
+                                                <Col md={3}>
+                                                    <div className="bg-light rounded p-3 text-center">
+                                                        <small className="text-muted">No. of Staffs</small>
+                                                        <h4 className="mb-0 text-success">
+                                                            {teamSummary?.total_members || 0}
+                                                        </h4>
+                                                    </div>
+                                                </Col>
+
+                                                <Col md={2}>
                                                     <div className="bg-light rounded p-3 text-center">
                                                         <small className="text-muted">Present</small>
                                                         <h4 className="mb-0 text-success">
@@ -1142,7 +1159,7 @@ const StatisticsApplications = () => {
                                                     </div>
                                                 </Col>
 
-                                                <Col md={4}>
+                                                <Col md={2}>
                                                     <div className="bg-light rounded p-3 text-center">
                                                         <small className="text-muted">Absent</small>
                                                         <h4 className="mb-0 text-danger">
@@ -1151,7 +1168,7 @@ const StatisticsApplications = () => {
                                                     </div>
                                                 </Col>
 
-                                                <Col md={4}>
+                                                <Col md={2}>
                                                     <div className="bg-light rounded p-3 text-center">
                                                         <small className="text-muted">Half Day</small>
                                                         <h4 className="mb-0 text-warning">

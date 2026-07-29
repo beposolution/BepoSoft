@@ -468,6 +468,7 @@ import LPODetail from "../pages/JobPages/LPODetail";
 import CommissionReceipt from "../pages/Receipts/CommissionReceipt";
 import CommissionReceiptList from "../pages/Receipts/CommissionReceiptList";
 import ProductRackUsabilityReport from "../pages/Resports/ProductRackUsabilityReport";
+import GrvFamilyPaymentSummaryReport from "../pages/Resports/GrvFamilyPaymentSummaryReport";
 
 
 
@@ -747,6 +748,7 @@ const authProtectedRoutes = [
   { path: "/order/comparison/report/", component: <OrderComparisonReport /> },
 
   { path: "/product/rack/usability/report/", component: <ProductRackUsabilityReport /> },
+  { path: "/grv/family/payment/summary/report/", component: <GrvFamilyPaymentSummaryReport /> },
 
 
   { path: "/sales/reports/", component: <Salesreport /> },

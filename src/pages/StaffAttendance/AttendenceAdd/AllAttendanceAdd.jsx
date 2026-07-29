@@ -37,6 +37,11 @@ const AllAttendanceAdd = () => {
     const [attendanceData, setAttendanceData] = useState([]);
     const [selectedTeam, setSelectedTeam] = useState("");
 
+    const [teamCountData, setTeamCountData] = useState([]);
+    const [teamCountSummary, setTeamCountSummary] = useState(null);
+    const [teamCountLoading, setTeamCountLoading] = useState(false);
+    const [showTeamWiseSummary, setShowTeamWiseSummary] = useState(false);
+
     const [staffSearch, setStaffSearch] = useState("");
 
     const [teamSummary, setTeamSummary] = useState({
@@ -164,15 +169,18 @@ const AllAttendanceAdd = () => {
         return flattenedAttendance;
     };
 
-    const fetchAttendance = async () => {
+    const fetchAttendance = async (
+        startDate = filters.start_date,
+        endDate = filters.end_date
+    ) => {
         try {
             const res = await axios.get(`${baseUrl}staff/attendance/`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
                 params: {
-                    start_date: filters.start_date || undefined,
-                    end_date: filters.end_date || undefined,
+                    start_date: startDate || undefined,
+                    end_date: endDate || undefined,
                 },
             });
 
@@ -189,10 +197,68 @@ const AllAttendanceAdd = () => {
         }
     };
 
+    const fetchTeamAttendanceCount = async (
+        startDate = filters.start_date,
+        endDate = filters.end_date
+    ) => {
+        try {
+            setTeamCountLoading(true);
+
+            const res = await axios.get(
+                `${baseUrl}staff/attendance/team/wise/count/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                    params: {
+                        start_date: startDate || undefined,
+                        end_date: endDate || undefined,
+                    },
+                }
+            );
+
+            setTeamCountData(res?.data?.data || []);
+            setTeamCountSummary(res?.data?.summary || null);
+        } catch {
+            setTeamCountData([]);
+            setTeamCountSummary(null);
+            toast.error("Failed to load team attendance summary");
+        } finally {
+            setTeamCountLoading(false);
+        }
+    };
+
+    const handleAttendanceSearch = async () => {
+        if (!filters.start_date || !filters.end_date) {
+            toast.warning("Please select start date and end date");
+            return;
+        }
+
+        if (filters.start_date > filters.end_date) {
+            toast.warning("Start date cannot be after end date");
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            await Promise.all([
+                fetchAttendance(),
+                fetchTeamAttendanceCount(),
+            ]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         const init = async () => {
             setLoading(true);
-            await Promise.all([fetchTeams(), fetchAttendance()]);
+            await Promise.all([
+                fetchTeams(),
+                fetchAttendance(),
+                fetchTeamAttendanceCount(),
+            ]);
             setLoading(false);
         };
 
@@ -355,16 +421,26 @@ const AllAttendanceAdd = () => {
         },
     });
 
-    const resetFilters = () => {
+    const resetFilters = async () => {
+        const startDate = todayDate;
+        const endDate = todayDate;
+
         setFilters({
-            start_date: todayDate,
-            end_date: todayDate,
-            // member: "",
+            start_date: startDate,
+            end_date: endDate,
+            member: "",
         });
 
-        setTimeout(() => {
-            fetchAttendance();
-        }, 0);
+        setLoading(true);
+
+        try {
+            await Promise.all([
+                fetchAttendance(startDate, endDate),
+                fetchTeamAttendanceCount(startDate, endDate),
+            ]);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const getStatusBadge = status => {
@@ -570,16 +646,7 @@ const AllAttendanceAdd = () => {
                         </div>
                     </div>
 
-                    <Card
-                        className="border-0 mb-4"
-                        style={{
-                            borderRadius: "22px",
-                            boxShadow: "0 10px 35px rgba(15, 23, 42, 0.08)",
-                            overflow: "visible",
-                        }}
-                    >
 
-                    </Card>
 
                     <Card
                         className="border-0 mb-4"
@@ -662,7 +729,7 @@ const AllAttendanceAdd = () => {
                                     <Button
                                         color="primary"
                                         className="w-100"
-                                        onClick={fetchAttendance}
+                                        onClick={handleAttendanceSearch}
                                         style={{
                                             borderRadius: "12px",
                                             minHeight: "46px",
@@ -675,6 +742,252 @@ const AllAttendanceAdd = () => {
                                     </Button>
                                 </Col>
                             </Row>
+                        </CardBody>
+                    </Card>
+
+                    <Card
+                        className="border-0 mb-4"
+                        style={{
+                            borderRadius: "22px",
+                            boxShadow: "0 10px 35px rgba(15, 23, 42, 0.08)",
+                            overflow: "visible",
+                        }}
+                    >
+                        <CardBody className="p-4">
+                            <div className="d-flex justify-content-between align-items-center mb-4">
+                                <div>
+                                    <h5 className="mb-1 fw-bold text-dark">
+                                        Team Attendance Summary
+                                    </h5>
+
+                                    <p className="text-muted mb-0">
+                                        {filters.start_date} to {filters.end_date}
+                                    </p>
+                                </div>
+
+                                <Button
+                                    color="light"
+                                    onClick={() =>
+                                        setShowTeamWiseSummary(prev => !prev)
+                                    }
+                                    style={{
+                                        width: "42px",
+                                        height: "42px",
+                                        borderRadius: "50%",
+                                        border: "1px solid #e5e7eb",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        padding: 0,
+                                    }}
+                                    title={
+                                        showTeamWiseSummary
+                                            ? "Hide team-wise summary"
+                                            : "Show team-wise summary"
+                                    }
+                                >
+                                    <i
+                                        className={
+                                            showTeamWiseSummary
+                                                ? "bx bx-chevron-up"
+                                                : "bx bx-chevron-down"
+                                        }
+                                        style={{
+                                            fontSize: "24px",
+                                        }}
+                                    />
+                                </Button>
+                            </div>
+
+                            {teamCountLoading ? (
+                                <div className="text-center py-4">
+                                    <Spinner size="sm" color="primary" />
+                                </div>
+                            ) : (
+                                <>
+                                    <Row className="g-3 mb-4">
+                                        <Col xl={2} lg={4} md={6}>
+                                            <div
+                                                className="p-3 text-center h-100"
+                                                style={{
+                                                    background: "#eff6ff",
+                                                    borderRadius: "14px",
+                                                }}
+                                            >
+                                                <small className="text-muted">
+                                                    Attendance %
+                                                </small>
+
+                                                <h4 className="mb-0 mt-1 text-primary fw-bold">
+                                                    {Number(
+                                                        teamCountSummary?.attendance_percentage || 0
+                                                    ).toFixed(2)}
+                                                    %
+                                                </h4>
+                                            </div>
+                                        </Col>
+
+                                        <Col xl={2} lg={4} md={6}>
+                                            <div
+                                                className="p-3 text-center h-100"
+                                                style={{
+                                                    background: "#f8fafc",
+                                                    borderRadius: "14px",
+                                                }}
+                                            >
+                                                <small className="text-muted">
+                                                    Total Staff
+                                                </small>
+
+                                                <h4 className="mb-0 mt-1 fw-bold">
+                                                    {teamCountSummary?.total_members || 0}
+                                                </h4>
+                                            </div>
+                                        </Col>
+
+                                        <Col xl={2} lg={4} md={6}>
+                                            <div
+                                                className="p-3 text-center h-100"
+                                                style={{
+                                                    background: "#f0fdf4",
+                                                    borderRadius: "14px",
+                                                }}
+                                            >
+                                                <small className="text-muted">
+                                                    Present
+                                                </small>
+
+                                                <h4 className="mb-0 mt-1 text-success fw-bold">
+                                                    {teamCountSummary?.total_present || 0}
+                                                </h4>
+                                            </div>
+                                        </Col>
+
+                                        <Col xl={2} lg={4} md={6}>
+                                            <div
+                                                className="p-3 text-center h-100"
+                                                style={{
+                                                    background: "#fef2f2",
+                                                    borderRadius: "14px",
+                                                }}
+                                            >
+                                                <small className="text-muted">
+                                                    Absent
+                                                </small>
+
+                                                <h4 className="mb-0 mt-1 text-danger fw-bold">
+                                                    {teamCountSummary?.total_absent || 0}
+                                                </h4>
+                                            </div>
+                                        </Col>
+
+                                        <Col xl={2} lg={4} md={6}>
+                                            <div
+                                                className="p-3 text-center h-100"
+                                                style={{
+                                                    background: "#fff7ed",
+                                                    borderRadius: "14px",
+                                                }}
+                                            >
+                                                <small className="text-muted">
+                                                    Half Day
+                                                </small>
+
+                                                <h4 className="mb-0 mt-1 text-warning fw-bold">
+                                                    {teamCountSummary?.total_half_day || 0}
+                                                </h4>
+                                            </div>
+                                        </Col>
+
+                                        <Col xl={2} lg={4} md={6}>
+                                            <div
+                                                className="p-3 text-center h-100"
+                                                style={{
+                                                    background: "#f8fafc",
+                                                    borderRadius: "14px",
+                                                }}
+                                            >
+                                                <small className="text-muted">
+                                                    Total Records
+                                                </small>
+
+                                                <h4 className="mb-0 mt-1 fw-bold">
+                                                    {teamCountSummary?.grand_total || 0}
+                                                </h4>
+                                            </div>
+                                        </Col>
+                                    </Row>
+
+                                    {showTeamWiseSummary && (
+                                        <div className="table-responsive">
+                                            <Table className="table align-middle mb-0" bordered>
+                                                <thead>
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Team</th>
+                                                        <th>Team Leader</th>
+                                                        <th>Staff</th>
+                                                        <th>Present</th>
+                                                        <th>Absent</th>
+                                                        <th>Half Day</th>
+                                                        <th>Attendance %</th>
+                                                    </tr>
+                                                </thead>
+
+                                                <tbody>
+                                                    {teamCountData.length > 0 ? (
+                                                        teamCountData.map((team, index) => (
+                                                            <tr key={team.team_id}>
+                                                                <td>{index + 1}</td>
+
+                                                                <td className="fw-bold">
+                                                                    {team.team_name || "-"}
+                                                                </td>
+
+                                                                <td>
+                                                                    {team.team_leader_name || "-"}
+                                                                </td>
+
+                                                                <td>
+                                                                    {team.members_count || 0}
+                                                                </td>
+
+                                                                <td className="text-success fw-bold">
+                                                                    {team.present_count || 0}
+                                                                </td>
+
+                                                                <td className="text-danger fw-bold">
+                                                                    {team.absent_count || 0}
+                                                                </td>
+
+                                                                <td className="text-warning fw-bold">
+                                                                    {team.half_day_count || 0}
+                                                                </td>
+
+                                                                <td className="text-primary fw-bold">
+                                                                    {Number(
+                                                                        team.attendance_percentage || 0
+                                                                    ).toFixed(2)}
+                                                                    %
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td
+                                                                colSpan="8"
+                                                                className="text-center text-muted py-4"
+                                                            >
+                                                                No team attendance summary found.
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </Table>
+                                        </div>
+                                    )}
+                                </>
+                            )}
                         </CardBody>
                     </Card>
 

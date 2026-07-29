@@ -21,6 +21,7 @@ const EcommerenceAddProduct = () => {
     const [rackDetails, setRackDetails] = useState([]);
     const [categories, setCategories] = useState([]);
     const [mainCategories, setMainCategories] = useState([]);
+    const [warehouseDetails, setWarehouseDetails] = useState([]);
     const [selectedWarehouse, setSelectedWarehouse] = useState(null);
     const [selectedWarehouseName, setSelectedWarehouseName] = useState("");
     const [beforeData, setBeforeData] = useState(null);
@@ -38,6 +39,7 @@ const EcommerenceAddProduct = () => {
             unit: "",
             selling_price: '',
             // stock: '',
+            warehouse: '',
             color: '',
             size: '',
             image: null,
@@ -58,6 +60,7 @@ const EcommerenceAddProduct = () => {
             tax: yup.string().required('Please Enter Tax'),
             unit: yup.string().required('Please Enter Unit'),
             selling_price: yup.number().required('Please Enter Selling Price'),
+            warehouse: yup.string().required('Please select a Warehouse'),
             // stock: yup.number().required('Please Enter Stock Quantity'),
             // color: yup.string().required('Please Enter Color'),
             // size: yup.string().required('Please Enter Size'),
@@ -179,6 +182,33 @@ const EcommerenceAddProduct = () => {
     ];
 
     useEffect(() => {
+        const fetchWarehouses = async () => {
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}warehouse/add/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                const warehouseData = Array.isArray(response.data)
+                    ? response.data
+                    : response.data?.data || [];
+
+                setWarehouseDetails(warehouseData);
+            } catch (error) {
+                console.error("Warehouse fetch error:", error);
+                setWarehouseDetails([]);
+                toast.error("Error fetching warehouses.");
+            }
+        };
+
+        fetchWarehouses();
+    }, [token]);
+
+    useEffect(() => {
         const fetchMainCategories = async () => {
             try {
                 const response = await axios.get(
@@ -264,8 +294,20 @@ const EcommerenceAddProduct = () => {
                     },
                 });
                 const productData = await response.json();
-                setSelectedWarehouse(productData.data.warehouse || null);
-                setSelectedWarehouseName(productData.data.warehouse_name || "");
+                const productWarehouseId =
+                    productData.data.warehouse?.id ??
+                    productData.data.warehouse ??
+                    null;
+
+                const productWarehouseName =
+                    productData.data.warehouse?.name ??
+                    productData.data.warehouse_name ??
+                    "";
+
+                setSelectedWarehouse(productWarehouseId);
+                setSelectedWarehouseName(productWarehouseName);
+                // setSelectedWarehouse(productData.data.warehouse || null);
+                // setSelectedWarehouseName(productData.data.warehouse_name || "");
                 if (response.ok && productData) {
 
                     setBeforeData(JSON.parse(JSON.stringify(productData.data)));
@@ -289,6 +331,11 @@ const EcommerenceAddProduct = () => {
                         landing_cost: productData.data.landing_cost || '',
                         final_price: productData.data.final_price || '',
                         duty_charge: productData.data.duty_charge || '',
+                        warehouse:
+                            productWarehouseId !== null &&
+                                productWarehouseId !== undefined
+                                ? String(productWarehouseId)
+                                : '',
                         product_category: productData.data.product_category !== undefined && productData.data.product_category !== null
                             ? String(productData.data.product_category)
                             : "",
@@ -546,7 +593,7 @@ const EcommerenceAddProduct = () => {
                                     <Form onSubmit={formik.handleSubmit} autoComplete="off">
 
                                         <Row>
-                                            <Col md={9}>
+                                            <Col md={7}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-name-Input">Product Name</Label>
                                                     <Input
@@ -580,7 +627,37 @@ const EcommerenceAddProduct = () => {
                                                         id="formrow-hsn_code-Input"
                                                         placeholder="Enter Your HSN code"
                                                         value={formik.values.hsn_code}
-                                                        onChange={formik.handleChange}
+                                                        onChange={(event) => {
+                                                            const warehouseId = event.target.value;
+                                                            const previousWarehouseId =
+                                                                formik.values.warehouse;
+
+                                                            formik.setFieldValue(
+                                                                "warehouse",
+                                                                warehouseId
+                                                            );
+
+                                                            setSelectedWarehouse(
+                                                                warehouseId || null
+                                                            );
+
+                                                            const warehouse = warehouseDetails.find(
+                                                                item =>
+                                                                    String(item.id) ===
+                                                                    String(warehouseId)
+                                                            );
+
+                                                            setSelectedWarehouseName(
+                                                                warehouse?.name || ""
+                                                            );
+
+                                                            if (
+                                                                String(previousWarehouseId) !==
+                                                                String(warehouseId)
+                                                            ) {
+                                                                setRackDetails([]);
+                                                            }
+                                                        }}
                                                         onBlur={formik.handleBlur}
                                                         invalid={
                                                             formik.touched.hsn_code && formik.errors.hsn_code ? true : false
@@ -591,6 +668,68 @@ const EcommerenceAddProduct = () => {
                                                             <FormFeedback type="invalid">{formik.errors.hsn_code}</FormFeedback>
                                                         ) : null
                                                     }
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={2}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-warehouse-Input">
+                                                        Warehouse
+                                                    </Label>
+
+                                                    <select
+                                                        name="warehouse"
+                                                        id="formrow-warehouse-Input"
+                                                        className={`form-control ${formik.touched.warehouse &&
+                                                            formik.errors.warehouse
+                                                            ? "is-invalid"
+                                                            : ""
+                                                            }`}
+                                                        value={formik.values.warehouse}
+                                                        onChange={(event) => {
+                                                            const warehouseId = event.target.value;
+
+                                                            formik.setFieldValue(
+                                                                "warehouse",
+                                                                warehouseId
+                                                            );
+
+                                                            setSelectedWarehouse(
+                                                                warehouseId || null
+                                                            );
+
+                                                            const warehouse = warehouseDetails.find(
+                                                                item =>
+                                                                    String(item.id) ===
+                                                                    String(warehouseId)
+                                                            );
+
+                                                            setSelectedWarehouseName(
+                                                                warehouse?.name || ""
+                                                            );
+                                                        }}
+                                                        onBlur={formik.handleBlur}
+                                                    >
+                                                        <option value="">
+                                                            Choose Warehouse...
+                                                        </option>
+
+                                                        {warehouseDetails.map((warehouse) => (
+                                                            <option
+                                                                key={warehouse.id}
+                                                                value={String(warehouse.id)}
+                                                            >
+                                                                {warehouse.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+
+                                                    {formik.touched.warehouse &&
+                                                        formik.errors.warehouse && (
+                                                            <FormFeedback className="d-block">
+                                                                {formik.errors.warehouse}
+                                                            </FormFeedback>
+                                                        )}
                                                 </div>
                                             </Col>
 
@@ -1142,9 +1281,20 @@ const EcommerenceAddProduct = () => {
                                             <Col md={12}>
                                                 <Label>Rack Details</Label>
                                                 {rackDetails.map((rack, idx) => {
-                                                    const racks = selectedWarehouse !== null
-                                                        ? rackList.filter(r => String(r.warehouse) === String(selectedWarehouse))
-                                                        : rackList.filter(r => r.warehouse_name === selectedWarehouseName);
+                                                    // const racks = selectedWarehouse !== null
+                                                    //     ? rackList.filter(r => String(r.warehouse) === String(selectedWarehouse))
+                                                    //     : rackList.filter(r => r.warehouse_name === selectedWarehouseName);
+                                                    const activeWarehouse =
+                                                        formik.values.warehouse ||
+                                                        selectedWarehouse;
+
+                                                    const racks = activeWarehouse
+                                                        ? rackList.filter(
+                                                            rack =>
+                                                                String(rack.warehouse) ===
+                                                                String(activeWarehouse)
+                                                        )
+                                                        : [];
                                                     const getColumnsForRack = (rackId) => {
                                                         const found = rackList.find(r => String(r.id) === String(rackId));
                                                         return found ? found.column_names : [];

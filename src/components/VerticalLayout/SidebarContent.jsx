@@ -831,6 +831,9 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/order/comparison/report/">{props.t("Order Comparison Report")}</Link>
                   </li>
+                  <li>
+                    <Link to="/product/rack/usability/report/">{props.t("Product Stock Rack Report")}</Link>
+                  </li>
                   {role !== 'CSO' && (
                     <>
                       <li>

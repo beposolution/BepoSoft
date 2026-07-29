@@ -837,6 +837,9 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/grv/family/payment/summary/report/">{props.t("Sales Return Summary Report")}</Link>
                   </li>
+                  <li>
+                    <Link to="/dispatched/pending/products/">{props.t("Pending & Dispatched Products Summary")}</Link>
+                  </li>
                   {role !== 'CSO' && (
                     <>
                       <li>

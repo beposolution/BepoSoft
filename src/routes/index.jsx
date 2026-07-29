@@ -469,6 +469,7 @@ import CommissionReceipt from "../pages/Receipts/CommissionReceipt";
 import CommissionReceiptList from "../pages/Receipts/CommissionReceiptList";
 import ProductRackUsabilityReport from "../pages/Resports/ProductRackUsabilityReport";
 import GrvFamilyPaymentSummaryReport from "../pages/Resports/GrvFamilyPaymentSummaryReport";
+import ShippingProductCountReport from "../pages/Resports/ShippingProductCountReport";
 
 
 
@@ -749,6 +750,7 @@ const authProtectedRoutes = [
 
   { path: "/product/rack/usability/report/", component: <ProductRackUsabilityReport /> },
   { path: "/grv/family/payment/summary/report/", component: <GrvFamilyPaymentSummaryReport /> },
+  { path: "/dispatched/pending/products/", component: <ShippingProductCountReport /> },
 
 
   { path: "/sales/reports/", component: <Salesreport /> },

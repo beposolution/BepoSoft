@@ -394,9 +394,9 @@ const ShippingProductCountReport = () => {
                                     <th style={tableHeaderStyle}>
                                         Product Quantity
                                     </th>
-                                    <th style={tableHeaderStyle}>
+                                    {/* <th style={tableHeaderStyle}>
                                         Distinct Products
-                                    </th>
+                                    </th> */}
                                 </tr>
                             </thead>
 
@@ -440,11 +440,11 @@ const ShippingProductCountReport = () => {
                                                 )}
                                             </td>
 
-                                            <td style={tableTdStyle}>
+                                            {/* <td style={tableTdStyle}>
                                                 {formatNumber(
                                                     item.total_distinct_products
                                                 )}
-                                            </td>
+                                            </td> */}
                                         </tr>
                                     ))
                                 )}
@@ -466,11 +466,11 @@ const ShippingProductCountReport = () => {
                                         )}
                                     </td>
 
-                                    <td style={totalTdStyle}>
+                                    {/* <td style={totalTdStyle}>
                                         {formatNumber(
                                             summary?.total_distinct_products
                                         )}
-                                    </td>
+                                    </td> */}
                                 </tr>
                             </tbody>
                         </Table>
@@ -1061,7 +1061,7 @@ const ShippingProductCountReport = () => {
                     {report && (
                         <>
                             <Row className="g-3 mt-1 mb-4">
-                                <Col xl={3} md={6}>
+                                <Col xl={4} md={6}>
                                     {renderSummaryCard(
                                         "Overall Orders",
                                         formatNumber(
@@ -1073,7 +1073,7 @@ const ShippingProductCountReport = () => {
                                     )}
                                 </Col>
 
-                                <Col xl={3} md={6}>
+                                <Col xl={4} md={6}>
                                     {renderSummaryCard(
                                         "Overall Amount",
                                         formatAmount(
@@ -1085,7 +1085,7 @@ const ShippingProductCountReport = () => {
                                     )}
                                 </Col>
 
-                                <Col xl={3} md={6}>
+                                <Col xl={4} md={6}>
                                     {renderSummaryCard(
                                         "Product Quantity",
                                         formatNumber(
@@ -1097,7 +1097,7 @@ const ShippingProductCountReport = () => {
                                     )}
                                 </Col>
 
-                                <Col xl={3} md={6}>
+                                {/* <Col xl={3} md={6}>
                                     {renderSummaryCard(
                                         "Distinct Products",
                                         formatNumber(
@@ -1107,7 +1107,7 @@ const ShippingProductCountReport = () => {
                                         "#ea580c",
                                         "#fff7ed"
                                     )}
-                                </Col>
+                                </Col> */}
                             </Row>
 
                             <Row className="g-3 mb-4">
@@ -1172,7 +1172,7 @@ const ShippingProductCountReport = () => {
                                                     </div>
                                                 </Col>
 
-                                                <Col md={6}>
+                                                <Col md={12}>
                                                     <div style={metricBoxStyle}>
                                                         <span>
                                                             Product Quantity
@@ -1185,7 +1185,7 @@ const ShippingProductCountReport = () => {
                                                     </div>
                                                 </Col>
 
-                                                <Col md={6}>
+                                                {/* <Col md={6}>
                                                     <div style={metricBoxStyle}>
                                                         <span>
                                                             Distinct Products
@@ -1196,7 +1196,7 @@ const ShippingProductCountReport = () => {
                                                             )}
                                                         </strong>
                                                     </div>
-                                                </Col>
+                                                </Col> */}
                                             </Row>
                                         </CardBody>
                                     </Card>
@@ -1263,7 +1263,7 @@ const ShippingProductCountReport = () => {
                                                     </div>
                                                 </Col>
 
-                                                <Col md={6}>
+                                                <Col md={12}>
                                                     <div style={metricBoxStyle}>
                                                         <span>
                                                             Product Quantity
@@ -1276,7 +1276,7 @@ const ShippingProductCountReport = () => {
                                                     </div>
                                                 </Col>
 
-                                                <Col md={6}>
+                                                {/* <Col md={6}>
                                                     <div style={metricBoxStyle}>
                                                         <span>
                                                             Distinct Products
@@ -1287,7 +1287,7 @@ const ShippingProductCountReport = () => {
                                                             )}
                                                         </strong>
                                                     </div>
-                                                </Col>
+                                                </Col> */}
                                             </Row>
                                         </CardBody>
                                     </Card>

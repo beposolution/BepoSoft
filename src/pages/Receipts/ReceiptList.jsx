@@ -33,55 +33,25 @@ import "react-toastify/dist/ReactToastify.css";
 const OtherReceipt = () => {
     const apiBase = import.meta.env.VITE_APP_KEY;
     const token = localStorage.getItem("token");
-
-    const pageSize = 10;
-
-    // ---------------------------------------------------------
-    // Receipt data
-    // ---------------------------------------------------------
     const [receipts, setReceipts] = useState([]);
     const [totalCount, setTotalCount] = useState(0);
     const [nextPage, setNextPage] = useState(null);
     const [previousPage, setPreviousPage] = useState(null);
-
-    // ---------------------------------------------------------
-    // Dropdown data
-    // ---------------------------------------------------------
     const [orders, setOrders] = useState([]);
     const [customers, setCustomers] = useState([]);
     const [banks, setBanks] = useState([]);
     const [staffs, setStaffs] = useState([]);
-
-    // ---------------------------------------------------------
-    // Dropdown search values
-    // ---------------------------------------------------------
     const [orderSearch, setOrderSearch] = useState("");
     const [customerSearch, setCustomerSearch] = useState("");
     const [bankSearch, setBankSearch] = useState("");
     const [staffSearch, setStaffSearch] = useState("");
-
-    // ---------------------------------------------------------
-    // Dropdown loading states
-    // ---------------------------------------------------------
     const [orderLoading, setOrderLoading] = useState(false);
     const [customerLoading, setCustomerLoading] = useState(false);
     const [bankLoading, setBankLoading] = useState(false);
     const [staffLoading, setStaffLoading] = useState(false);
-
-    // ---------------------------------------------------------
-    // Main loading states
-    // ---------------------------------------------------------
     const [loading, setLoading] = useState(true);
     const [filterLoading, setFilterLoading] = useState(false);
-
-    // ---------------------------------------------------------
-    // Pagination
-    // ---------------------------------------------------------
     const [currentPage, setCurrentPage] = useState(1);
-
-    // ---------------------------------------------------------
-    // Receipt filter inputs
-    // ---------------------------------------------------------
     const [searchTerm, setSearchTerm] = useState("");
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
@@ -91,9 +61,6 @@ const OtherReceipt = () => {
     const [selectedBank, setSelectedBank] = useState(null);
     const [selectedStaff, setSelectedStaff] = useState(null);
 
-    // ---------------------------------------------------------
-    // Applied receipt filters
-    // ---------------------------------------------------------
     const [appliedFilters, setAppliedFilters] = useState({
         search: "",
         start_date: "",
@@ -111,30 +78,6 @@ const OtherReceipt = () => {
         [token]
     );
 
-    const totalPages = useMemo(() => {
-        if (!totalCount) return 1;
-
-        return Math.ceil(totalCount / pageSize);
-    }, [totalCount]);
-
-    const firstItemNumber = useMemo(() => {
-        if (!receipts.length) return 0;
-
-        return (currentPage - 1) * pageSize + 1;
-    }, [currentPage, receipts.length]);
-
-    const lastItemNumber = useMemo(() => {
-        if (!receipts.length) return 0;
-
-        return Math.min(
-            currentPage * pageSize,
-            totalCount
-        );
-    }, [currentPage, receipts.length, totalCount]);
-
-    // ---------------------------------------------------------
-    // Helper for reading different API response structures
-    // ---------------------------------------------------------
     const extractArray = (responseData, paths = []) => {
         for (const path of paths) {
             const value = path
@@ -156,9 +99,6 @@ const OtherReceipt = () => {
         return [];
     };
 
-    // ---------------------------------------------------------
-    // Fetch receipts
-    // ---------------------------------------------------------
     const fetchReceiptData = useCallback(
         async ({
             page = 1,
@@ -179,7 +119,6 @@ const OtherReceipt = () => {
 
                 const params = {
                     page,
-                    page_size: pageSize,
                 };
 
                 if (filters.search) {
@@ -268,22 +207,6 @@ const OtherReceipt = () => {
         ]
     );
 
-    // ---------------------------------------------------------
-    // Fetch orders
-    //
-    // API response structure:
-    //
-    // {
-    //     count: 100,
-    //     next: "...",
-    //     previous: null,
-    //     results: {
-    //         invoice_created_count: 10,
-    //         invoice_approved_count: 5,
-    //         results: [...]
-    //     }
-    // }
-    // ---------------------------------------------------------
     const fetchOrders = useCallback(
         async (search = "") => {
             if (!token) return;
@@ -335,9 +258,6 @@ const OtherReceipt = () => {
         [apiBase, authHeaders, token]
     );
 
-    // ---------------------------------------------------------
-    // Fetch customers
-    // ---------------------------------------------------------
     const fetchCustomers = useCallback(
         async (search = "") => {
             if (!token) return;
@@ -384,9 +304,6 @@ const OtherReceipt = () => {
         [apiBase, authHeaders, token]
     );
 
-    // ---------------------------------------------------------
-    // Fetch staff
-    // ---------------------------------------------------------
     const fetchStaffs = useCallback(
         async (search = "") => {
             if (!token) return;
@@ -433,9 +350,6 @@ const OtherReceipt = () => {
         [apiBase, authHeaders, token]
     );
 
-    // ---------------------------------------------------------
-    // Fetch banks
-    // ---------------------------------------------------------
     const fetchBanks = useCallback(
         async (search = "") => {
             if (!token) return;
@@ -482,9 +396,6 @@ const OtherReceipt = () => {
         [apiBase, authHeaders, token]
     );
 
-    // ---------------------------------------------------------
-    // Initial dropdown data
-    // ---------------------------------------------------------
     useEffect(() => {
         fetchOrders("");
         fetchCustomers("");
@@ -497,9 +408,6 @@ const OtherReceipt = () => {
         fetchBanks,
     ]);
 
-    // ---------------------------------------------------------
-    // Debounced order search
-    // ---------------------------------------------------------
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchOrders(orderSearch);
@@ -508,9 +416,6 @@ const OtherReceipt = () => {
         return () => clearTimeout(timer);
     }, [orderSearch, fetchOrders]);
 
-    // ---------------------------------------------------------
-    // Debounced customer search
-    // ---------------------------------------------------------
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchCustomers(customerSearch);
@@ -519,9 +424,6 @@ const OtherReceipt = () => {
         return () => clearTimeout(timer);
     }, [customerSearch, fetchCustomers]);
 
-    // ---------------------------------------------------------
-    // Debounced staff search
-    // ---------------------------------------------------------
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchStaffs(staffSearch);
@@ -530,9 +432,6 @@ const OtherReceipt = () => {
         return () => clearTimeout(timer);
     }, [staffSearch, fetchStaffs]);
 
-    // ---------------------------------------------------------
-    // Debounced bank search
-    // ---------------------------------------------------------
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchBanks(bankSearch);
@@ -541,9 +440,6 @@ const OtherReceipt = () => {
         return () => clearTimeout(timer);
     }, [bankSearch, fetchBanks]);
 
-    // ---------------------------------------------------------
-    // Fetch receipt list
-    // ---------------------------------------------------------
     useEffect(() => {
         fetchReceiptData({
             page: currentPage,
@@ -556,9 +452,6 @@ const OtherReceipt = () => {
         fetchReceiptData,
     ]);
 
-    // ---------------------------------------------------------
-    // Dropdown options
-    // ---------------------------------------------------------
     const orderOptions = useMemo(
         () =>
             orders.map((order) => {
@@ -620,9 +513,6 @@ const OtherReceipt = () => {
         [banks]
     );
 
-    // ---------------------------------------------------------
-    // Apply filters
-    // ---------------------------------------------------------
     const handleApplyFilters = () => {
         if (
             startDate &&
@@ -650,9 +540,6 @@ const OtherReceipt = () => {
         setAppliedFilters(newFilters);
     };
 
-    // ---------------------------------------------------------
-    // Reset filters
-    // ---------------------------------------------------------
     const handleResetFilters = () => {
         setSearchTerm("");
         setStartDate("");
@@ -688,26 +575,16 @@ const OtherReceipt = () => {
     };
 
     const handlePreviousPage = () => {
-        if (
-            previousPage &&
-            currentPage > 1 &&
-            !filterLoading
-        ) {
-            setCurrentPage(
-                (previous) => previous - 1
+        if (previousPage && !filterLoading) {
+            setCurrentPage((previous) =>
+                Math.max(previous - 1, 1)
             );
         }
     };
 
     const handleNextPage = () => {
-        if (
-            nextPage &&
-            currentPage < totalPages &&
-            !filterLoading
-        ) {
-            setCurrentPage(
-                (previous) => previous + 1
-            );
+        if (nextPage && !filterLoading) {
+            setCurrentPage((previous) => previous + 1);
         }
     };
 
@@ -1234,7 +1111,7 @@ const OtherReceipt = () => {
 
                                                     <tbody>
                                                         {receipts.length >
-                                                        0 ? (
+                                                            0 ? (
                                                             receipts.map(
                                                                 (
                                                                     receipt,
@@ -1244,11 +1121,7 @@ const OtherReceipt = () => {
                                                                         key={`${receipt.receipt_type}-${receipt.id}`}
                                                                     >
                                                                         <td>
-                                                                            {(currentPage -
-                                                                                1) *
-                                                                                pageSize +
-                                                                                index +
-                                                                                1}
+                                                                            {(currentPage - 1) * 50 + index + 1}
                                                                         </td>
 
                                                                         <td>
@@ -1323,32 +1196,9 @@ const OtherReceipt = () => {
 
                                             <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mt-3">
                                                 <div className="text-muted">
-                                                    {totalCount >
-                                                    0 ? (
-                                                        <>
-                                                            Showing{" "}
-                                                            <strong>
-                                                                {
-                                                                    firstItemNumber
-                                                                }
-                                                            </strong>{" "}
-                                                            to{" "}
-                                                            <strong>
-                                                                {
-                                                                    lastItemNumber
-                                                                }
-                                                            </strong>{" "}
-                                                            of{" "}
-                                                            <strong>
-                                                                {
-                                                                    totalCount
-                                                                }
-                                                            </strong>{" "}
-                                                            receipts
-                                                        </>
-                                                    ) : (
-                                                        "No receipt records"
-                                                    )}
+                                                    {totalCount > 0
+                                                        ? `Total receipts: ${totalCount}`
+                                                        : "No receipt records"}
                                                 </div>
 
                                                 <div className="d-flex align-items-center gap-2">
@@ -1357,8 +1207,6 @@ const OtherReceipt = () => {
                                                         outline
                                                         disabled={
                                                             !previousPage ||
-                                                            currentPage <=
-                                                                1 ||
                                                             filterLoading
                                                         }
                                                         onClick={
@@ -1370,17 +1218,7 @@ const OtherReceipt = () => {
 
                                                     <span className="px-2">
                                                         Page{" "}
-                                                        <strong>
-                                                            {
-                                                                currentPage
-                                                            }
-                                                        </strong>{" "}
-                                                        of{" "}
-                                                        <strong>
-                                                            {
-                                                                totalPages
-                                                            }
-                                                        </strong>
+                                                        <strong>{currentPage}</strong>
                                                     </span>
 
                                                     <Button
@@ -1388,8 +1226,6 @@ const OtherReceipt = () => {
                                                         outline
                                                         disabled={
                                                             !nextPage ||
-                                                            currentPage >=
-                                                                totalPages ||
                                                             filterLoading
                                                         }
                                                         onClick={

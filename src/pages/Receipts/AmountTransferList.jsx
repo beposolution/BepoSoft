@@ -27,6 +27,7 @@ import Paginations from '../../components/Common/Pagination';
 const AmountTransferList = () => {
 
     const token = localStorage.getItem("token");
+    const [role, setRole] = useState(null);
     const [transfers, setTransfers] = useState([]);
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -86,6 +87,11 @@ const AmountTransferList = () => {
         value: customer.id,
         label: customer.name
     }));
+
+    useEffect(() => {
+        const role = localStorage.getItem("active");
+        setRole(role);
+    }, []);
 
     const fetchCustomers = async () => {
         try {
@@ -392,7 +398,9 @@ const AmountTransferList = () => {
                                                         <th>Date</th>
                                                         <th>Note</th>
                                                         <th>Created By</th>
-                                                        <th>Action</th>
+                                                        {["ADMIN", "CEO", "COO"].includes(role) && (
+                                                            <th>Action</th>
+                                                        )}
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -405,11 +413,13 @@ const AmountTransferList = () => {
                                                             <td>{item.date}</td>
                                                             <td>{item.note}</td>
                                                             <td>{item.created_by_name}</td>
-                                                            <td>
-                                                                <Button size="sm" color="primary" onClick={() => handleView(item.id)}>
-                                                                    View
-                                                                </Button>
-                                                            </td>
+                                                            {["ADMIN", "CEO", "COO"].includes(role) && (
+                                                                <td>
+                                                                    <Button size="sm" color="primary" onClick={() => handleView(item.id)}>
+                                                                        View
+                                                                    </Button>
+                                                                </td>
+                                                            )}
                                                         </tr>
                                                     ))}
                                                 </tbody>

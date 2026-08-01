@@ -25,6 +25,7 @@ import Paginations from '../../components/Common/Pagination';
 const RefundReceiptList = () => {
 
     const token = localStorage.getItem("token");
+    const [role, setRole] = useState(null);
 
     const [receipts, setReceipts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -48,6 +49,11 @@ const RefundReceiptList = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const perPageData = 10;
+
+    useEffect(() => {
+        const role = localStorage.getItem("active");
+        setRole(role);
+    }, []);
 
 
     const REFUND_FIELDS = [
@@ -76,7 +82,7 @@ const RefundReceiptList = () => {
 
     const computeDiff = (before, after) => {
         const before_data = { ...before };
-        const after_data = {};             
+        const after_data = {};
 
         REFUND_FIELDS.forEach((k) => {
             const prev = before?.[k] ?? null;
@@ -283,7 +289,9 @@ const RefundReceiptList = () => {
                                                         <th>Customer</th>
                                                         <th>Bank</th>
                                                         <th>Created By</th>
-                                                        <th>Action</th>
+                                                        {["ADMIN", "CEO", "COO"].includes(role) && (
+                                                            <th>Action</th>
+                                                        )}
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -297,15 +305,17 @@ const RefundReceiptList = () => {
                                                             <td>{item.customer_name}</td>
                                                             <td>{item.bank_name}</td>
                                                             <td>{item.created_name}</td>
-                                                            <td>
-                                                                <Button
-                                                                    size="sm"
-                                                                    color="primary"
-                                                                    onClick={() => handleView(item.id)}
-                                                                >
-                                                                    View
-                                                                </Button>
-                                                            </td>
+                                                            {["ADMIN", "CEO", "COO"].includes(role) && (
+                                                                <td>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        color="primary"
+                                                                        onClick={() => handleView(item.id)}
+                                                                    >
+                                                                        View
+                                                                    </Button>
+                                                                </td>
+                                                            )}
                                                         </tr>
                                                     ))}
                                                 </tbody>

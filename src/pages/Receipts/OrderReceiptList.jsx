@@ -26,6 +26,7 @@ const OrderReceiptList = () => {
     const [receipts, setReceipts] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const [role, setRole] = useState(null);
     const token = localStorage.getItem("token");
 
     const [modalOpen, setModalOpen] = useState(false);
@@ -79,6 +80,11 @@ const OrderReceiptList = () => {
         singleValue: base => ({ ...base, color: '#212529' }),
         placeholder: base => ({ ...base, color: '#6c757d' }),
     };
+
+    useEffect(() => {
+        const role = localStorage.getItem("active");
+        setRole(role);
+    }, []);
 
     const loadCustomers = async (inputValue) => {
         try {
@@ -533,7 +539,9 @@ const OrderReceiptList = () => {
                                                         <th>Customer</th>
                                                         <th>Bank</th>
                                                         <th>Created By</th>
-                                                        <th>Actions</th>
+                                                        {["ADMIN", "CEO", "COO"].includes(role) && (
+                                                            <th>Actions</th>
+                                                        )}
                                                     </tr>
                                                 </thead>
 
@@ -551,14 +559,16 @@ const OrderReceiptList = () => {
                                                                 <td>{item.customer_name}</td>
                                                                 <td>{item.bank_name}</td>
                                                                 <td>{item.created_by_name}</td>
-                                                                <td>
-                                                                    <button
-                                                                        className="btn btn-primary btn-sm"
-                                                                        onClick={() => handleView(item.id)}
-                                                                    >
-                                                                        View
-                                                                    </button>
-                                                                </td>
+                                                                {["ADMIN", "CEO", "COO"].includes(role) && (
+                                                                    <td>
+                                                                        <button
+                                                                            className="btn btn-primary btn-sm"
+                                                                            onClick={() => handleView(item.id)}
+                                                                        >
+                                                                            View
+                                                                        </button>
+                                                                    </td>
+                                                                )}
                                                             </tr>
                                                         ))
                                                     ) : (

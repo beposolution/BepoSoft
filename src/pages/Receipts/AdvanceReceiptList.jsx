@@ -27,6 +27,12 @@ const AdvanceReceiptList = () => {
     const [endDate, setEndDate] = useState("");
     const [beforeSnapshot, setBeforeSnapshot] = useState(null);
     const [orders, setOrders] = useState([]);
+    const [role, setRole] = useState(null);
+
+    useEffect(() => {
+        const role = localStorage.getItem("active");
+        setRole(role);
+    }, []);
 
     useEffect(() => {
         const fetchCustomers = async () => {
@@ -456,7 +462,9 @@ const AdvanceReceiptList = () => {
                                                         <th>Customer</th>
                                                         <th>Bank</th>
                                                         <th>Created By</th>
-                                                        <th>Actions</th>
+                                                        {["ADMIN", "CEO", "COO"].includes(role) && (
+                                                            <th>Actions</th>
+                                                        )}
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -471,14 +479,16 @@ const AdvanceReceiptList = () => {
                                                             <td>{item.customer_name}</td>
                                                             <td>{item.bank_name}</td>
                                                             <td>{item.created_by_name}</td>
-                                                            <td>
-                                                                <button
-                                                                    className="btn btn-primary btn-sm"
-                                                                    onClick={() => handleView(item.id)}
-                                                                >
-                                                                    View
-                                                                </button>
-                                                            </td>
+                                                            {["ADMIN", "CEO", "COO"].includes(role) && (
+                                                                <td>
+                                                                    <button
+                                                                        className="btn btn-primary btn-sm"
+                                                                        onClick={() => handleView(item.id)}
+                                                                    >
+                                                                        View
+                                                                    </button>
+                                                                </td>
+                                                            )}
                                                         </tr>
                                                     ))}
                                                 </tbody>

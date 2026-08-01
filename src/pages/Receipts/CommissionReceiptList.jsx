@@ -24,6 +24,7 @@ import AsyncSelect from "react-select/async";
 
 const CommissionReceiptList = () => {
   const token = localStorage.getItem("token");
+  const [role, setRole] = useState(null);
 
   const [receipts, setReceipts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +58,11 @@ const CommissionReceiptList = () => {
   const [filterCreatedBy, setFilterCreatedBy] = useState(null);
 
   const perPageData = 50;
+
+  useEffect(() => {
+    const role = localStorage.getItem("active");
+    setRole(role);
+  }, []);
 
   const authHeaders = {
     Authorization: `Bearer ${token}`,
@@ -169,11 +175,10 @@ const CommissionReceiptList = () => {
 
       return orders.map((order) => ({
         value: String(order.id),
-        label: `${order.invoice || "No Invoice"} - ${
-          order.customer?.name ||
+        label: `${order.invoice || "No Invoice"} - ${order.customer?.name ||
           order.customer_name ||
           "No Customer"
-        } - ₹${order.total_amount ?? 0}`,
+          } - ₹${order.total_amount ?? 0}`,
       }));
     } catch (error) {
       console.error("Order search error:", error);
@@ -198,9 +203,8 @@ const CommissionReceiptList = () => {
 
       return staffs.map((staff) => ({
         value: String(staff.id),
-        label: `${staff.name}${
-          staff.department_name ? ` - ${staff.department_name}` : ""
-        }${staff.phone ? ` - ${staff.phone}` : ""}`,
+        label: `${staff.name}${staff.department_name ? ` - ${staff.department_name}` : ""
+          }${staff.phone ? ` - ${staff.phone}` : ""}`,
       }));
     } catch (error) {
       console.error("Staff search error:", error);
@@ -680,7 +684,9 @@ const CommissionReceiptList = () => {
                             <th>Bank</th>
                             <th>Created By</th>
                             <th>Created At</th>
-                            <th>Actions</th>
+                            {["ADMIN", "CEO", "COO"].includes(role) && (
+                              <th>Actions</th>
+                            )}
                           </tr>
                         </thead>
 
@@ -703,22 +709,24 @@ const CommissionReceiptList = () => {
                                 <td>
                                   {item.created_at
                                     ? new Date(
-                                        item.created_at
-                                      ).toLocaleString("en-IN")
+                                      item.created_at
+                                    ).toLocaleString("en-IN")
                                     : "-"}
                                 </td>
 
-                                <td>
-                                  <Button
-                                    color="primary"
-                                    size="sm"
-                                    onClick={() =>
-                                      handleView(item.id)
-                                    }
-                                  >
-                                    View
-                                  </Button>
-                                </td>
+                                {["ADMIN", "CEO", "COO"].includes(role) && (
+                                  <td>
+                                    <Button
+                                      color="primary"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleView(item.id)
+                                      }
+                                    >
+                                      View
+                                    </Button>
+                                  </td>
+                                )}
                               </tr>
                             ))
                           ) : (

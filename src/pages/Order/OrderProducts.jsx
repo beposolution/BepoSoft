@@ -475,7 +475,7 @@ const FormLayouts = () => {
             status: "",
             manage_staff: "",
             order_date: "",
-            billing_date:"",
+            billing_date: "",
             company: "",
             cod_amount: "",
             shipping_mode: "",
@@ -541,12 +541,33 @@ const FormLayouts = () => {
 
     });
 
+    // useEffect(() => {
+    //     const role = localStorage.getItem("active");
+    //     if (role === "BDM" || role === "BDO" || role === "Warehouse Admin") {
+    //         setIsAddDisabled(true);
+    //     }
+    // }, []);
+
     useEffect(() => {
         const role = localStorage.getItem("active");
-        if (role === "BDM" || role === "BDO" || role === "Warehouse Admin") {
+        const status = formik.values.status;
+
+        if (role === "BDM" || role === "SD") {
+            // BDM can edit only when the order is Invoice Created
+            setIsAddDisabled(status !== "Invoice Created");
+        } else if (
+            role === "BDO" ||
+            role === "HR" ||
+            role === "Warehouse" ||
+            role === "Warehouse Admin"
+        ) {
+            // These roles cannot edit
             setIsAddDisabled(true);
+        } else {
+            // All other existing roles can edit
+            setIsAddDisabled(false);
         }
-    }, []);
+    }, [formik.values.status]);
 
     useEffect(() => {
         fetchOrderData();

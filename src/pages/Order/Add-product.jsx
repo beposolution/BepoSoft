@@ -21,6 +21,12 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
   const [quantity, setQuantity] = useState({});
   const [lockedInvoices, setLockedInvoices] = useState({});
   const token = localStorage.getItem("token");
+  const [role, setRole] = useState(null);
+
+  useEffect(() => {
+    const role = localStorage.getItem("active");
+    setRole(role);
+  }, []);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -126,31 +132,6 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
     }
   };
 
-  // const handleQuantityChange = (productId, value) => {
-  //   const parsedValue = parseInt(value, 10);
-  //   const product = products.find(
-  //     (p) => p.id === productId || p.variantIDs?.some((v) => v.id === productId)
-  //   );
-
-  //   const stock =
-  //     product?.id === productId
-  //       ? product.stock
-  //       : product?.variantIDs.find((v) => v.id === productId)?.stock || 0;
-
-  //   if (parsedValue > stock) {
-  //     setQuantity((prev) => ({
-  //       ...prev,
-  //       [productId]: stock,
-  //     }));
-  //     alert(`Quantity cannot exceed available stock of ${stock}.`);
-  //   } else {
-  //     setQuantity((prev) => ({
-  //       ...prev,
-  //       [productId]: parsedValue,
-  //     }));
-  //   }
-  // };
-
   const getAvailableStock = (item) => {
     return Math.max((item?.stock || 0) - (item?.locked_stock || 0), 0);
   };
@@ -184,35 +165,6 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
     }
   };
 
-  // const addToCart = async (product, variant = null) => {
-  //   const selectedId = variant ? variant.id : product.id;
-  //   const selectedQuantity = quantity[selectedId] || 1;
-
-  //   const cartItem = {
-  //     product: selectedId,
-  //     quantity: selectedQuantity,
-  //   };
-
-  //   try {
-  //     const response = await axios.post(
-  //       `${import.meta.env.VITE_APP_KEY}cart/product/`,
-  //       cartItem,
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //           "Content-Type": "application/json",
-  //         },
-  //       }
-  //     );
-
-  //     if (response.status === 201) {
-  //       alert("Product added to cart successfully!");
-  //       ProductsFetch();
-  //     }
-  //   } catch (error) {
-  //     toast.error("Failed to add product to cart");
-  //   }
-  // };
 
   const addToCart = async (product, variant = null) => {
     // Compare the selected warehouse vs user's own warehouse
@@ -272,6 +224,8 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
     })
     : [];
 
+  const canViewStock = ["CEO", "COO", "ADMIN", "Accounts / Accounting"].includes(role);
+
   return (
     <Modal
       isOpen={isOpen}
@@ -306,8 +260,9 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
                   <th>Image</th>
                   <th>Name</th>
                   <th>Price</th>
-                  <th>Stock</th>
-                  <th>Locked Stock</th>
+                  {canViewStock && <th>Stock</th>}
+                  {/* <th>Locked Stock</th> */}
+                  <th>Available Stock</th>
                   <th>Quantity</th>
                   <th>Action</th>
                 </tr>
@@ -337,14 +292,13 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
                           </td>
                           <td>{product.name}</td>
                           <td>₹{product.selling_price?.toFixed(2)}</td>
-                          <td>{product.stock}</td>
-                          <td>{product.locked_stock}</td>
+                          {canViewStock && <td>{product.stock}</td>}
+                          {/* <td>{product.locked_stock}</td> */}
+                          <td>{product.available_stock}</td>
                           <td>
                             <Input
                               type="number"
                               min="1"
-                              // max={product.stock}
-                              // max={(product.stock || 0) - (product.locked_stock || 0)}
                               max={availableStock}
                               value={quantity[product.id] || 1}
                               onChange={(e) =>
@@ -353,30 +307,19 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
                               className="form-control"
                             />
                           </td>
-                          {/* <td>
-                            <Button
-                              color="success"
-                              size="sm"
-                              onClick={() => addToCart(product)}
-                              disabled={product.stock === 0}
-                            >
-                              Add
-                            </Button>
-                          </td> */}
+
                           <td>
                             <div title={parseInt(warehouseId) !== 1 ? "Only Kochi warehouse can add products" : ""}>
                               <Button
                                 color="success"
                                 size="sm"
                                 onClick={() => addToCart(product)}
-                                // disabled={product.stock === 0 || parseInt(warehouseId) !== 1}
                                 disabled={
                                   availableStock <= 0 ||
                                   (quantity[product.id] || 1) > availableStock ||
                                   parseInt(warehouseId) !== parseInt(userWarehouseId)
                                 }
                               >
-                                {/* {parseInt(warehouseId) !== 1 ? "Restricted" : "Add"} */}
                                 {availableStock <= 0
                                   ? "No Stock"
                                   : parseInt(warehouseId) !== parseInt(userWarehouseId)
@@ -394,7 +337,7 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
                       ) {
                         rows.push(
                           <tr key={`locked-${product.id}`}>
-                            <td colSpan="8">
+                            <td colSpan={canViewStock ? 8 : 7}>
                               <div
                                 style={{
                                   backgroundColor: "#f8f9fa",
@@ -402,7 +345,7 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
                                   borderRadius: "5px",
                                 }}
                               >
-                                <strong>🔒 Locked by Invoices:</strong>
+                                <strong>🔒 Product in Invoices:</strong>
                                 <ul style={{ marginTop: 5, paddingLeft: 20 }}>
                                   {lockedInvoices[product.id].map((inv, idx) => (
                                     <li key={idx}>
@@ -441,13 +384,13 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
                               </td>
                               <td>{variant.name}</td>
                               <td>₹{variant.selling_price?.toFixed(2)}</td>
-                              <td>{variant.stock}</td>
-                              <td>{variant.locked_stock}</td>
+                              {canViewStock && <td>{variant.stock}</td>}
+                              {/* <td>{variant.locked_stock}</td> */}
+                              <td>{variant.available_stock}</td>
                               <td>
                                 <Input
                                   type="number"
                                   min="1"
-                                  // max={variant.stock}
                                   max={variantAvailableStock}
                                   value={quantity[variant.id] || 1}
                                   onChange={(e) =>
@@ -459,16 +402,6 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
                                   className="form-control"
                                 />
                               </td>
-                              {/* <td>
-                                <Button
-                                  color="success"
-                                  size="sm"
-                                  onClick={() => addToCart(product, variant)}
-                                  disabled={variant.stock === 0}
-                                >
-                                  Add
-                                </Button>
-                              </td> */}
                               <td>
                                 <div
                                   title={
@@ -481,19 +414,12 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
                                     color="success"
                                     size="sm"
                                     onClick={() => addToCart(product, variant)}
-                                    // disabled={
-                                    //   (variant ? variant.stock : product.stock) === 0 ||
-                                    //   parseInt(warehouseId) !== parseInt(userWarehouseId)
-                                    // }
                                     disabled={
                                       variantAvailableStock <= 0 ||
                                       (quantity[variant.id] || 1) > variantAvailableStock ||
                                       parseInt(warehouseId) !== parseInt(userWarehouseId)
                                     }
                                   >
-                                    {/* {parseInt(warehouseId) !== parseInt(userWarehouseId)
-                                      ? "Restricted"
-                                      : "Add"} */}
                                     {variantAvailableStock <= 0
                                       ? "No Stock"
                                       : parseInt(warehouseId) !== parseInt(userWarehouseId)
@@ -511,7 +437,7 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
                           ) {
                             rows.push(
                               <tr key={`locked-variant-${variant.id}`}>
-                                <td colSpan="8">
+                                <td colSpan={canViewStock ? 8 : 7}>
                                   <div
                                     style={{
                                       backgroundColor: "#f8f9fa",
@@ -519,7 +445,7 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
                                       borderRadius: "5px",
                                     }}
                                   >
-                                    <strong>🔒 Locked by Invoices:</strong>
+                                    <strong>🔒 Product in Invoices:</strong>
                                     <ul
                                       style={{ marginTop: 5, paddingLeft: 20 }}
                                     >
@@ -546,7 +472,7 @@ const AddProduct = ({ isOpen, toggle, warehouseId, ProductsFetch, userWarehouseI
                   })
                 ) : (
                   <tr>
-                    <td colSpan="8" className="text-center">
+                    <td colSpan={canViewStock ? 8 : 7} className="text-center">
                       No products found.
                     </td>
                   </tr>

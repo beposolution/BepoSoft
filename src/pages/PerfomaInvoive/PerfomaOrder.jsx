@@ -15,6 +15,11 @@ const PerfomaOrder = () => {
     const [banks, setBanks] = useState([]);
     const [selectedProductId, setSelectedProductId] = useState("");
     const [addQuantity, setAddQuantity] = useState(1);
+    const [paymentImages, setPaymentImages] = useState([]);
+    const [paymentImagesError, setPaymentImagesError] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isAddingItemsToCart, setIsAddingItemsToCart] = useState(false);
+    const [invoiceItemsAdded, setInvoiceItemsAdded] = useState(false);
 
     const formik = useFormik({
         enableReinitialize: true,
@@ -70,6 +75,19 @@ const PerfomaOrder = () => {
             }),
         }),
         onSubmit: async (values, { resetForm }) => {
+            if (!orders) {
+                toast.error("Performa order data is not available");
+                return;
+            }
+
+            if (paymentImages.length === 0) {
+                setPaymentImagesError("At least one payment slip is required");
+                toast.error("Please select at least one payment slip");
+                return;
+            }
+
+            setIsSubmitting(true);
+
             try {
                 const payload = {
                     ...values,
@@ -83,7 +101,7 @@ const PerfomaOrder = () => {
                     total_amount: orders.total_amount,
                 };
 
-                // SAME LOGIC AS OrderCreate
+                // SAME PAYMENT LOGIC AS THE EXISTING ORDER CREATION PAGE
                 if (values.payment_status === "COD") {
                     payload.cod_amount = Number(values.cod_amount || 0);
 
@@ -93,29 +111,124 @@ const PerfomaOrder = () => {
                         payload.adv_cod_amount = null;
                     }
                 } else {
-                    // IMPORTANT: remove COD fields
                     delete payload.cod_status;
                     delete payload.cod_amount;
                     delete payload.adv_cod_amount;
                 }
 
+                const formData = new FormData();
+
+                Object.entries(payload).forEach(([key, value]) => {
+                    if (value !== undefined && value !== null && value !== "") {
+                        formData.append(key, value);
+                    }
+                });
+
+                paymentImages.forEach((imageItem) => {
+                    formData.append("images", imageItem.file);
+                });
+
                 const response = await axios.post(
-                    `${import.meta.env.VITE_APP_KEY}order/create/`,
-                    payload,
-                    { headers: { Authorization: `Bearer ${token}` } }
+                    `${import.meta.env.VITE_APP_KEY}order/create/new/`,
+                    formData,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
                 );
 
                 if (response.status === 201) {
-                    toast.success("Order created successfully!");
+                    toast.success(
+                        response?.data?.message ||
+                        "Order and payment slips created successfully!"
+                    );
+
+                    paymentImages.forEach((imageItem) => {
+                        URL.revokeObjectURL(imageItem.preview);
+                    });
+
+                    setPaymentImages([]);
+                    setPaymentImagesError("");
                     resetForm();
                 }
             } catch (error) {
-                toast.error(
-                    error?.response?.data?.message || "Failed to create order"
-                );
+                const responseData = error?.response?.data;
+
+                if (
+                    responseData?.error_code === "OUT_OF_STOCK" &&
+                    Array.isArray(responseData?.errors)
+                ) {
+                    const stockMessage = responseData.errors
+                        .map((item) =>
+                            `${item.product_name || `Product ${item.product_id}`}: ${item.message}`
+                        )
+                        .join(" | ");
+
+                    toast.error(stockMessage || responseData.message);
+                } else if (responseData?.errors) {
+                    const validationMessage = typeof responseData.errors === "string"
+                        ? responseData.errors
+                        : Object.entries(responseData.errors)
+                            .map(([field, messages]) =>
+                                `${field}: ${Array.isArray(messages) ? messages.join(", ") : messages}`
+                            )
+                            .join(" | ");
+
+                    toast.error(validationMessage || responseData.message);
+                } else {
+                    toast.error(
+                        responseData?.message || "Failed to create order"
+                    );
+                }
+            } finally {
+                setIsSubmitting(false);
             }
         }
     });
+
+
+    const handlePaymentImagesChange = (event) => {
+        const selectedFiles = Array.from(event.target.files || []);
+
+        if (selectedFiles.length === 0) {
+            return;
+        }
+
+        const newImages = selectedFiles.map((file) => ({
+            file,
+            preview: URL.createObjectURL(file),
+        }));
+
+        setPaymentImages((previousImages) => [
+            ...previousImages,
+            ...newImages,
+        ]);
+        setPaymentImagesError("");
+
+        // Allows selecting the same file again after removing it.
+        event.target.value = "";
+    };
+
+    const removePaymentImage = (indexToRemove) => {
+        setPaymentImages((previousImages) => {
+            const imageToRemove = previousImages[indexToRemove];
+
+            if (imageToRemove?.preview) {
+                URL.revokeObjectURL(imageToRemove.preview);
+            }
+
+            const updatedImages = previousImages.filter(
+                (_, index) => index !== indexToRemove
+            );
+
+            if (updatedImages.length === 0) {
+                setPaymentImagesError("At least one payment slip is required");
+            }
+
+            return updatedImages;
+        });
+    };
 
 
     const handleAddToCart = async () => {
@@ -154,15 +267,21 @@ const PerfomaOrder = () => {
     };
 
     const handleAddInvoiceItemsToCart = async () => {
-        if (!orders || !orders.perfoma_items || orders.perfoma_items.length === 0) {
-            alert("No items to add to cart.");
+        if (invoiceItemsAdded || isAddingItemsToCart) {
             return;
         }
+
+        if (!orders || !orders.perfoma_items || orders.perfoma_items.length === 0) {
+            toast.error("No items available to add to cart");
+            return;
+        }
+
+        setIsAddingItemsToCart(true);
 
         try {
             for (const item of orders.perfoma_items) {
                 const payload = {
-                    product: item.product, // product ID
+                    product: item.product,
                     quantity: item.quantity
                 };
 
@@ -176,15 +295,20 @@ const PerfomaOrder = () => {
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Failed to add product ID ${item.product}`);
+                    const errorData = await response.json().catch(() => null);
+                    throw new Error(
+                        errorData?.message ||
+                        `Failed to add ${item.name || `product ID ${item.product}`} to cart`
+                    );
                 }
             }
 
-            alert("All items added to cart successfully!");
-            fetchOrderData(); // Refresh data
+            setInvoiceItemsAdded(true);
+            toast.success("All items added to cart successfully!");
         } catch (error) {
-            toast.error("Error adding invoice items to cart:");
-            alert("Some items could not be added to cart.");
+            toast.error(error?.message || "Some items could not be added to cart");
+        } finally {
+            setIsAddingItemsToCart(false);
         }
     };
 
@@ -294,11 +418,20 @@ const PerfomaOrder = () => {
                                 </Row>
                                 <Row>
                                     <Button
-                                        color="success"
+                                        color={invoiceItemsAdded ? "secondary" : "success"}
                                         className="mt-3"
                                         onClick={handleAddInvoiceItemsToCart}
+                                        disabled={
+                                            isAddingItemsToCart ||
+                                            invoiceItemsAdded ||
+                                            !orders?.perfoma_items?.length
+                                        }
                                     >
-                                        Add All Items to Cart
+                                        {isAddingItemsToCart
+                                            ? "Adding Items..."
+                                            : invoiceItemsAdded
+                                                ? "Items Added to Cart"
+                                                : "Add All Items to Cart"}
                                     </Button>
                                 </Row>
                                 <Row className="mt-4">
@@ -435,6 +568,71 @@ const PerfomaOrder = () => {
                                                 {formik.errors.payment_method && formik.touched.payment_method ? (
                                                     <FormFeedback>{formik.errors.payment_method}</FormFeedback>
                                                 ) : null}
+
+                                                <div className="mt-4">
+                                                    <Label for="payment_images">
+                                                        Payment Slips *
+                                                    </Label>
+                                                    <Input
+                                                        type="file"
+                                                        id="payment_images"
+                                                        name="payment_images"
+                                                        accept="image/*"
+                                                        multiple
+                                                        onChange={handlePaymentImagesChange}
+                                                        invalid={Boolean(paymentImagesError)}
+                                                    />
+                                                    <FormFeedback>
+                                                        {paymentImagesError}
+                                                    </FormFeedback>
+                                                    <small className="text-muted d-block mt-1">
+                                                        You can select multiple payment receipt images.
+                                                    </small>
+
+                                                    {paymentImages.length > 0 && (
+                                                        <Row className="mt-3">
+                                                            {paymentImages.map((imageItem, index) => (
+                                                                <Col
+                                                                    key={`${imageItem.file.name}-${imageItem.file.lastModified}-${index}`}
+                                                                    xs={6}
+                                                                    md={4}
+                                                                    className="mb-3"
+                                                                >
+                                                                    <div
+                                                                        className="border rounded p-2 position-relative"
+                                                                        style={{ minHeight: "150px" }}
+                                                                    >
+                                                                        <img
+                                                                            src={imageItem.preview}
+                                                                            alt={`Payment slip ${index + 1}`}
+                                                                            style={{
+                                                                                width: "100%",
+                                                                                height: "110px",
+                                                                                objectFit: "cover",
+                                                                                borderRadius: "4px",
+                                                                            }}
+                                                                        />
+                                                                        <div
+                                                                            className="small text-truncate mt-2"
+                                                                            title={imageItem.file.name}
+                                                                        >
+                                                                            {imageItem.file.name}
+                                                                        </div>
+                                                                        <Button
+                                                                            type="button"
+                                                                            color="danger"
+                                                                            size="sm"
+                                                                            className="position-absolute top-0 end-0 m-1"
+                                                                            onClick={() => removePaymentImage(index)}
+                                                                        >
+                                                                            ×
+                                                                        </Button>
+                                                                    </div>
+                                                                </Col>
+                                                            ))}
+                                                        </Row>
+                                                    )}
+                                                </div>
                                             </CardBody>
                                         </Card>
                                     </Col>
@@ -460,8 +658,9 @@ const PerfomaOrder = () => {
                                             color="primary"
                                             className="mt-3"
                                             onClick={formik.handleSubmit}
+                                            disabled={isSubmitting}
                                         >
-                                            Create Order
+                                            {isSubmitting ? "Creating Order..." : "Create Order"}
                                         </Button>
                                     </Col>
                                 </Row>

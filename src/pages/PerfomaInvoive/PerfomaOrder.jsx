@@ -7,12 +7,14 @@ import { useFormik } from "formik";
 import * as Yup from 'yup';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Select from "react-select";
 
 const PerfomaOrder = () => {
     const { invoice } = useParams();
     const [orders, setOrders] = useState(null);
     const token = localStorage.getItem('token');
     const [banks, setBanks] = useState([]);
+    const [parcelServices, setParcelServices] = useState([]);
     const [selectedProductId, setSelectedProductId] = useState("");
     const [addQuantity, setAddQuantity] = useState(1);
     const [paymentImages, setPaymentImages] = useState([]);
@@ -37,9 +39,12 @@ const PerfomaOrder = () => {
             cod_amount: "",
             adv_cod_amount: "",
             total_amount: orders?.total_amount || 0,
-            order_date: orders?.order_date || new Date().toISOString().substring(0, 10),
+            // order_date: orders?.order_date || new Date().toISOString().substring(0, 10),
+            order_date: new Date().toISOString().split("T")[0],
             status: "Invoice Created",
             warehouses: orders?.warehouse_id || "",
+            parcel_service: orders?.parcel_service?.id || orders?.parcel_service || "",
+            parcel_service_note: orders?.parcel_service_note || "",
         },
         validationSchema: Yup.object({
             payment_status: Yup.string().required("Payment status is required"),
@@ -337,6 +342,30 @@ const PerfomaOrder = () => {
         }
     };
 
+
+    const fetchParcelServices = async () => {
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}parcal/service/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (response.status === 200) {
+                setParcelServices(response?.data?.data || []);
+            }
+        } catch (error) {
+            console.error(
+                "Error fetching parcel services:",
+                error?.response?.data || error.message
+            );
+            toast.error("Failed to fetch parcel services");
+        }
+    };
+
     const fetchBanks = async () => {
         try {
             const response = await fetch(`${import.meta.env.VITE_APP_KEY}banks/`, {
@@ -365,7 +394,13 @@ const PerfomaOrder = () => {
 
     useEffect(() => {
         fetchBanks();
+        fetchParcelServices();
     }, []);
+
+    const parcelServiceOptions = parcelServices.map((service) => ({
+        value: service.id,
+        label: `${service.label} - ${service.name}`,
+    }));
 
 
     return (
@@ -434,6 +469,57 @@ const PerfomaOrder = () => {
                                                 : "Add All Items to Cart"}
                                     </Button>
                                 </Row>
+                                <Row className="mt-4">
+                                    <Col md={4}>
+                                        <div className="mb-3">
+                                            <Label htmlFor="parcel_service">Parcel Service</Label>
+                                            <Select
+                                                id="parcel_service"
+                                                name="parcel_service"
+                                                options={parcelServiceOptions}
+                                                placeholder="Search or select parcel service..."
+                                                isSearchable
+                                                isClearable
+                                                value={
+                                                    parcelServiceOptions.find(
+                                                        (option) =>
+                                                            String(option.value) ===
+                                                            String(formik.values.parcel_service)
+                                                    ) || null
+                                                }
+                                                onChange={(selectedOption) => {
+                                                    formik.setFieldValue(
+                                                        "parcel_service",
+                                                        selectedOption ? selectedOption.value : ""
+                                                    );
+                                                }}
+                                                onBlur={() =>
+                                                    formik.setFieldTouched("parcel_service", true)
+                                                }
+                                            />
+                                        </div>
+                                    </Col>
+
+                                    <Col md={8}>
+                                        <div className="mb-3">
+                                            <Label htmlFor="parcel_service_note">
+                                                Parcel Service Note
+                                            </Label>
+                                            <Input
+                                                type="textarea"
+                                                name="parcel_service_note"
+                                                id="parcel_service_note"
+                                                className="form-control"
+                                                placeholder="Enter parcel service note"
+                                                rows="3"
+                                                value={formik.values.parcel_service_note}
+                                                onChange={formik.handleChange}
+                                                onBlur={formik.handleBlur}
+                                            />
+                                        </div>
+                                    </Col>
+                                </Row>
+
                                 <Row className="mt-4">
 
                                     <Col md={6}>

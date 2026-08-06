@@ -45,6 +45,7 @@ const PerfomaOrder = () => {
             warehouses: orders?.warehouse_id || "",
             parcel_service: orders?.parcel_service?.id || orders?.parcel_service || "",
             parcel_service_note: orders?.parcel_service_note || "",
+            performa_id: orders?.id || "",
         },
         validationSchema: Yup.object({
             payment_status: Yup.string().required("Payment status is required"),

@@ -238,7 +238,12 @@ const InvoiceCreated = () => {
                                                                         ...getStatusStyle(order?.status)
                                                                     }}
                                                                 >
-                                                                    <strong>{order?.status}</strong>
+                                                                    {/* <strong>{order?.status}</strong> */}
+                                                                    <strong>
+                                                                        {order?.status === "Invoice Created"
+                                                                            ? "Waiting for Approval"
+                                                                            : order?.status}
+                                                                    </strong>
 
                                                                     {(["Ready to ship", "Shipped"].includes(order?.status)) &&
                                                                         (order?.warehouse_data?.length > 0 ||

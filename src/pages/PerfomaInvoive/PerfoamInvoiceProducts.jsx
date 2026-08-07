@@ -17,6 +17,7 @@ const FormLayouts = () => {
     const { id } = useParams();
     const { invoice } = useParams();
 
+
     const [orderItems, setOrderItems] = React.useState([]);
     const [successMessage, setSuccessMessage] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
@@ -171,13 +172,13 @@ const FormLayouts = () => {
                 formik.setValues({
                     invoice: data.invoice || "",
                     status: data.status || "",
-                    manage_staff: data.manage_staff || "",
+                    manage_staff: data.manage_staff_name  || "",
                     order_date: data.order_date || "",
                     company: data.company || "",
                     shipping_mode: data.shipping_mode || "",
                     code_charge: data.code_charge || "",
                     check: data.check || false,
-                    family: data.family || "",
+                    family: data.familyname  || "",
                 });
 
                 setOrderItems(data.perfoma_items || []);

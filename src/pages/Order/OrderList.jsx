@@ -274,6 +274,7 @@ const BasicTable = () => {
                                 >
                                     <option value="">All Status</option>
                                     {[
+                                        "Invoice Created",
                                         "Invoice Approved",
                                         "Pre Booked",
                                         "Waiting For Confirmation",
@@ -283,10 +284,12 @@ const BasicTable = () => {
                                         "Ready to ship",
                                         "Shipped",
                                         "Invoice Rejected",
-                                        "Invoice Created",
                                     ].map((status) => (
+                                        // <option key={status} value={status}>
+                                        //     {status}
+                                        // </option>
                                         <option key={status} value={status}>
-                                            {status}
+                                            {status === "Invoice Created" ? "Waiting for Approval" : status}
                                         </option>
                                     ))}
                                 </Input>
@@ -439,7 +442,12 @@ const BasicTable = () => {
                                                                             ...getStatusStyle(order?.status)
                                                                         }}
                                                                     >
-                                                                        <strong>{order?.status}</strong>
+                                                                        {/* <strong>{order?.status}</strong> */}
+                                                                        <strong>
+                                                                            {order?.status === "Invoice Created"
+                                                                                ? "Waiting For Approval"
+                                                                                : order?.status}
+                                                                        </strong>
 
                                                                         {["Ready to ship", "Shipped"].includes(order?.status) &&
                                                                             (order?.warehouse_data?.length > 0 ||

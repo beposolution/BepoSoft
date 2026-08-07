@@ -23,6 +23,43 @@ const PerfomaOrder = () => {
     const [isAddingItemsToCart, setIsAddingItemsToCart] = useState(false);
     const [invoiceItemsAdded, setInvoiceItemsAdded] = useState(false);
 
+    const writeCreateLog = async (orderId, token, proformaData, createdOrderData) => {
+        try {
+            const logPayload = {
+                order: Number(orderId),
+
+                before_data: {
+                    Action: "Proforma converting to Invoice - website",
+                    Data: proformaData,
+                },
+
+                after_data: {
+                    Action: "Proforma added to Waiting For Approval",
+                    Data: createdOrderData,
+                },
+            };
+
+            const logResponse = await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                logPayload,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+
+            return logResponse.data;
+
+        } catch (err) {
+            console.error("======= DATALOG FAILED =======");
+
+            return null;
+        }
+    };
+
     const formik = useFormik({
         enableReinitialize: true,
         initialValues: {
@@ -145,6 +182,68 @@ const PerfomaOrder = () => {
                 );
 
                 if (response.status === 201) {
+
+
+                    // Created order is inside response.data.data
+                    const createdOrderData = response?.data?.data;
+                    const createdOrderId = createdOrderData?.id;
+
+
+                    if (createdOrderId) {
+
+                        try {
+                            const logPayload = {
+                                order: Number(createdOrderId),
+
+                                before_data: {
+                                    Action: "Proforma converting to Invoice",
+                                    Data: {
+                                        proforma_id: orders?.id,
+                                        proforma_invoice: orders?.invoice,
+                                        status: orders?.status,
+                                        customer: orders?.customer,
+                                        customer_id: orders?.customerID,
+                                        company: orders?.company,
+                                        family: orders?.family,
+                                        manage_staff: orders?.manage_staff,
+                                        billing_address: orders?.billing_address,
+                                        warehouse_id: orders?.warehouse_id,
+                                        total_amount: orders?.total_amount,
+                                        perfoma_items: orders?.perfoma_items,
+                                    }
+                                },
+
+                                after_data: {
+                                    Action: "Proforma added to Waiting For Approval",
+                                    Data: {
+                                        ...createdOrderData,
+                                        status: "Waiting For Approval"
+                                    }
+                                }
+                            };
+
+                            const logResponse = await axios.post(
+                                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                                logPayload,
+                                {
+                                    headers: {
+                                        Authorization: `Bearer ${token}`,
+                                        "Content-Type": "application/json",
+                                    },
+                                }
+                            );
+
+                        } catch (logError) {
+                            console.error("======= DATALOG CREATION FAILED =======");
+                        }
+
+                    } else {
+
+                        console.error(
+                            "Order created but created order ID is missing:"
+                        );
+                    }
+
                     toast.success(
                         response?.data?.message ||
                         "Order and payment slips created successfully!"

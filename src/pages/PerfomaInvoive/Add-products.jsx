@@ -19,7 +19,13 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch }) => {
     const [error, setError] = useState(null);
     const [quantity, setQuantity] = useState({});
 
+    const [role, setRole] = useState(null);
     const token = localStorage.getItem("token");
+
+    useEffect(() => {
+        const role = localStorage.getItem("active");
+        setRole(role);
+    }, []);
 
     const fetchProducts = async (search = "") => {
         setLoading(true);
@@ -80,14 +86,20 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch }) => {
 
     const addToCart = async (product) => {
         const selectedQuantity = quantity[product.id] || 1;
+        const availableStock = Number(product.available_stock || 0);
 
         if (!product?.id) {
             toast.error("Invalid product selected");
             return;
         }
 
-        if (selectedQuantity > product.stock) {
-            toast.error(`Only ${product.stock} stock available`);
+        if (availableStock <= 0) {
+            toast.error("No available stock");
+            return;
+        }
+
+        if (selectedQuantity > availableStock) {
+            toast.error(`Only ${availableStock} available stock`);
             return;
         }
 
@@ -114,7 +126,11 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch }) => {
             }
         } catch (error) {
             console.error("Add to cart error:", error);
-            toast.error("Failed to add product to cart");
+
+            toast.error(
+                error?.response?.data?.message ||
+                "Failed to add product to cart"
+            );
         }
     };
 
@@ -161,7 +177,13 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch }) => {
                                     <th>Image</th>
                                     <th>Name</th>
                                     <th>Price</th>
-                                    <th>Stock</th>
+
+                                    {(role === "Accounts" || role === "CEO" || role === "COO") && (
+                                        <th>Stock</th>
+                                    )}
+
+                                    <th>Available Stock</th>
+
                                     <th>Quantity</th>
                                     <th>Action</th>
                                 </tr>
@@ -194,13 +216,23 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch }) => {
 
                                             <td>₹{formatPrice(product.selling_price)}</td>
 
-                                            <td>{product.stock || 0}</td>
+                                            {(role === "Accounts" ||
+                                                role === "CEO" ||
+                                                role === "COO") && (
+                                                    <td>
+                                                        {Number(product.stock || 0)}
+                                                    </td>
+                                                )}
+
+                                            <td>
+                                                {Number(product.available_stock || 0)}
+                                            </td>
 
                                             <td>
                                                 <Input
                                                     type="number"
                                                     min="1"
-                                                    max={product.stock || 1}
+                                                    max={Number(product.available_stock || 0)}
                                                     value={quantity[product.id] || 1}
                                                     onChange={(e) =>
                                                         handleQuantityChange(
@@ -218,7 +250,9 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch }) => {
                                                     color="success"
                                                     size="sm"
                                                     onClick={() => addToCart(product)}
-                                                    disabled={Number(product.stock || 0) <= 0}
+                                                    disabled={
+                                                        Number(product.available_stock || 0) <= 0
+                                                    }
                                                 >
                                                     Add
                                                 </Button>
@@ -227,7 +261,16 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch }) => {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="7" className="text-center">
+                                        <td
+                                            colSpan={
+                                                role === "Accounts" ||
+                                                    role === "CEO" ||
+                                                    role === "COO"
+                                                    ? "8"
+                                                    : "7"
+                                            }
+                                            className="text-center"
+                                        >
                                             No products found.
                                         </td>
                                     </tr>

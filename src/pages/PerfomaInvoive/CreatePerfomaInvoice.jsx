@@ -47,6 +47,198 @@ const FormLayouts = () => {
 
     const toggleModal = () => setModalOpen(!modalOpen);
 
+    const createProformaLog = async (proformaInvoice, postedData) => {
+        try {
+            const safeStates = Array.isArray(states) ? states : [];
+            const safeCompanies = Array.isArray(companys) ? companys : [];
+            const safeFamilies = Array.isArray(familys) ? familys : [];
+            const safeCustomers = Array.isArray(customers) ? customers : [];
+            const safeCustomerResults = Array.isArray(customerResults)
+                ? customerResults
+                : [];
+            const safeStaffs = Array.isArray(staffs) ? staffs : [];
+            const safeAddresses = Array.isArray(customerAddresses)
+                ? customerAddresses
+                : [];
+            const safeWarehouses = Array.isArray(warehouseDetails)
+                ? warehouseDetails
+                : [];
+            const safeProducts = Array.isArray(cartProducts)
+                ? cartProducts
+                : [];
+
+            const selectedState = safeStates.find(
+                (item) => Number(item?.id) === Number(postedData?.state)
+            );
+
+            const selectedCompany = safeCompanies.find(
+                (item) => Number(item?.id) === Number(postedData?.company)
+            );
+
+            const selectedFamily = safeFamilies.find(
+                (item) => Number(item?.id) === Number(postedData?.family)
+            );
+
+            const selectedCustomer =
+                safeCustomers.find(
+                    (item) =>
+                        Number(item?.id) === Number(postedData?.customer)
+                ) ||
+                safeCustomerResults.find(
+                    (item) =>
+                        Number(item?.id) === Number(postedData?.customer)
+                );
+
+            const selectedStaff =
+                safeStaffs.find(
+                    (item) =>
+                        Number(item?.id) === Number(postedData?.manage_staff)
+                ) ||
+                (
+                    loggedUser &&
+                        Number(loggedUser?.id) ===
+                        Number(postedData?.manage_staff)
+                        ? loggedUser
+                        : null
+                );
+
+            const selectedAddress = safeAddresses.find(
+                (item) =>
+                    Number(item?.id) ===
+                    Number(postedData?.billing_address)
+            );
+
+            const selectedWarehouse = safeWarehouses.find(
+                (item) =>
+                    Number(item?.id) ===
+                    Number(postedData?.warehouse_id)
+            );
+
+            const productDetails = safeProducts.map((product) => {
+                const quantity = Number(product?.quantity) || 1;
+                const price = Number(product?.price) || 0;
+                const discount = Number(product?.discount) || 0;
+
+                return {
+                    product_name:
+                        product?.name || "Unknown Product",
+
+                    quantity: quantity,
+
+                    rate:
+                        Number(product?.exclude_price) || 0,
+
+                    tax:
+                        Number(product?.tax) || 0,
+
+                    price: price,
+
+                    discount: discount,
+
+                    size:
+                        product?.size || "N/A",
+
+                    description:
+                        product?.note || "",
+
+                    total: (
+                        (price * quantity) -
+                        (discount * quantity)
+                    ).toFixed(2),
+                };
+            });
+
+            const readableData = {
+                proforma_invoice: proformaInvoice,
+
+                state:
+                    selectedState?.name ||
+                    postedData?.state ||
+                    "",
+
+                family:
+                    selectedFamily?.name ||
+                    postedData?.family ||
+                    "",
+
+                company:
+                    selectedCompany?.name ||
+                    postedData?.company ||
+                    "",
+
+                customer:
+                    selectedCustomer?.name ||
+                    customerSearch ||
+                    postedData?.customer ||
+                    "",
+
+                order_date:
+                    postedData?.order_date || "",
+
+                manage_staff:
+                    selectedStaff?.name ||
+                    postedData?.manage_staff ||
+                    "",
+
+                total_amount:
+                    postedData?.total_amount || 0,
+
+                warehouse:
+                    selectedWarehouse?.name ||
+                    postedData?.warehouse_id ||
+                    "",
+
+                billing_address: selectedAddress
+                    ? [
+                        selectedAddress?.name,
+                        selectedAddress?.address,
+                        selectedAddress?.city,
+                        selectedAddress?.zipcode,
+                        selectedAddress?.state,
+                        selectedAddress?.phone,
+                    ]
+                        .filter(Boolean)
+                        .join(" - ")
+                    : postedData?.billing_address || "",
+
+                products: productDetails,
+            };
+
+            const logData = {
+                before_data: {
+                    Action: "Proforma Invoice Creation - website",
+                },
+
+                after_data: {
+                    Action:
+                        "Proforma invoice created successfully",
+
+                    Data: readableData,
+                },
+            };
+
+            const logResponse = await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                logData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+        } catch (error) {
+            console.error(
+                "Proforma datalog creation failed:",
+                error?.response?.status,
+                error?.response?.data || error?.message
+            );
+
+            console.error("FULL DATALOG ERROR:", error);
+        }
+    };
+
     // Formik setup
     const formik = useFormik({
         initialValues: {
@@ -96,6 +288,20 @@ const FormLayouts = () => {
                 );
 
                 if (response.status === 201) {
+
+                    // Try all possible locations for created order/proforma ID
+                    const proformaId =
+                        response?.data?.invoice;
+
+                    if (proformaId) {
+                        await createProformaLog(proformaId, dataToSubmit);
+                    } else {
+                        console.error(
+                            "Datalog not created because order/proforma ID was not found.",
+                            response.data
+                        );
+                    }
+
                     toast.success("Performa invoice created successfully!", {
                         position: "top-right",
                         autoClose: 4000,
@@ -126,8 +332,36 @@ const FormLayouts = () => {
 
     });
 
-    const searchCustomers = async (query) => {
+    // const searchCustomers = async (query) => {
 
+    //     setCustomerSearch(query);
+
+    //     if (!query || query.length < 2) {
+    //         setCustomerResults([]);
+    //         return;
+    //     }
+
+    //     setCustomerLoading(true);
+
+    //     try {
+
+    //         const response = await axios.get(
+    //             `${import.meta.env.VITE_APP_KEY}customers/?search=${query}`,
+    //             { headers: { Authorization: `Bearer ${token}` } }
+    //         );
+
+    //         setCustomerResults(response?.data?.results || []);
+
+    //     } catch (error) {
+
+    //         console.error("Customer search error:", error);
+
+    //     } finally {
+    //         setCustomerLoading(false);
+    //     }
+    // };
+
+    const searchCustomers = async (query) => {
         setCustomerSearch(query);
 
         if (!query || query.length < 2) {
@@ -138,18 +372,64 @@ const FormLayouts = () => {
         setCustomerLoading(true);
 
         try {
+            const loginRole = localStorage.getItem("active");
 
-            const response = await axios.get(
-                `${import.meta.env.VITE_APP_KEY}customers/?search=${query}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            let response;
 
-            setCustomerResults(response?.data?.results || []);
+            if (loginRole === "BDO") {
+                // BDO - only assigned/staff customers
+                response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}staff/customers/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                const staffCustomers =
+                    response?.data?.data ||
+                    response?.data?.results ||
+                    response?.data ||
+                    [];
+
+                // Search only inside BDO customers
+                const searchText = query.toLowerCase().trim();
+
+                const filteredCustomers = staffCustomers.filter((customer) => {
+                    const name = customer?.name?.toLowerCase() || "";
+                    const phone = String(customer?.phone || "").toLowerCase();
+
+                    return (
+                        name.includes(searchText) ||
+                        phone.includes(searchText)
+                    );
+                });
+
+                setCustomerResults(filteredCustomers);
+
+            } else {
+                // Other roles - existing customer search API
+                response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}customers/?search=${encodeURIComponent(query)}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                setCustomerResults(
+                    response?.data?.results ||
+                    response?.data?.data ||
+                    []
+                );
+            }
 
         } catch (error) {
-
             console.error("Customer search error:", error);
-
+            setCustomerResults([]);
+            toast.error("Failed to load customers");
         } finally {
             setCustomerLoading(false);
         }
@@ -190,9 +470,13 @@ const FormLayouts = () => {
                         axios.get(`${import.meta.env.VITE_APP_KEY}warehouse/add/`, { headers: { Authorization: `Bearer ${token}` } })
                     ]);
 
-                    if (statesResponse.status === 200) {
-                        setStates(statesResponse.data.data);
+                    // if (statesResponse.status === 200) {
+                    //     setStates(statesResponse.data.data);
+                    // }
+                    if (statesResponse.status !== 200) {
+                        setStates([]);
                     }
+
                     if (familyResponse.status === 200) {
                         setFamilys(familyResponse.data.data);
                     }
@@ -202,19 +486,59 @@ const FormLayouts = () => {
                     if (staffcustomersResponse.status === 200) {
                         setCustomers(staffcustomersResponse.data?.data);
                     }
+
                     if (StaffResponse.status === 200) {
                         const user = StaffResponse.data.data;
+
                         setLoggedUser(user);
+
+                        // Set logged-in staff automatically
                         formik.setFieldValue("manage_staff", user.id || "");
                         formik.setFieldValue("family", user.family || "");
+
                         if (user.warehouse_id) {
                             formik.setFieldValue("warehouse_id", user.warehouse_id);
                         }
 
-                        if (states.length > 0) {
-                            const states = user.allocated_states || [];
-                            const filteredStates = states.filter(state => states.includes(state.id));
+                        // -----------------------------------------
+                        // STATE FILTERING BASED ON ROLE
+                        // -----------------------------------------
+                        const allStates = statesResponse?.data?.data || [];
+                        const loginRole = localStorage.getItem("active");
+
+                        if (loginRole === "BDO") {
+                            const allocatedStates = user?.allocated_states || [];
+
+                            // Supports allocated_states as either:
+                            // [1, 2, 3]
+                            // OR
+                            // [{id: 1, name: "Kerala"}, ...]
+                            const allocatedStateIds = allocatedStates.map((state) =>
+                                Number(
+                                    typeof state === "object"
+                                        ? state.id
+                                        : state
+                                )
+                            );
+
+                            const filteredStates = allStates.filter((state) =>
+                                allocatedStateIds.includes(Number(state.id))
+                            );
+
                             setStates(filteredStates);
+
+                            // Optional:
+                            // If BDO has only one allocated state,
+                            // automatically select that state
+                            if (filteredStates.length === 1) {
+                                formik.setFieldValue(
+                                    "state",
+                                    filteredStates[0].id
+                                );
+                            }
+                        } else {
+                            // Other roles can see all states
+                            setStates(allStates);
                         }
                     }
 
@@ -587,6 +911,7 @@ const FormLayouts = () => {
                                                         value={formik.values.manage_staff}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
+                                                        disabled={role === "BDO"}
                                                         invalid={formik.touched.manage_staff && formik.errors.manage_staff ? true : false}
                                                     >
                                                         <option value="">Select a staff...</option>
@@ -662,12 +987,13 @@ const FormLayouts = () => {
 
                                             <Col md={3}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="order_date">Current Date</Label>
+                                                    <Label htmlFor="order_date">Date</Label>
                                                     <Input
                                                         type="date"
                                                         name="order_date"
                                                         className="form-control"
                                                         id="order_date"
+                                                        readOnly
                                                         value={formik.values.order_date}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}

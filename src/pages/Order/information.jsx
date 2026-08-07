@@ -337,57 +337,6 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                         disabled={isBlockedTransition}
                                                     >
                                                         <option value="">Select Status</option>
-                                                        {/* {(() => {
-                                                            // CEO & COO → see ALL statuses always
-                                                            if (role === "CEO" || role === "COO") {
-                                                                return statusOptions.map((option, index) => (
-                                                                    <option key={index} value={option}>
-                                                                        {option}
-                                                                    </option>
-                                                                ));
-                                                            }
-
-                                                            let filteredOptions = [];
-                                                            const baseStatus = persistedStatus;
-
-                                                            if (baseStatus === "Invoice Rejected") {
-                                                                filteredOptions = [...statusOptions];
-                                                            } else {
-                                                                const baseIndex = statusOptions.indexOf(baseStatus);
-
-                                                                if (baseIndex !== -1) {
-                                                                    // current + next only
-                                                                    // filteredOptions = statusOptions.slice(baseIndex, baseIndex + 2);
-                                                                    if (baseStatus === "Invoice Approved") {
-                                                                        filteredOptions = [
-                                                                            "Invoice Approved",
-                                                                            "Waiting For Confirmation",
-                                                                            "Pre Booked",
-                                                                        ];
-                                                                    } else if (baseStatus === "Pre Booked") {
-                                                                        filteredOptions = [
-                                                                            "Pre Booked",
-                                                                            "Waiting For Confirmation",
-                                                                        ];
-                                                                    } else {
-                                                                        filteredOptions = statusOptions.slice(baseIndex, baseIndex + 2);
-                                                                    }
-                                                                } else {
-                                                                    filteredOptions = statusOptions.slice(0, 2);
-                                                                }
-
-                                                                // Always allow rejection
-                                                                if (!filteredOptions.includes("Invoice Rejected")) {
-                                                                    filteredOptions.push("Invoice Rejected");
-                                                                }
-                                                            }
-
-                                                            return filteredOptions.map((option, index) => (
-                                                                <option key={index} value={option}>
-                                                                    {option}
-                                                                </option>
-                                                            ));
-                                                        })()} */}
 
                                                         {(() => {
                                                             const normalizedRole = role?.trim().toUpperCase();
@@ -419,8 +368,13 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                                 }
 
                                                                 return bdmOptions.map((option, index) => (
+                                                                    // <option key={index} value={option}>
+                                                                    //     {option}
+                                                                    // </option>
                                                                     <option key={index} value={option}>
-                                                                        {option}
+                                                                        {option === "Invoice Created"
+                                                                            ? "Waiting For Approval"
+                                                                            : option}
                                                                     </option>
                                                                 ));
                                                             }
@@ -428,8 +382,13 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                             // CEO & COO → all statuses
                                                             if (normalizedRole === "CEO" || normalizedRole === "COO") {
                                                                 return statusOptions.map((option, index) => (
+                                                                    // <option key={index} value={option}>
+                                                                    //     {option}
+                                                                    // </option>
                                                                     <option key={index} value={option}>
-                                                                        {option}
+                                                                        {option === "Invoice Created"
+                                                                            ? "Waiting For Approval"
+                                                                            : option}
                                                                     </option>
                                                                 ));
                                                             }
@@ -467,8 +426,13 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                             }
 
                                                             return filteredOptions.map((option, index) => (
+                                                                // <option key={index} value={option}>
+                                                                //     {option}
+                                                                // </option>
                                                                 <option key={index} value={option}>
-                                                                    {option}
+                                                                    {option === "Invoice Created"
+                                                                        ? "Waiting For Approval"
+                                                                        : option}
                                                                 </option>
                                                             ));
                                                         })()}

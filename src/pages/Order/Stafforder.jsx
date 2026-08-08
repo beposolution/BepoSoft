@@ -632,7 +632,12 @@ const FormLayouts = () => {
                                                         className="form-control"
                                                         id="formrow-email-Input"
                                                         placeholder="Enter Your Email ID"
-                                                        value={formik.values.status}
+                                                        // value={formik.values.status}
+                                                        value={
+                                                            formik.values.status === "Invoice Created"
+                                                                ? "Waiting For Approval"
+                                                                : formik.values.status
+                                                        }
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
                                                         invalid={
@@ -894,7 +899,7 @@ const FormLayouts = () => {
                                                             <th>Price</th>
                                                             <th>Discount</th>
                                                             <th>Total Amount</th>
-                                                            <th>Remove</th>
+                                                            {/* <th>Remove</th> */}
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -940,7 +945,7 @@ const FormLayouts = () => {
                                                                 </td>
 
                                                                 <td>{((item.rate - item.discount) * item.quantity).toFixed(2)}</td>
-                                                                <td>
+                                                                {/* <td>
                                                                     <Button
                                                                         color="danger"
                                                                         disabled={isAddDisabled}
@@ -948,7 +953,7 @@ const FormLayouts = () => {
                                                                     >
                                                                         Remove
                                                                     </Button>
-                                                                </td>
+                                                                </td> */}
                                                             </tr>
                                                         ))}
 
@@ -1048,6 +1053,7 @@ const FormLayouts = () => {
                                                                             <input
                                                                                 type="number"
                                                                                 value={shippingCharge}
+                                                                                readOnly={true}
                                                                                 onChange={(e) => setShippingCharge(Number(e.target.value))}
                                                                                 style={{ width: '80px', fontWeight: "500", border: "1px solid #ccc", borderRadius: "4px", padding: "3px" }}
                                                                             />

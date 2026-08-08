@@ -172,13 +172,13 @@ const FormLayouts = () => {
                 formik.setValues({
                     invoice: data.invoice || "",
                     status: data.status || "",
-                    manage_staff: data.manage_staff_name  || "",
+                    manage_staff: data.manage_staff_name || "",
                     order_date: data.order_date || "",
                     company: data.company || "",
                     shipping_mode: data.shipping_mode || "",
                     code_charge: data.code_charge || "",
                     check: data.check || false,
-                    family: data.familyname  || "",
+                    family: data.familyname || "",
                 });
 
                 setOrderItems(data.perfoma_items || []);
@@ -283,87 +283,136 @@ const FormLayouts = () => {
         fetchOrderData();
     }, [id]);
 
-    const handleRemoveItem = async (itemId) => {
-        try {
-            // Replace with your API URL and method to delete the item
-            const response = await fetch(`${import.meta.env.VITE_APP_KEY}remove/order/${itemId}/item/`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
+    const handleRemoveItem = async (orderId, itemId) => {
+        const confirmDelete = window.confirm(
+            "Are you sure you want to remove this product?"
+        );
 
-
-            if (!response.ok) {
-                throw new Error('Failed to remove item');
-            }
-
-            setOrderItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
-
-            // Optionally show success message or notification
-            alert('Item removed successfully');
-        } catch (error) {
-            alert('Failed to remove item');
-        }
-    };
-
-
-    const updateCartProduct = async (productId, updateData) => {
-        const token = localStorage.getItem("token"); // Retrieve token directly here
-
-        if (!token) {
-            setErrorMessage("Authorization token is missing");
+        if (!confirmDelete) {
             return;
         }
 
         try {
-            // Use productId in the URL
-            const response = await fetch(`${import.meta.env.VITE_APP_KEY}remove/order/${productId}/item/`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(updateData)
-            });
+            const token = localStorage.getItem("token");
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Failed to update the product. Status: ${response.status} - ${errorData.message || 'Unknown error'}`);
+            if (!token) {
+                toast.error("Authorization token is missing");
+                return;
             }
 
-            const updatedProduct = await response.json();
+            const response = await fetch(
+                `${import.meta.env.VITE_APP_KEY}perfoma/order/${orderId}/item/${itemId}/delete/`,
+                {
+                    method: "DELETE",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
 
-            // Provide user feedback on success
-            setFeedback("Product updated successfully");
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data?.message ||
+                    data?.errors ||
+                    "Failed to remove product"
+                );
+            }
+
+            toast.success(
+                data?.message || "Product removed successfully"
+            );
+
+            // Reload Performa data after delete.
+            // This updates products + all calculations.
+            await fetchOrderData();
+
         } catch (error) {
+            console.error("Delete product error:", error);
+
+            toast.error(
+                error.message || "Failed to remove product"
+            );
+        }
+    };
+
+
+    const updateCartProduct = async (orderId, itemId, updateData) => {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            toast.error("Authorization token is missing");
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_APP_KEY}perfoma/order/${orderId}/item/${itemId}/update/`,
+                {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(updateData),
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data?.message ||
+                    data?.errors ||
+                    "Failed to update product"
+                );
+            }
+
+            toast.success("Product updated successfully");
+
+            // Reload the latest Performa data
+            await fetchOrderData();
+
+        } catch (error) {
+            console.error("Update Performa product error:", error);
+
+            toast.error(
+                error.message || "Failed to update product"
+            );
         }
     };
 
     // Handle Quantity/Discount Change
-    const handleItemChange = (index, field, value) => {
+    const handleItemChange = async (index, field, value) => {
         const updatedItems = [...orderItems];
-        const productId = updatedItems[index].id; // Assuming each item has a unique ID
 
-        // Update local state
-        if (field === 'quantity') {
-            updatedItems[index].quantity = Number(value); // Convert to Number for consistency
-        } else if (field === 'discount') {
-            updatedItems[index].discount = Number(value); // Convert to Number
+        const item = updatedItems[index];
+
+        if (!item) {
+            return;
         }
-        setOrderItems(updatedItems);
 
-        // Prepare the data to be sent to the backend
-        const updateData = {
-            quantity: updatedItems[index].quantity,
-            discount: updatedItems[index].discount
+        const numericValue = Number(value);
+
+        updatedItems[index] = {
+            ...item,
+            [field]: numericValue,
         };
 
-        // Call the backend update function with productId in the URL
-        updateCartProduct(productId, updateData);
-    };
+        setOrderItems(updatedItems);
 
+        const updateData = {
+            [field]: numericValue,
+        };
+
+        await updateCartProduct(
+            item.order,
+            item.id,
+            updateData
+        );
+    };
 
 
     const handleSubmit = async () => {
@@ -510,6 +559,7 @@ const FormLayouts = () => {
                                                         className="form-control"
                                                         id="formrow-invoice-Input"
                                                         placeholder="Enter Your INVOICE NO"
+                                                        disabled
                                                         value={formik.values.invoice}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
@@ -582,6 +632,7 @@ const FormLayouts = () => {
                                                         className="form-control"
                                                         id="formrow-Inputorder_date"
                                                         placeholder="Enter Your Living order_date"
+                                                        disabled
                                                         value={formik.values.order_date}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
@@ -780,7 +831,19 @@ const FormLayouts = () => {
                                 <Col xl={12}>
                                     <Card className="bordered-card">
                                         <CardBody>
-                                            <CardTitle className="h4">Bordered Table</CardTitle>
+                                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                                <CardTitle className="h4 mb-0">
+                                                    Bordered Table
+                                                </CardTitle>
+
+                                                <Button
+                                                    color="primary"
+                                                    type="button"
+                                                    onClick={toggleModal}
+                                                >
+                                                    Add Product
+                                                </Button>
+                                            </div>
                                             <div className="table-responsive">
                                                 <Table className="table table-bordered table-striped mb-0">
                                                     <thead>
@@ -788,7 +851,6 @@ const FormLayouts = () => {
                                                             <th>ID</th>
                                                             <th>Image</th>
                                                             <th>Name</th>
-                                                            <th>Actual Price</th>
                                                             <th>Rate</th>
                                                             <th>Tax %</th>
                                                             <th>Tax Amount</th>
@@ -802,7 +864,9 @@ const FormLayouts = () => {
                                                     <tbody>
                                                         {orderItems.map((item, index) => (
                                                             <tr key={item.id} className="table-row">
+
                                                                 <td>{index + 1}</td>
+
                                                                 <td className="image-cell">
                                                                     {item.images ? (
                                                                         <img
@@ -822,38 +886,91 @@ const FormLayouts = () => {
                                                                         <span>No Image</span>
                                                                     )}
                                                                 </td>
+
                                                                 <td>{item.name}</td>
-                                                                <td>{item.rate}</td>
-                                                                <td>{item.exclude_price}</td>
+
+                                                                {/* EDITABLE RATE */}
+                                                                <td>
+                                                                    <Input
+                                                                        type="number"
+                                                                        value={item.rate}
+                                                                        min="0"
+                                                                        onChange={(e) =>
+                                                                            handleItemChange(
+                                                                                index,
+                                                                                "rate",
+                                                                                e.target.value
+                                                                            )
+                                                                        }
+                                                                        style={{ width: "90px" }}
+                                                                    />
+                                                                </td>
+
                                                                 <td>{item.tax} %</td>
-                                                                <td>{item.rate - item.exclude_price}</td>
+
+                                                                <td>
+                                                                    {(Number(item.rate || 0) - Number(item.exclude_price || 0)).toFixed(2)}
+                                                                </td>
+
+                                                                {/* EDITABLE QUANTITY */}
                                                                 <td>
                                                                     <Input
                                                                         type="number"
                                                                         value={item.quantity}
-                                                                        onChange={(e) => handleItemChange(index, 'quantity', Number(e.target.value))}
-                                                                        style={{ width: '80px' }}
+                                                                        min="1"
+                                                                        onChange={(e) =>
+                                                                            handleItemChange(
+                                                                                index,
+                                                                                "quantity",
+                                                                                e.target.value
+                                                                            )
+                                                                        }
+                                                                        style={{ width: "80px" }}
                                                                     />
                                                                 </td>
-                                                                <td>{item.rate - item.discount}</td>
+
+                                                                <td>
+                                                                    {(Number(item.rate || 0) - Number(item.discount || 0)).toFixed(2)}
+                                                                </td>
+
+                                                                {/* EDITABLE DISCOUNT */}
                                                                 <td>
                                                                     <Input
                                                                         type="number"
                                                                         value={item.discount}
-                                                                        onChange={(e) => handleItemChange(index, 'discount', Number(e.target.value))}
-                                                                        style={{ width: '80px' }}
+                                                                        min="0"
+                                                                        onChange={(e) =>
+                                                                            handleItemChange(
+                                                                                index,
+                                                                                "discount",
+                                                                                e.target.value
+                                                                            )
+                                                                        }
+                                                                        style={{ width: "80px" }}
                                                                     />
                                                                 </td>
 
-                                                                <td>{((item.rate - item.discount) * item.quantity).toFixed(2)}</td>
+                                                                <td>
+                                                                    {(
+                                                                        (Number(item.rate || 0) - Number(item.discount || 0)) *
+                                                                        Number(item.quantity || 0)
+                                                                    ).toFixed(2)}
+                                                                </td>
+
                                                                 <td>
                                                                     <Button
                                                                         color="danger"
-                                                                        onClick={() => handleRemoveItem(item.id)}
+                                                                        onClick={() =>
+                                                                            handleRemoveItem(
+                                                                                item.order,
+                                                                                item.id
+                                                                            )
+                                                                        }
                                                                     >
                                                                         Remove
                                                                     </Button>
                                                                 </td>
+
                                                             </tr>
                                                         ))}
 
@@ -863,9 +980,6 @@ const FormLayouts = () => {
 
                                                             <td className="font-weight-bold">
                                                                 {orderItems.reduce((acc, item) => acc + parseFloat(item.rate), 0).toFixed(2)}
-                                                            </td>
-                                                            <td className="font-weight-bold">
-                                                                {orderItems.reduce((acc, item) => acc + parseFloat(item.exclude_price * item.quantity), 0).toFixed(2)}
                                                             </td>
                                                             <td></td>
                                                             <td></td>
@@ -893,80 +1007,7 @@ const FormLayouts = () => {
 
 
                                                 </Table>
-                                                <div className="container mt-5">
-                                                    {/* Invoice Header */}
-                                                    <div className="row">
-                                                        <div className="col-12 text-center mb-4">
-                                                            <h3 className="text-primary">Invoice</h3>
-                                                        </div>
-                                                    </div>
-                                                    <div className="row">
-                                                        {/* Bank Details Section */}
-                                                        <div className="col-md-6 mb-4">
-                                                            <h5 className="mb-3" style={{ fontWeight: "600", color: "#333" }}>Bank Details</h5>
-                                                            <Table className="table table-bordered" style={{ border: "2px solid #000" }}>
-                                                                <tbody>
-                                                                    <tr>
-                                                                        <th scope="row" className="text-dark" style={{ width: "40%", backgroundColor: "#f1f3f5", fontWeight: "bold" }}>Bank A/C</th>
-                                                                        <td style={{ fontWeight: "500" }}>{bankDetails.accountNumber}</td>
-                                                                    </tr>
-                                                                    <tr>
-                                                                        <th scope="row" className="text-dark" style={{ backgroundColor: "#f1f3f5", fontWeight: "bold" }}>Bank Name</th>
-                                                                        <td style={{ fontWeight: "500" }}>{bankDetails.name}</td>
-                                                                    </tr>
-                                                                    <tr>
-                                                                        <th scope="row" className="text-dark" style={{ backgroundColor: "#f1f3f5", fontWeight: "bold" }}>Bank IFSC</th>
-                                                                        <td style={{ fontWeight: "500" }}>{bankDetails.ifscCode}</td>
-                                                                    </tr>
-                                                                    <tr>
-                                                                        <th scope="row" className="text-dark" style={{ backgroundColor: "#f1f3f5", fontWeight: "bold" }}>Branch</th>
-                                                                        <td style={{ fontWeight: "500" }}>{bankDetails.Branch}</td>
-                                                                    </tr>
-                                                                </tbody>
-                                                            </Table>
-                                                        </div>
 
-                                                        {/* Summary Section */}
-                                                        <div className="col-md-6 mb-4">
-                                                            <h5 className="mb-3" style={{ fontWeight: "600", color: "#333" }}>Billing Summary</h5>
-                                                            <Table className="table table-bordered" style={{ border: "2px solid #000" }}>
-                                                                <tbody>
-                                                                    <tr>
-                                                                        <th scope="row" className="text-dark" style={{ width: "60%", backgroundColor: "#f1f3f5", fontWeight: "bold" }}>Discounted Amount</th>
-                                                                        <td style={{ fontWeight: "500" }}>${totalDiscountAmount.toFixed(2)}</td>
-                                                                    </tr>
-                                                                    <tr>
-                                                                        <th scope="row" className="text-dark" style={{ backgroundColor: "#f1f3f5", fontWeight: "bold" }}>Net Amount</th>
-                                                                        <td style={{ fontWeight: "500" }}>${totalNetPrice.toFixed(2)}</td>
-                                                                    </tr>
-                                                                    <tr>
-                                                                        <th scope="row" className="text-dark" style={{ backgroundColor: "#f1f3f5", fontWeight: "bold" }}>Net Amount Before Tax</th>
-                                                                        <td style={{ fontWeight: "500" }}>${NetAmountBeforTax.toFixed(2)}</td>
-                                                                    </tr>
-                                                                    <tr>
-                                                                        <th scope="row" className="text-dark" style={{ backgroundColor: "#f1f3f5", fontWeight: "bold" }}>Total Tax Amount</th>
-                                                                        <td style={{ fontWeight: "500" }}>${TaxAmount.toFixed(2)}</td>
-                                                                    </tr>
-                                                                    <tr>
-                                                                        <th scope="row" className="text-dark" style={{ backgroundColor: "#f1f3f5", fontWeight: "bold" }}>Shipping Charge</th>
-                                                                        <td>
-                                                                            <input
-                                                                                type="number"
-                                                                                value={shippingCharge}
-                                                                                onChange={(e) => setShippingCharge(Number(e.target.value))}
-                                                                                style={{ width: '80px', fontWeight: "500", border: "1px solid #ccc", borderRadius: "4px", padding: "3px" }}
-                                                                            />
-                                                                        </td>
-                                                                    </tr>
-                                                                    <tr>
-                                                                        <th scope="row" className="text-dark" style={{ backgroundColor: "#f1f3f5", fontWeight: "bold" }}>Total Payable Amount</th>
-                                                                        <td><strong className="text-success" style={{ fontWeight: "700", fontSize: "1.2em" }}>${totalAmount.toFixed(2)}</strong></td>
-                                                                    </tr>
-                                                                </tbody>
-                                                            </Table>
-                                                        </div>
-                                                    </div>
-                                                </div>
                                             </div>
 
 

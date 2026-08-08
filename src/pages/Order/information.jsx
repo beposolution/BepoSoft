@@ -35,6 +35,18 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
         "ADMIN",
     ].includes(role);
 
+    const canMarketingEditInvoiceCreated =
+        role === "Marketing" &&
+        persistedStatus === "Invoice Created";
+
+    const canEditAddress =
+        canEditShippingDetails ||
+        canMarketingEditInvoiceCreated;
+
+    const canEditAccountsNote =
+        canEditShippingDetails ||
+        canMarketingEditInvoiceCreated;
+
     useEffect(() => {
         const fetchImages = async () => {
             const token = localStorage.getItem("token");
@@ -341,7 +353,8 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
                                                         invalid={formik.touched.status && formik.errors.status}
-                                                        disabled={isBlockedTransition}
+                                                        // disabled={isBlockedTransition}
+                                                        disabled={!canEditShippingDetails || isBlockedTransition}
                                                     >
                                                         <option value="">Select Status</option>
 
@@ -458,6 +471,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                         name="billing_address"
                                                         className="form-control"
                                                         id="formrow-billing_address-select"
+                                                        disabled={!canEditAddress}
                                                         value={formik.values.billing_address}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
@@ -476,26 +490,27 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                     )}
                                 </>
                                 <>
-                                    <Col md={12}>
-                                        <div className="mb-3">
-                                            <Label htmlFor="formrow-note-Input">WAREHOUSE NOTE</Label>
-                                            <Input
-                                                type="textarea"
-                                                name="note"
-                                                className="form-control"
-                                                id="formrow-note-Input"
-                                                placeholder="Add a note"
-                                                value={formik.values.note}
-                                                onChange={formik.handleChange}
-                                                onBlur={formik.handleBlur}
-                                                disabled={
-                                                    (role === "BDM" || role === "BDO") &&
-                                                    !["Invoice Created"].includes(formik.values.status)
-                                                }
-                                                invalid={formik.touched.note && formik.errors.note}
-                                            />
-                                        </div>
-                                    </Col>
+                                    {["ADMIN", "CEO", "COO", "Accounts / Accounting", "Warehouse Admin", "warehouse"].includes(role) && (
+                                        <Col md={12}>
+                                            <div className="mb-3">
+                                                <Label htmlFor="formrow-note-Input">
+                                                    WAREHOUSE NOTE
+                                                </Label>
+
+                                                <Input
+                                                    type="textarea"
+                                                    name="note"
+                                                    className="form-control"
+                                                    id="formrow-note-Input"
+                                                    placeholder="Add a note"
+                                                    value={formik.values.note}
+                                                    onChange={formik.handleChange}
+                                                    onBlur={formik.handleBlur}
+                                                    invalid={formik.touched.note && formik.errors.note}
+                                                />
+                                            </div>
+                                        </Col>
+                                    )}
                                     <Col md={12}>
                                         <div className="mb-3">
                                             <Label htmlFor="formrow-note-Input">ACCOUNTS NOTE</Label>
@@ -508,10 +523,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                 value={formik.values.accounts_note}
                                                 onChange={formik.handleChange}
                                                 onBlur={formik.handleBlur}
-                                                disabled={
-                                                    (role === "BDM" || role === "BDO") &&
-                                                    !["Invoice Created"].includes(formik.values.status)
-                                                }
+                                                disabled={!canEditAccountsNote}
                                                 invalid={formik.touched.accounts_note && formik.errors.accounts_note}
                                             />
                                         </div>

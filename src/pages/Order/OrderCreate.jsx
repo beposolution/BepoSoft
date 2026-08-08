@@ -87,6 +87,7 @@ const FormLayouts = () => {
             adv_cod_amount: "",
             parcel_service: "",
             parcel_service_note: "",
+            accounts_note: "",
         },
         validationSchema: Yup.object({
             state: Yup.string().required("This field is required"),
@@ -987,7 +988,21 @@ const FormLayouts = () => {
                                                 <Col md={6}>
                                                     <Card className="mb-3">
                                                         <CardBody>
-                                                            <Label for="payment_status">Payment Status *</Label>
+
+                                                            <Label htmlFor="accounts_note">Accounts Note</Label>
+                                                            <Input
+                                                                type="textarea"
+                                                                name="accounts_note"
+                                                                className="form-control"
+                                                                id="accounts_note"
+                                                                placeholder="Enter accounts note"
+                                                                rows="5"
+                                                                value={formik.values.accounts_note}
+                                                                onChange={formik.handleChange}
+                                                                onBlur={formik.handleBlur}
+                                                            />
+
+                                                            <Label for="payment_status" className="mt-3">Payment Status *</Label>
                                                             <Input
                                                                 type="select"
                                                                 name="payment_status"

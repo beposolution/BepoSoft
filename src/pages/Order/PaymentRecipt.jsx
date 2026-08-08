@@ -27,6 +27,15 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
     const [ledgerLoading, setLedgerLoading] = useState(true);
     const [ledgerError, setLedgerError] = useState(null);
 
+    const role = localStorage.getItem("active");
+
+    const canEditShippingDetails = [
+        "Accounts / Accounting",
+        "CEO",
+        "COO",
+        "ADMIN",
+    ].includes(role);
+
     useEffect(() => {
         if (!customerId && !id) return;
 
@@ -817,7 +826,16 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                                                                     )}
                                                                     <td>{packedItems?.postoffice_date}</td>
                                                                     <th>
-                                                                        <button onClick={() => productModal(packedItems.id)} className="btn btn-primary">Edit</button>
+                                                                        {canEditShippingDetails ? (
+                                                                            <button
+                                                                                onClick={() => productModal(packedItems.id)}
+                                                                                className="btn btn-primary"
+                                                                            >
+                                                                                Edit
+                                                                            </button>
+                                                                        ) : (
+                                                                            "-"
+                                                                        )}
                                                                     </th>
                                                                     {packedItems.status === "Shipped" ? (
                                                                         <td>

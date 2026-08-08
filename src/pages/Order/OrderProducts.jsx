@@ -541,13 +541,6 @@ const FormLayouts = () => {
 
     });
 
-    // useEffect(() => {
-    //     const role = localStorage.getItem("active");
-    //     if (role === "BDM" || role === "BDO" || role === "Warehouse Admin") {
-    //         setIsAddDisabled(true);
-    //     }
-    // }, []);
-
     useEffect(() => {
         const role = localStorage.getItem("active");
         const status = formik.values.status;
@@ -1331,6 +1324,8 @@ const FormLayouts = () => {
     const allowedStaffDetailsRoles = [
         "ADMIN",
         "Accounts / Accounting",
+        "CEO",
+        "COO",
         "BDM",
         "BDO",
     ];
@@ -1351,6 +1346,13 @@ const FormLayouts = () => {
                     : allowedStaffDetailsStatusesForOthers.includes(formik.values.status)
         );
 
+    const canEditOrder = [
+        "Accounts / Accounting",
+        "CEO",
+        "COO",
+        "ADMIN",
+    ].includes(role);
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -1370,20 +1372,31 @@ const FormLayouts = () => {
                                 <Col xl={12}>
                                     <Card>
                                         <CardBody>
-                                            <CardTitle>Staff Added Details (Sales Persons)</CardTitle>
+                                            <CardTitle>
+                                                Staff Added Details (Sales Persons)
+                                            </CardTitle>
 
                                             <Row>
                                                 <Col md={6}>
                                                     <Label>Parcel Service</Label>
+
                                                     <Input
                                                         type="select"
                                                         value={orderParcelServiceId}
-                                                        onChange={(e) => setOrderParcelServiceId(e.target.value)}
+                                                        onChange={(e) =>
+                                                            setOrderParcelServiceId(e.target.value)
+                                                        }
+                                                        disabled={!canEditOrder}
                                                     >
-                                                        <option value="">Select Parcel Service</option>
+                                                        <option value="">
+                                                            Select Parcel Service
+                                                        </option>
 
                                                         {parcelService.map((service) => (
-                                                            <option key={service.id} value={service.id}>
+                                                            <option
+                                                                key={service.id}
+                                                                value={service.id}
+                                                            >
                                                                 {service.name} ({service.label})
                                                             </option>
                                                         ))}
@@ -1392,26 +1405,35 @@ const FormLayouts = () => {
 
                                                 <Col md={6}>
                                                     <Label>Parcel Service Note</Label>
+
                                                     <Input
                                                         type="textarea"
                                                         value={orderParcelServiceNote}
-                                                        onChange={(e) => setOrderParcelServiceNote(e.target.value)}
+                                                        onChange={(e) =>
+                                                            setOrderParcelServiceNote(e.target.value)
+                                                        }
                                                         rows="2"
                                                         placeholder="Enter parcel service note"
+                                                        disabled={!canEditOrder}
                                                     />
                                                 </Col>
                                             </Row>
 
-                                            <Row>
-                                                <Col md={2} className="d-flex align-items-end mt-3">
-                                                    <Button
-                                                        color="primary"
-                                                        onClick={handleParcelServiceUpdate}
+                                            {canEditOrder && (
+                                                <Row>
+                                                    <Col
+                                                        md={2}
+                                                        className="d-flex align-items-end mt-3"
                                                     >
-                                                        Save
-                                                    </Button>
-                                                </Col>
-                                            </Row>
+                                                        <Button
+                                                            color="primary"
+                                                            onClick={handleParcelServiceUpdate}
+                                                        >
+                                                            Save
+                                                        </Button>
+                                                    </Col>
+                                                </Row>
+                                            )}
                                         </CardBody>
                                     </Card>
                                 </Col>
@@ -1449,6 +1471,7 @@ const FormLayouts = () => {
                                                         id="formrow-invoice-Input"
                                                         placeholder="Enter Your INVOICE NO"
                                                         value={formik.values.invoice}
+                                                        disabled
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
                                                         invalid={
@@ -1470,8 +1493,14 @@ const FormLayouts = () => {
                                                         name="status"
                                                         className="form-control"
                                                         id="formrow-email-Input"
-                                                        placeholder="Enter Your Email ID"
-                                                        value={formik.values.status}
+                                                        placeholder="Status"
+                                                        disabled
+                                                        // value={formik.values.status}
+                                                        value={
+                                                            formik.values.status === "Invoice Created"
+                                                                ? "Waiting For Approval"
+                                                                : formik.values.status
+                                                        }
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
                                                         invalid={
@@ -1497,6 +1526,7 @@ const FormLayouts = () => {
                                                         autoComplete="off"
                                                         value={formik.values.manage_staff}
                                                         onChange={formik.handleChange}
+                                                        disabled
                                                         onBlur={formik.handleBlur}
                                                         invalid={
                                                             formik.touched.manage_staff && formik.errors.manage_staff ? true : false
@@ -1717,38 +1747,49 @@ const FormLayouts = () => {
                                                 )}
                                             </Col>
                                         </Row>
-                                        <div className="mb-3">
-                                            <div className="form-check">
-                                                <Input
-                                                    type="checkbox"
-                                                    className="form-check-Input"
-                                                    id="formrow-customCheck"
-                                                    name="check"
-                                                    value={formik.values.check}
-                                                    onChange={formik.handleChange}
-                                                    onBlur={formik.handleBlur}
-                                                    invalid={
-                                                        formik.touched.check && formik.errors.check ? true : false
-                                                    }
-                                                />
-                                                <Label
-                                                    className="form-check-Label"
-                                                    htmlFor="formrow-customCheck"
-                                                >
-                                                    Check me out
-                                                </Label>
+                                        {canEditOrder && (
+                                            <div className="mb-3">
+                                                <div className="form-check">
+                                                    <Input
+                                                        type="checkbox"
+                                                        className="form-check-Input"
+                                                        id="formrow-customCheck"
+                                                        name="check"
+                                                        checked={formik.values.check}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={
+                                                            formik.touched.check && formik.errors.check
+                                                                ? true
+                                                                : false
+                                                        }
+                                                    />
+
+                                                    <Label
+                                                        className="form-check-Label"
+                                                        htmlFor="formrow-customCheck"
+                                                    >
+                                                        Check me out
+                                                    </Label>
+                                                </div>
+
+                                                {formik.errors.check && formik.touched.check ? (
+                                                    <FormFeedback type="invalid">
+                                                        {formik.errors.check}
+                                                    </FormFeedback>
+                                                ) : null}
                                             </div>
-                                            {
-                                                formik.errors.check && formik.touched.check ? (
-                                                    <FormFeedback type="invalid">{formik.errors.check}</FormFeedback>
-                                                ) : null
-                                            }
-                                        </div>
-                                        <div>
-                                            <button type="submit" className="btn btn-primary w-md">
-                                                save changes
-                                            </button>
-                                        </div>
+                                        )}
+                                        {canEditOrder && (
+                                            <div>
+                                                <button
+                                                    type="submit"
+                                                    className="btn btn-primary w-md"
+                                                >
+                                                    Save changes
+                                                </button>
+                                            </div>
+                                        )}
                                     </Form>
                                 </CardBody>
                                 <div style={{ display: "flex", justifyContent: "space-between", padding: "20px", gap: "20px", backgroundColor: "#f5f5f5" }}>
@@ -1873,14 +1914,16 @@ const FormLayouts = () => {
                                 <Col xl={12}>
                                     <Card className="bordered-card">
                                         <CardBody>
-                                            {(role !== "BDO" ||
-                                                (role === "BDO" && formik.values.status === "Invoice Created")) && (
-                                                    <div className="text-end mb-3">
-                                                        <Button color="primary" onClick={toggleReciptModal}>
-                                                            Add Product
-                                                        </Button>
-                                                    </div>
-                                                )}
+                                            {canEditOrder && (
+                                                <div className="text-end mb-3">
+                                                    <Button
+                                                        color="primary"
+                                                        onClick={toggleReciptModal}
+                                                    >
+                                                        Add Product
+                                                    </Button>
+                                                </div>
+                                            )}
                                             <Modal isOpen={isOpen} toggle={toggleReciptModal} size="lg" style={{ maxWidth: "90%", width: "90%" }}>
                                                 <ModalHeader toggle={toggleReciptModal}>Search Products</ModalHeader>
                                                 <ModalBody>
@@ -2015,7 +2058,7 @@ const FormLayouts = () => {
                                                             <th>Discount</th>
                                                             <th>Total Amount</th>
                                                             {showRackDetails && <th>Rack</th>}
-                                                            <th>Remove</th>
+                                                            {canEditOrder && <th>Remove</th>}
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -2045,7 +2088,7 @@ const FormLayouts = () => {
                                                                     <Input
                                                                         type="number"
                                                                         value={item.quantity}
-                                                                        disabled={isAddDisabled}
+                                                                        disabled={!canEditOrder}
                                                                         onChange={(e) => handleItemChange(index, 'quantity', Number(e.target.value))}
                                                                         style={{ width: '80px' }}
                                                                     />
@@ -2055,7 +2098,7 @@ const FormLayouts = () => {
                                                                         type="number"
                                                                         step="0.01"
                                                                         value={item.rate}
-                                                                        disabled={isAddDisabled}
+                                                                        disabled={!canEditOrder}
                                                                         onChange={(e) => handleItemChange(index, 'rate', e.target.value)}
                                                                         style={{ width: '80px' }}
                                                                     />
@@ -2065,25 +2108,14 @@ const FormLayouts = () => {
                                                                         type="number"
                                                                         step="0.01"
                                                                         value={item.discount}
-                                                                        disabled={isAddDisabled}
+                                                                        disabled={!canEditOrder}
                                                                         onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
                                                                         style={{ width: '80px' }}
                                                                     />
                                                                 </td>
 
                                                                 <td>{((item.rate - item.discount) * item.quantity).toFixed(2)}</td>
-                                                                {/* {showRackDetails && (
-                                                                    <td>
-                                                                        <Button
-                                                                            color="secondary"
-                                                                            size="sm"
-                                                                            disabled={isAddDisabled}
-                                                                            onClick={() => openRackModal(item, index)}
-                                                                        >
-                                                                            Add Rack Details
-                                                                        </Button>
-                                                                    </td>
-                                                                )} */}
+
                                                                 {showRackDetails && (
                                                                     <td className="text-center" style={{ minWidth: 130 }}>
                                                                         <div className="d-flex flex-column align-items-center gap-1">
@@ -2104,13 +2136,14 @@ const FormLayouts = () => {
                                                                 )}
 
                                                                 <td>
-                                                                    <Button
-                                                                        color="danger"
-                                                                        onClick={() => handleRemoveItem(item.id)}
-                                                                    // disabled={isDisabled}
-                                                                    >
-                                                                        Remove
-                                                                    </Button>
+                                                                    {canEditOrder && (
+                                                                        <Button
+                                                                            color="danger"
+                                                                            onClick={() => handleRemoveItem(item.id)}
+                                                                        >
+                                                                            Remove
+                                                                        </Button>
+                                                                    )}
                                                                 </td>
                                                             </tr>
                                                         ))}
@@ -2405,6 +2438,7 @@ const FormLayouts = () => {
                                                                             <select
                                                                                 className="form-select"
                                                                                 value={selectedBank}
+                                                                                disabled={!canEditOrder}
                                                                                 onChange={(e) => {
                                                                                     const selectedId = parseInt(e.target.value);
                                                                                     setSelectedBank(selectedId);
@@ -2467,6 +2501,7 @@ const FormLayouts = () => {
                                                                             <input
                                                                                 type="number"
                                                                                 value={shippingCharge}
+                                                                                disabled={!canEditOrder}
                                                                                 onChange={(e) => setShippingCharge(Number(e.target.value))}
                                                                                 style={{ width: '80px', fontWeight: "500", border: "1px solid #ccc", borderRadius: "4px", padding: "3px" }}
                                                                             />
@@ -2549,11 +2584,20 @@ const FormLayouts = () => {
                                                     vertical-align: middle;
                                                 }
                                             `}</style>
-                                            <div className="mb-3 mt-3" style={{ textAlign: "right" }}>
-                                                <Button type="submit" color="primary" disabled={isAddDisabled} onClick={handleSubmit}>
-                                                    Submit
-                                                </Button>
-                                            </div>
+                                            {canEditOrder && (
+                                                <div
+                                                    className="mb-3 mt-3"
+                                                    style={{ textAlign: "right" }}
+                                                >
+                                                    <Button
+                                                        type="button"
+                                                        color="primary"
+                                                        onClick={handleSubmit}
+                                                    >
+                                                        Submit
+                                                    </Button>
+                                                </div>
+                                            )}
                                         </CardBody>
                                     </Card>
                                     <style jsx>{`
@@ -2584,7 +2628,7 @@ const FormLayouts = () => {
                             </Card>
                         </Col>
                         <Col xl={12}>
-                            <PaymentImages />
+                            <PaymentImages status={formik.values.status}/>
                             <Paymentrecipent
                                 billingPhone={billingAddress.phone}
                                 customerId={customerId}

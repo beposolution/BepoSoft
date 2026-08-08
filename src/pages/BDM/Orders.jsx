@@ -89,14 +89,20 @@ const BasicTable = () => {
 
     const getStatusColor = (status) => {
         const statusColors = {
-            Pending: "red",
-            Approved: "blue",
-            Shipped: "yellow",
-            Processing: "orange",
-            Completed: "green",
-            Cancelled: "gray",
+            "Invoice Created": "#f59e0b",           // Waiting For Approval - Amber
+            "Invoice Approved": "#2563eb",          // Blue
+            "Waiting For Confirmation": "#9333ea",  // Purple
+            "To Print": "#0891b2",                  // Cyan
+            "Packing under progress": "#ea580c",    // Orange
+            "Ready to ship": "#16a34a",             // Green
+            "Shipped": "#15803d",                   // Dark Green
+            "Invoice Rejected": "#dc2626",          // Red
         };
-        return { color: statusColors[status] || "black" };
+
+        return {
+            color: statusColors[status] || "#374151",
+            fontWeight: "600",
+        };
     };
 
     const filteredOrders = orders.filter((order) =>
@@ -153,6 +159,14 @@ const BasicTable = () => {
             ? [...new Set(ordersFamily.map(order => order.manage_staff))]
             : [...new Set(orders.map(order => order.manage_staff))];
 
+    const getStatusLabel = (status) => {
+        if (status === "Invoice Created") {
+            return "Waiting For Approval";
+        }
+
+        return status;
+    };
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -180,12 +194,13 @@ const BasicTable = () => {
                                     onChange={(e) => setSelectedState(e.target.value)}
                                 >
                                     <option value="">All Status</option>
+                                    <option value="Invoice Created">Waiting For Approval</option>
+                                    <option value="Invoice Approved">Invoice Approved</option>
                                     <option value="Waiting For Confirmation">Waiting For Confirmation</option>
                                     <option value="To Print">To Print</option>
-                                    <option value="Invoice Created">Invoice Created</option>
-                                    <option value="Invoice Approved">Invoice Approved</option>
-                                    <option value="Invoice Rejected">Invoice Rejected</option>
+                                    <option value="Packing under progress">Packing under progress</option>
                                     <option value="Shipped">Shipped</option>
+                                    <option value="Invoice Rejected">Invoice Rejected</option>
                                 </Input>
                             </FormGroup>
                         </Col>
@@ -254,8 +269,11 @@ const BasicTable = () => {
                                                                 </td>
                                                                 <td>{order.manage_staff} ({order.family})</td>
                                                                 <td>{order.customer?.name}</td>
-                                                                <td style={getStatusColor(order.status)}>
+                                                                {/* <td style={getStatusColor(order.status)}>
                                                                     {order.status}
+                                                                </td> */}
+                                                                <td style={getStatusColor(order.status)}>
+                                                                    <strong>{getStatusLabel(order.status)}</strong>
                                                                 </td>
                                                                 <td>{order.total_amount}</td>
                                                                 <td>{order.order_date}</td>

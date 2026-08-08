@@ -7,13 +7,51 @@ import axios from 'axios';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const PaymentImages = () => {
+const PaymentImages = ({ status }) => {
     const { id } = useParams(); // order id from route
     const [images, setImages] = useState([]);
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [uploading, setUploading] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewImg, setPreviewImg] = useState(null);
+
+    const role = localStorage.getItem('active');
+
+    const canEditPaymentSlip =
+        [
+            "Accounts / Accounting",
+            "CEO",
+            "COO",
+            "ADMIN",
+        ].includes(role) ||
+        (role === "BDM" && status === "Invoice Created");
+
+    const writePaymentImageLog = async (action, data = {}) => {
+        const token = localStorage.getItem("token");
+
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                {
+                    order: Number(id),
+                    before_data: data,
+                    after_data: {
+                        action: action,
+                    },
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+        } catch (err) {
+            console.warn(
+                "Payment Image DataLog failed:",
+                err?.response?.data || err.message
+            );
+        }
+    };
 
     // Fetch images when order ID changes
     useEffect(() => {
@@ -63,6 +101,11 @@ const PaymentImages = () => {
                     }
                 }
             );
+            await writePaymentImageLog("Payment images uploaded", {
+                image_count: selectedFiles.length,
+                image_names: selectedFiles.map(file => file.name),
+            });
+
             toast.success("Images uploaded successfully!");
             setSelectedFiles([]);
             fetchImages();
@@ -83,6 +126,11 @@ const PaymentImages = () => {
                 `${import.meta.env.VITE_APP_KEY}order/payment/images/delete/${imageId}/`,
                 { headers: { 'Authorization': `Bearer ${token}` } }
             );
+            
+            await writePaymentImageLog("Payment image removed", {
+                image_id: imageId,
+            });
+
             toast.success('Image deleted successfully!');
             fetchImages();
         } catch (error) {
@@ -107,27 +155,29 @@ const PaymentImages = () => {
                 </CardTitle>
 
                 {/* Image Upload Form */}
-                <Form onSubmit={handleUpload}>
-                    <Row className="align-items-center mb-3">
-                        <Col md={6} lg={4}>
-                            <Input
-                                type="file"
-                                multiple
-                                accept="image/*"
-                                onChange={handleFileChange}
-                                className="form-control"
-                            />
-                        </Col>
-                        <Col md={6} lg={4} className="d-flex align-items-end">
-                            <Button type="submit" color="primary" disabled={uploading}>
-                                {uploading ? "Uploading..." : "Upload Images"}
-                            </Button>
-                        </Col>
-                    </Row>
-                </Form>
+                {canEditPaymentSlip && (
+                    <Form onSubmit={handleUpload}>
+                        <Row className="align-items-center mb-3">
+                            <Col md={6} lg={4}>
+                                <Input
+                                    type="file"
+                                    multiple
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    className="form-control"
+                                />
+                            </Col>
+                            <Col md={6} lg={4} className="d-flex align-items-end">
+                                <Button type="submit" color="primary" disabled={uploading}>
+                                    {uploading ? "Uploading..." : "Upload Images"}
+                                </Button>
+                            </Col>
+                        </Row>
+                    </Form>
+                )}
 
                 {/* Selected File Previews */}
-                {selectedFiles.length > 0 && (
+                {canEditPaymentSlip && selectedFiles.length > 0 && (
                     <div className="mt-3">
                         <h6>Selected Files:</h6>
                         <Row>
@@ -163,14 +213,16 @@ const PaymentImages = () => {
                                         style={{ height: '100px', objectFit: 'cover', cursor: 'pointer' }}
                                         onClick={() => openPreview(img)}
                                     />
-                                    <Button
-                                        color="danger"
-                                        size="sm"
-                                        className="mt-2"
-                                        onClick={() => handleDeleteImage(img.id)}
-                                    >
-                                        Delete
-                                    </Button>
+                                    {canEditPaymentSlip && (
+                                        <Button
+                                            color="danger"
+                                            size="sm"
+                                            className="mt-2"
+                                            onClick={() => handleDeleteImage(img.id)}
+                                        >
+                                            Delete
+                                        </Button>
+                                    )}
                                 </Col>
                             ))}
                         </Row>

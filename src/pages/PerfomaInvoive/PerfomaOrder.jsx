@@ -82,6 +82,7 @@ const PerfomaOrder = () => {
             warehouses: orders?.warehouse_id || "",
             parcel_service: orders?.parcel_service?.id || orders?.parcel_service || "",
             parcel_service_note: orders?.parcel_service_note || "",
+            accounts_note: orders?.accounts_note || "",
             performa_id: orders?.id || "",
         },
         validationSchema: Yup.object({
@@ -625,6 +626,22 @@ const PerfomaOrder = () => {
                                     <Col md={6}>
                                         <Card className="mb-3">
                                             <CardBody>
+
+                                                <Label htmlFor="note">
+                                                    Accounts Note
+                                                </Label>
+                                                <Input
+                                                    type="textarea"
+                                                    name="accounts_note"
+                                                    id="accounts_note"
+                                                    className="form-control"
+                                                    placeholder="Enter accounts note"
+                                                    rows="3"
+                                                    value={formik.values.accounts_note}
+                                                    onChange={formik.handleChange}
+                                                    onBlur={formik.handleBlur}
+                                                />
+
                                                 <Label for="payment_status">Payment Status *</Label>
                                                 <Input
                                                     type="select"

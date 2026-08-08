@@ -28,6 +28,13 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
     const [paymentImagesCount, setPaymentImagesCount] = useState(0);
     const [persistedStatus, setPersistedStatus] = useState("");
 
+    const canEditShippingDetails = [
+        "Accounts / Accounting",
+        "CEO",
+        "COO",
+        "ADMIN",
+    ].includes(role);
+
     useEffect(() => {
         const fetchImages = async () => {
             const token = localStorage.getItem("token");
@@ -348,12 +355,6 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                                 if (persistedStatus === "Invoice Created") {
                                                                     bdmOptions = [
                                                                         "Invoice Created",
-                                                                        "Invoice Approved",
-                                                                        "Invoice Rejected",
-                                                                    ];
-                                                                } else if (persistedStatus === "Invoice Approved") {
-                                                                    bdmOptions = [
-                                                                        "Invoice Approved",
                                                                         "Invoice Rejected",
                                                                     ];
                                                                 } else if (persistedStatus === "Invoice Rejected") {
@@ -363,7 +364,6 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                                 } else {
                                                                     bdmOptions = [
                                                                         persistedStatus,
-                                                                        "Invoice Rejected",
                                                                     ].filter(Boolean);
                                                                 }
 

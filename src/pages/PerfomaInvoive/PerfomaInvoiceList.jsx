@@ -73,11 +73,18 @@ const BasicTable = () => {
         setRole(activeRole);
     }, []);
 
+    const adminRoles = [
+        "ADMIN",
+        "CEO",
+        "COO",
+        "CSO",
+        "SD",
+    ];
+
     const getInvoiceBaseUrl = useCallback(() => {
-        const endpoint =
-            role === "ADMIN"
-                ? "perfoma/invoices/new/"
-                : "performa/invoice/staff/new/";
+        const endpoint = adminRoles.includes(role)
+            ? "perfoma/invoices/new/"
+            : "performa/invoice/staff/new/";
 
         return `${apiBase}${endpoint}`;
     }, [apiBase, role]);
@@ -710,12 +717,12 @@ const BasicTable = () => {
         totalCount === 0
             ? 0
             : (currentPage - 1) *
-                  PAGE_SIZE +
-              1;
+            PAGE_SIZE +
+            1;
 
     const lastVisibleRecord = Math.min(
         (currentPage - 1) * PAGE_SIZE +
-            invoices.length,
+        invoices.length,
         totalCount
     );
 
@@ -838,62 +845,62 @@ const BasicTable = () => {
 
                                         {role ===
                                             "ADMIN" && (
-                                            <Col
-                                                xl={3}
-                                                lg={4}
-                                                md={6}
-                                                className="mb-3"
-                                            >
-                                                <Label>
-                                                    Staff
-                                                </Label>
+                                                <Col
+                                                    xl={3}
+                                                    lg={4}
+                                                    md={6}
+                                                    className="mb-3"
+                                                >
+                                                    <Label>
+                                                        Staff
+                                                    </Label>
 
-                                                <Select
-                                                    value={
-                                                        selectedStaff
-                                                    }
-                                                    onChange={(
-                                                        option
-                                                    ) => {
-                                                        setSelectedStaff(
-                                                            option
-                                                        );
-                                                    }}
-                                                    onInputChange={(
-                                                        value,
-                                                        actionMeta
-                                                    ) => {
-                                                        if (
-                                                            actionMeta.action ===
-                                                            "input-change"
-                                                        ) {
-                                                            setStaffSearch(
-                                                                value
-                                                            );
+                                                    <Select
+                                                        value={
+                                                            selectedStaff
                                                         }
+                                                        onChange={(
+                                                            option
+                                                        ) => {
+                                                            setSelectedStaff(
+                                                                option
+                                                            );
+                                                        }}
+                                                        onInputChange={(
+                                                            value,
+                                                            actionMeta
+                                                        ) => {
+                                                            if (
+                                                                actionMeta.action ===
+                                                                "input-change"
+                                                            ) {
+                                                                setStaffSearch(
+                                                                    value
+                                                                );
+                                                            }
 
-                                                        return value;
-                                                    }}
-                                                    options={
-                                                        staffOptions
-                                                    }
-                                                    isLoading={
-                                                        staffLoading
-                                                    }
-                                                    isClearable
-                                                    isSearchable
-                                                    filterOption={
-                                                        null
-                                                    }
-                                                    placeholder="Search and select staff..."
-                                                    noOptionsMessage={() =>
-                                                        staffLoading
-                                                            ? "Searching staffs..."
-                                                            : "No staffs found"
-                                                    }
-                                                />
-                                            </Col>
-                                        )}
+                                                            return value;
+                                                        }}
+                                                        options={
+                                                            staffOptions
+                                                        }
+                                                        isLoading={
+                                                            staffLoading
+                                                        }
+                                                        isClearable
+                                                        isSearchable
+                                                        filterOption={
+                                                            null
+                                                        }
+                                                        placeholder="Search and select staff..."
+                                                        noOptionsMessage={() =>
+                                                            staffLoading
+                                                                ? "Searching staffs..."
+                                                                : "No staffs found"
+                                                        }
+                                                    />
+                                                </Col>
+                                            )}
 
                                         <Col
                                             xl={2}
@@ -1017,7 +1024,7 @@ const BasicTable = () => {
                                                 {error}
                                             </div>
                                         ) : invoices.length ===
-                                          0 ? (
+                                            0 ? (
                                             <div className="text-center text-muted py-5">
                                                 No matching
                                                 records found.
@@ -1090,7 +1097,7 @@ const BasicTable = () => {
                                                             const serialNumber =
                                                                 (currentPage -
                                                                     1) *
-                                                                    PAGE_SIZE +
+                                                                PAGE_SIZE +
                                                                 index +
                                                                 1;
 

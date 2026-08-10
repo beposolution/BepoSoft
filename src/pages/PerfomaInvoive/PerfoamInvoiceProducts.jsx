@@ -5,7 +5,6 @@ import { FaFileInvoice, FaCalendarAlt, FaUser, FaDollarSign, FaUniversity, FaIdB
 import * as Yup from 'yup';
 import { useFormik } from "formik";
 import axios from 'axios';
-import AddProduct from "./InvoiceProductEdit";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
@@ -17,11 +16,12 @@ const FormLayouts = () => {
     const { id } = useParams();
     const { invoice } = useParams();
 
-
     const [orderItems, setOrderItems] = React.useState([]);
     const [successMessage, setSuccessMessage] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
-    const toggleModal = () => setModalOpen(!modalOpen);
+    const toggleModal = () => {
+        setModalOpen((prev) => !prev);
+    };
     const [modalOpen, setModalOpen] = useState(false);
     const [totalAmount, setTotalAmount] = useState(0);
     const [totalDiscountAmount, setTotalDiscountAmount] = useState(0);
@@ -37,6 +37,15 @@ const FormLayouts = () => {
     const currentDate = new Date().toISOString().split("T")[0];
     const [banks, setBanks] = useState([]);
     const [selectedBank, setSelectedBank] = useState('');
+
+    const [products, setProducts] = useState([]);
+    const [productSearch, setProductSearch] = useState("");
+    const [productLoading, setProductLoading] = useState(false);
+    const [productError, setProductError] = useState("");
+    const [productQuantity, setProductQuantity] = useState({});
+    const [addingProductId, setAddingProductId] = useState(null);
+
+    const role = localStorage.getItem("active");
 
     // Toggle modal visibility
 
@@ -282,6 +291,242 @@ const FormLayouts = () => {
     useEffect(() => {
         fetchOrderData();
     }, [id]);
+
+    const fetchProducts = async (search = "") => {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            toast.error("Authorization token is missing");
+            return;
+        }
+
+        setProductLoading(true);
+        setProductError("");
+
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}all/products/get/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    params: {
+                        search: search,
+                    },
+                }
+            );
+
+            const results =
+                response?.data?.results ||
+                response?.data?.data ||
+                [];
+
+            setProducts(
+                Array.isArray(results)
+                    ? results
+                    : []
+            );
+
+        } catch (error) {
+            console.error(
+                "Product fetch error:",
+                error?.response?.data || error
+            );
+
+            setProducts([]);
+            setProductError("Failed to load products");
+        } finally {
+            setProductLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!modalOpen) {
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            fetchProducts(productSearch);
+        }, 400);
+
+        return () => clearTimeout(timer);
+
+    }, [modalOpen, productSearch]);
+
+    const handleNewProductQuantityChange = (
+        productId,
+        value,
+        availableStock
+    ) => {
+        let enteredQuantity = parseInt(value, 10);
+
+        if (!Number.isFinite(enteredQuantity) || enteredQuantity < 1) {
+            enteredQuantity = 1;
+        }
+
+        const stock = Number(availableStock || 0);
+
+        if (enteredQuantity > stock) {
+            toast.error(
+                `Available quantity is only ${stock}. Please contact Accounts.`
+            );
+
+            setProductQuantity((prev) => ({
+                ...prev,
+                [productId]: stock > 0 ? stock : 1,
+            }));
+
+            return;
+        }
+
+        setProductQuantity((prev) => ({
+            ...prev,
+            [productId]: enteredQuantity,
+        }));
+    };
+
+    const handleAddProduct = async (product) => {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            toast.error("Authorization token is missing");
+            return;
+        }
+
+        if (!product?.id) {
+            toast.error("Invalid product selected");
+            return;
+        }
+
+        // SAME ORDER ID USED BY UPDATE / DELETE API
+        const orderId = orderItems?.[0]?.order;
+
+        if (!orderId) {
+            toast.error("Order ID is missing");
+            console.error("Unable to get orderId from orderItems:", orderItems);
+            return;
+        }
+
+        const quantity =
+            Number(productQuantity[product.id]) || 1;
+
+        const availableStock =
+            Number(product.available_stock || 0);
+
+        if (availableStock <= 0) {
+            toast.error("No available stock");
+            return;
+        }
+
+        if (quantity <= 0) {
+            toast.error("Quantity must be at least 1");
+            return;
+        }
+
+        if (quantity > availableStock) {
+            toast.error(
+                `Available quantity is only ${availableStock}. Please contact Accounts.`
+            );
+            return;
+        }
+
+        const rate = Number(
+            product.selling_price ??
+            product.rate ??
+            product.price ??
+            0
+        );
+
+        const tax = Number(
+            product.tax ??
+            product.tax_percentage ??
+            product.gst ??
+            0
+        );
+
+        const payload = {
+            product: Number(product.id),
+            quantity: quantity,
+            rate: rate,
+            discount: 0,
+            tax: tax,
+            description:
+                product.description ||
+                product.name ||
+                "Additional product",
+        };
+
+        console.log("ORDER ID:", orderId);
+        console.log("ADD PRODUCT PAYLOAD:", payload);
+
+        setAddingProductId(product.id);
+
+        try {
+            const response = await axios.post(
+                `${import.meta.env.VITE_APP_KEY}perfoma/order/${orderId}/item/add/`,
+                payload,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            console.log(
+                "ADD PRODUCT RESPONSE:",
+                response.data
+            );
+
+            toast.success(
+                response?.data?.message ||
+                "Product added successfully"
+            );
+
+            setProductQuantity((prev) => ({
+                ...prev,
+                [product.id]: 1,
+            }));
+
+            // Refresh products in invoice
+            await fetchOrderData();
+
+        } catch (error) {
+            console.error(
+                "Add Proforma product error:",
+                error?.response?.data || error
+            );
+
+            const data = error?.response?.data;
+
+            let message = "Failed to add product";
+
+            if (typeof data?.message === "string") {
+                message = data.message;
+
+            } else if (typeof data?.detail === "string") {
+                message = data.detail;
+
+            } else if (data?.description) {
+                message = Array.isArray(data.description)
+                    ? data.description.join(", ")
+                    : String(data.description);
+
+            } else if (data) {
+                try {
+                    message = JSON.stringify(data);
+                } catch {
+                    message = "Failed to add product";
+                }
+            }
+
+            toast.error(message);
+
+        } finally {
+            setAddingProductId(null);
+        }
+    };
 
     const handleRemoveItem = async (orderId, itemId) => {
         const confirmDelete = window.confirm(
@@ -1065,183 +1310,11 @@ const FormLayouts = () => {
                                     `}</style>
                                 </Col>
 
-                                {/* <AddProduct
-                                    isOpen={modalOpen}
-                                    toggle={toggleModal}
-                                /> */}
-
                             </Card>
                         </Col>
 
 
                         <Col xl={12}>
-                            {/* <Card>
-                                <CardBody>
-                                    <CardTitle className="mb-4 p-2 text-uppercase border-bottom border-primary">
-                                        <i className="bi bi-info-circle me-2"></i> INFORMATION
-                                    </CardTitle>
-
-                                    <Row>
-                                        <Col md={4} className="d-flex flex-column p-3" style={{ borderRight: "1px solid black" }}>
-                                            <h5>INVOICE PAYMENT STATUS</h5>
-                                            <p style={{ color: "green", fontWeight: "bold" }}>No reciept against Invoice</p>
-                                        </Col>
-
-                                        <Col md={4} className="d-flex flex-column p-3" style={{ borderRight: "1px solid black" }}>
-                                            <h5>CUSTOMER LEDGER</h5>
-                                            <div style={{ backgroundColor: "#f8f9fa", padding: "10px", borderRadius: "5px", fontWeight: "bold" }}>
-                                                Ledger debited: <span style={{ color: "#dc3545" }}>{totalAmount.toFixed(2)}</span>
-                                            </div>
-                                        </Col>
-
-                                        <Col md={4} className="d-flex flex-column p-3" style={{ borderRight: "1px solid black" }}>
-                                            <h5>ACTION</h5>
-                                            <button className="btn btn-primary btn-sm mt-2" onClick={toggleReciptModal}>Add</button>
-                                        </Col>
-                                    </Row>
-
-                                    <Modal isOpen={isOpen} toggle={toggleReciptModal} size="lg">
-                                        <ModalHeader toggle={toggleReciptModal}>Receipt Against Invoice Generate</ModalHeader>
-                                        <ModalBody>
-                                            <Receipt toggleReciptModal={toggleReciptModal} />
-                                        </ModalBody>
-                                    </Modal>
-
-
-
-                                    <Row>
-                                        <Col xl={12}>
-                                            <Card>
-                                                <CardBody>
-                                                    <CardTitle className="h4">RECEIPT DETAILS</CardTitle>
-                                                    <div className="table-responsive">
-                                                        <Table className="table table-bordered mb-0">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th>#</th>
-                                                                    <th>RECEIEPT NO</th>
-                                                                    <th>DATE</th>
-                                                                    <th>BANK</th>
-                                                                    <th>AMOUNT</th>
-                                                                    <th>CREATED BY</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {Array.isArray(paymentReceipts) && paymentReceipts.length > 0 ? (
-                                                                    paymentReceipts.map((receiptItem, index) => (
-                                                                        <tr key={receiptItem.id || index}>
-                                                                            <th scope="row">{index + 1}</th>
-                                                                            <td>{receiptItem.payment_receipt || 'N/A'}</td>
-                                                                            <td>{receiptItem.received_at || 'N/A'}</td>
-                                                                            <td>{receiptItem.bank ? 'Federal Bank' : 'N/A'}</td> 
-                                                                            <td>{receiptItem.amount || 'N/A'}</td>
-                                                                            <td>{receiptItem.created_by || 'N/A'}</td>
-
-                                                                        </tr>
-                                                                    ))
-                                                                ) : (
-                                                                    <tr>
-                                                                        <td colSpan="7" style={{ textAlign: 'center', color: 'gray' }}>No receipts available</td>
-                                                                    </tr>
-                                                                )}
-                                                            </tbody>
-
-
-                                                        </Table>
-                                                    </div>
-                                                </CardBody>
-                                                <Row>
-                                                    <Col xl={6}>
-                                                        <Card>
-                                                            <CardBody>
-                                                                <h4 className="card-title">PACKING INFORMATION</h4>
-                                                                <p className="card-title-desc">Add <code>.table-bordered</code> & <code>.border-*</code>
-                                                                    for colored borders on all sides of the table and cells.</p>
-                                                                <div className="table-responsive">
-                                                                    <Table className="table table-bordered border-primary mb-0">
-                                                                        <thead>
-                                                                            <tr>
-                                                                                <th>#</th>
-                                                                                <th>BOX</th>
-                                                                                <th>A.WT</th>
-                                                                                <th>V.WT</th>
-                                                                                <th>IMAGE</th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                            <tr>
-                                                                                <th scope="row">1</th>
-                                                                                <td>Mark</td>
-                                                                                <td>Otto</td>
-                                                                                <td>@mdo</td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <th scope="row">2</th>
-                                                                                <td>Jacob</td>
-                                                                                <td>Thornton</td>
-                                                                                <td>@fat</td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <th scope="row">3</th>
-                                                                                <td>Larry</td>
-                                                                                <td>the Bird</td>
-                                                                                <td>@twitter</td>
-                                                                            </tr>
-                                                                        </tbody>
-                                                                    </Table>
-                                                                </div>
-                                                            </CardBody>
-                                                        </Card>
-                                                    </Col>
-
-                                                    <Col xl={6}>
-                                                        <Card>
-                                                            <CardBody>
-                                                                <h4 className="card-title">TRACKING INFORMATION</h4>
-                                                                <p className="card-title-desc">Add <code>.table-bordered</code> & <code>.border-*</code> for colored borders on all sides of the table and cells.</p>
-
-                                                                <div className="table-responsive">
-                                                                    <Table className="table table-bordered border-success mb-0">
-                                                                        <thead>
-                                                                            <tr>
-                                                                                <th>#</th>
-                                                                                <th>BOX</th>
-                                                                                <th>PARCEL SERVICE	</th>
-                                                                                <th>TRACKING ID	</th>
-                                                                                <th>DELIVERY CHARGE</th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                            <tr>
-                                                                                <th scope="row">1</th>
-                                                                                <td>Mark</td>
-                                                                                <td>Otto</td>
-                                                                                <td>@mdo</td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <th scope="row">2</th>
-                                                                                <td>Jacob</td>
-                                                                                <td>Thornton</td>
-                                                                                <td>@fat</td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <th scope="row">3</th>
-                                                                                <td>Larry</td>
-                                                                                <td>the Bird</td>
-                                                                                <td>@twitter</td>
-                                                                            </tr>
-                                                                        </tbody>
-                                                                    </Table>
-                                                                </div>
-                                                            </CardBody>
-                                                        </Card>
-                                                    </Col>
-                                                </Row>
-                                            </Card>
-                                        </Col>
-                                    </Row>
-                                </CardBody>
-                            </Card> */}
 
                             {/* <Information/> */}
                             <Row>
@@ -1299,6 +1372,288 @@ const FormLayouts = () => {
                             </Row>
                         </Col>
                     </Row>
+
+                    <Modal
+                        isOpen={modalOpen}
+                        toggle={toggleModal}
+                        size="lg"
+                        style={{
+                            maxWidth: "90%",
+                            width: "90%",
+                        }}
+                    >
+                        <ModalHeader toggle={toggleModal}>
+                            Search Products
+                        </ModalHeader>
+
+                        <ModalBody>
+
+                            {/* SEARCH */}
+                            <Input
+                                type="text"
+                                placeholder="Search for products..."
+                                value={productSearch}
+                                onChange={(e) =>
+                                    setProductSearch(e.target.value)
+                                }
+                                className="mb-3"
+                            />
+
+                            {/* LOADING */}
+                            {productLoading ? (
+
+                                <div className="text-center py-4">
+                                    <div
+                                        className="spinner-border text-primary"
+                                        role="status"
+                                    >
+                                        <span className="visually-hidden">
+                                            Loading...
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-2">
+                                        Loading products...
+                                    </div>
+                                </div>
+
+                            ) : productError ? (
+
+                                <div className="text-center text-danger py-3">
+                                    {productError}
+                                </div>
+
+                            ) : (
+
+                                <div className="table-responsive">
+
+                                    <Table
+                                        className="table table-bordered table-hover"
+                                    >
+
+                                        <thead className="table-light">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Image</th>
+                                                <th>Name</th>
+                                                <th>Price</th>
+
+                                                {(
+                                                    role === "Accounts" ||
+                                                    role === "Accounts / Accounting" ||
+                                                    role === "CEO" ||
+                                                    role === "COO" ||
+                                                    role === "ADMIN"
+                                                ) && (
+                                                        <th>Stock</th>
+                                                    )}
+
+                                                <th>
+                                                    Available Stock
+                                                </th>
+
+                                                <th>
+                                                    Quantity
+                                                </th>
+
+                                                <th>
+                                                    Action
+                                                </th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody>
+
+                                            {products.length > 0 ? (
+
+                                                products.map(
+                                                    (product, index) => {
+
+                                                        const availableStock =
+                                                            Number(
+                                                                product.available_stock ||
+                                                                0
+                                                            );
+
+                                                        return (
+
+                                                            <tr key={product.id}>
+
+                                                                <td>
+                                                                    {index + 1}
+                                                                </td>
+
+                                                                {/* IMAGE */}
+                                                                <td>
+
+                                                                    {product.image ? (
+
+                                                                        <img
+                                                                            src={`${import.meta.env.VITE_APP_IMAGE}${product.image}`}
+                                                                            alt={
+                                                                                product.name ||
+                                                                                "Product"
+                                                                            }
+                                                                            style={{
+                                                                                width: "50px",
+                                                                                height: "50px",
+                                                                                objectFit: "cover",
+                                                                                borderRadius: "6px",
+                                                                            }}
+                                                                            onError={(e) => {
+                                                                                e.currentTarget.style.display =
+                                                                                    "none";
+                                                                            }}
+                                                                        />
+
+                                                                    ) : (
+
+                                                                        <span>
+                                                                            No Image
+                                                                        </span>
+
+                                                                    )}
+
+                                                                </td>
+
+                                                                {/* NAME */}
+                                                                <td>
+                                                                    {product.name ||
+                                                                        "Unknown Product"}
+                                                                </td>
+
+                                                                {/* PRICE */}
+                                                                <td>
+                                                                    ₹
+                                                                    {Number(
+                                                                        product.selling_price ||
+                                                                        product.rate ||
+                                                                        product.price ||
+                                                                        0
+                                                                    ).toFixed(2)}
+                                                                </td>
+
+                                                                {/* STOCK */}
+                                                                {(
+                                                                    role === "Accounts" ||
+                                                                    role === "Accounts / Accounting" ||
+                                                                    role === "CEO" ||
+                                                                    role === "COO" ||
+                                                                    role === "ADMIN"
+                                                                ) && (
+
+                                                                        <td>
+                                                                            {Number(
+                                                                                product.stock ||
+                                                                                0
+                                                                            )}
+                                                                        </td>
+
+                                                                    )}
+
+                                                                {/* AVAILABLE STOCK */}
+                                                                <td>
+                                                                    {availableStock}
+                                                                </td>
+
+                                                                {/* QUANTITY */}
+                                                                <td>
+
+                                                                    <Input
+                                                                        type="number"
+                                                                        min="1"
+                                                                        max={
+                                                                            availableStock
+                                                                        }
+                                                                        value={
+                                                                            productQuantity[
+                                                                            product.id
+                                                                            ] || 1
+                                                                        }
+                                                                        onChange={(e) =>
+                                                                            handleNewProductQuantityChange(
+                                                                                product.id,
+                                                                                e.target.value,
+                                                                                availableStock
+                                                                            )
+                                                                        }
+                                                                        style={{
+                                                                            width: "100px",
+                                                                        }}
+                                                                    />
+
+                                                                </td>
+
+                                                                {/* ACTION */}
+                                                                <td>
+
+                                                                    <Button
+                                                                        color="success"
+                                                                        size="sm"
+                                                                        type="button"
+                                                                        disabled={
+                                                                            availableStock <= 0 ||
+                                                                            addingProductId ===
+                                                                            product.id
+                                                                        }
+                                                                        onClick={() =>
+                                                                            handleAddProduct(
+                                                                                product
+                                                                            )
+                                                                        }
+                                                                    >
+
+                                                                        {addingProductId ===
+                                                                            product.id
+                                                                            ? "Adding..."
+                                                                            : "Add"}
+
+                                                                    </Button>
+
+                                                                </td>
+
+                                                            </tr>
+
+                                                        );
+                                                    }
+                                                )
+
+                                            ) : (
+
+                                                <tr>
+
+                                                    <td
+                                                        colSpan={
+                                                            (
+                                                                role === "Accounts" ||
+                                                                role ===
+                                                                "Accounts / Accounting" ||
+                                                                role === "CEO" ||
+                                                                role === "COO" ||
+                                                                role === "ADMIN"
+                                                            )
+                                                                ? 8
+                                                                : 7
+                                                        }
+                                                        className="text-center"
+                                                    >
+                                                        No products found.
+                                                    </td>
+
+                                                </tr>
+
+                                            )}
+
+                                        </tbody>
+
+                                    </Table>
+
+                                </div>
+
+                            )}
+
+                        </ModalBody>
+                    </Modal>
 
                 </Container>
             </div >

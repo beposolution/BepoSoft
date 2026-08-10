@@ -23,6 +23,11 @@ const PerfomaOrder = () => {
     const [isAddingItemsToCart, setIsAddingItemsToCart] = useState(false);
     const [invoiceItemsAdded, setInvoiceItemsAdded] = useState(false);
 
+    const [cartProducts, setCartProducts] = useState([]);
+    const [cartTotalAmount, setCartTotalAmount] = useState(0);
+    const [cartTotalDiscount, setCartTotalDiscount] = useState(0);
+    const [finalAmount, setFinalAmount] = useState(0);
+
     const writeCreateLog = async (orderId, token, proformaData, createdOrderData) => {
         try {
             const logPayload = {
@@ -106,8 +111,14 @@ const PerfomaOrder = () => {
                 otherwise: (schema) => schema.nullable(),
             }),
 
+            // cod_amount: Yup.number().when("cod_status", {
+            //     is: "FULL_COD",
+            //     then: (schema) => schema.required("COD Amount is required"),
+            //     otherwise: (schema) => schema.nullable(),
+            // }),
+
             cod_amount: Yup.number().when("cod_status", {
-                is: "FULL_COD",
+                is: (val) => val === "FULL_COD" || val === "PARTIAL_COD",
                 then: (schema) => schema.required("COD Amount is required"),
                 otherwise: (schema) => schema.nullable(),
             }),
@@ -124,11 +135,18 @@ const PerfomaOrder = () => {
                 return;
             }
 
-            if (paymentImages.length === 0) {
+            const isFullCOD =
+                values.payment_status === "COD" &&
+                values.cod_status === "FULL_COD";
+
+            // Payment slip is not required for Full COD
+            if (!isFullCOD && paymentImages.length === 0) {
                 setPaymentImagesError("At least one payment slip is required");
                 toast.error("Please select at least one payment slip");
                 return;
             }
+
+            setPaymentImagesError("");
 
             setIsSubmitting(true);
 
@@ -410,6 +428,9 @@ const PerfomaOrder = () => {
             }
 
             setInvoiceItemsAdded(true);
+
+            await fetchCartProducts();
+
             toast.success("All items added to cart successfully!");
         } catch (error) {
             toast.error(error?.message || "Some items could not be added to cart");
@@ -417,6 +438,209 @@ const PerfomaOrder = () => {
             setIsAddingItemsToCart(false);
         }
     };
+
+    const fetchCartProducts = async () => {
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_APP_KEY}cart/products/`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const products = data?.data || [];
+
+            setCartProducts(products);
+
+            const totalAmount = products.reduce((acc, product) => {
+                return acc + ((Number(product.price) || 0) * (Number(product.quantity) || 0));
+            }, 0);
+
+            const totalDiscount = products.reduce((acc, product) => {
+                return acc + (
+                    (Number(product.discount) || 0) *
+                    (Number(product.quantity) || 0)
+                );
+            }, 0);
+
+            setCartTotalAmount(totalAmount);
+            setCartTotalDiscount(totalDiscount);
+            setFinalAmount(totalAmount - totalDiscount);
+
+        } catch (error) {
+            console.error("Failed to fetch cart products:", error);
+            toast.error("Failed to fetch cart products");
+        }
+    };
+
+
+    const updateCartProduct = async (productId, updatedFields) => {
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_APP_KEY}cart/update/${productId}/`,
+                {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(updatedFields),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(
+                    `Failed to update product. Status: ${response.status}`
+                );
+            }
+
+            return await response.json();
+
+        } catch (error) {
+            console.error("Cart update failed:", error);
+            throw error;
+        }
+    };
+
+
+    const handlePriceChange = (index, newPrice) => {
+        const updatedProducts = [...cartProducts];
+
+        updatedProducts[index].price = parseFloat(newPrice) || 0;
+
+        setCartProducts(updatedProducts);
+    };
+
+
+    const handleDescriptionChange = (index, newDescription) => {
+        const updatedProducts = [...cartProducts];
+
+        updatedProducts[index].note = newDescription;
+
+        setCartProducts(updatedProducts);
+    };
+
+
+    const handleDiscountChange = (index, newDiscount) => {
+        const updatedProducts = [...cartProducts];
+
+        updatedProducts[index].discount = parseFloat(newDiscount) || 0;
+
+        setCartProducts(updatedProducts);
+    };
+
+
+    const handleQuantityChange = (index, newQuantity) => {
+        const updatedProducts = [...cartProducts];
+        const product = updatedProducts[index];
+
+        const availableStock =
+            (Number(product.stock) || 0) -
+            (Number(product.locked_stock) || 0);
+
+        const quantity = parseInt(newQuantity, 10) || 1;
+
+        if (quantity <= availableStock) {
+            product.quantity = quantity;
+        } else {
+            toast.error(
+                `Only ${availableStock} quantity available for ${product.name}`
+            );
+
+            product.quantity = availableStock;
+        }
+
+        setCartProducts(updatedProducts);
+    };
+
+
+    const handleUpdateEntireCart = async () => {
+        try {
+            for (const product of cartProducts) {
+                await updateCartProduct(product.id, {
+                    quantity: product.quantity,
+                    price: product.price,
+                    discount: product.discount,
+                    note: product.note,
+                });
+            }
+
+            toast.success("Cart updated successfully!");
+
+            await fetchCartProducts();
+
+        } catch (error) {
+            toast.error("Failed to update the cart");
+        }
+    };
+
+
+    const handleRemoveProduct = async (productId) => {
+        try {
+            const response = await axios.delete(
+                `${import.meta.env.VITE_APP_KEY}cart/update/${productId}/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (response.status === 204 || response.status === 200) {
+                toast.success("Product removed from cart");
+
+                await fetchCartProducts();
+            }
+
+        } catch (error) {
+            console.error("Cart delete failed:", error);
+            toast.error("Failed to remove product");
+        }
+    };
+
+    useEffect(() => {
+        if (token) {
+            fetchCartProducts();
+        }
+    }, [token]);
+
+    useEffect(() => {
+        if (cartProducts.length > 0) {
+            const totalAmount = cartProducts.reduce((acc, product) => {
+                return (
+                    acc +
+                    ((Number(product.price) || 0) *
+                        (Number(product.quantity) || 0))
+                );
+            }, 0);
+
+            const totalDiscount = cartProducts.reduce((acc, product) => {
+                return (
+                    acc +
+                    ((Number(product.discount) || 0) *
+                        (Number(product.quantity) || 0))
+                );
+            }, 0);
+
+            setCartTotalAmount(totalAmount);
+            setCartTotalDiscount(totalDiscount);
+            setFinalAmount(totalAmount - totalDiscount);
+
+        } else {
+            setCartTotalAmount(0);
+            setCartTotalDiscount(0);
+            setFinalAmount(0);
+        }
+    }, [cartProducts]);
 
     const fetchOrderData = async () => {
         try {
@@ -542,7 +766,7 @@ const PerfomaOrder = () => {
                                                             <td>{item.quantity}</td>
                                                             <td>₹{item.rate}</td>
                                                             <td>{item.tax}%</td>
-                                                            <td>₹{(item.rate * item.quantity * (1 + item.tax / 100)).toFixed(2)}</td>
+                                                            <td>₹{(item.rate * item.quantity).toFixed(2)}</td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
@@ -570,6 +794,199 @@ const PerfomaOrder = () => {
                                                 : "Add All Items to Cart"}
                                     </Button>
                                 </Row>
+                                {cartProducts.length > 0 && (
+                                    <Row className="mt-4">
+                                        <Col md={12}>
+                                            <Card>
+                                                <CardBody>
+
+                                                    <h5 className="mb-3">CART PRODUCTS</h5>
+
+                                                    <div className="table-responsive">
+                                                        <table className="table table-bordered table-hover">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>#</th>
+                                                                    <th>Image</th>
+                                                                    <th>Product Name</th>
+                                                                    <th>Rate</th>
+                                                                    <th>Tax</th>
+                                                                    <th>Description</th>
+                                                                    <th>Size</th>
+                                                                    <th>Discount</th>
+                                                                    <th>Price</th>
+                                                                    <th>Quantity</th>
+                                                                    <th>Total</th>
+                                                                    <th>Action</th>
+                                                                </tr>
+                                                            </thead>
+
+                                                            <tbody>
+                                                                {cartProducts.map((product, index) => {
+
+                                                                    const availableStock =
+                                                                        (Number(product.stock) || 0) -
+                                                                        (Number(product.locked_stock) || 0);
+
+                                                                    const lineTotal =
+                                                                        ((Number(product.price) || 0) *
+                                                                            (Number(product.quantity) || 0)) -
+                                                                        ((Number(product.discount) || 0) *
+                                                                            (Number(product.quantity) || 0));
+
+                                                                    return (
+                                                                        <tr key={product.id || index}>
+
+                                                                            <td>{index + 1}</td>
+
+                                                                            <td>
+                                                                                <img
+                                                                                    src={`${import.meta.env.VITE_APP_IMAGE}${product.image}`}
+                                                                                    alt={product.name}
+                                                                                    style={{
+                                                                                        width: "50px",
+                                                                                        height: "50px",
+                                                                                        objectFit: "cover",
+                                                                                    }}
+                                                                                />
+                                                                            </td>
+
+                                                                            <td>
+                                                                                {product.name || "Unknown Product"}
+                                                                            </td>
+
+                                                                            <td>
+                                                                                ₹{product.exclude_price || 0}
+                                                                            </td>
+
+                                                                            <td>
+                                                                                {product.tax || 0}%
+                                                                            </td>
+
+                                                                            <td style={{ minWidth: "180px" }}>
+                                                                                <Input
+                                                                                    type="text"
+                                                                                    value={product.note || ""}
+                                                                                    onChange={(e) =>
+                                                                                        handleDescriptionChange(
+                                                                                            index,
+                                                                                            e.target.value
+                                                                                        )
+                                                                                    }
+                                                                                />
+                                                                            </td>
+
+                                                                            <td>
+                                                                                {product.size || "N/A"}
+                                                                            </td>
+
+                                                                            <td style={{ minWidth: "110px" }}>
+                                                                                <Input
+                                                                                    type="number"
+                                                                                    min="0"
+                                                                                    value={product.discount || 0}
+                                                                                    onChange={(e) =>
+                                                                                        handleDiscountChange(
+                                                                                            index,
+                                                                                            e.target.value
+                                                                                        )
+                                                                                    }
+                                                                                />
+                                                                            </td>
+
+                                                                            <td style={{ minWidth: "120px" }}>
+                                                                                <Input
+                                                                                    type="number"
+                                                                                    value={product.price || 0}
+                                                                                    onChange={(e) =>
+                                                                                        handlePriceChange(
+                                                                                            index,
+                                                                                            e.target.value
+                                                                                        )
+                                                                                    }
+                                                                                />
+                                                                            </td>
+
+                                                                            <td style={{ minWidth: "110px" }}>
+                                                                                <Input
+                                                                                    type="number"
+                                                                                    min="1"
+                                                                                    max={availableStock}
+                                                                                    value={product.quantity || 1}
+                                                                                    onChange={(e) =>
+                                                                                        handleQuantityChange(
+                                                                                            index,
+                                                                                            e.target.value
+                                                                                        )
+                                                                                    }
+                                                                                />
+
+                                                                                <small className="text-muted">
+                                                                                    Available: {availableStock}
+                                                                                </small>
+                                                                            </td>
+
+                                                                            <td>
+                                                                                ₹{lineTotal.toFixed(2)}
+                                                                            </td>
+
+                                                                            <td>
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    color="danger"
+                                                                                    size="sm"
+                                                                                    onClick={() =>
+                                                                                        handleRemoveProduct(
+                                                                                            product.id
+                                                                                        )
+                                                                                    }
+                                                                                >
+                                                                                    Remove
+                                                                                </Button>
+                                                                            </td>
+
+                                                                        </tr>
+                                                                    );
+                                                                })}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+
+                                                    <div className="d-flex justify-content-between align-items-center mt-3">
+
+                                                        <div>
+                                                            <strong>
+                                                                Cart Total: ₹{cartTotalAmount.toFixed(2)}
+                                                            </strong>
+
+                                                            <br />
+
+                                                            <strong>
+                                                                Discount: ₹{cartTotalDiscount.toFixed(2)}
+                                                            </strong>
+
+                                                            <br />
+
+                                                            <strong>
+                                                                Net Amount: ₹{finalAmount.toFixed(2)}
+                                                            </strong>
+                                                        </div>
+
+                                                        <Button
+                                                            type="button"
+                                                            color="primary"
+                                                            onClick={handleUpdateEntireCart}
+                                                        >
+                                                            Update Cart
+                                                        </Button>
+
+                                                    </div>
+
+                                                </CardBody>
+                                            </Card>
+                                        </Col>
+                                    </Row>
+                                )}
                                 <Row className="mt-4">
                                     <Col md={4}>
                                         <div className="mb-3">
@@ -697,20 +1114,26 @@ const PerfomaOrder = () => {
                                                         </Input>
                                                         <FormFeedback>{formik.errors.cod_status}</FormFeedback>
 
-                                                        {formik.values.cod_status === "FULL_COD" && (
-                                                            <>
-                                                                <Label className="mt-3">COD Amount</Label>
-                                                                <Input
-                                                                    type="number"
-                                                                    name="cod_amount"
-                                                                    value={formik.values.cod_amount}
-                                                                    onChange={formik.handleChange}
-                                                                    onBlur={formik.handleBlur}
-                                                                    invalid={formik.touched.cod_amount && formik.errors.cod_amount}
-                                                                />
-                                                                <FormFeedback>{formik.errors.cod_amount}</FormFeedback>
-                                                            </>
-                                                        )}
+                                                        {(formik.values.cod_status === "FULL_COD" ||
+                                                            formik.values.cod_status === "PARTIAL_COD") && (
+                                                                <>
+                                                                    <Label className="mt-3">COD Amount</Label>
+                                                                    <Input
+                                                                        type="number"
+                                                                        name="cod_amount"
+                                                                        value={formik.values.cod_amount}
+                                                                        onChange={formik.handleChange}
+                                                                        onBlur={formik.handleBlur}
+                                                                        invalid={
+                                                                            formik.touched.cod_amount &&
+                                                                            formik.errors.cod_amount
+                                                                        }
+                                                                    />
+                                                                    <FormFeedback>
+                                                                        {formik.errors.cod_amount}
+                                                                    </FormFeedback>
+                                                                </>
+                                                            )}
 
                                                         {formik.values.cod_status === "PARTIAL_COD" && (
                                                             <>

@@ -77,7 +77,58 @@ const FormLayouts = () => {
         zipcode: "",
     })
 
+    const createDataLog = async (action, beforeData = {}, afterData = {}) => {
+        try {
+            const token = localStorage.getItem("token");
 
+            if (!token) {
+                console.error("Datalog: Authorization token missing");
+                return;
+            }
+
+            // Product item order ID is the actual Proforma order ID.
+            const orderId = orderItems?.[0]?.order;
+
+            if (!orderId) {
+                console.error("Datalog: Order ID missing");
+                return;
+            }
+
+            const logPayload = {
+                order: Number(orderId),
+
+                before_data: {
+                    Action: action,
+                    Data: beforeData,
+                },
+
+                after_data: {
+                    Action: action,
+                    Data: afterData,
+                },
+            };
+
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
+                logPayload,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            console.log("Datalog created:", action);
+
+        } catch (error) {
+            // Datalog failure should NOT stop the main operation.
+            console.error(
+                "Datalog creation failed:",
+                error?.response?.data || error
+            );
+        }
+    };
 
 
     const formik = useFormik({
@@ -489,6 +540,20 @@ const FormLayouts = () => {
                 [product.id]: 1,
             }));
 
+            await createDataLog(
+                "Product Added to Proforma",
+                {},
+                {
+                    product_id: product.id,
+                    product_name: product.name,
+                    quantity: quantity,
+                    rate: rate,
+                    discount: 0,
+                    tax: tax,
+                    description: payload.description,
+                }
+            );
+
             // Refresh products in invoice
             await fetchOrderData();
 
@@ -529,6 +594,11 @@ const FormLayouts = () => {
     };
 
     const handleRemoveItem = async (orderId, itemId) => {
+
+        const removedItem = orderItems.find(
+            (item) => Number(item.id) === Number(itemId)
+        );
+
         const confirmDelete = window.confirm(
             "Are you sure you want to remove this product?"
         );
@@ -570,6 +640,23 @@ const FormLayouts = () => {
                 data?.message || "Product removed successfully"
             );
 
+            await createDataLog(
+                "Product Removed from Proforma",
+                removedItem
+                    ? {
+                        product_id: removedItem.product,
+                        product_name: removedItem.name,
+                        quantity: removedItem.quantity,
+                        rate: removedItem.rate,
+                        discount: removedItem.discount,
+                        tax: removedItem.tax,
+                    }
+                    : {
+                        item_id: itemId,
+                    },
+                {}
+            );
+
             // Reload Performa data after delete.
             // This updates products + all calculations.
             await fetchOrderData();
@@ -584,7 +671,12 @@ const FormLayouts = () => {
     };
 
 
-    const updateCartProduct = async (orderId, itemId, updateData) => {
+    const updateCartProduct = async (
+        orderId,
+        itemId,
+        updateData,
+        oldItem = null
+    ) => {
         const token = localStorage.getItem("token");
 
         if (!token) {
@@ -616,6 +708,24 @@ const FormLayouts = () => {
             }
 
             toast.success("Product updated successfully");
+
+            const changedField = Object.keys(updateData)[0];
+
+            await createDataLog(
+                `Product ${changedField} Updated`,
+                {
+                    item_id: itemId,
+                    product_id: oldItem?.product,
+                    product_name: oldItem?.name,
+                    [changedField]: oldItem?.[changedField],
+                },
+                {
+                    item_id: itemId,
+                    product_id: oldItem?.product,
+                    product_name: oldItem?.name,
+                    [changedField]: updateData[changedField],
+                }
+            );
 
             // Reload the latest Performa data
             await fetchOrderData();
@@ -655,7 +765,8 @@ const FormLayouts = () => {
         await updateCartProduct(
             item.order,
             item.id,
-            updateData
+            updateData,
+            item
         );
     };
 
@@ -679,6 +790,19 @@ const FormLayouts = () => {
             if (response.ok) {
                 const data = await response.json();
                 setSuccessMessage("Form submitted successfully!");
+
+                await createDataLog(
+                    "Shipping / Total Information Updated",
+                    {
+                        shipping_charge: shippingCharge,
+                        total_amount: totalAmount,
+                    },
+                    {
+                        shipping_charge: payload.shipping_charge,
+                        total_amount: payload.total_amount,
+                    }
+                );
+
             } else {
                 const errorData = await response.json();
                 setErrorMessage("Failed to submit the form. Please check your input and try again.");
@@ -725,6 +849,21 @@ const FormLayouts = () => {
                     }
                 );
                 alert("Receipt saved successfully!");
+
+                await createDataLog(
+                    "Payment Receipt Added",
+                    {},
+                    {
+                        date: values.date,
+                        amount: values.amount,
+                        bank: values.bank,
+                        transactionID: values.transactionID,
+                        receivedBy: values.receivedBy,
+                        createdBy: values.createdBy,
+                        remarks: values.remarks,
+                    }
+                );
+
                 toggleReciptModal(); // Close modal after saving
             } catch (error) {
                 alert("Failed to save receipt. Please try again.");
@@ -753,6 +892,18 @@ const FormLayouts = () => {
             if (response.ok) {
                 const data = await response.json();
                 setSuccessMessage("Form submitted successfully!");
+
+                await createDataLog(
+                    "Shipping / Total Information Updated",
+                    {
+                        shipping_charge: shippingCharge,
+                        total_amount: totalAmount,
+                    },
+                    {
+                        shipping_charge: payload.shipping_charge,
+                        total_amount: payload.total_amount,
+                    }
+                );
             } else {
                 const errorData = await response.json();
                 setErrorMessage("Failed to submit the form. Please check your input and try again.");

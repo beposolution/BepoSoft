@@ -22,10 +22,63 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch }) => {
     const [role, setRole] = useState(null);
     const token = localStorage.getItem("token");
 
+    const [lockedInvoices, setLockedInvoices] = useState({});
+    const [expandedProductId, setExpandedProductId] = useState(null);
+    const [lockedInvoicesLoading, setLockedInvoicesLoading] = useState({});
+
     useEffect(() => {
         const role = localStorage.getItem("active");
         setRole(role);
     }, []);
+
+    // products in invoices
+    const fetchLockedInvoices = async (productId) => {
+        setLockedInvoicesLoading((prev) => ({
+            ...prev,
+            [productId]: true,
+        }));
+
+        try {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}product/${productId}/locked-invoices/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            setLockedInvoices((prev) => ({
+                ...prev,
+                [productId]: response?.data?.locked_invoices || [],
+            }));
+        } catch (error) {
+            console.error("Failed to fetch locked invoices:", error);
+
+            setLockedInvoices((prev) => ({
+                ...prev,
+                [productId]: [],
+            }));
+        } finally {
+            setLockedInvoicesLoading((prev) => ({
+                ...prev,
+                [productId]: false,
+            }));
+        }
+    };
+
+    const toggleProductDetails = (productId) => {
+        if (expandedProductId === productId) {
+            setExpandedProductId(null);
+            return;
+        }
+
+        setExpandedProductId(productId);
+
+        if (!lockedInvoices[productId]) {
+            fetchLockedInvoices(productId);
+        }
+    };
 
     const fetchProducts = async (search = "") => {
         setLoading(true);
@@ -178,9 +231,13 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch }) => {
                                     <th>Name</th>
                                     <th>Price</th>
 
-                                    {(role === "Accounts" || role === "CEO" || role === "COO") && (
-                                        <th>Stock</th>
-                                    )}
+
+                                    {(role === "Accounts / Accounting" ||
+                                        role === "CEO" ||
+                                        role === "COO" ||
+                                        role === "ADMIN") && (
+                                            <th>Stock</th>
+                                        )}
 
                                     <th>Available Stock</th>
 
@@ -189,7 +246,7 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch }) => {
                                 </tr>
                             </thead>
 
-                            <tbody>
+                            {/* <tbody>
                                 {filteredProducts.length > 0 ? (
                                     filteredProducts.map((product, index) => (
                                         <tr key={product.id}>
@@ -268,6 +325,169 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch }) => {
                                                     role === "COO"
                                                     ? "8"
                                                     : "7"
+                                            }
+                                            className="text-center"
+                                        >
+                                            No products found.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody> */}
+
+                            <tbody>
+                                {filteredProducts.length > 0 ? (
+                                    filteredProducts.map((product, index) => (
+                                        <React.Fragment key={product.id}>
+
+                                            {/* PRODUCT ROW */}
+                                            <tr
+                                                onClick={() => toggleProductDetails(product.id)}
+                                                style={{ cursor: "pointer" }}
+                                            >
+                                                <td>{index + 1}</td>
+
+                                                <td>
+                                                    {product.image ? (
+                                                        <img
+                                                            src={`${import.meta.env.VITE_APP_IMAGE}${product.image}`}
+                                                            alt={product.name || "Product image"}
+                                                            style={{
+                                                                width: "50px",
+                                                                height: "50px",
+                                                                objectFit: "cover",
+                                                                borderRadius: "6px",
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <span>No Image</span>
+                                                    )}
+                                                </td>
+
+                                                <td>{product.name || "Unknown Product"}</td>
+
+                                                <td>
+                                                    ₹{formatPrice(product.selling_price)}
+                                                </td>
+
+                                                {(role === "Accounts / Accounting" ||
+                                                    role === "CEO" ||
+                                                    role === "COO" ||
+                                                    role === "ADMIN") && (
+                                                        <td>{Number(product.stock || 0)}</td>
+                                                    )}
+
+                                                <td>
+                                                    {Number(product.available_stock || 0)}
+                                                </td>
+
+                                                <td>
+                                                    <Input
+                                                        type="number"
+                                                        min="1"
+                                                        max={Number(product.available_stock || 0)}
+                                                        value={quantity[product.id] || 1}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        onChange={(e) =>
+                                                            handleQuantityChange(
+                                                                product.id,
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        className="form-control"
+                                                        placeholder="Quantity"
+                                                    />
+                                                </td>
+
+                                                <td>
+                                                    <Button
+                                                        color="success"
+                                                        size="sm"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            addToCart(product);
+                                                        }}
+                                                        disabled={
+                                                            Number(product.available_stock || 0) <= 0
+                                                        }
+                                                    >
+                                                        Add
+                                                    </Button>
+                                                </td>
+                                            </tr>
+
+                                            {/* LOCKED INVOICE DETAILS */}
+                                            {expandedProductId === product.id && (
+                                                <tr>
+                                                    <td
+                                                        colSpan={
+                                                            role === "Accounts" ||
+                                                                role === "CEO" ||
+                                                                role === "COO"
+                                                                ? 8
+                                                                : 7
+                                                        }
+                                                    >
+                                                        <div
+                                                            style={{
+                                                                backgroundColor: "#f8f9fa",
+                                                                padding: "12px 15px",
+                                                                borderRadius: "5px",
+                                                            }}
+                                                        >
+                                                            <strong>
+                                                                🔒 Product in Invoices:
+                                                            </strong>
+
+                                                            {lockedInvoicesLoading[product.id] ? (
+                                                                <div className="mt-2">
+                                                                    <Spinner size="sm" /> Loading...
+                                                                </div>
+                                                            ) : lockedInvoices[product.id]?.length > 0 ? (
+                                                                <ul
+                                                                    style={{
+                                                                        marginTop: "8px",
+                                                                        marginBottom: 0,
+                                                                        paddingLeft: "20px",
+                                                                    }}
+                                                                >
+                                                                    {lockedInvoices[product.id].map(
+                                                                        (inv, idx) => (
+                                                                            <li key={idx}>
+                                                                                🧾 <b>{inv.invoice}</b>
+                                                                                {" — "}
+                                                                                Quantity:{" "}
+                                                                                <b>{inv.quantity_locked}</b>
+                                                                                {" | "}
+                                                                                Status:{" "}
+                                                                                <b>{inv.status}</b>
+                                                                                {" | "}
+                                                                                Date:{" "}
+                                                                                <b>{inv.order_date}</b>
+                                                                            </li>
+                                                                        )
+                                                                    )}
+                                                                </ul>
+                                                            ) : (
+                                                                <div className="mt-2">
+                                                                    No locked invoices for this product.
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+
+                                        </React.Fragment>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td
+                                            colSpan={
+                                                role === "Accounts" ||
+                                                    role === "CEO" ||
+                                                    role === "COO"
+                                                    ? 8
+                                                    : 7
                                             }
                                             className="text-center"
                                         >

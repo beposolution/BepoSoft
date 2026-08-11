@@ -24,7 +24,7 @@ const PaymentImages = ({ status }) => {
             "COO",
             "ADMIN",
         ].includes(role) ||
-        (role === "BDM" && status === "Invoice Created");
+        (["BDM", "Marketing"].includes(role) && status === "Invoice Created");
 
     const writePaymentImageLog = async (action, data = {}) => {
         const token = localStorage.getItem("token");
@@ -126,7 +126,7 @@ const PaymentImages = ({ status }) => {
                 `${import.meta.env.VITE_APP_KEY}order/payment/images/delete/${imageId}/`,
                 { headers: { 'Authorization': `Bearer ${token}` } }
             );
-            
+
             await writePaymentImageLog("Payment image removed", {
                 image_id: imageId,
             });

@@ -1328,6 +1328,7 @@ const FormLayouts = () => {
         "COO",
         "BDM",
         "BDO",
+        "Marketing",
     ];
 
     const allowedStaffDetailsStatusesForOthers = [
@@ -1351,6 +1352,7 @@ const FormLayouts = () => {
         "CEO",
         "COO",
         "ADMIN",
+        "Marketing",
     ].includes(role);
 
     return (

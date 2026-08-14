@@ -470,6 +470,9 @@ import CommissionReceiptList from "../pages/Receipts/CommissionReceiptList";
 import ProductRackUsabilityReport from "../pages/Resports/ProductRackUsabilityReport";
 import GrvFamilyPaymentSummaryReport from "../pages/Resports/GrvFamilyPaymentSummaryReport";
 import ShippingProductCountReport from "../pages/Resports/ShippingProductCountReport";
+import FamilyDateSummary from "../pages/Home/FamilyDateSummary";
+import FamilyStaffSummary from "../pages/Home/FamilyStaffSummary";
+import StaffOrderSummary from "../pages/Home/StaffOrderSummary";
 
 
 
@@ -482,6 +485,10 @@ const authProtectedRoutes = [
   { path: "/blog", component: <Blog /> },
   { path: "/dashboard/", component: <DashboardJob /> },
   { path: "/dashboard/family/details", component: <FamilyDetails /> },
+
+  { path: "/orders/family/date/summary", component: <FamilyDateSummary /> },
+  { path: "/orders/family/:family_id/staff/summary/:start_date/:end_date", component: <FamilyStaffSummary /> },
+  { path: "/orders/staff/:staff_id/summary/:start_date/:end_date", component: <StaffOrderSummary /> },
 
   //   //Crypto
   { path: "/crypto-wallet", component: <CryptoWallet /> },

@@ -1321,7 +1321,16 @@ const StatisticsApplications = () => {
                                     <div className="p-3 border rounded-4 shadow-sm bg-white">
                                         <div className="d-flex flex-column gap-3">
                                             {/* First Row (was Column 1) */}
-                                            <div className="p-4 border rounded-4 shadow-sm bg-light d-flex flex-column justify-content-center align-items-center text-center">
+                                            <div
+                                                className="p-4 border rounded-4 shadow-sm bg-light d-flex flex-column justify-content-center align-items-center text-center"
+                                                style={{
+                                                    cursor: "pointer",
+                                                    transition: "0.2s",
+                                                }}
+                                                onClick={() =>
+                                                    navigate("/orders/family/date/summary")
+                                                }
+                                            >
                                                 <p className="text-muted fw-medium mb-2">Total Division Status</p>
                                                 <h5 className="mb-1">Today's Total Volume : <span className='text-primary'>₹<strong>{familyOrders2?.today_total_amount?.toFixed(2)}</strong></span></h5>
                                                 <p className="text-muted fw-medium mb-1">

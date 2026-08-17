@@ -33,6 +33,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
         "CEO",
         "COO",
         "ADMIN",
+        "Marketing",
     ].includes(role);
 
     const canMarketingEditInvoiceCreated =

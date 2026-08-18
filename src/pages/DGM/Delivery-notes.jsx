@@ -110,6 +110,7 @@ const BasicTable = () => {
                     "Packing under progress",
                     "Packed",
                     "Ready to ship",
+                    "Return From Delivery",
                     "Shipped",
                 ];
 
@@ -123,6 +124,7 @@ const BasicTable = () => {
                     "Invoice Created",
                     "Invoice Approved",
                     "Waiting For Confirmation",
+                    "Pre Booked",
                 ];
 
                 const filteredOrders = data.filter(
@@ -144,21 +146,13 @@ const BasicTable = () => {
     };
 
     const statusOptions = [
-        "Pending",
-        "Approved",
-        "Shipped",
         "To Print",
-        "Invoice Rejected",
-        "Order Request by Warehouse",
-        "Processing",
-        "Completed",
-        "Cancelled",
-        "Refunded",
-        "Rejected",
-        "Return",
         "Packing under progress",
         "Packed",
+        "Return From Delivery",
         "Ready to ship",
+        "Shipped",
+        "Invoice Rejected",
     ];
 
     const viewDeliveryNote = async (invoiceId) => {
@@ -198,6 +192,139 @@ const BasicTable = () => {
             window.removeEventListener("beforeunload", handleUnload);
         };
     }, [lockedOrderId]);
+
+    const getDisplayStatus = (status) => {
+        switch (status) {
+            case "Invoice Created":
+                return "Waiting For Approval";
+
+            case "To Print":
+                return "Delivery Order (DO)";
+
+            case "Packed":
+                return "Packed For Delivery (PFD)";
+
+            case "Ready to ship":
+                return "Out For Delivery (OFD)";
+
+            default:
+                return status;
+        }
+    };
+
+    const getStatusDisplay = (status) => {
+        switch (status) {
+            case "Invoice Created":
+                return {
+                    label: "Waiting For Approval",
+                    style: {
+                        color: "#d97706",
+                        backgroundColor: "#fff7ed",
+                        border: "1px solid #fed7aa",
+                    },
+                };
+
+            case "To Print":
+                return {
+                    label: "Delivery Order (DO)",
+                    style: {
+                        color: "#2563eb",
+                        backgroundColor: "#eff6ff",
+                        border: "1px solid #bfdbfe",
+                    },
+                };
+
+            case "Packing under progress":
+                return {
+                    label: "Packing Under Progress",
+                    style: {
+                        color: "#7c3aed",
+                        backgroundColor: "#f5f3ff",
+                        border: "1px solid #ddd6fe",
+                    },
+                };
+
+            case "Packed":
+                return {
+                    label: "Packed For Delivery (PFD)",
+                    style: {
+                        color: "#0891b2",
+                        backgroundColor: "#ecfeff",
+                        border: "1px solid #a5f3fc",
+                    },
+                };
+
+            case "Ready to ship":
+                return {
+                    label: "Out For Delivery (OFD)",
+                    style: {
+                        color: "#ea580c",
+                        backgroundColor: "#fff7ed",
+                        border: "1px solid #fed7aa",
+                    },
+                };
+
+            case "Shipped":
+                return {
+                    label: "Shipped",
+                    style: {
+                        color: "#16a34a",
+                        backgroundColor: "#f0fdf4",
+                        border: "1px solid #bbf7d0",
+                    },
+                };
+
+            case "Delivered":
+                return {
+                    label: "Delivered",
+                    style: {
+                        color: "#15803d",
+                        backgroundColor: "#dcfce7",
+                        border: "1px solid #86efac",
+                    },
+                };
+
+            case "Return From Delivery":
+                return {
+                    label: "Return From Delivery",
+                    style: {
+                        color: "#dc2626",
+                        backgroundColor: "#fef2f2",
+                        border: "1px solid #fecaca",
+                    },
+                };
+
+            case "Cancelled":
+                return {
+                    label: "Cancelled",
+                    style: {
+                        color: "#b91c1c",
+                        backgroundColor: "#fef2f2",
+                        border: "1px solid #fecaca",
+                    },
+                };
+
+            case "Invoice Rejected":
+                return {
+                    label: "Invoice Rejected",
+                    style: {
+                        color: "#dc2626",
+                        backgroundColor: "#fef2f2",
+                        border: "1px solid #fecaca",
+                    },
+                };
+
+            default:
+                return {
+                    label: status || "-",
+                    style: {
+                        color: "#475569",
+                        backgroundColor: "#f8fafc",
+                        border: "1px solid #e2e8f0",
+                    },
+                };
+        }
+    };
 
     return (
         <React.Fragment>
@@ -240,7 +367,7 @@ const BasicTable = () => {
                                                 <option value="">All Status</option>
                                                 {statusOptions.map((status, index) => (
                                                     <option key={index} value={status}>
-                                                        {status}
+                                                        {getDisplayStatus(status)}
                                                     </option>
                                                 ))}
                                             </select>
@@ -323,7 +450,28 @@ const BasicTable = () => {
                                                                 <td>{order.invoice}</td>
                                                                 <td>{order.customer?.name}</td>
                                                                 <td>{order.manage_staff}</td>
-                                                                <td>{order.status}</td>
+                                                                <td>
+                                                                    {(() => {
+                                                                        const statusData = getStatusDisplay(order.status);
+
+                                                                        return (
+                                                                            <span
+                                                                                style={{
+                                                                                    ...statusData.style,
+                                                                                    display: "inline-block",
+                                                                                    padding: "6px 12px",
+                                                                                    borderRadius: "6px",
+                                                                                    fontSize: "12px",
+                                                                                    fontWeight: "600",
+                                                                                    lineHeight: "1.2",
+                                                                                    whiteSpace: "nowrap",
+                                                                                }}
+                                                                            >
+                                                                                {statusData.label}
+                                                                            </span>
+                                                                        );
+                                                                    })()}
+                                                                </td>
                                                                 <td>{order.total_amount}</td>
                                                                 <td>{order.order_date?.substring(0, 10)}</td>
                                                                 <td>

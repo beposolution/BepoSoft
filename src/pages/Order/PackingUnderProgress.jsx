@@ -34,6 +34,8 @@ const PackingUnderProgress = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const perPageData = 25;
     const status = "Packing under progress";
+    const [fromDate, setFromDate] = useState("");
+    const [toDate, setToDate] = useState("");
 
     document.title = "Orders | Beposoft";
 
@@ -69,8 +71,8 @@ const PackingUnderProgress = () => {
                 : response.data.results || [];
 
             if (role === "Warehouse Admin" || role === "warehouse") {
-                const filterOrders = results.filter(order => order.status === "To Print");
-                setOrders(filterOrders);
+                // const filterOrders = results.filter(order => order.status === "To Print");
+                setOrders(results);
             } else {
                 setOrders(results);
             }
@@ -86,17 +88,44 @@ const PackingUnderProgress = () => {
         const invoice = order.invoice?.toString().toLowerCase() || "";
         const customerName = order.customer?.name?.toLowerCase() || "";
 
-        const matchesSearch = searchTerm === "" ||
+        const matchesSearch =
+            searchTerm === "" ||
             invoice.includes(searchTerm.toLowerCase()) ||
             customerName.includes(searchTerm.toLowerCase());
 
-        const matchesStatus = selectedState === "" ||
+        const matchesStatus =
+            selectedState === "" ||
             order.status?.toLowerCase() === selectedState.toLowerCase();
 
-        const matchesStaff = selectedStaff === "" ||
+        const matchesStaff =
+            selectedStaff === "" ||
             order.manage_staff === selectedStaff;
 
-        return matchesSearch && matchesStatus && matchesStaff;
+        // DATE RANGE FILTER
+        let matchesDate = true;
+
+        if (order?.order_date) {
+            const orderDate = order.order_date.substring(0, 10);
+
+            if (fromDate && toDate) {
+                matchesDate =
+                    orderDate >= fromDate &&
+                    orderDate <= toDate;
+            } else if (fromDate) {
+                matchesDate = orderDate >= fromDate;
+            } else if (toDate) {
+                matchesDate = orderDate <= toDate;
+            }
+        } else if (fromDate || toDate) {
+            matchesDate = false;
+        }
+
+        return (
+            matchesSearch &&
+            matchesStatus &&
+            matchesStaff &&
+            matchesDate
+        );
     });
 
     const indexOfLastItem = currentPage * perPageData;
@@ -162,32 +191,128 @@ const PackingUnderProgress = () => {
                 <div className="container-fluid">
                     <Breadcrumbs title="Tables" breadcrumbItem="ORDERS LIST" />
                     <Row className="align-items-end mb-3">
-                        <Col md={4}>
+
+                        {/* SEARCH */}
+                        <Col lg={3} md={6}>
                             <FormGroup>
                                 <Label>Search by Invoice or Customer</Label>
-                                <Input type="text" placeholder="Search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+
+                                <Input
+                                    type="text"
+                                    placeholder="Search"
+                                    value={searchTerm}
+                                    onChange={(e) => {
+                                        setSearchTerm(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                />
                             </FormGroup>
                         </Col>
-                        <Col md={3}>
+
+                        {/* STAFF FILTER */}
+                        <Col lg={2} md={6}>
                             <FormGroup>
                                 <Label>Filter by Staff</Label>
-                                <Input type="select" value={selectedStaff} onChange={(e) => setSelectedStaff(e.target.value)}>
+
+                                <Input
+                                    type="select"
+                                    value={selectedStaff}
+                                    onChange={(e) => {
+                                        setSelectedStaff(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                >
                                     <option value="">All Staff</option>
-                                    {[...new Set(orders.map(order => order.manage_staff))].map((staff, index) => (
-                                        <option key={index} value={staff}>{staff}</option>
+
+                                    {[...new Set(
+                                        orders
+                                            .map(order => order.manage_staff)
+                                            .filter(Boolean)
+                                    )].map((staff, index) => (
+                                        <option
+                                            key={index}
+                                            value={staff}
+                                        >
+                                            {staff}
+                                        </option>
                                     ))}
                                 </Input>
                             </FormGroup>
                         </Col>
-                        <Col md={2} className="d-flex justify-content-end">
-                            <Button color="success" onClick={exportToExcel}>Export to Excel</Button>
+
+                        {/* FROM DATE */}
+                        <Col lg={2} md={6}>
+                            <FormGroup>
+                                <Label>From Date</Label>
+
+                                <Input
+                                    type="date"
+                                    value={fromDate}
+                                    onChange={(e) => {
+                                        setFromDate(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                />
+                            </FormGroup>
                         </Col>
+
+                        {/* TO DATE */}
+                        <Col lg={2} md={6}>
+                            <FormGroup>
+                                <Label>To Date</Label>
+
+                                <Input
+                                    type="date"
+                                    value={toDate}
+                                    min={fromDate || undefined}
+                                    onChange={(e) => {
+                                        setToDate(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                />
+                            </FormGroup>
+                        </Col>
+
+                        {/* CLEAR */}
+                        <Col lg={1} md={3}>
+                            <FormGroup>
+                                <Button
+                                    color="secondary"
+                                    outline
+                                    className="w-100"
+                                    onClick={() => {
+                                        setSearchTerm("");
+                                        setSelectedStaff("");
+                                        setSelectedState("");
+                                        setFromDate("");
+                                        setToDate("");
+                                        setCurrentPage(1);
+                                    }}
+                                >
+                                    Clear
+                                </Button>
+                            </FormGroup>
+                        </Col>
+
+                        {/* EXPORT */}
+                        <Col lg={2} md={3}>
+                            <FormGroup>
+                                <Button
+                                    color="success"
+                                    className="w-100"
+                                    onClick={exportToExcel}
+                                >
+                                    Export to Excel
+                                </Button>
+                            </FormGroup>
+                        </Col>
+
                     </Row>
                     <Row>
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
-                                    <CardTitle className="h4">BEPOSOFT ORDERS</CardTitle>
+                                    <CardTitle className="h4">PACKING UNDER PROGRESS ORDERS</CardTitle>
                                     <div className="table-responsive">
                                         {loading ? <div>Loading...</div> : error ? <div className="text-danger">{error}</div> : (
                                             <Table className="table mb-0">

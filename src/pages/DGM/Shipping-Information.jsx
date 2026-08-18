@@ -34,6 +34,7 @@ const BasicTable = () => {
     const [status, setStatus] = useState([
         "Packing under progress",
         "Packed",
+        "Return From Delivery",
         "Ready to ship",
         "Shipped"
     ]);
@@ -116,7 +117,7 @@ const BasicTable = () => {
                 }
             );
             if (response.status === 200) {
-                
+
                 toast.success("Box deleted successfully!");
                 await writeDeleteBoxLog(updatedItem);
 
@@ -173,6 +174,25 @@ const BasicTable = () => {
             }
         } catch (error) {
             toast.error("Error sending SMS. Try again.");
+        }
+    };
+
+    const getDisplayStatus = (status) => {
+        switch (status) {
+            case "Invoice Created":
+                return "Waiting For Approval";
+
+            case "To Print":
+                return "Delivery Order (DO)";
+
+            case "Packed":
+                return "Packed For Delivery (PFD)";
+
+            case "Ready to ship":
+                return "Out For Delivery (OFD)";
+
+            default:
+                return status;
         }
     };
 
@@ -254,7 +274,7 @@ const BasicTable = () => {
                                                     item.packed_by || "N/A"
                                                 }
                                             </td>
-                                            <td>{item.status || "N/A"}</td>
+                                            <td>{getDisplayStatus(item.status) || "N/A"}</td>
                                             <td>
                                                 {
                                                     staffs.find(
@@ -391,7 +411,7 @@ const BasicTable = () => {
                                                 <option value="">Select</option>
                                                 {status.map((s, i) => (
                                                     <option key={i} value={s}>
-                                                        {s}
+                                                        {getDisplayStatus(s)}
                                                     </option>
                                                 ))}
                                             </select>

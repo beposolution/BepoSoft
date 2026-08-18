@@ -330,6 +330,25 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
         hasUnallocated &&
         !allowedWhenUnallocated.includes(formik.values.status);
 
+    const getDisplayStatus = (status) => {
+        switch (status) {
+            case "Invoice Created":
+                return "Waiting For Approval";
+
+            case "To Print":
+                return "Delivery Order (DO)";
+
+            case "Packed":
+                return "Packed For Delivery (PFD)";
+
+            case "Ready to ship":
+                return "Out For Delivery (OFD)";
+
+            default:
+                return status;
+        }
+    };
+
     return (
         <Row>
             <Col xl={12}>
@@ -386,9 +405,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                                     //     {option}
                                                                     // </option>
                                                                     <option key={index} value={option}>
-                                                                        {option === "Invoice Created"
-                                                                            ? "Waiting For Approval"
-                                                                            : option}
+                                                                        {getDisplayStatus(option)}
                                                                     </option>
                                                                 ));
                                                             }
@@ -400,9 +417,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                                     //     {option}
                                                                     // </option>
                                                                     <option key={index} value={option}>
-                                                                        {option === "Invoice Created"
-                                                                            ? "Waiting For Approval"
-                                                                            : option}
+                                                                        {getDisplayStatus(option)}
                                                                     </option>
                                                                 ));
                                                             }
@@ -444,9 +459,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                                 //     {option}
                                                                 // </option>
                                                                 <option key={index} value={option}>
-                                                                    {option === "Invoice Created"
-                                                                        ? "Waiting For Approval"
-                                                                        : option}
+                                                                    {getDisplayStatus(option)}
                                                                 </option>
                                                             ));
                                                         })()}

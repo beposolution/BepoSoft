@@ -239,6 +239,28 @@ const BasicTable = () => {
         XLSX.writeFile(workbook, "Orders_List.xlsx");
     };
 
+    const getDisplayStatus = (status) => {
+        switch (status) {
+            case "Invoice Created":
+                return "Waiting For Approval";
+
+            case "To Print":
+                return "Delivery Order (DO)";
+
+            case "Packed":
+                return "Packed For Delivery (PFD)";
+
+            case "Ready to ship":
+                return "Out For Delivery (OFD)";
+
+            case "Return From Delivery":
+                return "Return From Delivery (RFD)";
+
+            default:
+                return status;
+        }
+    };
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -281,15 +303,13 @@ const BasicTable = () => {
                                         "To Print",
                                         "Packing under progress",
                                         "Packed",
+                                        "Return From Delivery",
                                         "Ready to ship",
                                         "Shipped",
                                         "Invoice Rejected",
                                     ].map((status) => (
-                                        // <option key={status} value={status}>
-                                        //     {status}
-                                        // </option>
                                         <option key={status} value={status}>
-                                            {status === "Invoice Created" ? "Waiting for Approval" : status}
+                                            {getDisplayStatus(status)}
                                         </option>
                                     ))}
                                 </Input>
@@ -444,9 +464,7 @@ const BasicTable = () => {
                                                                     >
                                                                         {/* <strong>{order?.status}</strong> */}
                                                                         <strong>
-                                                                            {order?.status === "Invoice Created"
-                                                                                ? "Waiting For Approval"
-                                                                                : order?.status}
+                                                                            {getDisplayStatus(order?.status)}
                                                                         </strong>
 
                                                                         {["Ready to ship", "Shipped"].includes(order?.status) &&

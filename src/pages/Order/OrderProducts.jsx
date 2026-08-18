@@ -1355,6 +1355,25 @@ const FormLayouts = () => {
         "Marketing",
     ].includes(role);
 
+    const getDisplayStatus = (status) => {
+        switch (status) {
+            case "Invoice Created":
+                return "Waiting For Approval";
+
+            case "To Print":
+                return "Delivery Order (DO)";
+
+            case "Packed":
+                return "Packed For Delivery (PFD)";
+
+            case "Ready to ship":
+                return "Out For Delivery (OFD)";
+
+            default:
+                return status;
+        }
+    };
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -1498,11 +1517,7 @@ const FormLayouts = () => {
                                                         placeholder="Status"
                                                         disabled
                                                         // value={formik.values.status}
-                                                        value={
-                                                            formik.values.status === "Invoice Created"
-                                                                ? "Waiting For Approval"
-                                                                : formik.values.status
-                                                        }
+                                                        value={getDisplayStatus(formik.values.status)}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
                                                         invalid={
@@ -2630,7 +2645,7 @@ const FormLayouts = () => {
                             </Card>
                         </Col>
                         <Col xl={12}>
-                            <PaymentImages status={formik.values.status}/>
+                            <PaymentImages status={formik.values.status} />
                             <Paymentrecipent
                                 billingPhone={billingAddress.phone}
                                 customerId={customerId}

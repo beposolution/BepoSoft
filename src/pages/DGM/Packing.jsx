@@ -121,6 +121,25 @@ const FormLayouts = () => {
         }
     };
 
+    const getDisplayStatus = (status) => {
+        switch (status) {
+            case "Invoice Created":
+                return "Waiting For Approval";
+
+            case "To Print":
+                return "Delivery Order (DO)";
+
+            case "Packed":
+                return "Packed For Delivery (PFD)";
+
+            case "Ready to ship":
+                return "Out For Delivery (OFD)";
+
+            default:
+                return status;
+        }
+    };
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -167,7 +186,7 @@ const FormLayouts = () => {
                                                     name="status"
                                                     className="form-control"
                                                     id="formrow-status-Input"
-                                                    value={orderData?.status || ""}
+                                                    value={getDisplayStatus(orderData?.status) || ""}
                                                     readOnly
                                                 />
                                             </div>
@@ -203,12 +222,14 @@ const FormLayouts = () => {
                                                 <div className="d-flex">
                                                     <Dropdown isOpen={dropdownOpen} toggle={toggleDropdown} className="me-3 flex-grow-1">
                                                         <DropdownToggle caret className="w-100">
-                                                            {selectedStatus || "Select Status"}
+                                                            {selectedStatus
+                                                                ? getDisplayStatus(selectedStatus)
+                                                                : "Select Status"}
                                                         </DropdownToggle>
                                                         <DropdownMenu className="w-100">
                                                             {status.map((stat, index) => (
                                                                 <DropdownItem key={index} onClick={() => handleStatusChange(stat)}>
-                                                                    {stat}
+                                                                    {getDisplayStatus(stat)}
                                                                 </DropdownItem>
                                                             ))}
                                                         </DropdownMenu>

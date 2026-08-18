@@ -16,6 +16,7 @@ const ChartSection = () => {
     const [role, setRole] = useState(null)
     const [orders, setOrders] = useState([]);
     const [userData, setUserData] = useState();
+    const [orderCount, setOrderCount] = useState();
     const [proforma, setProforma] = useState([]);
     const [uniqueProforma, setUniqueProforma] = useState([]);
     const [grvCount, setGrvCount] = useState([]);
@@ -40,6 +41,48 @@ const ChartSection = () => {
         };
         fetchUserData();
     }, []);
+
+    useEffect(() => {
+        const fetchOrderCount = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_APP_KEY}orders/status/count/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setOrderCount(response?.data);
+                console.log("Order Count:", response?.data);
+            } catch (error) {
+                toast.error('Error fetching order count:');
+            }
+        };
+        fetchOrderCount();
+    }, []);
+
+    const toPrintToday =
+        orderCount?.today?.find(item => item.status === "To Print")?.count || 0;
+
+    const toPrintAll =
+        orderCount?.all?.find(item => item.status === "To Print")?.count || 0;
+
+    const getTodayStatusCount = (status) =>
+        orderCount?.today?.find(item => item.status === status)?.count || 0;
+
+    const getAllStatusCount = (status) =>
+        orderCount?.all?.find(item => item.status === status)?.count || 0;
+
+    const packedForDeliveryToday = getTodayStatusCount("Packed");
+    const packedForDeliveryAll = getAllStatusCount("Packed");
+
+    const outForDeliveryToday = getTodayStatusCount("Ready to ship");
+    const outForDeliveryAll = getAllStatusCount("Ready to ship");
+
+    const returnFromDeliveryToday =
+        getTodayStatusCount("Return From Delivery");
+
+    const returnFromDeliveryAll =
+        getAllStatusCount("Return From Delivery");
+
+    const shippedToday = getTodayStatusCount("Shipped");
+    const shippedAll = getAllStatusCount("Shipped");
 
     useEffect(() => {
         const fetchOrdersData = async () => {
@@ -253,36 +296,331 @@ const ChartSection = () => {
 
             <Row>
                 {(role === "warehouse" || role === "Warehouse Admin") && (
-                    <>
-                        <Col lg={3} style={{ cursor: "pointer" }}>
-                            <Card className="mini-stats-wid" onClick={() => navigate("/Orders/")}>
-                                <CardBody>
-                                    <div className="d-flex">
-                                        <div className="flex-grow-1">
-                                            <p className="text-muted fw-medium">Waiting For Packing</p>
-                                            <h4 className="mb-0"></h4>
-                                        </div>
+                    <Row className="g-3 mb-3">
 
-                                    </div>
+                        {/* DELIVERY ORDER */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                            <Card
+                                onClick={() => navigate("/orders/toprint")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#f8fbff",
+                                    borderLeft: "5px solid #3b82f6"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Delivery Order (DO)
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#1e3a8a",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {toPrintAll}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#dbeafe",
+                                            color: "#1d4ed8",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today:&nbsp;
+                                        <strong style={{ fontWeight: "700" }}>
+                                            {toPrintToday}
+                                        </strong>
+                                    </span>
+
                                 </CardBody>
-
                             </Card>
                         </Col>
-                        <Col lg={3} style={{ cursor: "pointer" }}>
-                            <Card className="mini-stats-wid" onClick={() => navigate("/Orders2")}>
-                                <CardBody>
-                                    <div className="d-flex">
-                                        <div className="flex-grow-1">
-                                            <p className="text-muted fw-medium">Waiting For Shipping</p>
-                                            <h4 className="mb-0"></h4>
-                                        </div>
 
-                                    </div>
+
+                        {/* PACKED FOR DELIVERY */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                            <Card
+                                onClick={() => navigate("/orders/packed")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#f5fdff",
+                                    borderLeft: "5px solid #06b6d4"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Packed For Delivery (PFD)
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#155e75",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {packedForDeliveryAll}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#cffafe",
+                                            color: "#0e7490",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today:&nbsp;
+                                        <strong style={{ fontWeight: "700" }}>
+                                            {packedForDeliveryToday}
+                                        </strong>
+                                    </span>
+
                                 </CardBody>
-
                             </Card>
                         </Col>
-                    </>
+
+
+                        {/* OUT FOR DELIVERY */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                            <Card
+                                onClick={() => navigate("/orders/readytoship")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#fffaf3",
+                                    borderLeft: "5px solid #f59e0b"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Out For Delivery (OFD)
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#92400e",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {outForDeliveryAll}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#fef3c7",
+                                            color: "#b45309",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today:&nbsp;
+                                        <strong style={{ fontWeight: "700" }}>
+                                            {outForDeliveryToday}
+                                        </strong>
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+
+                        {/* RETURN FROM DELIVERY */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                            <Card
+                                onClick={() => navigate("/orders/returnfromdelivery")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#fff7f7",
+                                    borderLeft: "5px solid #ef4444"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Return From Delivery (RFD)
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#991b1b",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {returnFromDeliveryAll}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#fee2e2",
+                                            color: "#b91c1c",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today:&nbsp;
+                                        <strong style={{ fontWeight: "700" }}>
+                                            {returnFromDeliveryToday}
+                                        </strong>
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+
+                        {/* SHIPPED */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                            <Card
+                                onClick={() => navigate("/orders/shipped")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#f5fff8",
+                                    borderLeft: "5px solid #22c55e"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Shipped
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#166534",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {shippedAll}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#dcfce7",
+                                            color: "#15803d",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today:&nbsp;
+                                        <strong style={{ fontWeight: "700" }}>
+                                            {shippedToday}
+                                        </strong>
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+
+                        {/* DGM */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                            <Card
+                                onClick={() => navigate("/daily/good/movment/")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#fff7f7",
+                                    borderLeft: "5px solid #ef4444"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Daily Goods Movement
+                                    </p>
+
+                                    <h2>DGM</h2>
+                                    <span>Check daily goods movement</span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+                    </Row>
                 )}
 
                 {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === 'CSO' || role === 'SD' || role === 'Marketing' || role === 'COO') && (

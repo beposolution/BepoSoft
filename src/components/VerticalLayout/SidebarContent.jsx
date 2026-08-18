@@ -351,16 +351,19 @@ const SidebarContent = (props) => {
                         <Link to="/orders/waitingforconfirmation">{props.t("Waiting For Confirmation List")}</Link>
                       </li>
                       <li>
-                        <Link to="/orders/toprint">{props.t("To Print List")}</Link>
+                        <Link to="/orders/toprint">{props.t("Delivery Order (DO)")}</Link>
                       </li>
                       <li>
                         <Link to="/orders/packingunderprogress">{props.t("Packing Under Progress List")}</Link>
                       </li>
                       <li>
-                        <Link to="/orders/packed">{props.t("Packed List")}</Link>
+                        <Link to="/orders/packed">{props.t("Packed For Delivery (PFD)")}</Link>
                       </li>
                       <li>
-                        <Link to="/orders/readytoship">{props.t("Ready to Ship List")}</Link>
+                        <Link to="/orders/returnfromdelivery">{props.t("Return From Delivery (DFO)")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/orders/readytoship">{props.t("Out For Delivery (OFD)")}</Link>
                       </li>
                       <li>
                         <Link to="/orders/shipped">{props.t("Shipped List")}</Link>
@@ -504,7 +507,7 @@ const SidebarContent = (props) => {
                     <Link to="/delivery/notes/">{props.t("delivery-notes")}</Link>
                   </li>
                   <li>
-                    <Link to="/daily/good/movment/">{props.t("Daily Goods Movment")}</Link>
+                    <Link to="/daily/good/movment/">{props.t("Daily Goods Movement")}</Link>
                   </li>
 
                 </ul>
@@ -767,8 +770,12 @@ const SidebarContent = (props) => {
                   <span>{props.t("Orders")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
-                  <li><Link to="/Orders/">{props.t("Waiting For Packing")}</Link></li>
-                  <li><Link to="/Orders2">{props.t("Waiting For Shipping")}</Link></li>
+                  <li><Link to="/orders/toprint">{props.t("Delivery Order (DO)")}</Link></li>
+                  <li><Link to="/orders/packingunderprogress">{props.t("Packing Under Progress")}</Link></li>
+                  <li><Link to="/orders/packed">{props.t("Packed For Delivery (PFD)")}</Link></li>
+                  <li><Link to="/orders/readytoship">{props.t("Out For Delivery (OFD)")}</Link></li>
+                  <li><Link to="/orders/returnfromdelivery">{props.t("Return From Delivery (RFD)")}</Link></li>
+                  <li><Link to="/orders/shipped">{props.t("Shipped")}</Link></li>
                 </ul>
               </li>
             ) : null}

@@ -473,6 +473,7 @@ import ShippingProductCountReport from "../pages/Resports/ShippingProductCountRe
 import FamilyDateSummary from "../pages/Home/FamilyDateSummary";
 import FamilyStaffSummary from "../pages/Home/FamilyStaffSummary";
 import StaffOrderSummary from "../pages/Home/StaffOrderSummary";
+import ReturnFromDelivery from "../pages/Order/ReturnFromDelivery";
 
 
 
@@ -640,6 +641,7 @@ const authProtectedRoutes = [
   { path: "/create/warehouse/order/", component: <WarehouseToWarehouseOrderCreation /> },
   { path: "/view/warehouse/order/", component: <WarehouseToWarehouseOrderList /> },
   { path: "/warehouse/orders/list/:invoice", component: <WarehouseOrderDetails /> },
+  { path: "/orders/returnfromdelivery", component: <ReturnFromDelivery /> },
 
   { path: "/order/warehousee/", component: <Warehouseorders /> },
 

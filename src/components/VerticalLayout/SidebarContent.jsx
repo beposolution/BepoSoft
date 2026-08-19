@@ -263,7 +263,7 @@ const SidebarContent = (props) => {
                     <Link to="/New/Order/">{props.t("Create Order")}</Link>
                   </li> */}
                   <li>
-                    <Link to="/managed/family/order/">{props.t("View Order List")}</Link>
+                    <Link to="/staff/order/list/">{props.t("View Order List")}</Link>
                   </li>
                 </ul>
               </li>

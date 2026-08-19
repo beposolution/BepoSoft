@@ -37,6 +37,7 @@ const FormLayouts = () => {
     const navigate = useNavigate();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState("");
+    const [deliveryReturnReason, setDeliveryReturnReason] = useState("");
 
 
     const downloadShippingAddress = () => {
@@ -52,11 +53,37 @@ const FormLayouts = () => {
 
     const handleStatusChange = (newStatus) => {
         setSelectedStatus(newStatus);
+
+        if (newStatus !== "Return From Delivery") {
+            setDeliveryReturnReason("");
+        }
     };
-    const [status, setStatus] = useState([
-        "Packing under progress",
-        "Ready to ship",
-    ]);
+
+    const getAvailableStatuses = () => {
+        const currentStatus = orderData?.status;
+
+        if (currentStatus === "Packing under progress") {
+            return [
+                "Ready to ship",
+            ];
+        }
+
+        if (currentStatus === "Ready to ship") {
+            return [
+                "Shipped",
+                "Return From Delivery",
+            ];
+        }
+
+        if (currentStatus === "Return From Delivery") {
+            return [
+                "Ready to ship",
+            ];
+        }
+
+        return [];
+    };
+    
 
     useEffect(() => {
         const fetchOrderData = async () => {
@@ -68,6 +95,9 @@ const FormLayouts = () => {
                 });
                 setOrderData(response.data.order);
                 setSelectedStatus(response.data.order?.status || "");
+                setDeliveryReturnReason(
+                    response.data.order?.delivery_return_reason || ""
+                );
             } catch (error) {
                 toast.error("Error fetching order data:");
             } finally {
@@ -80,14 +110,41 @@ const FormLayouts = () => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        if (
+            selectedStatus === "Return From Delivery" &&
+            !deliveryReturnReason.trim()
+        ) {
+            toast.error("Please enter delivery return reason");
+            return;
+        }
         try {
-            await axios.put(`${import.meta.env.VITE_APP_KEY}shipping/${id}/order/`, {
+            const requestData = {
                 status: selectedStatus,
-            }, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            })
+            };
+
+            if (selectedStatus === "Return From Delivery") {
+                requestData.delivery_return_reason = deliveryReturnReason.trim();
+            }
+
+            await axios.put(
+                `${import.meta.env.VITE_APP_KEY}shipping/${id}/order/`,
+                requestData,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+            setOrderData(prevData => ({
+                ...prevData,
+                status: selectedStatus,
+                ...(selectedStatus === "Return From Delivery"
+                    ? {
+                        delivery_return_reason: deliveryReturnReason.trim()
+                    }
+                    : {})
+            }));
+
+            setDeliveryReturnReason("");
             alert("Status updated successfully");
         } catch (error) {
             alert("Failed to update status");
@@ -135,10 +192,15 @@ const FormLayouts = () => {
             case "Ready to ship":
                 return "Out For Delivery (OFD)";
 
+            case "Return From Delivery":
+                return "Return From Delivery (RFD)";
+
             default:
                 return status;
         }
     };
+
+    const availableStatuses = getAvailableStatuses();
 
     return (
         <React.Fragment>
@@ -227,17 +289,45 @@ const FormLayouts = () => {
                                                                 : "Select Status"}
                                                         </DropdownToggle>
                                                         <DropdownMenu className="w-100">
-                                                            {status.map((stat, index) => (
-                                                                <DropdownItem key={index} onClick={() => handleStatusChange(stat)}>
-                                                                    {getDisplayStatus(stat)}
+                                                            {availableStatuses.length > 0 ? (
+                                                                availableStatuses.map((stat, index) => (
+                                                                    <DropdownItem
+                                                                        key={index}
+                                                                        onClick={() => handleStatusChange(stat)}
+                                                                    >
+                                                                        {getDisplayStatus(stat)}
+                                                                    </DropdownItem>
+                                                                ))
+                                                            ) : (
+                                                                <DropdownItem disabled>
+                                                                    No status available
                                                                 </DropdownItem>
-                                                            ))}
+                                                            )}
                                                         </DropdownMenu>
                                                     </Dropdown>
                                                     <Button type="submit" color="primary">
                                                         Update
                                                     </Button>
                                                 </div>
+                                                {selectedStatus === "Return From Delivery" && (
+                                                    <div className="mt-3">
+                                                        <Label htmlFor="delivery_return_reason">
+                                                            Delivery Return Reason
+                                                        </Label>
+
+                                                        <Input
+                                                            type="textarea"
+                                                            id="delivery_return_reason"
+                                                            name="delivery_return_reason"
+                                                            placeholder="Enter delivery return reason"
+                                                            value={deliveryReturnReason}
+                                                            onChange={(e) =>
+                                                                setDeliveryReturnReason(e.target.value)
+                                                            }
+                                                            required
+                                                        />
+                                                    </div>
+                                                )}
                                             </Form>
                                             <Button className="ms-3" color="danger" onClick={handleCancel}>
                                                 Unlock

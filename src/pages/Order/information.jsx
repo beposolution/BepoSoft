@@ -95,6 +95,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
             billing_address: '',
             note: '',
             accounts_note: '',
+            delivery_return_reason: '',
         },
         validationSchema: Yup.object({
             status: Yup.string().required('Status is required'),
@@ -107,7 +108,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
             const original = originalValuesRef.current;
 
             // detect changes (add any new fields here if needed)
-            ["status", "billing_address", "note", "accounts_note"].forEach((key) => {
+            ["status", "billing_address", "note", "accounts_note", "delivery_return_reason"].forEach((key) => {
                 const before = original?.[key] ?? "";
                 const after = values?.[key] ?? "";
                 if (after !== "" && after !== before) {
@@ -118,6 +119,21 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
             if (Object.keys(payload).length === 0) {
                 toast.info("No changes to update.");
                 return;
+            }
+
+            if (
+                values.status === "Return From Delivery" &&
+                persistedStatus !== "Return From Delivery" &&
+                !values.delivery_return_reason?.trim()
+            ) {
+                toast.error("Please enter delivery return reason.");
+                return;
+            }
+
+            if (values.status === "Return From Delivery") {
+                payload.delivery_return_reason = values.delivery_return_reason.trim();
+            } else {
+                delete payload.delivery_return_reason;
             }
 
             const restrictedStatusesWhenUnallocated = [
@@ -256,6 +272,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                 'Packing under progress',
                 'Packed',
                 'Ready to ship',
+                'Return From Delivery',
                 'Shipped',
                 "Invoice Rejected",
             ]);
@@ -278,7 +295,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
 
                 // Access order and customer details from the response
                 const orderData = orderResponse.data.order;
-                const { status, note, billing_address, accounts_note } = orderData;
+                const { status, note, billing_address, accounts_note, delivery_return_reason } = orderData;
                 const customerId = orderData.customerID;
                 setPersistedStatus(status || "");
 
@@ -288,6 +305,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                     billing_address: billing_address?.id || '',
                     note: note || '',
                     accounts_note: accounts_note || '',
+                    delivery_return_reason: delivery_return_reason || '',
                 });
 
                 originalValuesRef.current = {
@@ -295,6 +313,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                     billing_address: billing_address?.id || '',
                     note: note || '',
                     accounts_note: accounts_note || '',
+                    delivery_return_reason: delivery_return_reason || '',
                 };
 
                 // Step 2: Fetch customer shipping addresses
@@ -343,6 +362,9 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
 
             case "Ready to ship":
                 return "Out For Delivery (OFD)";
+
+            case "Return From Delivery":
+                return "Return From Delivery (RFD)";
 
             default:
                 return status;
@@ -412,7 +434,24 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
 
                                                             // CEO & COO → all statuses
                                                             if (normalizedRole === "CEO" || normalizedRole === "COO") {
-                                                                return statusOptions.map((option, index) => (
+                                                                let executiveOptions = statusOptions;
+
+                                                                if (persistedStatus === "Ready to ship") {
+                                                                    executiveOptions = [
+                                                                        "Ready to ship",
+                                                                        "Return From Delivery",
+                                                                        "Shipped",
+                                                                        "Invoice Rejected",
+                                                                    ];
+                                                                } else if (persistedStatus === "Return From Delivery") {
+                                                                    executiveOptions = [
+                                                                        "Return From Delivery",
+                                                                        "Ready to ship",
+                                                                        "Invoice Rejected",
+                                                                    ];
+                                                                }
+
+                                                                return executiveOptions.map((option, index) => (
                                                                     // <option key={index} value={option}>
                                                                     //     {option}
                                                                     // </option>
@@ -441,6 +480,17 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                                         filteredOptions = [
                                                                             "Pre Booked",
                                                                             "Waiting For Confirmation",
+                                                                        ];
+                                                                    } else if (baseStatus === "Ready to ship") {
+                                                                        filteredOptions = [
+                                                                            "Ready to ship",
+                                                                            "Return From Delivery",
+                                                                            "Shipped",
+                                                                        ];
+                                                                    } else if (baseStatus === "Return From Delivery") {
+                                                                        filteredOptions = [
+                                                                            "Return From Delivery",
+                                                                            "Ready to ship",
                                                                         ];
                                                                     } else {
                                                                         filteredOptions = statusOptions.slice(baseIndex, baseIndex + 2);
@@ -475,6 +525,26 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                     ) : null}
                                                 </div>
                                             </Col>
+
+
+                                            {formik.values.status === "Return From Delivery" && (
+                                                <div className="mt-3">
+                                                    <Label htmlFor="delivery_return_reason">
+                                                        DELIVERY RETURN REASON
+                                                    </Label>
+
+                                                    <Input
+                                                        type="textarea"
+                                                        name="delivery_return_reason"
+                                                        id="delivery_return_reason"
+                                                        className="form-control"
+                                                        placeholder="Enter delivery return reason"
+                                                        value={formik.values.delivery_return_reason}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                    />
+                                                </div>
+                                            )}
 
 
                                             <Col md={6}>

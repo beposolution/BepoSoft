@@ -413,6 +413,38 @@ const ChartSection = () => {
                             </Card>
                         </Col>
 
+                        {/* DGM */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                            <Card
+                                onClick={() => navigate("/daily/good/movment/")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#fff7f7",
+                                    borderLeft: "5px solid #ef4444"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Daily Goods Movement
+                                    </p>
+
+                                    <h2>DGM</h2>
+                                    <span>Check daily goods movement</span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
 
                         {/* OUT FOR DELIVERY */}
                         <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
@@ -582,39 +614,6 @@ const ChartSection = () => {
                                             {shippedToday}
                                         </strong>
                                     </span>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-
-                        {/* DGM */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
-                            <Card
-                                onClick={() => navigate("/daily/good/movment/")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#fff7f7",
-                                    borderLeft: "5px solid #ef4444"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Daily Goods Movement
-                                    </p>
-
-                                    <h2>DGM</h2>
-                                    <span>Check daily goods movement</span>
 
                                 </CardBody>
                             </Card>

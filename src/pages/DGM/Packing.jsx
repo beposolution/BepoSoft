@@ -62,6 +62,12 @@ const FormLayouts = () => {
     const getAvailableStatuses = () => {
         const currentStatus = orderData?.status;
 
+        if (currentStatus === "To Print") {
+            return [
+                "Packing under progress",
+            ];
+        }
+
         if (currentStatus === "Packing under progress") {
             return [
                 "Ready to ship",

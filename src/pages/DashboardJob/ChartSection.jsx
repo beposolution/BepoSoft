@@ -637,7 +637,7 @@ const ChartSection = () => {
                     </Row>
                 )}
 
-                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === 'CSO' || role === 'SD' || role === 'Marketing' || role === 'COO') && (
+                {(role === "ADMIN" || role === "Accounts / Accounting" || role === 'CSO' || role === 'SD' || role === 'Marketing' || role === 'COO') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}
                             onClick={() => navigate("/dashboard/todaysbill-details")}>
@@ -715,7 +715,7 @@ const ChartSection = () => {
                     </Col>
                 )}
 
-                {(role === "BDM" || role === 'CSO' || role === 'SD' || role === 'Marketing') && (
+                {(role === 'CSO' || role === 'SD' || role === 'Marketing') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}>
                             <Card className="mini-stats-wid">
@@ -774,7 +774,7 @@ const ChartSection = () => {
                     </Col>
                 )}
 
-                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === 'COO') && (
+                {(role === "ADMIN" || role === "Accounts / Accounting" || role === 'COO') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}
                             onClick={() => navigate("/dashboard/shipped-details")}>
@@ -803,7 +803,7 @@ const ChartSection = () => {
                     </Col>
                 )}
 
-                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === 'COO') && (
+                {(role === "ADMIN" || role === "Accounts / Accounting" || role === 'COO') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}
                             onClick={() => navigate("/perfoma/invoices/")}>
@@ -859,7 +859,7 @@ const ChartSection = () => {
                     </Col>
                 )}
 
-                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === 'COO') && (
+                {(role === "ADMIN" || role === "Accounts / Accounting" || role === 'COO') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}
                             onClick={() => navigate("/dashboard/grvwaitingforconfirmation-details")}>
@@ -893,7 +893,7 @@ const ChartSection = () => {
                     </Col>
                 )}
 
-                {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === 'COO') && (
+                {(role === "ADMIN" || role === "Accounts / Accounting" || role === 'COO') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}
                             onClick={() => navigate("/dashboard/waitingforapproval-details")}>
@@ -921,13 +921,13 @@ const ChartSection = () => {
                         </div>
                     </Col>
                 )}
-                {(role === "BDO") && (
+                {(role === "BDO" || role === "BDM") && (
                     <>
 
                         {/* Waiting For Approval */}
                         <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
                             <Card
-                                onClick={() => navigate("/orders/toprint")}
+                                onClick={() => navigate("/staff/order/list/")}
                                 className="h-100 border-0 shadow-sm"
                                 style={{
                                     cursor: "pointer",
@@ -985,7 +985,7 @@ const ChartSection = () => {
                         {/* Todays order */}
                         <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
                             <Card
-                                onClick={() => navigate("/orders/packed")}
+                                onClick={() => navigate("/staff/order/list/")}
                                 className="h-100 border-0 shadow-sm"
                                 style={{
                                     cursor: "pointer",
@@ -1042,7 +1042,7 @@ const ChartSection = () => {
                         {/* total */}
                         <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
                             <Card
-                                onClick={() => navigate("/orders/readytoship")}
+                                onClick={() => navigate("/staff/order/list/")}
                                 className="h-100 border-0 shadow-sm"
                                 style={{
                                     cursor: "pointer",

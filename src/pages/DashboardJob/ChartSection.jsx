@@ -1317,6 +1317,62 @@ const ChartSection = () => {
                             </Card>
                         </Col>
 
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                            <Card
+                                onClick={() => navigate("/orders/returnfromdelivery")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#fff7f7",
+                                    borderLeft: "5px solid #ef4444"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Pre Booked
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#991b1b",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {preBookedAll}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#fee2e2",
+                                            color: "#b91c1c",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today:&nbsp;
+                                        <strong style={{ fontWeight: "700" }}>
+                                            {preBookedToday}
+                                        </strong>
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
                         <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
                             <Card
                                 onClick={() => navigate("/perfoma/invoices/")}

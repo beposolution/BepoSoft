@@ -72,32 +72,100 @@ const ChartSection = () => {
         fetchOrderCount();
     }, []);
 
-    const toPrintToday =
-        orderCount?.today?.find(item => item.status === "To Print")?.count || 0;
-
-    const toPrintAll =
-        orderCount?.all?.find(item => item.status === "To Print")?.count || 0;
-
     const getTodayStatusCount = (status) =>
         orderCount?.today?.find(item => item.status === status)?.count || 0;
 
     const getAllStatusCount = (status) =>
         orderCount?.all?.find(item => item.status === status)?.count || 0;
 
-    const packedForDeliveryToday = getTodayStatusCount("Packed");
-    const packedForDeliveryAll = getAllStatusCount("Packed");
 
-    const outForDeliveryToday = getTodayStatusCount("Ready to ship");
-    const outForDeliveryAll = getAllStatusCount("Ready to ship");
+    // WAITING FOR APPROVAL
+    const waitingForApprovalToday =
+        getTodayStatusCount("Invoice Created");
 
+    const waitingForApprovalAll =
+        getAllStatusCount("Invoice Created");
+
+
+    // INVOICE APPROVED
+    const invoiceApprovedToday =
+        getTodayStatusCount("Invoice Approved");
+
+    const invoiceApprovedAll =
+        getAllStatusCount("Invoice Approved");
+
+
+    // PRE BOOKED
+    const preBookedToday =
+        getTodayStatusCount("Pre Booked");
+
+    const preBookedAll =
+        getAllStatusCount("Pre Booked");
+
+
+    // WAITING FOR CONFIRMATION
+    const waitingForConfirmationStatusToday =
+        getTodayStatusCount("Waiting For Confirmation");
+
+    const waitingForConfirmationStatusAll =
+        getAllStatusCount("Waiting For Confirmation");
+
+
+    // DELIVERY ORDER
+    const toPrintToday =
+        getTodayStatusCount("To Print");
+
+    const toPrintAll =
+        getAllStatusCount("To Print");
+
+
+    // PACKING UNDER PROGRESS
+    const packingUnderProgressToday =
+        getTodayStatusCount("Packing under progress");
+
+    const packingUnderProgressAll =
+        getAllStatusCount("Packing under progress");
+
+
+    // PACKED FOR DELIVERY
+    const packedForDeliveryToday =
+        getTodayStatusCount("Packed");
+
+    const packedForDeliveryAll =
+        getAllStatusCount("Packed");
+
+
+    // OUT FOR DELIVERY
+    const outForDeliveryToday =
+        getTodayStatusCount("Ready to ship");
+
+    const outForDeliveryAll =
+        getAllStatusCount("Ready to ship");
+
+
+    // RETURN FROM DELIVERY
     const returnFromDeliveryToday =
         getTodayStatusCount("Return From Delivery");
 
     const returnFromDeliveryAll =
         getAllStatusCount("Return From Delivery");
 
-    const shippedToday = getTodayStatusCount("Shipped");
-    const shippedAll = getAllStatusCount("Shipped");
+
+    // SHIPPED
+    const shippedToday =
+        getTodayStatusCount("Shipped");
+
+    const shippedAll =
+        getAllStatusCount("Shipped");
+
+
+    // INVOICE REJECTED
+    const invoiceRejectedToday =
+        getTodayStatusCount("Invoice Rejected");
+
+    const invoiceRejectedAll =
+        getAllStatusCount("Invoice Rejected");
+
 
     useEffect(() => {
         const fetchOrdersData = async () => {
@@ -310,6 +378,9 @@ const ChartSection = () => {
         <React.Fragment>
 
             <Row>
+
+                {/* warehouse & Warehouse Admin dashboard */}
+
                 {(role === "warehouse" || role === "Warehouse Admin") && (
                     <Row className="g-3 mb-3">
 
@@ -637,7 +708,778 @@ const ChartSection = () => {
                     </Row>
                 )}
 
-                {(role === "ADMIN" || role === "Accounts / Accounting" || role === 'CSO' || role === 'SD' || role === 'Marketing' || role === 'COO') && (
+                {/* ADMIN & Accounts / Accounting dashboard */}
+
+                {(role === "ADMIN" || role === "Accounts / Accounting" || role === "COO") && (
+                    <Row className="g-3 mb-3">
+
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/dashboard/todaysbill-details")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#f8fbff",
+                                    borderLeft: "5px solid #3b82f6"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Today's Bill
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#1e3a8a",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {allTodayOrdersCount}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#dbeafe",
+                                            color: "#1d4ed8",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today's Orders
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+                        {/* WAITING FOR APPROVAL */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/orders/invoicecreated")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#f8fbff",
+                                    borderLeft: "5px solid #3b82f6"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Waiting For Approval
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#1e3a8a",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {waitingForApprovalAll}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#dbeafe",
+                                            color: "#1d4ed8",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today:&nbsp;
+                                        <strong style={{ fontWeight: "700" }}>
+                                            {waitingForApprovalToday}
+                                        </strong>
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+
+                        {/* INVOICE APPROVED */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/orders/invoiceapproved")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#f5fdff",
+                                    borderLeft: "5px solid #06b6d4"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Invoice Approved
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#155e75",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {invoiceApprovedAll}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#cffafe",
+                                            color: "#0e7490",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today:&nbsp;
+                                        <strong style={{ fontWeight: "700" }}>
+                                            {invoiceApprovedToday}
+                                        </strong>
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+                        {/* Waiting For Confirmation */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/orders/waitingforconfirmation")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#fff7f7",
+                                    borderLeft: "5px solid #ef4444"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Waiting For Confirmation
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#155e75",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {waitingForConfirmationStatusAll}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#cffafe",
+                                            color: "#0e7490",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today:&nbsp;
+                                        <strong style={{ fontWeight: "700" }}>
+                                            {waitingForConfirmationStatusToday}
+                                        </strong>
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+
+                        {/* Delivery Order */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/orders/toprint")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#fffaf3",
+                                    borderLeft: "5px solid #f59e0b"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Delivery Order (DO)
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#92400e",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {toPrintAll}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#fef3c7",
+                                            color: "#b45309",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today:&nbsp;
+                                        <strong style={{ fontWeight: "700" }}>
+                                            {toPrintToday}
+                                        </strong>
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+                        {/* Packing Under Progress */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/orders/packingunderprogress")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#fffaf3",
+                                    borderLeft: "5px solid #f59e0b"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Packing Under Progress
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#92400e",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {packingUnderProgressAll}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#fef3c7",
+                                            color: "#b45309",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today:&nbsp;
+                                        <strong style={{ fontWeight: "700" }}>
+                                            {packingUnderProgressToday}
+                                        </strong>
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+
+                        {/* PACKED FOR DELIVERY */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/orders/packed")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#f5fdff",
+                                    borderLeft: "5px solid #06b6d4"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Packed For Delivery (PFD)
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#155e75",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {packedForDeliveryAll}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#cffafe",
+                                            color: "#0e7490",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today:&nbsp;
+                                        <strong style={{ fontWeight: "700" }}>
+                                            {packedForDeliveryToday}
+                                        </strong>
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+                        {/* DGM */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/daily/good/movment/")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#fff7f7",
+                                    borderLeft: "5px solid #ef4444"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Daily Goods Movement
+                                    </p>
+
+                                    <h2>DGM</h2>
+                                    <span>Check daily goods movement</span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+
+                        {/* OUT FOR DELIVERY */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/orders/readytoship")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#fffaf3",
+                                    borderLeft: "5px solid #f59e0b"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Out For Delivery (OFD)
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#92400e",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {outForDeliveryAll}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#fef3c7",
+                                            color: "#b45309",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today:&nbsp;
+                                        <strong style={{ fontWeight: "700" }}>
+                                            {outForDeliveryToday}
+                                        </strong>
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+
+                        {/* RETURN FROM DELIVERY */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/orders/returnfromdelivery")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#fff7f7",
+                                    borderLeft: "5px solid #ef4444"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Return From Delivery (RFD)
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#991b1b",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {returnFromDeliveryAll}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#fee2e2",
+                                            color: "#b91c1c",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today:&nbsp;
+                                        <strong style={{ fontWeight: "700" }}>
+                                            {returnFromDeliveryToday}
+                                        </strong>
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+
+                        {/* SHIPPED */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/orders/shipped")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#f5fff8",
+                                    borderLeft: "5px solid #22c55e"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Shipped
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#166534",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {shippedAll}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#dcfce7",
+                                            color: "#15803d",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today:&nbsp;
+                                        <strong style={{ fontWeight: "700" }}>
+                                            {shippedToday}
+                                        </strong>
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/perfoma/invoices/")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#f5fdff",
+                                    borderLeft: "5px solid #06b6d4"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Proforma Invoices
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#155e75",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {proformaCountAdmin}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#cffafe",
+                                            color: "#0e7490",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        View Proforma
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/beposoft/grv/view/")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#fff7f7",
+                                    borderLeft: "5px solid #ef4444"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Goods Return
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#991b1b",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {goodsReturn?.order || 0}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#fee2e2",
+                                            color: "#b91c1c",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        View Returns
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/dashboard/grvwaitingforconfirmation-details")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#fffaf3",
+                                    borderLeft: "5px solid #f59e0b"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        GRV Waiting for Confirmation
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#92400e",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {(grvWaitingForConfirmation?.order || 0)}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#fef3c7",
+                                            color: "#b45309",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        View Pending GRV
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+                    </Row>
+                )}
+
+                {(role === 'CSO' || role === 'SD' || role === 'Marketing') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}
                             onClick={() => navigate("/dashboard/todaysbill-details")}>
@@ -647,7 +1489,7 @@ const ChartSection = () => {
                                         <div className="flex-grow-1">
                                             <p className="text-muted fw-medium">Todays Bill</p>
                                             <h4 className="mb-0">
-                                                {role === "ADMIN" || role === "CEO" || role === 'COO'
+                                                {role === "CEO"
                                                     ? allTodayOrdersCount
                                                     : role === "CSO"
                                                         ? skatingAndCyclingTodayCount
@@ -747,180 +1589,6 @@ const ChartSection = () => {
                     </Col>
                 )}
 
-                {(role === "ADMIN" || role === "Accounts / Accounting" || role === 'COO') && (
-                    <Col lg={3} style={{ cursor: "pointer" }}
-                        onClick={() => navigate("/dashboard/waitingforconfirmation-details")}>
-                        <Card className="mini-stats-wid">
-                            <CardBody>
-                                <div className="d-flex">
-                                    <div className="flex-grow-1">
-                                        <p className="text-muted fw-medium">Waiting For Confirmation</p>
-                                        <h4 className="mb-0">{waitingForConfirmationToday}</h4>
-                                    </div>
-                                    <div className="flex-shrink-0 align-self-center">
-                                        {/* Optional Chart */}
-                                    </div>
-                                </div>
-                            </CardBody>
-                            <div className="card-body border-top py-3">
-                                <p className="mb-0">
-                                    <span className="badge badge-soft-success me-2">
-                                        {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{waitingForConfirmation?.percentageValue || 0} */}
-                                    </span>
-                                    {/* Increase last month */}
-                                </p>
-                            </div>
-                        </Card>
-                    </Col>
-                )}
-
-                {(role === "ADMIN" || role === "Accounts / Accounting" || role === 'COO') && (
-                    <Col lg={3}>
-                        <div style={{ cursor: "pointer" }}
-                            onClick={() => navigate("/dashboard/shipped-details")}>
-                            <Card className="mini-stats-wid">
-                                <CardBody>
-                                    <div className="d-flex">
-                                        <div className="flex-grow-1">
-                                            <p className="text-muted fw-medium">Shipped</p>
-                                            <h4 className="mb-0"> {role === "ADMIN" ? (shippedOrdersToday) : shippedOrdersTodayStaff}</h4>
-                                        </div>
-                                        <div className="flex-shrink-0 align-self-center">
-                                            {/* Optional Chart */}
-                                        </div>
-                                    </div>
-                                </CardBody>
-                                <div className="card-body border-top py-3">
-                                    <p className="mb-0">
-                                        <span className="badge badge-soft-success me-2">
-                                            {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{shipped?.percentageValue || 0} */}
-                                        </span>
-                                        {/* Increase last month */}
-                                    </p>
-                                </div>
-                            </Card>
-                        </div>
-                    </Col>
-                )}
-
-                {(role === "ADMIN" || role === "Accounts / Accounting" || role === 'COO') && (
-                    <Col lg={3}>
-                        <div style={{ cursor: "pointer" }}
-                            onClick={() => navigate("/perfoma/invoices/")}>
-                            <Card className="mini-stats-wid">
-                                <CardBody>
-                                    <div className="d-flex">
-                                        <div className="flex-grow-1">
-                                            <p className="text-muted fw-medium">Proforma Invoices</p>
-                                            <h4 className="mb-0">{role === "ADMIN" ? (proformaCountAdmin) : uniqueProformaCount}</h4>
-                                        </div>
-                                        <div className="flex-shrink-0 align-self-center">
-                                            {/* Optional Chart */}
-                                        </div>
-                                    </div>
-                                </CardBody>
-                                <div className="card-body border-top py-3">
-                                    <p className="mb-0">
-                                        <span className="badge badge-soft-success me-2">
-                                            {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{proformaInvoices?.percentageValue || 0} */}
-                                        </span>
-                                        {/* Increase last month */}
-                                    </p>
-                                </div>
-                            </Card>
-                        </div>
-                    </Col>
-                )}
-
-                {(role === "ADMIN" || role === "Accounts / Accounting" || role === 'COO') && (
-                    <Col lg={3} style={{ cursor: "pointer" }}
-                        onClick={() => navigate("/beposoft/grv/view/")}>
-                        <Card className="mini-stats-wid">
-                            <CardBody>
-                                <div className="d-flex">
-                                    <div className="flex-grow-1">
-                                        <p className="text-muted fw-medium">Goods Return</p>
-                                        <h4 className="mb-0">{goodsReturn?.order || 0}</h4>
-                                    </div>
-                                    <div className="flex-shrink-0 align-self-center">
-                                        {/* Optional Chart */}
-                                    </div>
-                                </div>
-                            </CardBody>
-                            <div className="card-body border-top py-3">
-                                <p className="mb-0">
-                                    <span className="badge badge-soft-success me-2">
-                                        {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{goodsReturn?.percentageValue || 0} */}
-                                    </span>
-                                    {/* Increase last month */}
-                                </p>
-                            </div>
-                        </Card>
-                    </Col>
-                )}
-
-                {(role === "ADMIN" || role === "Accounts / Accounting" || role === 'COO') && (
-                    <Col lg={3}>
-                        <div style={{ cursor: "pointer" }}
-                            onClick={() => navigate("/dashboard/grvwaitingforconfirmation-details")}>
-                            <Card className="mini-stats-wid">
-                                <CardBody>
-                                    <div className="d-flex">
-                                        <div className="flex-grow-1">
-                                            <p className="text-muted fw-medium">GRV waiting for confirmation</p>
-                                            <h4 className="mb-0">
-                                                {role === "ADMIN"
-                                                    ? (grvWaitingForConfirmation?.order)
-                                                    : (pendingGRVCount)}
-                                            </h4>
-
-                                        </div>
-                                        <div className="flex-shrink-0 align-self-center">
-                                            {/* Optional Chart */}
-                                        </div>
-                                    </div>
-                                </CardBody>
-                                <div className="card-body border-top py-3">
-                                    <p className="mb-0">
-                                        <span className="badge badge-soft-success me-2">
-                                            {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{grvWaitingForConfirmation?.percentageValue || 0} */}
-                                        </span>
-                                        {/* Increase last month */}
-                                    </p>
-                                </div>
-                            </Card>
-                        </div>
-                    </Col>
-                )}
-
-                {(role === "ADMIN" || role === "Accounts / Accounting" || role === 'COO') && (
-                    <Col lg={3}>
-                        <div style={{ cursor: "pointer" }}
-                            onClick={() => navigate("/dashboard/waitingforapproval-details")}>
-                            <Card className="mini-stats-wid">
-                                <CardBody>
-                                    <div className="d-flex">
-                                        <div className="flex-grow-1">
-                                            <p className="text-muted fw-medium">Waiting For Approval</p>
-                                            <h4 className="mb-0">{role === "ADMIN" ? (waitingForApproval?.order) : waitingForApprovalStaff}</h4>
-                                        </div>
-                                        <div className="flex-shrink-0 align-self-center">
-                                            {/* Optional Chart */}
-                                        </div>
-                                    </div>
-                                </CardBody>
-                                <div className="card-body border-top py-3">
-                                    <p className="mb-0">
-                                        <span className="badge badge-soft-success me-2">
-                                            {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i>{waitingForApproval?.percentageValue} */}
-                                        </span>
-                                        {/* Increase last month */}
-                                    </p>
-                                </div>
-                            </Card>
-                        </div>
-                    </Col>
-                )}
                 {(role === "BDO" || role === "BDM") && (
                     <>
 

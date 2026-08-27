@@ -23,6 +23,9 @@ const ChartSection = () => {
     const [grvCount, setGrvCount] = useState([]);
     const navigate = useNavigate();
     const [expense, setExpense] = useState([])
+    const [teamSummary, setTeamSummary] = useState(null);
+    const [teamLoading, setTeamLoading] = useState(false);
+    const [teamAttendance, setTeamAttendance] = useState([]);
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -44,13 +47,47 @@ const ChartSection = () => {
     }, []);
 
     useEffect(() => {
+        const fetchTeamAttendance = async () => {
+            try {
+                setTeamLoading(true);
+
+                const today = new Date().toISOString().split("T")[0];
+
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}staff/attendance/team/wise/count/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        params: {
+                            start_date: today,
+                            end_date: today,
+                        },
+                    }
+                );
+
+                setTeamAttendance(response.data.data || []);
+                setTeamSummary(response.data.summary || null);
+
+            } catch (error) {
+                toast.error("Failed to fetch team attendance");
+            } finally {
+                setTeamLoading(false);
+            }
+        };
+
+        if (token) {
+            fetchTeamAttendance();
+        }
+    }, [token]);
+
+    useEffect(() => {
         const fetchMyOrderData = async () => {
             try {
                 const response = await axios.get(`${import.meta.env.VITE_APP_KEY}my/order/summary/`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setMyOrderData(response?.data);
-                console.log("Order Count:", response?.data);
             } catch (error) {
                 toast.error('Error fetching order count:');
             }
@@ -1531,6 +1568,71 @@ const ChartSection = () => {
                                 </CardBody>
                             </Card>
                         </Col>
+
+                    </Row>
+                )}
+
+                {/* HR dashboard */}
+                {(role === "HR") && (
+                    <Row className="g-3 mb-3">
+
+                        <div className="p-3 border rounded-4 shadow-sm bg-white"  onClick={() => navigate("/staff-attendance/")}>
+                            <h5 className="text-center mb-3 text-primary fw-bold">
+                                Daily Staff Attendance Summary
+                            </h5>
+
+                            {teamLoading ? (
+                                <div className="text-center py-3">Loading...</div>
+                            ) : (
+                                <Row className="g-3">
+
+                                    <Col md={3}>
+                                        <div className="bg-light rounded p-3 text-center">
+                                            <small className="text-muted">Attendance %</small>
+                                            <h4 className="mb-0 text-success">
+                                                {teamSummary?.attendance_percentage || 0}
+                                            </h4>
+                                        </div>
+                                    </Col>
+
+                                    <Col md={3}>
+                                        <div className="bg-light rounded p-3 text-center">
+                                            <small className="text-muted">No. of Staffs</small>
+                                            <h4 className="mb-0 text-success">
+                                                {teamSummary?.total_members || 0}
+                                            </h4>
+                                        </div>
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <div className="bg-light rounded p-3 text-center">
+                                            <small className="text-muted">Present</small>
+                                            <h4 className="mb-0 text-success">
+                                                {teamSummary?.total_present || 0}
+                                            </h4>
+                                        </div>
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <div className="bg-light rounded p-3 text-center">
+                                            <small className="text-muted">Absent</small>
+                                            <h4 className="mb-0 text-danger">
+                                                {teamSummary?.total_absent || 0}
+                                            </h4>
+                                        </div>
+                                    </Col>
+
+                                    <Col md={2}>
+                                        <div className="bg-light rounded p-3 text-center">
+                                            <small className="text-muted">Half Day</small>
+                                            <h4 className="mb-0 text-warning">
+                                                {teamSummary?.total_half_day || 0}
+                                            </h4>
+                                        </div>
+                                    </Col>
+                                </Row>
+                            )}
+                        </div>
 
                     </Row>
                 )}

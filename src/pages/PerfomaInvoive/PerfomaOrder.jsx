@@ -160,7 +160,7 @@ const PerfomaOrder = () => {
                     manage_staff: orders.manage_staff,
                     billing_address: orders.billing_address?.id,
                     warehouses: orders.warehouse_id,
-                    total_amount: orders.total_amount,
+                    total_amount: finalAmount.toFixed(2),
                 };
 
                 // SAME PAYMENT LOGIC AS THE EXISTING ORDER CREATION PAGE

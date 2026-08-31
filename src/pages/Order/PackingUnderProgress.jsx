@@ -325,6 +325,7 @@ const PackingUnderProgress = () => {
                                                         <th>STATUS</th>
                                                         <th>BILL AMOUNT</th>
                                                         <th>CREATED AT</th>
+                                                        <th>UPDATED AT</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -409,6 +410,9 @@ const PackingUnderProgress = () => {
 
                                                                 <td style={rowStyle}>
                                                                     {order?.order_date?.substring(0, 10)}
+                                                                </td>
+                                                                <td style={rowStyle}>
+                                                                    {order?.updated_at?.substring(0, 10)}
                                                                 </td>
                                                             </tr>
                                                         );

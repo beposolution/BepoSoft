@@ -395,7 +395,11 @@ const PerfomaOrder = () => {
             return;
         }
 
-        if (!orders || !orders.perfoma_items || orders.perfoma_items.length === 0) {
+        if (
+            !orders ||
+            !orders.perfoma_items ||
+            orders.perfoma_items.length === 0
+        ) {
             toast.error("No items available to add to cart");
             return;
         }
@@ -404,25 +408,35 @@ const PerfomaOrder = () => {
 
         try {
             for (const item of orders.perfoma_items) {
+
                 const payload = {
                     product: item.product,
-                    quantity: item.quantity
+                    quantity: item.quantity,
+                    price: item.rate
                 };
 
-                const response = await fetch(`${import.meta.env.VITE_APP_KEY}cart/product/`, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(payload),
-                });
+                const response = await fetch(
+                    `${import.meta.env.VITE_APP_KEY}cart/product/excel/`,
+                    {
+                        method: "POST",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(payload),
+                    }
+                );
 
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => null);
+                    const errorData = await response
+                        .json()
+                        .catch(() => null);
+
                     throw new Error(
                         errorData?.message ||
-                        `Failed to add ${item.name || `product ID ${item.product}`} to cart`
+                        `Failed to add ${item.name ||
+                        `product ID ${item.product}`
+                        } to cart`
                     );
                 }
             }
@@ -431,9 +445,21 @@ const PerfomaOrder = () => {
 
             await fetchCartProducts();
 
-            toast.success("All items added to cart successfully!");
+            toast.success(
+                "All Proforma items added to cart successfully!"
+            );
+
         } catch (error) {
-            toast.error(error?.message || "Some items could not be added to cart");
+            console.error(
+                "Error adding Proforma items to cart:",
+                error
+            );
+
+            toast.error(
+                error?.message ||
+                "Some items could not be added to cart"
+            );
+
         } finally {
             setIsAddingItemsToCart(false);
         }

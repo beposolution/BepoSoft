@@ -18,6 +18,8 @@ const ChartSection = () => {
     const [userData, setUserData] = useState();
     const [orderCount, setOrderCount] = useState();
     const [myOrderData, setMyOrderData] = useState();
+    const [todayOrderData, setTodayOrderData] = useState({});
+    const [monthOrderData, setMonthOrderData] = useState({});
     const [proforma, setProforma] = useState([]);
     const [uniqueProforma, setUniqueProforma] = useState([]);
     const [grvCount, setGrvCount] = useState([]);
@@ -94,6 +96,117 @@ const ChartSection = () => {
         };
         fetchMyOrderData();
     }, []);
+
+    useEffect(() => {
+        const formatDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const day = String(date.getDate()).padStart(2, "0");
+
+            return `${year}-${month}-${day}`;
+        };
+
+        const fetchOrderData = async () => {
+            try {
+                const todayDate = new Date();
+
+                const today = formatDate(todayDate);
+
+                const monthStart = formatDate(
+                    new Date(
+                        todayDate.getFullYear(),
+                        todayDate.getMonth(),
+                        1
+                    )
+                );
+
+                // =====================================================
+                // TODAY STATUS COUNT
+                // =====================================================
+
+                const todayResponse = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}shipping/status/history/summary/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        params: {
+                            date: today,
+                        },
+                    }
+                );
+
+                setTodayOrderData(
+                    todayResponse?.data?.data?.status_counts || {}
+                );
+
+                // =====================================================
+                // CURRENT MONTH STATUS COUNT
+                // =====================================================
+
+                const monthResponse = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}shipping/status/history/summary/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        params: {
+                            start_date: monthStart,
+                            end_date: today,
+                        },
+                    }
+                );
+
+                setMonthOrderData(monthResponse?.data?.data?.status_counts || {});
+
+            } catch (error) {
+                console.error(
+                    "Error fetching order count:",
+                    error
+                );
+
+                toast.error("Error fetching order count");
+            }
+        };
+
+        if (token) {
+            fetchOrderData();
+        }
+    }, [token]);
+
+
+    const todayToPrint =
+        todayOrderData?.["To Print"] ?? 0;
+
+    const todayPackedForDelivery =
+        todayOrderData?.["Packed"] ?? 0;
+
+    const todayOutForDelivery =
+        todayOrderData?.["Ready to ship"] ?? 0;
+
+    const todayReturnFromDelivery =
+        todayOrderData?.["Return From Delivery"] ?? 0;
+
+    const todayShipped =
+        todayOrderData?.["Shipped"] ?? 0;
+
+
+    const toPrintThisMonth =
+        monthOrderData?.["To Print"] ?? 0;
+
+    const packedForDeliveryThisMonth =
+        monthOrderData?.["Packed"] ?? 0;
+
+    const outForDeliveryThisMonth =
+        monthOrderData?.["Ready to ship"] ?? 0;
+
+    const returnFromDeliveryThisMonth =
+        monthOrderData?.["Return From Delivery"] ?? 0;
+
+    const shippedThisMonth =
+        monthOrderData?.["Shipped"] ?? 0;
+
+
 
     useEffect(() => {
         const fetchOrderCount = async () => {
@@ -446,33 +559,46 @@ const ChartSection = () => {
                                         Delivery Order (DO)
                                     </p>
 
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#1e3a8a",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {toPrintAll}
-                                    </h2>
+                                    <div className="mb-3">
+                                        <span
+                                            style={{
+                                                color: "#64748b",
+                                                fontSize: "12px",
+                                                fontWeight: "600",
+                                            }}
+                                        >
+                                            This Month
+                                        </span>
 
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#dbeafe",
-                                            color: "#1d4ed8",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Today:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {toPrintToday}
-                                        </strong>
-                                    </span>
+                                        <h2
+                                            className="fw-bold mb-3"
+                                            style={{
+                                                color: "#1e3a8a",
+                                                fontSize: "30px"
+                                            }}
+                                        >
+                                            {toPrintThisMonth}
+                                        </h2>
+
+                                        <span
+                                            style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                backgroundColor: "#dbeafe",
+                                                color: "#1d4ed8",
+                                                padding: "7px 12px",
+                                                borderRadius: "8px",
+                                                fontSize: "13px",
+                                                fontWeight: "500"
+                                            }}
+                                        >
+                                            Today:&nbsp;
+                                            <strong style={{ fontWeight: "700" }}>
+                                                {todayToPrint}
+                                            </strong>
+                                        </span>
+
+                                    </div>
 
                                 </CardBody>
                             </Card>
@@ -504,33 +630,46 @@ const ChartSection = () => {
                                         Packed For Delivery (PFD)
                                     </p>
 
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#155e75",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {packedForDeliveryAll}
-                                    </h2>
+                                    <div className="mb-3">
+                                        <span
+                                            style={{
+                                                color: "#64748b",
+                                                fontSize: "12px",
+                                                fontWeight: "600",
+                                            }}
+                                        >
+                                            This Month
+                                        </span>
 
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#cffafe",
-                                            color: "#0e7490",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Today:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {packedForDeliveryToday}
-                                        </strong>
-                                    </span>
+                                        <h2
+                                            className="fw-bold mb-3"
+                                            style={{
+                                                color: "#155e75",
+                                                fontSize: "30px"
+                                            }}
+                                        >
+                                            {packedForDeliveryThisMonth}
+                                        </h2>
+
+                                        <span
+                                            style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                backgroundColor: "#cffafe",
+                                                color: "#0e7490",
+                                                padding: "7px 12px",
+                                                borderRadius: "8px",
+                                                fontSize: "13px",
+                                                fontWeight: "500"
+                                            }}
+                                        >
+                                            Today:&nbsp;
+                                            <strong style={{ fontWeight: "700" }}>
+                                                {todayPackedForDelivery}
+                                            </strong>
+                                        </span>
+
+                                    </div>
 
                                 </CardBody>
                             </Card>
@@ -594,33 +733,46 @@ const ChartSection = () => {
                                         Out For Delivery (OFD)
                                     </p>
 
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#92400e",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {outForDeliveryAll}
-                                    </h2>
+                                    <div className="mb-3">
+                                        <span
+                                            style={{
+                                                color: "#64748b",
+                                                fontSize: "12px",
+                                                fontWeight: "600",
+                                            }}
+                                        >
+                                            This Month
+                                        </span>
 
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#fef3c7",
-                                            color: "#b45309",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Today:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {outForDeliveryToday}
-                                        </strong>
-                                    </span>
+                                        <h2
+                                            className="fw-bold mb-3"
+                                            style={{
+                                                color: "#92400e",
+                                                fontSize: "30px"
+                                            }}
+                                        >
+                                            {outForDeliveryThisMonth}
+                                        </h2>
+
+                                        <span
+                                            style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                backgroundColor: "#fef3c7",
+                                                color: "#b45309",
+                                                padding: "7px 12px",
+                                                borderRadius: "8px",
+                                                fontSize: "13px",
+                                                fontWeight: "500"
+                                            }}
+                                        >
+                                            Today:&nbsp;
+                                            <strong style={{ fontWeight: "700" }}>
+                                                {todayOutForDelivery}
+                                            </strong>
+                                        </span>
+
+                                    </div>
 
                                 </CardBody>
                             </Card>
@@ -652,33 +804,46 @@ const ChartSection = () => {
                                         Return From Delivery (RFD)
                                     </p>
 
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#991b1b",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {returnFromDeliveryAll}
-                                    </h2>
+                                    <div className="mb-3">
+                                        <span
+                                            style={{
+                                                color: "#64748b",
+                                                fontSize: "12px",
+                                                fontWeight: "600",
+                                            }}
+                                        >
+                                            This Month
+                                        </span>
 
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#fee2e2",
-                                            color: "#b91c1c",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Today:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {returnFromDeliveryToday}
-                                        </strong>
-                                    </span>
+                                        <h2
+                                            className="fw-bold mb-3"
+                                            style={{
+                                                color: "#991b1b",
+                                                fontSize: "30px"
+                                            }}
+                                        >
+                                            {returnFromDeliveryThisMonth}
+                                        </h2>
+
+                                        <span
+                                            style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                backgroundColor: "#fee2e2",
+                                                color: "#b91c1c",
+                                                padding: "7px 12px",
+                                                borderRadius: "8px",
+                                                fontSize: "13px",
+                                                fontWeight: "500"
+                                            }}
+                                        >
+                                            Today:&nbsp;
+                                            <strong style={{ fontWeight: "700" }}>
+                                                {todayReturnFromDelivery}
+                                            </strong>
+                                        </span>
+
+                                    </div>
 
                                 </CardBody>
                             </Card>
@@ -710,33 +875,46 @@ const ChartSection = () => {
                                         Shipped
                                     </p>
 
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#166534",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {shippedAll}
-                                    </h2>
+                                    <div className="mb-3">
+                                        <span
+                                            style={{
+                                                color: "#64748b",
+                                                fontSize: "12px",
+                                                fontWeight: "600",
+                                            }}
+                                        >
+                                            This Month
+                                        </span>
 
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#dcfce7",
-                                            color: "#15803d",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Today:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {shippedToday}
-                                        </strong>
-                                    </span>
+                                        <h2
+                                            className="fw-bold mb-3"
+                                            style={{
+                                                color: "#166534",
+                                                fontSize: "30px"
+                                            }}
+                                        >
+                                            {shippedThisMonth}
+                                        </h2>
+
+                                        <span
+                                            style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                backgroundColor: "#dcfce7",
+                                                color: "#15803d",
+                                                padding: "7px 12px",
+                                                borderRadius: "8px",
+                                                fontSize: "13px",
+                                                fontWeight: "500"
+                                            }}
+                                        >
+                                            Today:&nbsp;
+                                            <strong style={{ fontWeight: "700" }}>
+                                                {todayShipped}
+                                            </strong>
+                                        </span>
+
+                                    </div>
 
                                 </CardBody>
                             </Card>
@@ -1576,7 +1754,7 @@ const ChartSection = () => {
                 {(role === "HR") && (
                     <Row className="g-3 mb-3">
 
-                        <div className="p-3 border rounded-4 shadow-sm bg-white"  onClick={() => navigate("/staff-attendance/")}>
+                        <div className="p-3 border rounded-4 shadow-sm bg-white" onClick={() => navigate("/staff-attendance/")}>
                             <h5 className="text-center mb-3 text-primary fw-bold">
                                 Daily Staff Attendance Summary
                             </h5>

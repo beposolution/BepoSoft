@@ -34,12 +34,14 @@ const BasicTable = () => {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [pageNumber, setPageNumber] = useState(1);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [imageModal, setImageModal] = useState(false);
     const [selectedImages, setSelectedImages] = useState([]);
 
     const token = localStorage.getItem("token");
     const debounceRef = useRef(null);
     const controllerRef = useRef(null);
+    const loadMoreRef = useRef(null);
 
     document.title = "Orders | Beposoft";
 
@@ -62,6 +64,10 @@ const BasicTable = () => {
         }
 
         debounceRef.current = setTimeout(() => {
+            setOrders([]);
+            setNextPage(null);
+            setPageNumber(1);
+
             fetchOrders();
         }, 400);
 
@@ -71,6 +77,35 @@ const BasicTable = () => {
             }
         };
     }, [token, role, searchTerm, selectedState, selectedStaff, startDate, endDate]);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const firstEntry = entries[0];
+
+                if (firstEntry.isIntersecting) {
+                    loadMoreOrders();
+                }
+            },
+            {
+                root: null,
+                rootMargin: "300px",
+                threshold: 0.1
+            }
+        );
+
+        const currentElement = loadMoreRef.current;
+
+        if (currentElement) {
+            observer.observe(currentElement);
+        }
+
+        return () => {
+            if (currentElement) {
+                observer.unobserve(currentElement);
+            }
+        };
+    }, [nextPage, loadingMore, loading]);
 
     const fetchStaff = async () => {
         try {
@@ -111,22 +146,33 @@ const BasicTable = () => {
         return `${baseUrl}orders/?${params.toString()}`;
     };
 
-    const fetchOrders = async (url = null) => {
+    const fetchOrders = async (url = null, append = false) => {
         try {
-            setLoading(true);
-            setError(null);
-
-            if (controllerRef.current) {
-                controllerRef.current.abort();
+            if (append) {
+                setLoadingMore(true);
+            } else {
+                setLoading(true);
             }
 
-            controllerRef.current = new AbortController();
+            setError(null);
+
+            if (!append) {
+                if (controllerRef.current) {
+                    controllerRef.current.abort();
+                }
+
+                controllerRef.current = new AbortController();
+            }
 
             const apiUrl = url || buildOrdersUrl();
 
             const response = await axios.get(apiUrl, {
-                headers: { Authorization: `Bearer ${token}` },
-                signal: controllerRef.current.signal
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+                ...(append && !controllerRef.current
+                    ? {}
+                    : { signal: controllerRef.current?.signal })
             });
 
             setNextPage(response.data.next);
@@ -146,7 +192,21 @@ const BasicTable = () => {
                 results = response.data.results.results;
             }
 
-            setOrders(results);
+            if (append) {
+                setOrders((prevOrders) => {
+                    const existingIds = new Set(
+                        prevOrders.map((order) => order.id)
+                    );
+
+                    const newOrders = results.filter(
+                        (order) => !existingIds.has(order.id)
+                    );
+
+                    return [...prevOrders, ...newOrders];
+                });
+            } else {
+                setOrders(results);
+            }
         } catch (error) {
             if (error.name === "CanceledError" || error.code === "ERR_CANCELED") {
                 return;
@@ -155,8 +215,20 @@ const BasicTable = () => {
             console.error("Error fetching orders:", error);
             setError("Error fetching orders data.");
         } finally {
-            setLoading(false);
+            if (append) {
+                setLoadingMore(false);
+            } else {
+                setLoading(false);
+            }
         }
+    };
+
+    const loadMoreOrders = () => {
+        if (!nextPage || loadingMore || loading) {
+            return;
+        }
+
+        fetchOrders(nextPage, true);
     };
 
     const getStatusStyle = (status) => {
@@ -365,13 +437,6 @@ const BasicTable = () => {
                             </FormGroup>
                         </Col>
 
-                        <Col md={1}>
-                            <FormGroup>
-                                <Button color="success" onClick={exportToExcel}>
-                                    Export to Excel
-                                </Button>
-                            </FormGroup>
-                        </Col>
                     </Row>
 
                     <Row>
@@ -412,7 +477,7 @@ const BasicTable = () => {
                                                             return (
                                                                 <tr key={order?.id}>
                                                                     <th scope="row" style={rowStyle}>
-                                                                        {((pageNumber - 1) * 50) + index + 1}
+                                                                        {index + 1}
                                                                     </th>
 
                                                                     <td style={rowStyle}>
@@ -517,21 +582,27 @@ const BasicTable = () => {
                                                     </tbody>
 
                                                 </Table>
+                                                <div
+                                                    ref={loadMoreRef}
+                                                    style={{
+                                                        width: "100%",
+                                                        minHeight: "60px",
+                                                        display: "flex",
+                                                        justifyContent: "center",
+                                                        alignItems: "center"
+                                                    }}
+                                                >
+                                                    {loadingMore && (
+                                                        <div>
+                                                            Loading more orders...
+                                                        </div>
+                                                    )}
 
-                                                <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
-                                                    <Button
-                                                        disabled={!prevPage}
-                                                        onClick={() => fetchOrders(prevPage)}
-                                                    >
-                                                        Previous
-                                                    </Button>
-
-                                                    <Button
-                                                        disabled={!nextPage}
-                                                        onClick={() => fetchOrders(nextPage)}
-                                                    >
-                                                        Next
-                                                    </Button>
+                                                    {!nextPage && orders.length > 0 && (
+                                                        <div className="text-muted">
+                                                            All orders loaded
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </>
                                         )}
@@ -577,6 +648,22 @@ const BasicTable = () => {
                     )}
                 </div>
             </div>
+            <Button
+                color="success"
+                onClick={exportToExcel}
+                style={{
+                    position: "fixed",
+                    right: "25px",
+                    bottom: "25px",
+                    zIndex: 9999,
+                    borderRadius: "50px",
+                    padding: "12px 20px",
+                    fontWeight: "600",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
+                }}
+            >
+                Excel
+            </Button>
         </React.Fragment>
     );
 };

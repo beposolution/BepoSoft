@@ -1815,7 +1815,7 @@ const ChartSection = () => {
                     </Row>
                 )}
 
-                {(role === 'CSO' || role === 'SD' || role === 'Marketing') && (
+                {(role === 'CSO' || role === 'Marketing') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}
                             onClick={() => navigate("/dashboard/todaysbill-details")}>
@@ -1848,7 +1848,7 @@ const ChartSection = () => {
                 )}
 
 
-                {(role === "CSO" || role === 'SD') && (
+                {(role === "CSO") && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}>
                             <Card className="mini-stats-wid">
@@ -1870,7 +1870,7 @@ const ChartSection = () => {
                         </div>
                     </Col>
                 )}
-                {(role === "CSO" || role === 'SD') && (
+                {(role === "CSO") && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}>
                             <Card className="mini-stats-wid">
@@ -1893,7 +1893,7 @@ const ChartSection = () => {
                     </Col>
                 )}
 
-                {(role === 'CSO' || role === 'SD' || role === 'Marketing') && (
+                {(role === 'CSO' || role === 'Marketing') && (
                     <Col lg={3}>
                         <div style={{ cursor: "pointer" }}>
                             <Card className="mini-stats-wid">
@@ -1925,286 +1925,528 @@ const ChartSection = () => {
                     </Col>
                 )}
 
-                {(role === "BDO" || role === "BDM") && (
+                {(role === "BDO" || role === "BDM" || role === "SD") && (
                     <>
+                        <style>{`
+                            .custom-dash-card {
+                                transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+                            }
+                            .custom-dash-card:hover {
+                                transform: translateY(-4px);
+                                box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.1) !important;
+                            }
+                        `}</style>
 
-                        {/* Waiting For Approval */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                        {/* PERFORMANCE OVERVIEW CARD */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} className="mb-4">
+                            <Card
+                                className="h-100 border-0 shadow-sm custom-dash-card"
+                                style={{
+                                    borderRadius: "16px",
+                                    background: "#ffffff",
+                                    border: "1px solid #e8edf3",
+                                    overflow: "hidden",
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4 d-flex flex-column justify-content-between">
+                                    {/* TOP HEADER */}
+                                    <div className="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                                        <div className="d-flex align-items-center gap-2">
+                                            <div
+                                                style={{
+                                                    width: "34px",
+                                                    height: "34px",
+                                                    borderRadius: "10px",
+                                                    background: "#eef2ff",
+                                                    color: "#4f46e5",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    fontWeight: "700",
+                                                    fontSize: "16px"
+                                                }}
+                                            >
+                                                <i className="bx bx-trophy"></i>
+                                            </div>
+                                            <div>
+                                                <span
+                                                    style={{
+                                                        fontSize: "10px",
+                                                        color: "#94a3b8",
+                                                        fontWeight: "700",
+                                                        letterSpacing: "0.8px",
+                                                        display: "block",
+                                                        lineHeight: "1"
+                                                    }}
+                                                >
+                                                    PERFORMANCE
+                                                </span>
+                                                <span
+                                                    style={{
+                                                        fontSize: "14px",
+                                                        color: "#334155",
+                                                        fontWeight: "700"
+                                                    }}
+                                                >
+                                                    Overview
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* METRICS ROW */}
+                                    <div className="d-flex align-items-center justify-content-between gap-2">
+                                        {/* RANK */}
+                                        <div
+                                            className="flex-fill p-2 rounded-3"
+                                            style={{ background: "#f8fafc", border: "1px solid #f1f5f9" }}
+                                        >
+                                            <div className="d-flex align-items-center justify-content-between mb-1">
+                                                <span style={{ fontSize: "11px", fontWeight: "700", color: "#64748b" }}>
+                                                    Rank
+                                                </span>
+                                                <div
+                                                    style={{
+                                                        width: "24px",
+                                                        height: "24px",
+                                                        borderRadius: "7px",
+                                                        background: "#eef2ff",
+                                                        color: "#4f46e5",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        fontWeight: "800",
+                                                        fontSize: "12px",
+                                                    }}
+                                                >
+                                                    #
+                                                </div>
+                                            </div>
+                                            <div style={{ fontSize: "22px", fontWeight: "800", color: "#4f46e5", lineHeight: "1.1" }}>
+                                                {myOrderData?.rank ?? 0}
+                                            </div>
+                                        </div>
+
+                                        {/* POINTS */}
+                                        <div
+                                            className="flex-fill p-2 rounded-3"
+                                            style={{ background: "#f8fafc", border: "1px solid #f1f5f9" }}
+                                        >
+                                            <div className="d-flex align-items-center justify-content-between mb-1">
+                                                <span style={{ fontSize: "11px", fontWeight: "700", color: "#64748b" }}>
+                                                    Points
+                                                </span>
+                                                <div
+                                                    style={{
+                                                        width: "24px",
+                                                        height: "24px",
+                                                        borderRadius: "7px",
+                                                        background: "#ecfdf5",
+                                                        color: "#059669",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        fontWeight: "800",
+                                                        fontSize: "12px",
+                                                    }}
+                                                >
+                                                    P
+                                                </div>
+                                            </div>
+                                            <div style={{ fontSize: "22px", fontWeight: "800", color: "#059669", lineHeight: "1.1" }}>
+                                                {myOrderData?.points ?? 0}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardBody>
+                                {/* BOTTOM ACCENT GRADIENT */}
+                                <div
+                                    style={{
+                                        height: "4px",
+                                        width: "100%",
+                                        background: "linear-gradient(90deg, #4f46e5 0%, #818cf8 48%, #10b981 52%, #34d399 100%)",
+                                    }}
+                                />
+                            </Card>
+                        </Col>
+
+                        {/* WAITING FOR APPROVAL */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} className="mb-4">
                             <Card
                                 onClick={() => navigate("/staff/order/list/")}
-                                className="h-100 border-0 shadow-sm"
+                                className="h-100 border-0 shadow-sm custom-dash-card"
                                 style={{
                                     cursor: "pointer",
                                     borderRadius: "16px",
                                     minHeight: "155px",
-                                    background: "#f8fbff",
-                                    borderLeft: "5px solid #3b82f6"
+                                    background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+                                    borderLeft: "5px solid #3b82f6",
+                                    borderTop: "1px solid #e2e8f0",
+                                    borderRight: "1px solid #e2e8f0",
+                                    borderBottom: "1px solid #e2e8f0",
                                 }}
                             >
-                                <CardBody className="p-3 p-md-4">
+                                <CardBody className="p-3 p-md-4 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <div className="d-flex align-items-center justify-content-between mb-2">
+                                            <p
+                                                className="fw-semibold mb-0"
+                                                style={{ color: "#475569", fontSize: "13px", letterSpacing: "0.3px" }}
+                                            >
+                                                Waiting For Approval
+                                            </p>
+                                            <div
+                                                style={{
+                                                    width: "34px",
+                                                    height: "34px",
+                                                    borderRadius: "10px",
+                                                    backgroundColor: "#dbeafe",
+                                                    color: "#1d4ed8",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    fontSize: "17px"
+                                                }}
+                                            >
+                                                <i className="bx bx-time-five"></i>
+                                            </div>
+                                        </div>
 
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Waiting For Approval
-                                    </p>
+                                        <h2
+                                            className="fw-bold mb-3"
+                                            style={{
+                                                color: "#1e3a8a",
+                                                fontSize: "26px",
+                                                letterSpacing: "-0.5px"
+                                            }}
+                                        >
+                                            ₹ {myOrderData?.invoice_created?.total_amount ? myOrderData.invoice_created.total_amount.toFixed(1) : "0.0"}
+                                        </h2>
+                                    </div>
 
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#1e3a8a",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        ₹ {myOrderData?.invoice_created?.total_amount?.toFixed(1)}
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#dbeafe",
-                                            color: "#1d4ed8",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Bills:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {myOrderData?.invoice_created?.count}
-                                        </strong>
-                                    </span>
-
+                                    <div>
+                                        <span
+                                            style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                backgroundColor: "#dbeafe",
+                                                color: "#1d4ed8",
+                                                padding: "6px 12px",
+                                                borderRadius: "8px",
+                                                fontSize: "12px",
+                                                fontWeight: "600"
+                                            }}
+                                        >
+                                            Bills:&nbsp;
+                                            <strong style={{ fontWeight: "700" }}>
+                                                {myOrderData?.invoice_created?.count ?? 0}
+                                            </strong>
+                                        </span>
+                                    </div>
                                 </CardBody>
                             </Card>
                         </Col>
 
-
-                        {/* Todays order */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                        {/* TODAYS BILLS */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} className="mb-4">
                             <Card
                                 onClick={() => navigate("/staff/order/list/")}
-                                className="h-100 border-0 shadow-sm"
+                                className="h-100 border-0 shadow-sm custom-dash-card"
                                 style={{
                                     cursor: "pointer",
                                     borderRadius: "16px",
                                     minHeight: "155px",
-                                    background: "#f5fdff",
-                                    borderLeft: "5px solid #06b6d4"
+                                    background: "linear-gradient(135deg, #ffffff 0%, #f5fdff 100%)",
+                                    borderLeft: "5px solid #06b6d4",
+                                    borderTop: "1px solid #e2e8f0",
+                                    borderRight: "1px solid #e2e8f0",
+                                    borderBottom: "1px solid #e2e8f0",
                                 }}
                             >
-                                <CardBody className="p-3 p-md-4">
+                                <CardBody className="p-3 p-md-4 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <div className="d-flex align-items-center justify-content-between mb-2">
+                                            <p
+                                                className="fw-semibold mb-0"
+                                                style={{ color: "#475569", fontSize: "13px", letterSpacing: "0.3px" }}
+                                            >
+                                                Todays Bills
+                                            </p>
+                                            <div
+                                                style={{
+                                                    width: "34px",
+                                                    height: "34px",
+                                                    borderRadius: "10px",
+                                                    backgroundColor: "#cffafe",
+                                                    color: "#0e7490",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    fontSize: "17px"
+                                                }}
+                                            >
+                                                <i className="bx bx-receipt"></i>
+                                            </div>
+                                        </div>
 
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Todays Bills
-                                    </p>
+                                        <h2
+                                            className="fw-bold mb-3"
+                                            style={{
+                                                color: "#155e75",
+                                                fontSize: "26px",
+                                                letterSpacing: "-0.5px"
+                                            }}
+                                        >
+                                            ₹ {myOrderData?.today_orders?.total_amount ? myOrderData.today_orders.total_amount.toFixed(1) : "0.0"}
+                                        </h2>
+                                    </div>
 
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#155e75",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        ₹ {myOrderData?.today_orders?.total_amount?.toFixed(1)}
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#cffafe",
-                                            color: "#0e7490",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Bills:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {myOrderData?.today_orders?.count}
-                                        </strong>
-                                    </span>
-
+                                    <div>
+                                        <span
+                                            style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                backgroundColor: "#cffafe",
+                                                color: "#0e7490",
+                                                padding: "6px 12px",
+                                                borderRadius: "8px",
+                                                fontSize: "12px",
+                                                fontWeight: "600"
+                                            }}
+                                        >
+                                            Bills:&nbsp;
+                                            <strong style={{ fontWeight: "700" }}>
+                                                {myOrderData?.today_orders?.count ?? 0}
+                                            </strong>
+                                        </span>
+                                    </div>
                                 </CardBody>
                             </Card>
                         </Col>
 
-                        {/* total */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                        {/* CURRENT MONTH BILLS */}
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} className="mb-4">
                             <Card
                                 onClick={() => navigate("/staff/order/list/")}
-                                className="h-100 border-0 shadow-sm"
+                                className="h-100 border-0 shadow-sm custom-dash-card"
                                 style={{
                                     cursor: "pointer",
                                     borderRadius: "16px",
                                     minHeight: "155px",
-                                    background: "#fffaf3",
-                                    borderLeft: "5px solid #f59e0b"
+                                    background: "linear-gradient(135deg, #ffffff 0%, #fffaf3 100%)",
+                                    borderLeft: "5px solid #f59e0b",
+                                    borderTop: "1px solid #e2e8f0",
+                                    borderRight: "1px solid #e2e8f0",
+                                    borderBottom: "1px solid #e2e8f0",
                                 }}
                             >
-                                <CardBody className="p-3 p-md-4">
+                                <CardBody className="p-3 p-md-4 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <div className="d-flex align-items-center justify-content-between mb-2">
+                                            <p
+                                                className="fw-semibold mb-0"
+                                                style={{ color: "#475569", fontSize: "13px", letterSpacing: "0.3px" }}
+                                            >
+                                                Current Month Bills
+                                            </p>
+                                            <div
+                                                style={{
+                                                    width: "34px",
+                                                    height: "34px",
+                                                    borderRadius: "10px",
+                                                    backgroundColor: "#fef3c7",
+                                                    color: "#b45309",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    fontSize: "17px"
+                                                }}
+                                            >
+                                                <i className="bx bx-calendar-event"></i>
+                                            </div>
+                                        </div>
 
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Total Bills
-                                    </p>
+                                        <h2
+                                            className="fw-bold mb-3"
+                                            style={{
+                                                color: "#92400e",
+                                                fontSize: "26px",
+                                                letterSpacing: "-0.5px"
+                                            }}
+                                        >
+                                            ₹ {myOrderData?.current_month_orders?.total_amount ? myOrderData.current_month_orders.total_amount.toFixed(1) : "0.0"}
+                                        </h2>
+                                    </div>
 
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#92400e",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        ₹ {myOrderData?.all_orders?.total_amount?.toFixed(1)}
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#fef3c7",
-                                            color: "#b45309",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Bills:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {myOrderData?.all_orders?.count}
-                                        </strong>
-                                    </span>
-
+                                    <div>
+                                        <span
+                                            style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                backgroundColor: "#fef3c7",
+                                                color: "#b45309",
+                                                padding: "6px 12px",
+                                                borderRadius: "8px",
+                                                fontSize: "12px",
+                                                fontWeight: "600"
+                                            }}
+                                        >
+                                            Bills:&nbsp;
+                                            <strong style={{ fontWeight: "700" }}>
+                                                {myOrderData?.current_month_orders?.count ?? 0}
+                                            </strong>
+                                        </span>
+                                    </div>
                                 </CardBody>
                             </Card>
                         </Col>
 
                         {/* ORDERS */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} className="mb-4">
                             <Card
                                 onClick={() => navigate("/staff/order/list/")}
-                                className="h-100 border-0 shadow-sm"
+                                className="h-100 border-0 shadow-sm custom-dash-card"
                                 style={{
                                     cursor: "pointer",
                                     borderRadius: "16px",
                                     minHeight: "155px",
-                                    background: "#f8fbff",
-                                    borderLeft: "5px solid #3b82f6"
+                                    background: "linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)",
+                                    borderLeft: "5px solid #6366f1",
+                                    borderTop: "1px solid #e2e8f0",
+                                    borderRight: "1px solid #e2e8f0",
+                                    borderBottom: "1px solid #e2e8f0",
                                 }}
                             >
-                                <CardBody className="p-3 p-md-4">
+                                <CardBody className="p-3 p-md-4 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <div className="d-flex align-items-center justify-content-between mb-2">
+                                            <p
+                                                className="fw-semibold mb-0"
+                                                style={{ color: "#475569", fontSize: "13px", letterSpacing: "0.3px" }}
+                                            >
+                                                ORDERS
+                                            </p>
+                                            <div
+                                                style={{
+                                                    width: "34px",
+                                                    height: "34px",
+                                                    borderRadius: "10px",
+                                                    backgroundColor: "#e0e7ff",
+                                                    color: "#4338ca",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    fontSize: "17px"
+                                                }}
+                                            >
+                                                <i className="bx bx-shopping-bag"></i>
+                                            </div>
+                                        </div>
 
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        ORDERS
-                                    </p>
+                                        <h2
+                                            className="fw-bold mb-3"
+                                            style={{
+                                                color: "#312e81",
+                                                fontSize: "26px",
+                                                letterSpacing: "-0.5px"
+                                            }}
+                                        >
+                                            Orders
+                                        </h2>
+                                    </div>
 
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#1e3a8a",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        Orders
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#dbeafe",
-                                            color: "#1d4ed8",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        View Orders
-                                    </span>
-
+                                    <div>
+                                        <span
+                                            style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: "4px",
+                                                backgroundColor: "#e0e7ff",
+                                                color: "#4338ca",
+                                                padding: "6px 12px",
+                                                borderRadius: "8px",
+                                                fontSize: "12px",
+                                                fontWeight: "600"
+                                            }}
+                                        >
+                                            View Orders <i className="bx bx-right-arrow-alt font-size-14"></i>
+                                        </span>
+                                    </div>
                                 </CardBody>
                             </Card>
                         </Col>
 
-
                         {/* CUSTOMERS */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} className="mb-4">
                             <Card
                                 onClick={() => navigate("/all/staff/customers/")}
-                                className="h-100 border-0 shadow-sm"
+                                className="h-100 border-0 shadow-sm custom-dash-card"
                                 style={{
                                     cursor: "pointer",
                                     borderRadius: "16px",
                                     minHeight: "155px",
-                                    background: "#f5fdff",
-                                    borderLeft: "5px solid #06b6d4"
+                                    background: "linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)",
+                                    borderLeft: "5px solid #10b981",
+                                    borderTop: "1px solid #e2e8f0",
+                                    borderRight: "1px solid #e2e8f0",
+                                    borderBottom: "1px solid #e2e8f0",
                                 }}
                             >
-                                <CardBody className="p-3 p-md-4">
+                                <CardBody className="p-3 p-md-4 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <div className="d-flex align-items-center justify-content-between mb-2">
+                                            <p
+                                                className="fw-semibold mb-0"
+                                                style={{ color: "#475569", fontSize: "13px", letterSpacing: "0.3px" }}
+                                            >
+                                                CUSTOMERS
+                                            </p>
+                                            <div
+                                                style={{
+                                                    width: "34px",
+                                                    height: "34px",
+                                                    borderRadius: "10px",
+                                                    backgroundColor: "#d1fae5",
+                                                    color: "#047857",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    fontSize: "17px"
+                                                }}
+                                            >
+                                                <i className="bx bx-group"></i>
+                                            </div>
+                                        </div>
 
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        CUSTOMERS
-                                    </p>
+                                        <h2
+                                            className="fw-bold mb-3"
+                                            style={{
+                                                color: "#064e3b",
+                                                fontSize: "26px",
+                                                letterSpacing: "-0.5px"
+                                            }}
+                                        >
+                                            Customers
+                                        </h2>
+                                    </div>
 
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#155e75",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        Customers
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#cffafe",
-                                            color: "#0e7490",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        View Customers
-                                    </span>
-
+                                    <div>
+                                        <span
+                                            style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: "4px",
+                                                backgroundColor: "#d1fae5",
+                                                color: "#047857",
+                                                padding: "6px 12px",
+                                                borderRadius: "8px",
+                                                fontSize: "12px",
+                                                fontWeight: "600"
+                                            }}
+                                        >
+                                            View Customers <i className="bx bx-right-arrow-alt font-size-14"></i>
+                                        </span>
+                                    </div>
                                 </CardBody>
                             </Card>
                         </Col>

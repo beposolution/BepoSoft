@@ -474,6 +474,8 @@ import FamilyDateSummary from "../pages/Home/FamilyDateSummary";
 import FamilyStaffSummary from "../pages/Home/FamilyStaffSummary";
 import StaffOrderSummary from "../pages/Home/StaffOrderSummary";
 import ReturnFromDelivery from "../pages/Order/ReturnFromDelivery";
+import ProductPointSystemForm from "../pages/PointSystem/ProductPointSystemForm";
+import ProductPointSystem from "../pages/PointSystem/ProductPointSystem";
 
 
 
@@ -830,6 +832,10 @@ const authProtectedRoutes = [
   { path: "/delivery/:date/reports/", component: <DeliveryReportsDeliverdOrdes /> },
   { path: "/product/sold/report/", component: <ProductSalesReport /> },
   { path: "/division/wise/report/", component: <DivisionWiseReport /> },
+
+  // point system
+  { path: "/add/point/", component: <ProductPointSystemForm /> },
+  { path: "/view/point/", component: <ProductPointSystem /> },
 
   //   //Blog
   { path: "/blog-list", component: <BlogList /> },

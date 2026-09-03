@@ -781,7 +781,6 @@ const SidebarContent = (props) => {
             ) : null}
 
 
-
             {/* {role === 'ADMIN' || role === 'ACCOUNTS' || role === 'Warehouse Admin' ? (
 
 
@@ -1401,6 +1400,19 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/district/view/">{props.t("District")}</Link>
                   </li>
+                </ul>
+              </li>
+            ) : null}
+
+            {role === 'ADMIN' || role === 'Accounts / Accounting' || role === 'COO' || role === 'CEO' ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("Point System")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li><Link to="/add/point/">{props.t("Add Point")}</Link></li>
+                  <li><Link to="/view/point/">{props.t("View Point")}</Link></li>
                 </ul>
               </li>
             ) : null}

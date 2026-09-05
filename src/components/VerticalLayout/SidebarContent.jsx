@@ -1417,6 +1417,19 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
+            {/* {role === 'ADMIN' || role === 'Accounts / Accounting' || role === 'COO' || role === 'CEO' ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaUsers size={20} style={{ marginRight: '8px' }} />
+                  <span>{props.t("Vehicle")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
+                  <li><Link to="/add/vehicle/">{props.t("Add Vehicle")}</Link></li>
+                  <li><Link to="/vehicle/km/">{props.t("Vehicle KM Report")}</Link></li>
+                </ul>
+              </li>
+            ) : null} */}
+
             {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
               <li>
                 <Link to="#" >

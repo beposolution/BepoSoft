@@ -65,11 +65,13 @@ const FormLayouts = () => {
         if (currentStatus === "To Print") {
             return [
                 "Packing under progress",
+                "Packed",
             ];
         }
 
         if (currentStatus === "Packing under progress") {
             return [
+                "Packed",
                 "Ready to ship",
             ];
         }

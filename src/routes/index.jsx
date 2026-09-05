@@ -476,6 +476,8 @@ import StaffOrderSummary from "../pages/Home/StaffOrderSummary";
 import ReturnFromDelivery from "../pages/Order/ReturnFromDelivery";
 import ProductPointSystemForm from "../pages/PointSystem/ProductPointSystemForm";
 import ProductPointSystem from "../pages/PointSystem/ProductPointSystem";
+import AddVehicle from "../pages/Vehicle/AddVehicle";
+import VehicleKMEntry from "../pages/Vehicle/VehicleKMEntry";
 
 
 
@@ -836,6 +838,10 @@ const authProtectedRoutes = [
   // point system
   { path: "/add/point/", component: <ProductPointSystemForm /> },
   { path: "/view/point/", component: <ProductPointSystem /> },
+
+  // vehicle report
+  { path: "/add/vehicle/", component: <AddVehicle /> },
+  { path: "/vehicle/km/", component: <VehicleKMEntry /> },
 
   //   //Blog
   { path: "/blog-list", component: <BlogList /> },

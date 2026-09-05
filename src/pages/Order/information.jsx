@@ -269,7 +269,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                 "Pre Booked",
                 "Waiting For Confirmation",
                 "To Print",
-                'Packing under progress',
+                // 'Packing under progress',
                 'Packed',
                 'Ready to ship',
                 'Return From Delivery',

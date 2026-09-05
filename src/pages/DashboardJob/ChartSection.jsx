@@ -1212,7 +1212,7 @@ const ChartSection = () => {
                         </Col>
 
                         {/* Packing Under Progress */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                        {/* <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
                             <Card
                                 onClick={() => navigate("/orders/packingunderprogress")}
                                 className="h-100 border-0 shadow-sm"
@@ -1266,7 +1266,7 @@ const ChartSection = () => {
 
                                 </CardBody>
                             </Card>
-                        </Col>
+                        </Col> */}
 
 
                         {/* PACKED FOR DELIVERY */}

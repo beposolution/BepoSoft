@@ -239,8 +239,8 @@ const BasicTable = () => {
                 return { color: "red", fontWeight: "bold" };
             case "Waiting For Confirmation":
                 return { color: "orange", fontWeight: "bold" };
-            case "Packing under progress":
-                return { color: "purple", fontWeight: "bold" };
+            // case "Packing under progress":
+            //     return { color: "purple", fontWeight: "bold" };
             case "Invoice Created":
                 return { color: "blue", fontWeight: "bold" };
             default:
@@ -373,7 +373,7 @@ const BasicTable = () => {
                                         "Pre Booked",
                                         "Waiting For Confirmation",
                                         "To Print",
-                                        "Packing under progress",
+                                        // "Packing under progress",
                                         "Packed",
                                         "Return From Delivery",
                                         "Ready to ship",

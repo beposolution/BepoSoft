@@ -289,7 +289,7 @@ const RefundReceiptList = () => {
                                                         <th>Customer</th>
                                                         <th>Bank</th>
                                                         <th>Created By</th>
-                                                        {["ADMIN", "CEO", "COO"].includes(role) && (
+                                                        {["ADMIN", "CEO", "COO", "Accounts / Accounting"].includes(role) && (
                                                             <th>Action</th>
                                                         )}
                                                     </tr>
@@ -305,7 +305,7 @@ const RefundReceiptList = () => {
                                                             <td>{item.customer_name}</td>
                                                             <td>{item.bank_name}</td>
                                                             <td>{item.created_name}</td>
-                                                            {["ADMIN", "CEO", "COO"].includes(role) && (
+                                                            {["ADMIN", "CEO", "COO", "Accounts / Accounting"].includes(role) && (
                                                                 <td>
                                                                     <Button
                                                                         size="sm"

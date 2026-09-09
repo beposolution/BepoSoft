@@ -539,7 +539,7 @@ const OrderReceiptList = () => {
                                                         <th>Customer</th>
                                                         <th>Bank</th>
                                                         <th>Created By</th>
-                                                        {["ADMIN", "CEO", "COO"].includes(role) && (
+                                                        {["ADMIN", "CEO", "COO","Accounts / Accounting"].includes(role) && (
                                                             <th>Actions</th>
                                                         )}
                                                     </tr>
@@ -559,7 +559,7 @@ const OrderReceiptList = () => {
                                                                 <td>{item.customer_name}</td>
                                                                 <td>{item.bank_name}</td>
                                                                 <td>{item.created_by_name}</td>
-                                                                {["ADMIN", "CEO", "COO"].includes(role) && (
+                                                                {["ADMIN", "CEO", "COO", "Accounts / Accounting"].includes(role) && (
                                                                     <td>
                                                                         <button
                                                                             className="btn btn-primary btn-sm"

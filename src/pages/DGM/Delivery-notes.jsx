@@ -107,7 +107,7 @@ const BasicTable = () => {
             if (role === "Warehouse Admin") {
                 const warehouseStatuses = [
                     "To Print",
-                    "Packing under progress",
+                    // "Packing under progress",
                     "Packed",
                     "Ready to ship",
                     "Return From Delivery",
@@ -147,7 +147,7 @@ const BasicTable = () => {
 
     const statusOptions = [
         "To Print",
-        "Packing under progress",
+        // "Packing under progress",
         "Packed",
         "Return From Delivery",
         "Ready to ship",
@@ -234,15 +234,15 @@ const BasicTable = () => {
                     },
                 };
 
-            case "Packing under progress":
-                return {
-                    label: "Packing Under Progress",
-                    style: {
-                        color: "#7c3aed",
-                        backgroundColor: "#f5f3ff",
-                        border: "1px solid #ddd6fe",
-                    },
-                };
+            // case "Packing under progress":
+            //     return {
+            //         label: "Packing Under Progress",
+            //         style: {
+            //             color: "#7c3aed",
+            //             backgroundColor: "#f5f3ff",
+            //             border: "1px solid #ddd6fe",
+            //         },
+            //     };
 
             case "Packed":
                 return {

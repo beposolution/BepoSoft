@@ -265,7 +265,7 @@ const CandidateSection = () => {
         },
     ];
 
-    const allowedRoles = ["BDM", "BDO", "SD"];
+    const allowedRoles = ["BDM", "BDO"];
 
     if (!allowedRoles.includes(role)) {
         return null;

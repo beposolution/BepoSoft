@@ -1815,115 +1815,292 @@ const ChartSection = () => {
                     </Row>
                 )}
 
-                {(role === 'CSO' || role === 'Marketing') && (
-                    <Col lg={3}>
-                        <div style={{ cursor: "pointer" }}
-                            onClick={() => navigate("/dashboard/todaysbill-details")}>
-                            <Card className="mini-stats-wid">
-                                <CardBody>
-                                    <div className="d-flex">
-                                        <div className="flex-grow-1">
-                                            <p className="text-muted fw-medium">Todays Bill</p>
-                                            <h4 className="mb-0">
-                                                {role === "CEO"
-                                                    ? allTodayOrdersCount
-                                                    : role === "CSO"
-                                                        ? skatingAndCyclingTodayCount
-                                                        : userFamilyTodayOrderCount}
-                                            </h4>
+                {(role === 'Marketing') && (
+                    <Row>
+                        <Col lg={3}>
+                            <div style={{ cursor: "pointer" }}
+                                onClick={() => navigate("/dashboard/todaysbill-details")}>
+                                <Card className="mini-stats-wid">
+                                    <CardBody>
+                                        <div className="d-flex">
+                                            <div className="flex-grow-1">
+                                                <p className="text-muted fw-medium">Todays Bill</p>
+                                                <h4 className="mb-0">
+                                                    {role === "CEO"
+                                                        ? allTodayOrdersCount
+                                                        : role === "CSO"
+                                                            ? skatingAndCyclingTodayCount
+                                                            : userFamilyTodayOrderCount}
+                                                </h4>
+                                            </div>
                                         </div>
+                                    </CardBody>
+                                    <div className="card-body border-top py-3">
+                                        <p className="mb-0">
+                                            <span className="badge badge-soft-success me-2">
+                                                {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i> {todayBills?.percentageValue} */}
+                                            </span>
+                                            {/* Increase last month */}
+                                        </p>
                                     </div>
-                                </CardBody>
-                                <div className="card-body border-top py-3">
-                                    <p className="mb-0">
-                                        <span className="badge badge-soft-success me-2">
-                                            {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i> {todayBills?.percentageValue} */}
-                                        </span>
-                                        {/* Increase last month */}
+                                </Card>
+                            </div>
+                        </Col>
+                        <Col lg={3}>
+                            <div style={{ cursor: "pointer" }}>
+                                <Card className="mini-stats-wid">
+                                    <CardBody>
+                                        <div className="d-flex">
+                                            <div className="flex-grow-1">
+                                                <p className="text-muted fw-medium">Todays Total Volume</p>
+                                                <h4>
+                                                    ₹ {role === "CSO"
+                                                        ? totalAmountSkatingAndCyclingToday
+                                                        : totalAmountForCurrentUserFamilyToday}
+                                                </h4>
+                                            </div>
+                                            <div className="flex-shrink-0 align-self-center">
+                                                {/* Optional Chart */}
+                                            </div>
+                                        </div>
+                                    </CardBody>
+                                    <div className="card-body border-top py-3">
+                                        <p className="mb-0">
+                                            <span className="badge badge-soft-success me-2">
+                                                {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i> {todayBills?.percentageValue} */}
+                                            </span>
+                                            {/* Increase last month */}
+                                        </p>
+                                    </div>
+                                </Card>
+                            </div>
+                        </Col>
+                    </Row>
+                )}
+
+
+                {role === "CSO" && (
+                    <Row className="g-3 mb-3">
+
+                        {/* TODAY'S BILL */}
+                        <Col xs={12} sm={6} lg={3}>
+                            <Card
+                                onClick={() => navigate("/dashboard/todaysbill-details")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "160px",
+                                    background: "#f8fbff",
+                                    borderLeft: "5px solid #3b82f6",
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px",
+                                        }}
+                                    >
+                                        Today's Bill
                                     </p>
-                                </div>
+
+                                    <h2
+                                        className="fw-bold mb-0"
+                                        style={{
+                                            color: "#1e3a8a",
+                                            fontSize: "30px",
+                                        }}
+                                    >
+                                        {role === "CEO"
+                                            ? allTodayOrdersCount
+                                            : role === "CSO"
+                                                ? skatingAndCyclingTodayCount
+                                                : userFamilyTodayOrderCount}
+                                    </h2>
+                                </CardBody>
                             </Card>
-                        </div>
-                    </Col>
-                )}
+                        </Col>
 
 
-                {(role === "CSO") && (
-                    <Col lg={3}>
-                        <div style={{ cursor: "pointer" }}>
-                            <Card className="mini-stats-wid">
-                                <CardBody>
-                                    <div className="d-flex">
-                                        <div className="flex-grow-1">
-                                            <p className="text-muted fw-medium">SKATING</p>
-                                            <h5>Todays Bill: <strong> {skatingTodayCount}</strong> </h5>
-                                            <h5>Todays Volume: ₹ <strong> {totalSkatingTodayAmount?.toFixed(2)}</strong> </h5>
-                                        </div>
-                                        <div className="flex-shrink-0 align-self-center">
-                                            {/* Optional Chart */}
-                                        </div>
-                                    </div>
-                                </CardBody>
-                                <div className="card-body border-top py-3">
-                                </div>
-                            </Card>
-                        </div>
-                    </Col>
-                )}
-                {(role === "CSO") && (
-                    <Col lg={3}>
-                        <div style={{ cursor: "pointer" }}>
-                            <Card className="mini-stats-wid">
-                                <CardBody>
-                                    <div className="d-flex">
-                                        <div className="flex-grow-1">
-                                            <p className="text-muted fw-medium">CYCLING</p>
-                                            <h5>Todays Bill: <strong> {cyclingTodayCount}</strong> </h5>
-                                            <h5>Todays Volume: ₹ <strong> {totalCyclingTodayAmount?.toFixed(2)}</strong> </h5>
-                                        </div>
-                                        <div className="flex-shrink-0 align-self-center">
-                                            {/* Optional Chart */}
-                                        </div>
-                                    </div>
-                                </CardBody>
-                                <div className="card-body border-top py-3">
-                                </div>
-                            </Card>
-                        </div>
-                    </Col>
-                )}
-
-                {(role === 'CSO' || role === 'Marketing') && (
-                    <Col lg={3}>
-                        <div style={{ cursor: "pointer" }}>
-                            <Card className="mini-stats-wid">
-                                <CardBody>
-                                    <div className="d-flex">
-                                        <div className="flex-grow-1">
-                                            <p className="text-muted fw-medium">Todays Total Volume</p>
-                                            <h4>
-                                                ₹ {role === "CSO"
-                                                    ? totalAmountSkatingAndCyclingToday
-                                                    : totalAmountForCurrentUserFamilyToday}
-                                            </h4>
-                                        </div>
-                                        <div className="flex-shrink-0 align-self-center">
-                                            {/* Optional Chart */}
-                                        </div>
-                                    </div>
-                                </CardBody>
-                                <div className="card-body border-top py-3">
-                                    <p className="mb-0">
-                                        <span className="badge badge-soft-success me-2">
-                                            {/* <i className="bx bx-trending-up align-bottom me-1 text-success"></i> {todayBills?.percentageValue} */}
-                                        </span>
-                                        {/* Increase last month */}
+                        {/* SKATING */}
+                        <Col xs={12} sm={6} lg={3}>
+                            <Card
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    borderRadius: "16px",
+                                    minHeight: "160px",
+                                    background: "#f5fdff",
+                                    borderLeft: "5px solid #06b6d4",
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+                                    <p
+                                        className="fw-semibold mb-3"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px",
+                                        }}
+                                    >
+                                        SKATING
                                     </p>
-                                </div>
+
+                                    <div className="mb-2">
+                                        <span
+                                            style={{
+                                                color: "#64748b",
+                                                fontSize: "12px",
+                                                fontWeight: "600",
+                                            }}
+                                        >
+                                            Today's Bill
+                                        </span>
+
+                                        <h4
+                                            className="fw-bold mb-0"
+                                            style={{
+                                                color: "#155e75",
+                                            }}
+                                        >
+                                            {skatingTodayCount}
+                                        </h4>
+                                    </div>
+
+                                    <div>
+                                        <span
+                                            style={{
+                                                color: "#64748b",
+                                                fontSize: "12px",
+                                                fontWeight: "600",
+                                            }}
+                                        >
+                                            Today's Volume
+                                        </span>
+
+                                        <h5
+                                            className="fw-bold mb-0"
+                                            style={{
+                                                color: "#155e75",
+                                            }}
+                                        >
+                                            ₹ {totalSkatingTodayAmount?.toFixed(2)}
+                                        </h5>
+                                    </div>
+                                </CardBody>
                             </Card>
-                        </div>
-                    </Col>
+                        </Col>
+
+
+                        {/* CYCLING */}
+                        <Col xs={12} sm={6} lg={3}>
+                            <Card
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    borderRadius: "16px",
+                                    minHeight: "160px",
+                                    background: "#fffaf3",
+                                    borderLeft: "5px solid #f59e0b",
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+                                    <p
+                                        className="fw-semibold mb-3"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px",
+                                        }}
+                                    >
+                                        CYCLING
+                                    </p>
+
+                                    <div className="mb-2">
+                                        <span
+                                            style={{
+                                                color: "#64748b",
+                                                fontSize: "12px",
+                                                fontWeight: "600",
+                                            }}
+                                        >
+                                            Today's Bill
+                                        </span>
+
+                                        <h4
+                                            className="fw-bold mb-0"
+                                            style={{
+                                                color: "#92400e",
+                                            }}
+                                        >
+                                            {cyclingTodayCount}
+                                        </h4>
+                                    </div>
+
+                                    <div>
+                                        <span
+                                            style={{
+                                                color: "#64748b",
+                                                fontSize: "12px",
+                                                fontWeight: "600",
+                                            }}
+                                        >
+                                            Today's Volume
+                                        </span>
+
+                                        <h5
+                                            className="fw-bold mb-0"
+                                            style={{
+                                                color: "#92400e",
+                                            }}
+                                        >
+                                            ₹ {totalCyclingTodayAmount?.toFixed(2)}
+                                        </h5>
+                                    </div>
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+
+                        {/* TODAY'S TOTAL VOLUME */}
+                        <Col xs={12} sm={6} lg={3}>
+                            <Card
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    borderRadius: "16px",
+                                    minHeight: "160px",
+                                    background: "#f5fff8",
+                                    borderLeft: "5px solid #22c55e",
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px",
+                                        }}
+                                    >
+                                        Today's Total Volume
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-0"
+                                        style={{
+                                            color: "#166534",
+                                            fontSize: "27px",
+                                        }}
+                                    >
+                                        ₹{" "}
+                                        {role === "CSO"
+                                            ? totalAmountSkatingAndCyclingToday
+                                            : totalAmountForCurrentUserFamilyToday}
+                                    </h2>
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+                    </Row>
                 )}
+                
 
                 {(role === "BDO" || role === "BDM" || role === "SD") && (
                     <>

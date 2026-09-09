@@ -684,7 +684,7 @@ const CommissionReceiptList = () => {
                             <th>Bank</th>
                             <th>Created By</th>
                             <th>Created At</th>
-                            {["ADMIN", "CEO", "COO"].includes(role) && (
+                            {["ADMIN", "CEO", "COO", "Accounts / Accounting"].includes(role) && (
                               <th>Actions</th>
                             )}
                           </tr>
@@ -714,7 +714,7 @@ const CommissionReceiptList = () => {
                                     : "-"}
                                 </td>
 
-                                {["ADMIN", "CEO", "COO"].includes(role) && (
+                                {["ADMIN", "CEO", "COO", "Accounts / Accounting"].includes(role) && (
                                   <td>
                                     <Button
                                       color="primary"

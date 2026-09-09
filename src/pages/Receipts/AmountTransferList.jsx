@@ -398,7 +398,7 @@ const AmountTransferList = () => {
                                                         <th>Date</th>
                                                         <th>Note</th>
                                                         <th>Created By</th>
-                                                        {["ADMIN", "CEO", "COO"].includes(role) && (
+                                                        {["ADMIN", "CEO", "COO", "Accounts / Accounting"].includes(role) && (
                                                             <th>Action</th>
                                                         )}
                                                     </tr>
@@ -413,7 +413,7 @@ const AmountTransferList = () => {
                                                             <td>{item.date}</td>
                                                             <td>{item.note}</td>
                                                             <td>{item.created_by_name}</td>
-                                                            {["ADMIN", "CEO", "COO"].includes(role) && (
+                                                            {["ADMIN", "CEO", "COO", "Accounts / Accounting"].includes(role) && (
                                                                 <td>
                                                                     <Button size="sm" color="primary" onClick={() => handleView(item.id)}>
                                                                         View

@@ -397,7 +397,7 @@ const CODTransferList = () => {
                                                         <th>Created By</th>
                                                         <th>Payment Receipt</th>
                                                         <th>Transaction ID</th>
-                                                        {["ADMIN", "CEO", "COO"].includes(role) && (
+                                                        {["ADMIN", "CEO", "COO", "Accounts / Accounting"].includes(role) && (
                                                             <th>Actions</th>
                                                         )}
                                                     </tr>
@@ -424,7 +424,7 @@ const CODTransferList = () => {
                                                                 <td>{item.created_by_name || ""}</td>
                                                                 <td>{item.payment_receipt || ""}</td>
                                                                 <td>{item.transactionID || ""}</td>
-                                                                {["ADMIN", "CEO", "COO"].includes(role) && (
+                                                                {["ADMIN", "CEO", "COO", "Accounts / Accounting"].includes(role) && (
                                                                     <td>
                                                                         <Button
                                                                             color="primary"

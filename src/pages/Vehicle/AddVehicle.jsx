@@ -30,17 +30,38 @@ const AddVehicle = () => {
     const baseUrl = import.meta.env.VITE_APP_KEY;
 
     const [vehicles, setVehicles] = useState([]);
-
     const [loading, setLoading] = useState(false);
     const [tableLoading, setTableLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [viewLoadingId, setViewLoadingId] = useState(null);
-
     const [pageError, setPageError] = useState("");
     const [searchText, setSearchText] = useState("");
-
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedVehicleId, setSelectedVehicleId] = useState(null);
+    const [existingImage, setExistingImage] = useState("");
+    const [fileInputKey, setFileInputKey] = useState(0);
+
+    const getImageUrl = (image) => {
+        if (!image) return "";
+
+        const imageValue = String(image);
+
+        if (
+            imageValue.startsWith("http://") ||
+            imageValue.startsWith("https://")
+        ) {
+            return imageValue;
+        }
+
+        try {
+            const base = new URL(baseUrl);
+
+            return `${base.origin}${imageValue.startsWith("/") ? "" : "/"
+                }${imageValue}`;
+        } catch (error) {
+            return imageValue;
+        }
+    };
 
     const fetchVehicles = async () => {
         try {
@@ -95,15 +116,38 @@ const AddVehicle = () => {
         initialValues: {
             name: "",
             registration_number: "",
+            model: "",
+            image: null,
         },
 
         validationSchema: Yup.object({
             name: Yup.string()
                 .trim()
                 .required("Vehicle name is required"),
+
             registration_number: Yup.string()
                 .trim()
                 .nullable(),
+
+            model: Yup.string()
+                .trim()
+                .nullable(),
+
+            image: Yup.mixed()
+                .nullable()
+                .test(
+                    "fileType",
+                    "Only JPG, JPEG, PNG or WEBP images are allowed",
+                    (value) => {
+                        if (!value) return true;
+
+                        return [
+                            "image/jpeg",
+                            "image/png",
+                            "image/webp",
+                        ].includes(value.type);
+                    }
+                ),
         }),
 
         onSubmit: async (values, { resetForm }) => {
@@ -111,40 +155,65 @@ const AddVehicle = () => {
                 setSubmitting(true);
                 setPageError("");
 
-                const payload = {
-                    name: values.name.trim(),
-                    registration_number: values.registration_number.trim()
-                        ? values.registration_number.trim()
-                        : null,
-                };
+                const formData = new FormData();
+
+                formData.append(
+                    "name",
+                    values.name.trim()
+                );
+
+                if (values.registration_number.trim()) {
+                    formData.append(
+                        "registration_number",
+                        values.registration_number.trim()
+                    );
+                }
+
+                if (values.model.trim()) {
+                    formData.append(
+                        "model",
+                        values.model.trim()
+                    );
+                }
+
+                if (values.image instanceof File) {
+                    formData.append(
+                        "image",
+                        values.image
+                    );
+                }
 
                 let response;
 
-                if (isEditMode && selectedVehicleId) {
+                if (
+                    isEditMode &&
+                    selectedVehicleId
+                ) {
                     response = await axios.put(
                         `${baseUrl}vehicles/${selectedVehicleId}/`,
-                        payload,
+                        formData,
                         {
                             headers: {
                                 Authorization: `Bearer ${token}`,
-                                "Content-Type": "application/json",
                             },
                         }
                     );
                 } else {
                     response = await axios.post(
                         `${baseUrl}vehicles/`,
-                        payload,
+                        formData,
                         {
                             headers: {
                                 Authorization: `Bearer ${token}`,
-                                "Content-Type": "application/json",
                             },
                         }
                     );
                 }
 
-                if (response.status === 201 || response.status === 200) {
+                if (
+                    response.status === 201 ||
+                    response.status === 200
+                ) {
                     toast.success(
                         isEditMode
                             ? "Vehicle updated successfully"
@@ -154,6 +223,10 @@ const AddVehicle = () => {
                     resetForm();
                     setIsEditMode(false);
                     setSelectedVehicleId(null);
+                    setExistingImage("");
+                    setFileInputKey(
+                        (previous) => previous + 1
+                    );
 
                     await fetchVehicles();
                 } else {
@@ -164,22 +237,49 @@ const AddVehicle = () => {
                     );
                 }
             } catch (error) {
-                const responseData = error?.response?.data;
-                let message = "Something went wrong. Please try again.";
+                const responseData =
+                    error?.response?.data;
+
+                let message =
+                    "Something went wrong. Please try again.";
 
                 if (responseData?.errors) {
-                    const firstErrorKey = Object.keys(responseData.errors)[0];
-                    const firstErrorValue = responseData.errors[firstErrorKey];
+                    const firstErrorKey =
+                        Object.keys(
+                            responseData.errors
+                        )[0];
 
-                    if (Array.isArray(firstErrorValue)) {
-                        message = firstErrorValue[0];
-                    } else if (typeof firstErrorValue === "string") {
-                        message = firstErrorValue;
+                    const firstErrorValue =
+                        responseData.errors[
+                        firstErrorKey
+                        ];
+
+                    if (
+                        Array.isArray(
+                            firstErrorValue
+                        )
+                    ) {
+                        message =
+                            firstErrorValue[0];
+                    } else if (
+                        typeof firstErrorValue ===
+                        "string"
+                    ) {
+                        message =
+                            firstErrorValue;
                     }
 
                     if (firstErrorKey) {
-                        formik.setFieldTouched(firstErrorKey, true, false);
-                        formik.setFieldError(firstErrorKey, message);
+                        formik.setFieldTouched(
+                            firstErrorKey,
+                            true,
+                            false
+                        );
+
+                        formik.setFieldError(
+                            firstErrorKey,
+                            message
+                        );
                     }
                 } else {
                     message =
@@ -201,11 +301,18 @@ const AddVehicle = () => {
     const clearFormAndMode = () => {
         setIsEditMode(false);
         setSelectedVehicleId(null);
+        setExistingImage("");
         setPageError("");
         formik.resetForm();
+
+        setFileInputKey(
+            (previous) => previous + 1
+        );
     };
 
-    const handleViewVehicle = async (vehicleId) => {
+    const handleViewVehicle = async (
+        vehicleId
+    ) => {
         try {
             setViewLoadingId(vehicleId);
             setPageError("");
@@ -215,25 +322,53 @@ const AddVehicle = () => {
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
+                        "Content-Type":
+                            "application/json",
                     },
                 }
             );
 
             if (response.status === 200) {
-                const vehicleData = response?.data?.data;
+                const vehicleData =
+                    response?.data?.data;
 
                 formik.setValues({
-                    name: vehicleData?.name
-                        ? String(vehicleData.name)
-                        : "",
+                    name:
+                        vehicleData?.name
+                            ? String(
+                                vehicleData.name
+                            )
+                            : "",
+
                     registration_number:
                         vehicleData?.registration_number
-                            ? String(vehicleData.registration_number)
+                            ? String(
+                                vehicleData.registration_number
+                            )
                             : "",
+
+                    model:
+                        vehicleData?.model
+                            ? String(
+                                vehicleData.model
+                            )
+                            : "",
+
+                    image: null,
                 });
 
-                setSelectedVehicleId(vehicleId);
+                setExistingImage(
+                    vehicleData?.image || ""
+                );
+
+                setFileInputKey(
+                    (previous) => previous + 1
+                );
+
+                setSelectedVehicleId(
+                    vehicleId
+                );
+
                 setIsEditMode(true);
 
                 window.scrollTo({
@@ -241,9 +376,13 @@ const AddVehicle = () => {
                     behavior: "smooth",
                 });
 
-                toast.success("Vehicle details loaded");
+                toast.success(
+                    "Vehicle details loaded"
+                );
             } else {
-                throw new Error("Failed to fetch vehicle details");
+                throw new Error(
+                    "Failed to fetch vehicle details"
+                );
             }
         } catch (error) {
             const message =
@@ -260,38 +399,79 @@ const AddVehicle = () => {
         }
     };
 
-    const filteredVehicles = useMemo(() => {
-        if (!searchText.trim()) return vehicles;
+    const filteredVehicles = useMemo(
+        () => {
+            if (!searchText.trim()) {
+                return vehicles;
+            }
 
-        const search = searchText.toLowerCase();
+            const search =
+                searchText
+                    .trim()
+                    .toLowerCase();
 
-        return vehicles.filter((item) => {
-            const nameText = item?.name
-                ? String(item.name).toLowerCase()
-                : "";
+            return vehicles.filter(
+                (item) => {
+                    const nameText =
+                        item?.name
+                            ? String(
+                                item.name
+                            ).toLowerCase()
+                            : "";
 
-            const registrationText = item?.registration_number
-                ? String(item.registration_number).toLowerCase()
-                : "";
+                    const registrationText =
+                        item?.registration_number
+                            ? String(
+                                item.registration_number
+                            ).toLowerCase()
+                            : "";
 
-            const createdByText = item?.createed_by_name
-                ? String(item.createed_by_name).toLowerCase()
-                : "";
+                    const modelText =
+                        item?.model
+                            ? String(
+                                item.model
+                            ).toLowerCase()
+                            : "";
 
-            return (
-                nameText.includes(search) ||
-                registrationText.includes(search) ||
-                createdByText.includes(search)
+                    const createdByText =
+                        item?.createed_by_name
+                            ? String(
+                                item.createed_by_name
+                            ).toLowerCase()
+                            : "";
+
+                    return (
+                        nameText.includes(
+                            search
+                        ) ||
+                        registrationText.includes(
+                            search
+                        ) ||
+                        modelText.includes(
+                            search
+                        ) ||
+                        createdByText.includes(
+                            search
+                        )
+                    );
+                }
             );
-        });
-    }, [vehicles, searchText]);
+        },
+        [vehicles, searchText]
+    );
 
     const formatDateTime = (value) => {
-        if (!value) return "-";
+        if (!value) {
+            return "-";
+        }
 
         const date = new Date(value);
 
-        if (Number.isNaN(date.getTime())) {
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
             return value;
         }
 
@@ -313,6 +493,7 @@ const AddVehicle = () => {
                                 <Card>
                                     <CardBody className="text-center py-5">
                                         <Spinner color="primary" />
+
                                         <div className="mt-3">
                                             Loading vehicle page...
                                         </div>
@@ -337,7 +518,11 @@ const AddVehicle = () => {
                                             </div>
                                         ) : null}
 
-                                        <Form onSubmit={formik.handleSubmit}>
+                                        <Form
+                                            onSubmit={
+                                                formik.handleSubmit
+                                            }
+                                        >
                                             <div className="mb-3">
                                                 <Label htmlFor="name">
                                                     Vehicle Name
@@ -348,19 +533,39 @@ const AddVehicle = () => {
                                                     name="name"
                                                     type="text"
                                                     placeholder="Enter vehicle name"
-                                                    value={formik.values.name}
-                                                    onChange={formik.handleChange}
-                                                    onBlur={formik.handleBlur}
+                                                    value={
+                                                        formik
+                                                            .values
+                                                            .name
+                                                    }
+                                                    onChange={
+                                                        formik.handleChange
+                                                    }
+                                                    onBlur={
+                                                        formik.handleBlur
+                                                    }
                                                     invalid={
-                                                        formik.touched.name &&
-                                                        !!formik.errors.name
+                                                        formik
+                                                            .touched
+                                                            .name &&
+                                                        !!formik
+                                                            .errors
+                                                            .name
                                                     }
                                                 />
 
-                                                {formik.touched.name &&
-                                                formik.errors.name ? (
+                                                {formik
+                                                    .touched
+                                                    .name &&
+                                                    formik
+                                                        .errors
+                                                        .name ? (
                                                     <FormFeedback>
-                                                        {formik.errors.name}
+                                                        {
+                                                            formik
+                                                                .errors
+                                                                .name
+                                                        }
                                                     </FormFeedback>
                                                 ) : null}
                                             </div>
@@ -376,52 +581,265 @@ const AddVehicle = () => {
                                                     type="text"
                                                     placeholder="Enter registration number"
                                                     value={
-                                                        formik.values
+                                                        formik
+                                                            .values
                                                             .registration_number
                                                     }
-                                                    onChange={formik.handleChange}
-                                                    onBlur={formik.handleBlur}
+                                                    onChange={
+                                                        formik.handleChange
+                                                    }
+                                                    onBlur={
+                                                        formik.handleBlur
+                                                    }
                                                     invalid={
-                                                        formik.touched
+                                                        formik
+                                                            .touched
                                                             .registration_number &&
-                                                        !!formik.errors
+                                                        !!formik
+                                                            .errors
                                                             .registration_number
                                                     }
                                                 />
 
-                                                {formik.touched
+                                                {formik
+                                                    .touched
                                                     .registration_number &&
-                                                formik.errors
-                                                    .registration_number ? (
+                                                    formik
+                                                        .errors
+                                                        .registration_number ? (
                                                     <FormFeedback>
                                                         {
-                                                            formik.errors
+                                                            formik
+                                                                .errors
                                                                 .registration_number
                                                         }
                                                     </FormFeedback>
                                                 ) : null}
                                             </div>
 
+                                            <div className="mb-3">
+                                                <Label htmlFor="model">
+                                                    Model
+                                                </Label>
+
+                                                <Input
+                                                    id="model"
+                                                    name="model"
+                                                    type="text"
+                                                    placeholder="Enter vehicle model"
+                                                    value={
+                                                        formik
+                                                            .values
+                                                            .model
+                                                    }
+                                                    onChange={
+                                                        formik.handleChange
+                                                    }
+                                                    onBlur={
+                                                        formik.handleBlur
+                                                    }
+                                                    invalid={
+                                                        formik
+                                                            .touched
+                                                            .model &&
+                                                        !!formik
+                                                            .errors
+                                                            .model
+                                                    }
+                                                />
+
+                                                {formik
+                                                    .touched
+                                                    .model &&
+                                                    formik
+                                                        .errors
+                                                        .model ? (
+                                                    <FormFeedback>
+                                                        {
+                                                            formik
+                                                                .errors
+                                                                .model
+                                                        }
+                                                    </FormFeedback>
+                                                ) : null}
+                                            </div>
+
+                                            {isEditMode &&
+                                                existingImage ? (
+                                                <div className="mb-3">
+                                                    <Label className="d-block">
+                                                        Current Vehicle Image
+                                                    </Label>
+
+                                                    <div
+                                                        style={{
+                                                            border:
+                                                                "1px solid #e9e9ef",
+                                                            borderRadius:
+                                                                "8px",
+                                                            padding:
+                                                                "10px",
+                                                            textAlign:
+                                                                "center",
+                                                            background:
+                                                                "#f8f9fa",
+                                                        }}
+                                                    >
+                                                        <img
+                                                            src={getImageUrl(
+                                                                existingImage
+                                                            )}
+                                                            alt="Current Vehicle"
+                                                            style={{
+                                                                width:
+                                                                    "100%",
+                                                                maxHeight:
+                                                                    "220px",
+                                                                objectFit:
+                                                                    "contain",
+                                                                borderRadius:
+                                                                    "6px",
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : null}
+
+                                            <div className="mb-3">
+                                                <Label htmlFor="image">
+                                                    {isEditMode
+                                                        ? "Change Vehicle Image"
+                                                        : "Vehicle Image"}
+                                                </Label>
+
+                                                <Input
+                                                    key={fileInputKey}
+                                                    id="image"
+                                                    name="image"
+                                                    type="file"
+                                                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                                                    onChange={(e) => {
+                                                        const file = e.currentTarget.files?.[0];
+
+                                                        if (!file) {
+                                                            formik.setFieldValue("image", null);
+                                                            return;
+                                                        }
+
+                                                        const allowedTypes = [
+                                                            "image/jpeg",
+                                                            "image/png",
+                                                            "image/webp",
+                                                        ];
+
+                                                        if (!allowedTypes.includes(file.type)) {
+                                                            toast.error(
+                                                                "Please upload JPG, JPEG, PNG or WEBP image only."
+                                                            );
+
+                                                            formik.setFieldValue("image", null);
+
+                                                            setFileInputKey(
+                                                                (previous) => previous + 1
+                                                            );
+
+                                                            return;
+                                                        }
+
+                                                        formik.setFieldValue(
+                                                            "image",
+                                                            file
+                                                        );
+                                                    }}
+                                                />
+
+                                                {formik
+                                                    .touched
+                                                    .image &&
+                                                    formik
+                                                        .errors
+                                                        .image ? (
+                                                    <div className="text-danger mt-1">
+                                                        {
+                                                            formik
+                                                                .errors
+                                                                .image
+                                                        }
+                                                    </div>
+                                                ) : null}
+                                            </div>
+
+                                            {formik
+                                                .values
+                                                .image instanceof
+                                                File && (
+                                                    <div className="mb-3">
+                                                        <Label className="d-block">
+                                                            New Image Preview
+                                                        </Label>
+
+                                                        <div
+                                                            style={{
+                                                                border:
+                                                                    "1px solid #e9e9ef",
+                                                                borderRadius:
+                                                                    "8px",
+                                                                padding:
+                                                                    "10px",
+                                                                textAlign:
+                                                                    "center",
+                                                                background:
+                                                                    "#f8f9fa",
+                                                            }}
+                                                        >
+                                                            <img
+                                                                src={URL.createObjectURL(
+                                                                    formik
+                                                                        .values
+                                                                        .image
+                                                                )}
+                                                                alt="Vehicle Preview"
+                                                                style={{
+                                                                    width:
+                                                                        "100%",
+                                                                    maxHeight:
+                                                                        "220px",
+                                                                    objectFit:
+                                                                        "contain",
+                                                                    borderRadius:
+                                                                        "6px",
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+
                                             <div className="d-flex gap-2 mt-4 flex-wrap">
                                                 <Button
                                                     color="primary"
                                                     type="submit"
-                                                    disabled={submitting}
+                                                    disabled={
+                                                        submitting
+                                                    }
                                                 >
                                                     {submitting
                                                         ? isEditMode
                                                             ? "Updating..."
                                                             : "Saving..."
                                                         : isEditMode
-                                                        ? "Update Vehicle"
-                                                        : "Create Vehicle"}
+                                                            ? "Update Vehicle"
+                                                            : "Create Vehicle"}
                                                 </Button>
 
                                                 <Button
                                                     color="light"
                                                     type="button"
-                                                    onClick={clearFormAndMode}
-                                                    disabled={submitting}
+                                                    onClick={
+                                                        clearFormAndMode
+                                                    }
+                                                    disabled={
+                                                        submitting
+                                                    }
                                                 >
                                                     {isEditMode
                                                         ? "Cancel"
@@ -443,7 +861,10 @@ const AddVehicle = () => {
 
                                             <div
                                                 className="d-flex flex-wrap gap-2"
-                                                style={{ minWidth: "280px" }}
+                                                style={{
+                                                    minWidth:
+                                                        "280px",
+                                                }}
                                             >
                                                 <InputGroup>
                                                     <InputGroupText>
@@ -452,11 +873,17 @@ const AddVehicle = () => {
 
                                                     <Input
                                                         type="text"
-                                                        placeholder="Search vehicle, registration..."
-                                                        value={searchText}
-                                                        onChange={(e) =>
+                                                        placeholder="Search vehicle, registration, model..."
+                                                        value={
+                                                            searchText
+                                                        }
+                                                        onChange={(
+                                                            e
+                                                        ) =>
                                                             setSearchText(
-                                                                e.target.value
+                                                                e
+                                                                    .target
+                                                                    .value
                                                             )
                                                         }
                                                     />
@@ -465,8 +892,12 @@ const AddVehicle = () => {
                                                 <Button
                                                     color="primary"
                                                     outline
-                                                    onClick={fetchVehicles}
-                                                    disabled={tableLoading}
+                                                    onClick={
+                                                        fetchVehicles
+                                                    }
+                                                    disabled={
+                                                        tableLoading
+                                                    }
                                                 >
                                                     {tableLoading
                                                         ? "Refreshing..."
@@ -484,7 +915,9 @@ const AddVehicle = () => {
                                                         </h6>
 
                                                         <h4 className="mb-0">
-                                                            {vehicles.length}
+                                                            {
+                                                                vehicles.length
+                                                            }
                                                         </h4>
                                                     </CardBody>
                                                 </Card>
@@ -531,7 +964,8 @@ const AddVehicle = () => {
                                                     Loading vehicles...
                                                 </div>
                                             </div>
-                                        ) : filteredVehicles.length === 0 ? (
+                                        ) : filteredVehicles.length ===
+                                            0 ? (
                                             <div className="text-center py-5 text-muted">
                                                 No vehicles found
                                             </div>
@@ -555,6 +989,15 @@ const AddVehicle = () => {
                                                             <th
                                                                 style={{
                                                                     minWidth:
+                                                                        "100px",
+                                                                }}
+                                                            >
+                                                                Image
+                                                            </th>
+
+                                                            <th
+                                                                style={{
+                                                                    minWidth:
                                                                         "180px",
                                                                 }}
                                                             >
@@ -568,6 +1011,15 @@ const AddVehicle = () => {
                                                                 }}
                                                             >
                                                                 Registration No.
+                                                            </th>
+
+                                                            <th
+                                                                style={{
+                                                                    minWidth:
+                                                                        "160px",
+                                                                }}
+                                                            >
+                                                                Model
                                                             </th>
 
                                                             <th
@@ -601,7 +1053,10 @@ const AddVehicle = () => {
 
                                                     <tbody>
                                                         {filteredVehicles.map(
-                                                            (item, index) => (
+                                                            (
+                                                                item,
+                                                                index
+                                                            ) => (
                                                                 <tr
                                                                     key={
                                                                         item.id
@@ -613,12 +1068,57 @@ const AddVehicle = () => {
                                                                     </td>
 
                                                                     <td>
+                                                                        {item.image ? (
+                                                                            <img
+                                                                                src={getImageUrl(
+                                                                                    item.image
+                                                                                )}
+                                                                                alt={
+                                                                                    item.name ||
+                                                                                    "Vehicle"
+                                                                                }
+                                                                                style={{
+                                                                                    width:
+                                                                                        "70px",
+                                                                                    height:
+                                                                                        "55px",
+                                                                                    objectFit:
+                                                                                        "cover",
+                                                                                    borderRadius:
+                                                                                        "6px",
+                                                                                    border:
+                                                                                        "1px solid #e9e9ef",
+                                                                                }}
+                                                                            />
+                                                                        ) : (
+                                                                            <div
+                                                                                className="d-flex align-items-center justify-content-center bg-light rounded"
+                                                                                style={{
+                                                                                    width:
+                                                                                        "70px",
+                                                                                    height:
+                                                                                        "55px",
+                                                                                    border:
+                                                                                        "1px solid #e9e9ef",
+                                                                                }}
+                                                                            >
+                                                                                <i className="bx bx-car text-muted fs-4" />
+                                                                            </div>
+                                                                        )}
+                                                                    </td>
+
+                                                                    <td>
                                                                         {item.name ||
                                                                             "-"}
                                                                     </td>
 
                                                                     <td>
                                                                         {item.registration_number ||
+                                                                            "-"}
+                                                                    </td>
+
+                                                                    <td>
+                                                                        {item.model ||
                                                                             "-"}
                                                                     </td>
 
@@ -649,7 +1149,7 @@ const AddVehicle = () => {
                                                                             }
                                                                         >
                                                                             {viewLoadingId ===
-                                                                            item.id
+                                                                                item.id
                                                                                 ? "Loading..."
                                                                                 : "View"}
                                                                         </Button>

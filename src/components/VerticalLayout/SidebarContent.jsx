@@ -1426,6 +1426,7 @@ const SidebarContent = (props) => {
                 <ul className="sub-menu" aria-expanded="false">
                   <li><Link to="/add/vehicle/">{props.t("Add Vehicle")}</Link></li>
                   <li><Link to="/vehicle/km/">{props.t("Vehicle KM Report")}</Link></li>
+                  <li><Link to="/vehicle/service/">{props.t("Vehicle Service History")}</Link></li>
                 </ul>
               </li>
             ) : null}

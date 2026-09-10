@@ -478,6 +478,7 @@ import ProductPointSystemForm from "../pages/PointSystem/ProductPointSystemForm"
 import ProductPointSystem from "../pages/PointSystem/ProductPointSystem";
 import AddVehicle from "../pages/Vehicle/AddVehicle";
 import VehicleKMEntry from "../pages/Vehicle/VehicleKMEntry";
+import VehicleServiceHistory from "../pages/Vehicle/VehicleServiceHistory";
 
 
 
@@ -842,6 +843,7 @@ const authProtectedRoutes = [
   // vehicle report
   { path: "/add/vehicle/", component: <AddVehicle /> },
   { path: "/vehicle/km/", component: <VehicleKMEntry /> },
+  { path: "/vehicle/service/", component: <VehicleServiceHistory /> },
 
   //   //Blog
   { path: "/blog-list", component: <BlogList /> },

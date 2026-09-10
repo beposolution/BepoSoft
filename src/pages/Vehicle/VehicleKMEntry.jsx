@@ -33,6 +33,12 @@ const VehicleKMEntry = () => {
     const [entries, setEntries] = useState([]);
     const [vehicles, setVehicles] = useState([]);
 
+    const [pagination, setPagination] = useState({
+        count: 0,
+        next: null,
+        previous: null,
+    });
+
     const [loading, setLoading] = useState(false);
     const [tableLoading, setTableLoading] = useState(false);
     const [vehicleLoading, setVehicleLoading] = useState(false);
@@ -54,25 +60,35 @@ const VehicleKMEntry = () => {
         return `${year}-${month}-${day}`;
     };
 
-    const fetchEntries = async () => {
+    const fetchEntries = async (
+        url = `${baseUrl}vehicle/km/entry/`
+    ) => {
         try {
             setTableLoading(true);
             setPageError("");
 
-            const response = await axios.get(
-                `${baseUrl}vehicle/km/entry/`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
+            const response = await axios.get(url, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
 
             if (response.status === 200) {
-                setEntries(response?.data?.data || []);
+                setEntries(response?.data?.results?.data || []);
+
+                setPagination({
+                    count: response?.data?.count || 0,
+                    next: response?.data?.next || null,
+                    previous: response?.data?.previous || null,
+                });
             } else {
                 setEntries([]);
+                setPagination({
+                    count: 0,
+                    next: null,
+                    previous: null,
+                });
                 throw new Error("Failed to fetch vehicle KM entries");
             }
         } catch (error) {
@@ -86,6 +102,11 @@ const VehicleKMEntry = () => {
             setPageError(message);
             toast.error(message);
             setEntries([]);
+            setPagination({
+                count: 0,
+                next: null,
+                previous: null,
+            });
         } finally {
             setTableLoading(false);
         }
@@ -393,17 +414,17 @@ const VehicleKMEntry = () => {
                         : "",
                     starting_km:
                         entryData?.starting_km !== undefined &&
-                        entryData?.starting_km !== null
+                            entryData?.starting_km !== null
                             ? String(entryData.starting_km)
                             : "",
                     end_km:
                         entryData?.end_km !== undefined &&
-                        entryData?.end_km !== null
+                            entryData?.end_km !== null
                             ? String(entryData.end_km)
                             : "",
                     petrol:
                         entryData?.petrol !== undefined &&
-                        entryData?.petrol !== null
+                            entryData?.petrol !== null
                             ? String(entryData.petrol)
                             : "",
                 });
@@ -475,15 +496,15 @@ const VehicleKMEntry = () => {
             const registrationText =
                 item?.registration_number
                     ? String(
-                          item.registration_number
-                      ).toLowerCase()
+                        item.registration_number
+                    ).toLowerCase()
                     : "";
 
             const createdByText =
                 item?.created_by_name
                     ? String(
-                          item.created_by_name
-                      ).toLowerCase()
+                        item.created_by_name
+                    ).toLowerCase()
                     : "";
 
             return (
@@ -622,8 +643,8 @@ const VehicleKMEntry = () => {
 
                                                 {formik.touched
                                                     .date &&
-                                                formik.errors
-                                                    .date ? (
+                                                    formik.errors
+                                                        .date ? (
                                                     <FormFeedback>
                                                         {
                                                             formik
@@ -673,8 +694,8 @@ const VehicleKMEntry = () => {
                                                             "vehicle",
                                                             selectedOption
                                                                 ? String(
-                                                                      selectedOption.value
-                                                                  )
+                                                                    selectedOption.value
+                                                                )
                                                                 : ""
                                                         );
                                                     }}
@@ -694,9 +715,9 @@ const VehicleKMEntry = () => {
                                                         formik
                                                             .touched
                                                             .vehicle &&
-                                                        formik
-                                                            .errors
-                                                            .vehicle
+                                                            formik
+                                                                .errors
+                                                                .vehicle
                                                             ? "is-invalid"
                                                             : ""
                                                     }
@@ -707,8 +728,8 @@ const VehicleKMEntry = () => {
 
                                                 {formik.touched
                                                     .vehicle &&
-                                                formik.errors
-                                                    .vehicle ? (
+                                                    formik.errors
+                                                        .vehicle ? (
                                                     <div className="invalid-feedback d-block">
                                                         {
                                                             formik
@@ -754,8 +775,8 @@ const VehicleKMEntry = () => {
 
                                                 {formik.touched
                                                     .starting_km &&
-                                                formik.errors
-                                                    .starting_km ? (
+                                                    formik.errors
+                                                        .starting_km ? (
                                                     <FormFeedback>
                                                         {
                                                             formik
@@ -801,8 +822,8 @@ const VehicleKMEntry = () => {
 
                                                 {formik.touched
                                                     .end_km &&
-                                                formik.errors
-                                                    .end_km ? (
+                                                    formik.errors
+                                                        .end_km ? (
                                                     <FormFeedback>
                                                         {
                                                             formik
@@ -869,8 +890,8 @@ const VehicleKMEntry = () => {
 
                                                 {formik.touched
                                                     .petrol &&
-                                                formik.errors
-                                                    .petrol ? (
+                                                    formik.errors
+                                                        .petrol ? (
                                                     <FormFeedback>
                                                         {
                                                             formik
@@ -894,8 +915,8 @@ const VehicleKMEntry = () => {
                                                             ? "Updating..."
                                                             : "Saving..."
                                                         : isEditMode
-                                                        ? "Update Entry"
-                                                        : "Create Entry"}
+                                                            ? "Update Entry"
+                                                            : "Create Entry"}
                                                 </Button>
 
                                                 <Button
@@ -983,7 +1004,7 @@ const VehicleKMEntry = () => {
 
                                                         <h4 className="mb-0">
                                                             {
-                                                                entries.length
+                                                                pagination.count
                                                             }
                                                         </h4>
                                                     </CardBody>
@@ -1032,7 +1053,7 @@ const VehicleKMEntry = () => {
                                                 </div>
                                             </div>
                                         ) : filteredEntries.length ===
-                                          0 ? (
+                                            0 ? (
                                             <div className="text-center py-5 text-muted">
                                                 No vehicle KM entries found
                                             </div>
@@ -1229,7 +1250,7 @@ const VehicleKMEntry = () => {
                                                                             }
                                                                         >
                                                                             {viewLoadingId ===
-                                                                            item.id
+                                                                                item.id
                                                                                 ? "Loading..."
                                                                                 : "View"}
                                                                         </Button>
@@ -1241,6 +1262,52 @@ const VehicleKMEntry = () => {
                                                 </Table>
                                             </div>
                                         )}
+
+                                        {!tableLoading &&
+                                            pagination.count > 0 && (
+                                                <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                                                    <div className="text-muted">
+                                                        Total Records:{" "}
+                                                        {pagination.count}
+                                                    </div>
+
+                                                    <div className="d-flex gap-2">
+                                                        <Button
+                                                            color="primary"
+                                                            outline
+                                                            size="sm"
+                                                            disabled={
+                                                                !pagination.previous ||
+                                                                tableLoading
+                                                            }
+                                                            onClick={() =>
+                                                                fetchEntries(
+                                                                    pagination.previous
+                                                                )
+                                                            }
+                                                        >
+                                                            Previous
+                                                        </Button>
+
+                                                        <Button
+                                                            color="primary"
+                                                            outline
+                                                            size="sm"
+                                                            disabled={
+                                                                !pagination.next ||
+                                                                tableLoading
+                                                            }
+                                                            onClick={() =>
+                                                                fetchEntries(
+                                                                    pagination.next
+                                                                )
+                                                            }
+                                                        >
+                                                            Next
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )}
                                     </CardBody>
                                 </Card>
                             </Col>

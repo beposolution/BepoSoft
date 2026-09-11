@@ -479,6 +479,7 @@ import ProductPointSystem from "../pages/PointSystem/ProductPointSystem";
 import AddVehicle from "../pages/Vehicle/AddVehicle";
 import VehicleKMEntry from "../pages/Vehicle/VehicleKMEntry";
 import VehicleServiceHistory from "../pages/Vehicle/VehicleServiceHistory";
+import AllBdoSalesReportPage from "../pages/SalesTeam/AllBdoSalesReportPage";
 
 
 
@@ -548,6 +549,7 @@ const authProtectedRoutes = [
   { path: "/sales/user/call/duration/data/", component: <SalesTeamMemberDailyReportPage /> },
   { path: "/sales/team/summary/cd/report/", component: <SalesTeamSummaryReport /> },
   { path: "/sales/team/cd/daily/report/", component: <SalesTeamCdDailyReport /> },
+  { path: "/all/bdo/sales/report/", component: <AllBdoSalesReportPage /> },
 
   { path: "/sales/team/division/cd/report/", component: <SalesTeamDivisionDailyReportPage /> },
   { path: "/sales/team/leader/report/view/", component: <TeamLeaderSalesDetailedSummary /> },

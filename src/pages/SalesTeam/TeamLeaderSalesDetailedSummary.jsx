@@ -23,6 +23,7 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import * as XLSX from "xlsx-js-style";
 
 const TeamLeaderSalesDetailedSummary = () => {
     document.title = "Team Leader Sales Detailed Summary | Beposoft";
@@ -598,6 +599,461 @@ const TeamLeaderSalesDetailedSummary = () => {
     const summaryTotalVolume = Number(summary?.total_volume ?? 0);
     const summaryTotalCallCount = Number(summary?.total_call_count ?? 0);
 
+    const downloadBdoSalesReportExcel = () => {
+        try {
+            if (!filteredRows || filteredRows.length === 0) {
+                toast.warning("No data available to export");
+                return;
+            }
+
+            const getInvoiceNumberForExcel = (item) => {
+                return (
+                    item?.invoice?.invoice ||
+                    item?.invoice_number ||
+                    item?.invoice_details?.invoice ||
+                    item?.invoice_details?.invoice_number ||
+                    (typeof item?.invoice === "string" ? item.invoice : "") ||
+                    ""
+                );
+            };
+
+            const getInvoiceAmountForExcel = (item) => {
+                const value =
+                    item?.invoice?.invoice_total ??
+                    item?.invoice?.total_amount ??
+                    item?.invoice_details?.invoice_total ??
+                    item?.invoice_details?.total_amount ??
+                    item?.invoice_amount ??
+                    item?.total_amount ??
+                    0;
+
+                const amount = Number(value);
+
+                return Number.isFinite(amount) ? amount : 0;
+            };
+
+            const getBdoName = (item) => {
+                return (
+                    item?.staff_name ||
+                    item?.created_by ||
+                    item?.created_by_name ||
+                    ""
+                );
+            };
+
+            const getStateName = (item) => {
+                if (typeof item?.state === "string") {
+                    return item.state;
+                }
+
+                return item?.state_name || item?.state?.name || "";
+            };
+
+            const getDistrictName = (item) => {
+                if (typeof item?.district === "string") {
+                    return item.district;
+                }
+
+                return (
+                    item?.district_name ||
+                    item?.district?.name ||
+                    ""
+                );
+            };
+
+            const getProductiveCall = (item) => {
+                return normalize(item?.call_status) === "productive"
+                    ? 1
+                    : "";
+            };
+
+            const formatExcelDate = (dateValue) => {
+                if (!dateValue) return "";
+
+                const date = new Date(dateValue);
+
+                if (Number.isNaN(date.getTime())) {
+                    return dateValue;
+                }
+
+                return date.toLocaleDateString("en-GB");
+            };
+
+            let dateText = "";
+
+            if (startDateFilter && endDateFilter) {
+                if (startDateFilter === endDateFilter) {
+                    dateText = formatExcelDate(startDateFilter);
+                } else {
+                    dateText =
+                        `${formatExcelDate(startDateFilter)} TO ` +
+                        `${formatExcelDate(endDateFilter)}`;
+                }
+            } else if (startDateFilter) {
+                dateText = formatExcelDate(startDateFilter);
+            } else if (endDateFilter) {
+                dateText = formatExcelDate(endDateFilter);
+            } else {
+                dateText = new Date().toLocaleDateString("en-GB");
+            }
+
+            const excelData = [
+                [
+                    "BDO SALES REPORT",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    `DATE : ${dateText}`,
+                    "",
+                    "",
+                ],
+                [
+                    "SL",
+                    "SALES PERSON (BDO)",
+                    "CONTACT PERSON",
+                    "CONTACT NO",
+                    "STATE",
+                    "DIST",
+                    "CD",
+                    "PC",
+                    "INV NO",
+                    "INV AMT",
+                ],
+            ];
+
+            filteredRows.forEach((item, index) => {
+                excelData.push([
+                    index + 1,
+
+                    // BDO / SALES PERSON
+                    getBdoName(item),
+
+                    // CONTACT PERSON
+                    getCustomerName(item) === "-"
+                        ? ""
+                        : getCustomerName(item),
+
+                    // CONTACT NO
+                    getPhone(item) === "-"
+                        ? ""
+                        : getPhone(item),
+
+                    // STATE
+                    getStateName(item),
+
+                    // DISTRICT
+                    getDistrictName(item),
+
+                    // CALL DURATION
+                    item?.call_duration || "",
+
+                    // PRODUCTIVE CALL
+                    getProductiveCall(item),
+
+                    // INVOICE NUMBER
+                    getInvoiceNumberForExcel(item),
+
+                    // INVOICE AMOUNT
+                    getInvoiceAmountForExcel(item),
+                ]);
+            });
+
+            const totalProductiveCalls = filteredRows.filter(
+                (item) =>
+                    normalize(item?.call_status) === "productive"
+            ).length;
+
+            const totalInvoiceAmount = filteredRows.reduce(
+                (total, item) =>
+                    total + getInvoiceAmountForExcel(item),
+                0
+            );
+
+            excelData.push([
+                "TOTAL",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                totalProductiveCalls,
+                "",
+                totalInvoiceAmount,
+            ]);
+
+            const worksheet =
+                XLSX.utils.aoa_to_sheet(excelData);
+
+            const lastRowIndex = excelData.length - 1;
+
+            // MERGE TITLE AND DATE
+            worksheet["!merges"] = [
+                {
+                    s: { r: 0, c: 0 },
+                    e: { r: 0, c: 6 },
+                },
+                {
+                    s: { r: 0, c: 7 },
+                    e: { r: 0, c: 9 },
+                },
+            ];
+
+            // COLUMN WIDTHS
+            worksheet["!cols"] = [
+                { wch: 7 },  // SL
+                { wch: 25 }, // SALES PERSON
+                { wch: 28 }, // CONTACT PERSON
+                { wch: 18 }, // CONTACT NO
+                { wch: 18 }, // STATE
+                { wch: 22 }, // DIST
+                { wch: 15 }, // CD
+                { wch: 10 }, // PC
+                { wch: 20 }, // INV NO
+                { wch: 18 }, // INV AMT
+            ];
+
+            worksheet["!rows"] = [
+                { hpt: 26 },
+                { hpt: 28 },
+            ];
+
+            const thinBorder = {
+                top: {
+                    style: "thin",
+                    color: { rgb: "000000" },
+                },
+                bottom: {
+                    style: "thin",
+                    color: { rgb: "000000" },
+                },
+                left: {
+                    style: "thin",
+                    color: { rgb: "000000" },
+                },
+                right: {
+                    style: "thin",
+                    color: { rgb: "000000" },
+                },
+            };
+
+            // TITLE ROW
+            for (let col = 0; col <= 9; col++) {
+                const address = XLSX.utils.encode_cell({
+                    r: 0,
+                    c: col,
+                });
+
+                if (!worksheet[address]) {
+                    worksheet[address] = {
+                        t: "s",
+                        v: "",
+                    };
+                }
+
+                worksheet[address].s = {
+                    font: {
+                        bold: true,
+                        color: {
+                            rgb: "000000",
+                        },
+                        sz: 12,
+                    },
+                    fill: {
+                        patternType: "solid",
+                        fgColor: {
+                            rgb: "D9EAF7",
+                        },
+                    },
+                    alignment: {
+                        horizontal:
+                            col <= 6 ? "center" : "left",
+                        vertical: "center",
+                    },
+                    border: thinBorder,
+                };
+            }
+
+            // RED HEADER ROW
+            for (let col = 0; col <= 9; col++) {
+                const address = XLSX.utils.encode_cell({
+                    r: 1,
+                    c: col,
+                });
+
+                worksheet[address].s = {
+                    font: {
+                        bold: true,
+                        color: {
+                            rgb: "FFFFFF",
+                        },
+                        sz: 11,
+                    },
+                    fill: {
+                        patternType: "solid",
+                        fgColor: {
+                            rgb: "FF0000",
+                        },
+                    },
+                    alignment: {
+                        horizontal: "center",
+                        vertical: "center",
+                        wrapText: true,
+                    },
+                    border: thinBorder,
+                };
+            }
+
+            // DATA ROW STYLING
+            for (
+                let row = 2;
+                row < lastRowIndex;
+                row++
+            ) {
+                for (let col = 0; col <= 9; col++) {
+                    const address =
+                        XLSX.utils.encode_cell({
+                            r: row,
+                            c: col,
+                        });
+
+                    if (!worksheet[address]) {
+                        worksheet[address] = {
+                            t: "s",
+                            v: "",
+                        };
+                    }
+
+                    worksheet[address].s = {
+                        font: {
+                            color: {
+                                rgb: "000000",
+                            },
+                            sz: 10,
+                        },
+                        alignment: {
+                            horizontal:
+                                col === 0 ||
+                                    col === 6 ||
+                                    col === 7 ||
+                                    col === 9
+                                    ? "center"
+                                    : "left",
+                            vertical: "center",
+                            wrapText: true,
+                        },
+                        border: thinBorder,
+                    };
+                }
+            }
+
+            // YELLOW TOTAL ROW
+            for (let col = 0; col <= 9; col++) {
+                const address =
+                    XLSX.utils.encode_cell({
+                        r: lastRowIndex,
+                        c: col,
+                    });
+
+                if (!worksheet[address]) {
+                    worksheet[address] = {
+                        t: "s",
+                        v: "",
+                    };
+                }
+
+                worksheet[address].s = {
+                    font: {
+                        bold: true,
+                        color: {
+                            rgb:
+                                col === 0
+                                    ? "FF0000"
+                                    : "000000",
+                        },
+                        sz: 11,
+                    },
+                    fill: {
+                        patternType: "solid",
+                        fgColor: {
+                            rgb: "FFFF00",
+                        },
+                    },
+                    alignment: {
+                        horizontal: "center",
+                        vertical: "center",
+                    },
+                    border: thinBorder,
+                };
+            }
+
+            // INVOICE AMOUNT NUMBER FORMAT
+            for (
+                let row = 2;
+                row <= lastRowIndex;
+                row++
+            ) {
+                const address = `J${row + 1}`;
+
+                if (worksheet[address]) {
+                    worksheet[address].z = "#,##0.00";
+                }
+            }
+
+            const workbook =
+                XLSX.utils.book_new();
+
+            XLSX.utils.book_append_sheet(
+                workbook,
+                worksheet,
+                "BDO Sales Report"
+            );
+
+            let fileDate = "";
+
+            if (startDateFilter && endDateFilter) {
+                fileDate =
+                    startDateFilter === endDateFilter
+                        ? startDateFilter
+                        : `${startDateFilter}_to_${endDateFilter}`;
+            } else {
+                const today = new Date();
+
+                fileDate = [
+                    today.getFullYear(),
+                    String(
+                        today.getMonth() + 1
+                    ).padStart(2, "0"),
+                    String(
+                        today.getDate()
+                    ).padStart(2, "0"),
+                ].join("-");
+            }
+
+            XLSX.writeFile(
+                workbook,
+                `BDO SALES REPORT - ${fileDate}.xlsx`
+            );
+
+            toast.success(
+                "BDO Sales Report downloaded successfully"
+            );
+        } catch (error) {
+            console.error(
+                "BDO SALES REPORT EXCEL ERROR:",
+                error
+            );
+
+            toast.error(
+                error?.message ||
+                "Failed to download Excel"
+            );
+        }
+    };
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -623,6 +1079,18 @@ const TeamLeaderSalesDetailedSummary = () => {
                                         <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
                                             <CardTitle className="mb-0">Team Leader Sales Detailed Summary</CardTitle>
                                             <div className="d-flex gap-2 flex-wrap">
+                                                <Button
+                                                    color="success"
+                                                    onClick={downloadBdoSalesReportExcel}
+                                                    disabled={
+                                                        tableLoading ||
+                                                        filteredRows.length === 0
+                                                    }
+                                                >
+                                                    <i className="bx bx-download me-1"></i>
+                                                    Download Excel
+                                                </Button>
+
                                                 <Button color="primary" outline onClick={() => fetchData(currentPage)} disabled={tableLoading}>
                                                     {tableLoading ? "Refreshing..." : "Refresh"}
                                                 </Button>

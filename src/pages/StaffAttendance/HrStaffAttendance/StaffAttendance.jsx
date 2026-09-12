@@ -128,6 +128,34 @@ const StaffAttendance = () => {
         fetchAttendance(1, resetData);
     };
 
+    // =========================
+    // Attendance Summary
+    // Added without changing the existing attendance flow.
+    // The summary is calculated from the currently loaded/filtered attendanceData.
+    // =========================
+    const attendanceSummary = attendanceData.reduce(
+        (teamSummary, team) => {
+            (team?.date_wise_attendance || []).forEach((dateItem) => {
+                teamSummary.present += Number(dateItem?.present_count || 0);
+                teamSummary.halfDay += Number(dateItem?.half_day_count || 0);
+                teamSummary.absent += Number(dateItem?.absent_count || 0);
+                teamSummary.pending += Number(dateItem?.pending_count || 0);
+                teamSummary.rejected += Number(dateItem?.rejected_count || 0);
+                teamSummary.total += Number(dateItem?.total_count || 0);
+            });
+
+            return teamSummary;
+        },
+        {
+            present: 0,
+            halfDay: 0,
+            absent: 0,
+            pending: 0,
+            rejected: 0,
+            total: 0,
+        }
+    );
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -226,6 +254,101 @@ const StaffAttendance = () => {
                                     Reset
                                 </Button>
                             </div>
+                        </CardBody>
+                    </Card>
+
+                    {/* Attendance Summary - newly appended */}
+                    <Card className="mb-4">
+                        <CardBody>
+                            <CardTitle className="mb-3">
+                                Attendance Summary
+                            </CardTitle>
+
+                            <Row className="g-3">
+                                <Col xl={2} lg={4} md={6} sm={6}>
+                                    <div
+                                        className="border rounded p-3 text-center h-100"
+                                        style={{ backgroundColor: "#f6fff9" }}
+                                    >
+                                        <div className="text-muted mb-1">
+                                            Present
+                                        </div>
+                                        <h4 className="mb-0 text-success fw-bold">
+                                            {attendanceSummary.present}
+                                        </h4>
+                                    </div>
+                                </Col>
+
+                                <Col xl={2} lg={4} md={6} sm={6}>
+                                    <div
+                                        className="border rounded p-3 text-center h-100"
+                                        style={{ backgroundColor: "#fffaf0" }}
+                                    >
+                                        <div className="text-muted mb-1">
+                                            Half Day
+                                        </div>
+                                        <h4 className="mb-0 text-warning fw-bold">
+                                            {attendanceSummary.halfDay}
+                                        </h4>
+                                    </div>
+                                </Col>
+
+                                <Col xl={2} lg={4} md={6} sm={6}>
+                                    <div
+                                        className="border rounded p-3 text-center h-100"
+                                        style={{ backgroundColor: "#fff6f6" }}
+                                    >
+                                        <div className="text-muted mb-1">
+                                            Absent
+                                        </div>
+                                        <h4 className="mb-0 text-danger fw-bold">
+                                            {attendanceSummary.absent}
+                                        </h4>
+                                    </div>
+                                </Col>
+
+                                <Col xl={2} lg={4} md={6} sm={6}>
+                                    <div
+                                        className="border rounded p-3 text-center h-100"
+                                        style={{ backgroundColor: "#f8f9fa" }}
+                                    >
+                                        <div className="text-muted mb-1">
+                                            Pending
+                                        </div>
+                                        <h4 className="mb-0 text-secondary fw-bold">
+                                            {attendanceSummary.pending}
+                                        </h4>
+                                    </div>
+                                </Col>
+
+                                <Col xl={2} lg={4} md={6} sm={6}>
+                                    <div
+                                        className="border rounded p-3 text-center h-100"
+                                        style={{ backgroundColor: "#f5f5f5" }}
+                                    >
+                                        <div className="text-muted mb-1">
+                                            Rejected
+                                        </div>
+                                        <h4 className="mb-0 text-dark fw-bold">
+                                            {attendanceSummary.rejected}
+                                        </h4>
+                                    </div>
+                                </Col>
+
+                                <Col xl={2} lg={4} md={6} sm={6}>
+                                    <div
+                                        className="border rounded p-3 text-center h-100"
+                                        style={{ backgroundColor: "#f3f6ff" }}
+                                    >
+                                        <div className="text-muted mb-1">
+                                            Total
+                                        </div>
+                                        <h4 className="mb-0 text-primary fw-bold">
+                                            {attendanceSummary.total}
+                                        </h4>
+                                    </div>
+                                </Col>
+                            </Row>
                         </CardBody>
                     </Card>
 

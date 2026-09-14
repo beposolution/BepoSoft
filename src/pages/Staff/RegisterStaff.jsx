@@ -29,6 +29,7 @@ const FormLayouts = () => {
         initialValues: {
             name: "",
             username: "",
+            salary: "",
             email: "",
             password: "",
             country: "",
@@ -76,6 +77,9 @@ const FormLayouts = () => {
         validationSchema: Yup.object({
             name: Yup.string().required("This field is required"),
             username: Yup.string().required("Please enter a username"),
+            salary: Yup.number()
+                .typeError("Salary must be a valid number")
+                .min(0, "Salary cannot be negative"),
             email: Yup.string()
                 .email("Invalid email format")
                 .required("Please enter an email"),
@@ -153,6 +157,13 @@ const FormLayouts = () => {
                 const formData = new FormData();
 
                 for (let key in values) {
+
+                    // Salary belongs to StaffSalary model.
+                    // Do not send it to add/staff/.
+                    if (key === "salary") {
+                        continue;
+                    }
+
                     // if (key === "signatur_up" && values[key]) {
                     //     formData.append(key, values[key]);
                     // } else
@@ -200,7 +211,26 @@ const FormLayouts = () => {
                     const staffData = response?.data?.data;
 
                     if (staffData?.id) {
-                        await writeStaffCreateLog(staffData);
+
+                        // salary
+                        await axios.post(
+                            `${import.meta.env.VITE_APP_KEY}staff/salary/`,
+                            {
+                                staff: Number(staffData.id),
+                                salary: Number(values.salary),
+                            },
+                            {
+                                headers: {
+                                    Authorization: `Bearer ${token}`,
+                                },
+                            }
+                        );
+
+                        // log
+                        await writeStaffCreateLog(
+                            staffData,
+                            values.salary
+                        );
                     }
 
                     setSuccess("Form submitted successfully");
@@ -249,7 +279,7 @@ const FormLayouts = () => {
         }
     });
 
-    const writeStaffCreateLog = async (staffData) => {
+    const writeStaffCreateLog = async (staffData, salary) => {
         try {
             await axios.post(
                 `${import.meta.env.VITE_APP_KEY}datalog/create/`,
@@ -264,6 +294,7 @@ const FormLayouts = () => {
                         action: "Staff Created",
                         name: staffData.name,
                         username: staffData.username,
+                        salary: salary || "",
                         email: staffData.email,
                         phone: staffData.phone,
                         designation: staffData.designation,
@@ -1215,6 +1246,39 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
+                                            <Col lg={3}>
+                                                <div className="mb-3">
+
+                                                    <Label htmlFor="formrow-salary-Input">
+                                                        Salary
+                                                    </Label>
+
+                                                    <Input
+                                                        type="number"
+                                                        name="salary"
+                                                        id="formrow-salary-Input"
+                                                        className="form-control"
+                                                        placeholder="Enter Staff Salary"
+                                                        value={formik.values.salary}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        min="0"
+                                                        step="0.01"
+                                                        invalid={
+                                                            formik.touched.salary &&
+                                                            !!formik.errors.salary
+                                                        }
+                                                    />
+
+                                                    {formik.errors.salary &&
+                                                        formik.touched.salary && (
+                                                            <FormFeedback>
+                                                                {formik.errors.salary}
+                                                            </FormFeedback>
+                                                        )}
+
+                                                </div>
+                                            </Col>
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -1271,6 +1335,13 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col> */}
 
+
+
+
+                                        </Row>
+
+                                        <Row>
+
                                             <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Signature-Input">image Upload</Label>
@@ -1290,13 +1361,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-
-                                        </Row>
-
-                                        <Row>
-
-
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-InputJoinDate">Join Date</Label>
                                                     <Input
@@ -1319,7 +1384,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-ConfirmationDate-Input">Confirmation Date</Label>
                                                     <Input
@@ -1344,7 +1409,7 @@ const FormLayouts = () => {
 
 
 
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-TerminationDate-Input"> Last Day of Working</Label>
                                                     <Input

@@ -65,6 +65,14 @@ const DatatableTables = () => {
         }
     };
 
+    const handleSalaryClick = (staff) => {
+        if (staff && staff.id) {
+            navigate(`/staff/salary/${staff.id}/`);
+        } else {
+            toast.error("Staff ID is undefined");
+        }
+    };
+
     const fetchFilterData = async () => {
         try {
             const headers = {
@@ -565,13 +573,23 @@ const DatatableTables = () => {
                                                     </td>
 
                                                     <td style={rowStyle}>
-                                                        <button
-                                                            className="btn btn-primary"
-                                                            style={{ height: "30px" }}
-                                                            onClick={() => handleViewClick(staff)}
-                                                        >
-                                                            Edit
-                                                        </button>
+                                                        <div className="d-flex gap-2">
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-primary btn-sm"
+                                                                onClick={() => handleViewClick(staff)}
+                                                            >
+                                                                Edit
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-success btn-sm"
+                                                                onClick={() => handleSalaryClick(staff)}
+                                                            >
+                                                                Salary Details
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             );

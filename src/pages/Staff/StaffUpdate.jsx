@@ -35,6 +35,217 @@ const FormLayouts = () => {
     const [docUrl, setDocUrl] = useState("");
     const [docTitle, setDocTitle] = useState("");
 
+    // salary management states
+    const [salaryData, setSalaryData] = useState(null);
+    const [salaryLoading, setSalaryLoading] = useState(false);
+
+    const [salaryModal, setSalaryModal] = useState(false);
+    const [editSalary, setEditSalary] = useState("");
+    const [salaryUpdating, setSalaryUpdating] = useState(false);
+    const [newSalary, setNewSalary] = useState("");
+    const [salaryAdding, setSalaryAdding] = useState(false);
+
+    const fetchStaffSalary = async () => {
+        try {
+            setSalaryLoading(true);
+
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}staff/salary/?staff=${id}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            const salaryList = response?.data?.data || [];
+
+            if (salaryList.length > 0) {
+                setSalaryData(salaryList[0]);
+            } else {
+                setSalaryData(null);
+            }
+
+        } catch (error) {
+            console.error(
+                "Salary fetch error:",
+                error?.response?.data || error.message
+            );
+
+            setSalaryData(null);
+        } finally {
+            setSalaryLoading(false);
+        }
+    };
+
+    const addStaffSalary = async () => {
+        try {
+            if (
+                newSalary === "" ||
+                newSalary === null ||
+                newSalary === undefined
+            ) {
+                toast.error("Please enter salary.");
+                return;
+            }
+
+            const salaryAmount = Number(newSalary);
+
+            if (
+                Number.isNaN(salaryAmount) ||
+                salaryAmount < 0
+            ) {
+                toast.error("Please enter a valid salary.");
+                return;
+            }
+
+            setSalaryAdding(true);
+
+            await axios.post(
+                `${import.meta.env.VITE_APP_KEY}staff/salary/`,
+                {
+                    staff: Number(id),
+                    salary: salaryAmount,
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            toast.success("Salary added successfully.");
+
+            setNewSalary("");
+
+            await fetchStaffSalary();
+
+        } catch (error) {
+            console.error(
+                "Salary add error:",
+                error?.response?.data || error.message
+            );
+
+            toast.error(
+                error?.response?.data?.message ||
+                error?.response?.data?.errors ||
+                "Failed to add salary."
+            );
+        } finally {
+            setSalaryAdding(false);
+        }
+    };
+
+    useEffect(() => {
+        if (token && id) {
+            fetchStaffSalary();
+        }
+    }, [token, id]);
+
+    const openSalaryEditModal = () => {
+        if (!salaryData) {
+            return;
+        }
+
+        if (
+            Array.isArray(salaryData.increments) &&
+            salaryData.increments.length > 0
+        ) {
+            toast.warning(
+                "Salary cannot be edited because increment history already exists."
+            );
+            return;
+        }
+
+        setEditSalary(
+            salaryData.salary !== null &&
+                salaryData.salary !== undefined
+                ? String(salaryData.salary)
+                : ""
+        );
+
+        setSalaryModal(true);
+    };
+
+    const updateStaffSalary = async () => {
+        try {
+
+            if (!salaryData?.id) {
+                toast.error("Salary record not found.");
+                return;
+            }
+
+            if (
+                Array.isArray(salaryData.increments) &&
+                salaryData.increments.length > 0
+            ) {
+                toast.error(
+                    "Salary cannot be edited because increment history exists."
+                );
+                return;
+            }
+
+            if (
+                editSalary === "" ||
+                editSalary === null ||
+                editSalary === undefined
+            ) {
+                toast.error("Please enter salary.");
+                return;
+            }
+
+            const salaryAmount = Number(editSalary);
+
+            if (
+                Number.isNaN(salaryAmount) ||
+                salaryAmount < 0
+            ) {
+                toast.error("Please enter a valid salary.");
+                return;
+            }
+
+            setSalaryUpdating(true);
+
+            await axios.put(
+                `${import.meta.env.VITE_APP_KEY}staff/salary/edit/${salaryData.id}/`,
+                {
+                    salary: salaryAmount,
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            toast.success(
+                "Salary updated successfully."
+            );
+
+            setSalaryModal(false);
+
+            await fetchStaffSalary();
+
+        } catch (error) {
+
+            toast.error(
+                error?.response?.data?.message ||
+                error?.response?.data?.errors ||
+                "Failed to update salary."
+            );
+
+        } finally {
+            setSalaryUpdating(false);
+        }
+    };
+
+    const canEditSalary =
+        salaryData &&
+        Array.isArray(salaryData.increments) &&
+        salaryData.increments.length === 0;
+
     // Formik setup
     const formik = useFormik({
         initialValues: {
@@ -1491,6 +1702,77 @@ const FormLayouts = () => {
                                                     </div>
                                                 </Col>
 
+                                                <Col lg={3}>
+                                                    <div className="mb-3">
+                                                        <Label>Salary</Label>
+
+                                                        {salaryLoading ? (
+                                                            <div className="form-control">
+                                                                Loading...
+                                                            </div>
+                                                        ) : salaryData ? (
+                                                            <>
+                                                                <div
+                                                                    className="form-control d-flex align-items-center justify-content-between"
+                                                                    style={{
+                                                                        minHeight: "38px",
+                                                                        backgroundColor: "#f8f9fa",
+                                                                    }}
+                                                                >
+                                                                    <span>
+                                                                        ₹{Number(
+                                                                            salaryData.salary || 0
+                                                                        ).toLocaleString("en-IN", {
+                                                                            minimumFractionDigits: 2,
+                                                                            maximumFractionDigits: 2,
+                                                                        })}
+                                                                    </span>
+
+                                                                    {canEditSalary && (
+                                                                        <Button
+                                                                            type="button"
+                                                                            color="primary"
+                                                                            size="sm"
+                                                                            onClick={openSalaryEditModal}
+                                                                        >
+                                                                            Edit
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
+
+                                                                {Array.isArray(salaryData.increments) &&
+                                                                    salaryData.increments.length > 0 && (
+                                                                        <small className="text-muted">
+                                                                            Salary cannot be edited after increment has been added.
+                                                                        </small>
+                                                                    )}
+                                                            </>
+                                                        ) : (
+                                                            <div className="d-flex gap-2">
+                                                                <Input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    step="0.01"
+                                                                    placeholder="Enter Salary"
+                                                                    value={newSalary}
+                                                                    onChange={(e) =>
+                                                                        setNewSalary(e.target.value)
+                                                                    }
+                                                                    disabled={salaryAdding}
+                                                                />
+
+                                                                <Button
+                                                                    type="button"
+                                                                    color="primary"
+                                                                    onClick={addStaffSalary}
+                                                                    disabled={salaryAdding}
+                                                                >
+                                                                    {salaryAdding ? "Adding..." : "Add"}
+                                                                </Button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </Col>
 
 
                                                 <Col lg={3}>
@@ -1562,41 +1844,6 @@ const FormLayouts = () => {
                                                     </div>
                                                 </Col> */}
 
-                                                <Col md={3}>
-                                                    <div className="mb-3">
-                                                        <Label htmlFor="formrow-image-Input">
-                                                            Staff Image
-
-                                                            {oldStaffData?.image && (
-                                                                <span
-                                                                    style={{ marginLeft: "10px", cursor: "pointer", color: "#007bff" }}
-                                                                    onClick={() =>
-                                                                        openDocument(
-                                                                            `${import.meta.env.VITE_APP_IMAGE}${oldStaffData.image}`,
-                                                                            "Staff Image"
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    ({oldStaffData.image.split("/").pop()})
-                                                                </span>
-                                                            )}
-                                                        </Label>
-                                                        <Input
-                                                            type="file"
-                                                            name="image"
-                                                            id="formrow-image-Input"
-                                                            onChange={(event) => {
-                                                                formik.setFieldValue("image", event.currentTarget.files[0]);
-                                                            }}
-                                                            onBlur={formik.handleBlur}
-                                                            invalid={formik.touched.image && !!formik.errors.image}
-                                                        />
-                                                        {formik.errors.image && formik.touched.image && (
-                                                            <FormFeedback>{formik.errors.image}</FormFeedback>
-                                                        )}
-                                                    </div>
-                                                </Col>
-
 
 
                                             </Row>
@@ -1605,7 +1852,42 @@ const FormLayouts = () => {
 
 
                                         <Row>
-                                            <Col lg={4}>
+                                            <Col md={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-image-Input">
+                                                        Staff Image
+
+                                                        {oldStaffData?.image && (
+                                                            <span
+                                                                style={{ marginLeft: "10px", cursor: "pointer", color: "#007bff" }}
+                                                                onClick={() =>
+                                                                    openDocument(
+                                                                        `${import.meta.env.VITE_APP_IMAGE}${oldStaffData.image}`,
+                                                                        "Staff Image"
+                                                                    )
+                                                                }
+                                                            >
+                                                                ({oldStaffData.image.split("/").pop()})
+                                                            </span>
+                                                        )}
+                                                    </Label>
+                                                    <Input
+                                                        type="file"
+                                                        name="image"
+                                                        id="formrow-image-Input"
+                                                        onChange={(event) => {
+                                                            formik.setFieldValue("image", event.currentTarget.files[0]);
+                                                        }}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.image && !!formik.errors.image}
+                                                    />
+                                                    {formik.errors.image && formik.touched.image && (
+                                                        <FormFeedback>{formik.errors.image}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-InputJoinDate">Join Date</Label>
                                                     <Input
@@ -1628,7 +1910,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-ConfirmationDate-Input">Confirmation Date</Label>
                                                     <Input
@@ -1651,7 +1933,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-TerminationDate-Input">Last day of working</Label>
                                                     <Input
@@ -1674,7 +1956,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Supervisor-Input">Supervisor</Label>
                                                     <select
@@ -1863,6 +2145,74 @@ const FormLayouts = () => {
                             style={{ width: "100%" }}
                         />
                     )}
+                </ModalBody>
+            </Modal>
+            <Modal
+                isOpen={salaryModal}
+                toggle={() => {
+                    if (!salaryUpdating) {
+                        setSalaryModal(false);
+                    }
+                }}
+            >
+                <ModalHeader
+                    toggle={() => {
+                        if (!salaryUpdating) {
+                            setSalaryModal(false);
+                        }
+                    }}
+                >
+                    Edit Salary
+                </ModalHeader>
+
+                <ModalBody>
+
+                    <div className="mb-3">
+                        <Label>
+                            Salary
+                        </Label>
+
+                        <Input
+                            type="number"
+                            value={editSalary}
+                            min="0"
+                            step="0.01"
+                            placeholder="Enter Salary"
+                            onChange={(e) =>
+                                setEditSalary(
+                                    e.target.value
+                                )
+                            }
+                            disabled={salaryUpdating}
+                        />
+                    </div>
+
+                    <div className="d-flex justify-content-end gap-2">
+
+                        <Button
+                            type="button"
+                            color="secondary"
+                            onClick={() =>
+                                setSalaryModal(false)
+                            }
+                            disabled={salaryUpdating}
+                        >
+                            Cancel
+                        </Button>
+
+                        <Button
+                            type="button"
+                            color="primary"
+                            onClick={updateStaffSalary}
+                            disabled={salaryUpdating}
+                        >
+                            {salaryUpdating
+                                ? "Updating..."
+                                : "Update Salary"}
+                        </Button>
+
+                    </div>
+
                 </ModalBody>
             </Modal>
         </React.Fragment>

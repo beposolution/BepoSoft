@@ -480,6 +480,7 @@ import AddVehicle from "../pages/Vehicle/AddVehicle";
 import VehicleKMEntry from "../pages/Vehicle/VehicleKMEntry";
 import VehicleServiceHistory from "../pages/Vehicle/VehicleServiceHistory";
 import AllBdoSalesReportPage from "../pages/SalesTeam/AllBdoSalesReportPage";
+import StaffSalaryDetails from "../pages/Staff/StaffSalaryDetails";
 
 
 
@@ -539,6 +540,7 @@ const authProtectedRoutes = [
   { path: "/manager/leave/applications/", component: <ManagerLeaveApplications /> },
   { path: "/hr/leave/applications/", component: <HrLeaveApplication /> },
   { path: "/manager-leave-applications", component: <ManagerLeaveApplications /> },
+  { path: "/staff/salary/:id/", component: <StaffSalaryDetails /> },
 
   // Team
   { path: "/sales/team/add/", component: <AddTeam /> },

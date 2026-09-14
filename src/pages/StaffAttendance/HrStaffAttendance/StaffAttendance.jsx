@@ -341,7 +341,7 @@ const StaffAttendance = () => {
                                         style={{ backgroundColor: "#f3f6ff" }}
                                     >
                                         <div className="text-muted mb-1">
-                                            Total
+                                            Working Days
                                         </div>
                                         <h4 className="mb-0 text-primary fw-bold">
                                             {attendanceSummary.total}

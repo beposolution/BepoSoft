@@ -254,6 +254,7 @@ const FormLayouts = () => {
             email: "",
             password: "",
             country: "",
+            paid_leaves: 0,
             state: "",
             allocated_states: [],
             warehouse_id: "",
@@ -309,6 +310,12 @@ const FormLayouts = () => {
                 .matches(/^[0-9]+$/, "Phone number must be digits only")
                 .min(10, "Phone number must be at least 10 digits")
                 .required("Please enter a phone number"),
+
+            paid_leaves: Yup.number()
+                .typeError("Paid leaves must be a valid number")
+                .integer("Paid leaves must be a whole number")
+                .min(0, "Paid leaves cannot be negative")
+                .required("Paid leaves is required"),
 
             // Password Validation
             password: Yup.string()
@@ -564,6 +571,7 @@ const FormLayouts = () => {
                         aadhar_no: beforeData.aadhar_no || "",
                         pan_no: beforeData.pan_no || "",
                         address: beforeData.address || "",
+                        paid_leaves: beforeData.paid_leaves ?? 0,
                     },
 
                     after_data: {
@@ -578,7 +586,7 @@ const FormLayouts = () => {
                         department: afterData.department?.name || "",
                         supervisor: afterData.supervisor?.name || "",
                         family: afterData.family?.name || "",
-
+                        paid_leaves: afterData.paid_leaves ?? 0,
                         country: afterData.country,
                         state: afterData.state?.name || "",
                         gender: afterData.gender,
@@ -691,6 +699,11 @@ const FormLayouts = () => {
                             username: staffData.username || "",
                             email: staffData.email || "",
                             password: "",
+                            paid_leaves:
+                                staffData.paid_leaves !== null &&
+                                    staffData.paid_leaves !== undefined
+                                    ? staffData.paid_leaves
+                                    : 0,
                             country: staffData.country || "",
                             state: staffData.state || "",
                             family: staffData.family || "",
@@ -1798,16 +1811,36 @@ const FormLayouts = () => {
 
                                                 <Col lg={3}>
                                                     <div className="mb-3">
-                                                        <Label className="control-label">Allocated States</Label>
-                                                        <Select
-                                                            value={selectedStates} // This should contain the currently selected options
-                                                            isMulti={true}
-                                                            onChange={handleMultiChange}
-                                                            options={states} // This should be the list of all states
-                                                            className="select2-selection"
+                                                        <Label htmlFor="formrow-paid-leaves-Input">
+                                                            No. of Paid Leaves
+                                                        </Label>
+
+                                                        <Input
+                                                            type="number"
+                                                            name="paid_leaves"
+                                                            id="formrow-paid-leaves-Input"
+                                                            className="form-control"
+                                                            placeholder="Enter No. of Paid Leaves"
+                                                            value={formik.values.paid_leaves}
+                                                            onChange={formik.handleChange}
+                                                            onBlur={formik.handleBlur}
+                                                            min="0"
+                                                            step="1"
+                                                            invalid={
+                                                                formik.touched.paid_leaves &&
+                                                                !!formik.errors.paid_leaves
+                                                            }
                                                         />
+
+                                                        {formik.errors.paid_leaves &&
+                                                            formik.touched.paid_leaves && (
+                                                                <FormFeedback type="invalid">
+                                                                    {formik.errors.paid_leaves}
+                                                                </FormFeedback>
+                                                            )}
                                                     </div>
                                                 </Col>
+
 
                                                 {/* <Col lg={3}>
                                                     <div className="mb-3">
@@ -1852,40 +1885,19 @@ const FormLayouts = () => {
 
 
                                         <Row>
-                                            <Col md={3}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-image-Input">
-                                                        Staff Image
-
-                                                        {oldStaffData?.image && (
-                                                            <span
-                                                                style={{ marginLeft: "10px", cursor: "pointer", color: "#007bff" }}
-                                                                onClick={() =>
-                                                                    openDocument(
-                                                                        `${import.meta.env.VITE_APP_IMAGE}${oldStaffData.image}`,
-                                                                        "Staff Image"
-                                                                    )
-                                                                }
-                                                            >
-                                                                ({oldStaffData.image.split("/").pop()})
-                                                            </span>
-                                                        )}
-                                                    </Label>
-                                                    <Input
-                                                        type="file"
-                                                        name="image"
-                                                        id="formrow-image-Input"
-                                                        onChange={(event) => {
-                                                            formik.setFieldValue("image", event.currentTarget.files[0]);
-                                                        }}
-                                                        onBlur={formik.handleBlur}
-                                                        invalid={formik.touched.image && !!formik.errors.image}
+                                                    <Label className="control-label">Allocated States</Label>
+                                                    <Select
+                                                        value={selectedStates} // This should contain the currently selected options
+                                                        isMulti={true}
+                                                        onChange={handleMultiChange}
+                                                        options={states} // This should be the list of all states
+                                                        className="select2-selection"
                                                     />
-                                                    {formik.errors.image && formik.touched.image && (
-                                                        <FormFeedback>{formik.errors.image}</FormFeedback>
-                                                    )}
                                                 </div>
                                             </Col>
+
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -1956,6 +1968,41 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
+                                            <Col md={3}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="formrow-image-Input">
+                                                        Staff Image
+
+                                                        {oldStaffData?.image && (
+                                                            <span
+                                                                style={{ marginLeft: "10px", cursor: "pointer", color: "#007bff" }}
+                                                                onClick={() =>
+                                                                    openDocument(
+                                                                        `${import.meta.env.VITE_APP_IMAGE}${oldStaffData.image}`,
+                                                                        "Staff Image"
+                                                                    )
+                                                                }
+                                                            >
+                                                                ({oldStaffData.image.split("/").pop()})
+                                                            </span>
+                                                        )}
+                                                    </Label>
+                                                    <Input
+                                                        type="file"
+                                                        name="image"
+                                                        id="formrow-image-Input"
+                                                        onChange={(event) => {
+                                                            formik.setFieldValue("image", event.currentTarget.files[0]);
+                                                        }}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={formik.touched.image && !!formik.errors.image}
+                                                    />
+                                                    {formik.errors.image && formik.touched.image && (
+                                                        <FormFeedback>{formik.errors.image}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+
                                             <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Supervisor-Input">Supervisor</Label>
@@ -1984,7 +2031,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-Department-Input">Department</Label>
                                                     <select
@@ -2012,7 +2059,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={4}>
+                                            <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-status-Input">Approval Status</Label>
                                                     <select

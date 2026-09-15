@@ -1291,6 +1291,12 @@ const SidebarContent = (props) => {
                       <li>
                         <Link to="/staff/exit/list/">{props.t("Staff Exit List")}</Link>
                       </li>
+                      <li>
+                        <Link to="/staff/salary/details/">{props.t("Staff Salary Confirmation")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/staff/monthly/salary/report/">{props.t("Staff Salary Report")}</Link>
+                      </li>
                     </>
                   ) : null}
                 </ul>

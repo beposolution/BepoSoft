@@ -481,6 +481,8 @@ import VehicleKMEntry from "../pages/Vehicle/VehicleKMEntry";
 import VehicleServiceHistory from "../pages/Vehicle/VehicleServiceHistory";
 import AllBdoSalesReportPage from "../pages/SalesTeam/AllBdoSalesReportPage";
 import StaffSalaryDetails from "../pages/Staff/StaffSalaryDetails";
+import StaffMonthlySalaryCalculation from "../pages/Staff/StaffMonthlySalaryCalculation";
+import StaffMonthlySalaryReport from "../pages/Staff/StaffMonthlySalaryReport";
 
 
 
@@ -541,6 +543,8 @@ const authProtectedRoutes = [
   { path: "/hr/leave/applications/", component: <HrLeaveApplication /> },
   { path: "/manager-leave-applications", component: <ManagerLeaveApplications /> },
   { path: "/staff/salary/:id/", component: <StaffSalaryDetails /> },
+  { path: "/staff/salary/details/", component: <StaffMonthlySalaryCalculation /> },
+  { path: "/staff/monthly/salary/report/", component: <StaffMonthlySalaryReport /> },
 
   // Team
   { path: "/sales/team/add/", component: <AddTeam /> },

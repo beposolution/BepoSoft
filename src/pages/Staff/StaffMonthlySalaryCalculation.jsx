@@ -181,7 +181,7 @@ const StaffMonthlySalaryCalculation = () => {
 
             toast.error(
                 error?.response?.data?.message ||
-                    "Failed to fetch staff list."
+                "Failed to fetch staff list."
             );
 
             setStaffList([]);
@@ -251,11 +251,11 @@ const StaffMonthlySalaryCalculation = () => {
                 records.find(
                     (item) =>
                         String(item.staff) ===
-                            String(staffId) &&
+                        String(staffId) &&
                         Number(item.year) ===
-                            Number(year) &&
+                        Number(year) &&
                         Number(item.month) ===
-                            Number(month)
+                        Number(month)
                 ) || records[0];
 
             const recordId = exactRecord?.id;
@@ -281,7 +281,7 @@ const StaffMonthlySalaryCalculation = () => {
 
             if (
                 detailResponse?.data?.status ===
-                    "success" &&
+                "success" &&
                 detailResponse?.data?.data
             ) {
                 const savedData =
@@ -301,7 +301,7 @@ const StaffMonthlySalaryCalculation = () => {
             console.error(
                 "Saved monthly salary fetch error:",
                 err?.response?.data ||
-                    err.message
+                err.message
             );
 
             // 404 means no saved monthly salary.
@@ -373,7 +373,7 @@ const StaffMonthlySalaryCalculation = () => {
 
             if (
                 response?.data?.status ===
-                    "success" &&
+                "success" &&
                 response?.data?.data
             ) {
                 setSalaryData(
@@ -392,7 +392,7 @@ const StaffMonthlySalaryCalculation = () => {
 
                 toast.success(
                     response?.data?.message ||
-                        "Monthly salary calculated successfully."
+                    "Monthly salary calculated successfully."
                 );
             } else {
                 const message =
@@ -406,7 +406,7 @@ const StaffMonthlySalaryCalculation = () => {
             console.error(
                 "Salary calculation error:",
                 err?.response?.data ||
-                    err.message
+                err.message
             );
 
             const backendMessage =
@@ -482,6 +482,35 @@ const StaffMonthlySalaryCalculation = () => {
         Math.floor(
             Number(lateComes || 0) / 3
         ) * 0.5;
+
+    // ============================================================
+    // FRONTEND FINAL SALARY CALCULATION
+    // Base Payable Salary + Bonus + Incentives
+    // - Late Come Salary Deduction - Fines
+    // 3 Late Comes = 0.5 Day Salary
+    // ============================================================
+
+    const basePayableSalary = Number(
+        salaryData?.payable_salary || 0
+    );
+
+    const bonusAmount = Number(bonus || 0);
+    const incentiveAmount = Number(incentives || 0);
+    const fineAmount = Number(fines || 0);
+
+    const perDaySalary = Number(
+        salary?.per_day_salary || 0
+    );
+
+    const lateComeSalaryDeduction =
+        lateComeHalfDays * perDaySalary;
+
+    const newlyCalculatedSalary =
+        basePayableSalary +
+        bonusAmount +
+        incentiveAmount -
+        lateComeSalaryDeduction -
+        fineAmount;
 
     // ============================================================
     // SAVE / UPDATE MONTHLY SALARY
@@ -651,9 +680,9 @@ const StaffMonthlySalaryCalculation = () => {
             ) {
                 toast.success(
                     response?.data?.message ||
-                        (monthlySalaryId
-                            ? "Monthly salary data updated successfully."
-                            : "Monthly salary data saved successfully.")
+                    (monthlySalaryId
+                        ? "Monthly salary data updated successfully."
+                        : "Monthly salary data saved successfully.")
                 );
 
                 // =================================================
@@ -668,16 +697,16 @@ const StaffMonthlySalaryCalculation = () => {
             } else {
                 toast.error(
                     response?.data?.message ||
-                        (monthlySalaryId
-                            ? "Failed to update monthly salary data."
-                            : "Failed to save monthly salary data.")
+                    (monthlySalaryId
+                        ? "Failed to update monthly salary data."
+                        : "Failed to save monthly salary data.")
                 );
             }
         } catch (err) {
             console.error(
                 "Monthly salary save/update error:",
                 err?.response?.data ||
-                    err.message
+                err.message
             );
 
             const responseData =
@@ -721,7 +750,7 @@ const StaffMonthlySalaryCalculation = () => {
                     if (firstErrorKey) {
                         const firstError =
                             backendErrors[
-                                firstErrorKey
+                            firstErrorKey
                             ];
 
                         if (
@@ -756,11 +785,10 @@ const StaffMonthlySalaryCalculation = () => {
         staffList.map((staffItem) => ({
             value: staffItem.id,
 
-            label: `${staffItem.name || "-"} - ${
-                staffItem.staff_id ||
+            label: `${staffItem.name || "-"} - ${staffItem.staff_id ||
                 staffItem.eid ||
                 `ID ${staffItem.id}`
-            }`,
+                }`,
 
             staff: staffItem,
         }));
@@ -905,12 +933,12 @@ const StaffMonthlySalaryCalculation = () => {
                                                         : "none",
 
                                                 "&:hover":
-                                                    {
-                                                        borderColor:
-                                                            state.isFocused
-                                                                ? "#86b7fe"
-                                                                : "#ced4da",
-                                                    },
+                                                {
+                                                    borderColor:
+                                                        state.isFocused
+                                                            ? "#86b7fe"
+                                                            : "#ced4da",
+                                                },
                                             }),
 
                                             menu: (
@@ -1075,7 +1103,7 @@ const StaffMonthlySalaryCalculation = () => {
                                             }
                                         >
                                             {loading ||
-                                            monthlySalaryLoading ? (
+                                                monthlySalaryLoading ? (
                                                 <>
                                                     <Spinner
                                                         size="sm"
@@ -1641,9 +1669,57 @@ const StaffMonthlySalaryCalculation = () => {
                                     </CardBody>
                                 </Card>
 
-                                {/* ========================================= */}
-                                {/* MONTHLY SALARY INPUT */}
-                                {/* ========================================= */}
+                                <Card className="mb-4">
+                                    <CardBody>
+                                        <Row className="align-items-center">
+                                            <Col
+                                                lg={8}
+                                                className="mb-3 mb-lg-0"
+                                            >
+                                                <CardTitle className="mb-2">
+                                                    Final
+                                                    Payable
+                                                    Salary
+                                                </CardTitle>
+
+                                                <div className="text-muted">
+                                                    Monthly
+                                                    salary
+                                                    after
+                                                    attendance
+                                                    and
+                                                    applicable
+                                                    deductions.
+                                                </div>
+                                            </Col>
+
+                                            <Col
+                                                lg={4}
+                                                className="text-lg-end"
+                                            >
+                                                <div className="text-muted mb-1">
+                                                    Payable
+                                                    Salary
+                                                </div>
+
+                                                <div
+                                                    className="text-success"
+                                                    style={{
+                                                        fontSize:
+                                                            "36px",
+                                                        fontWeight:
+                                                            "700",
+                                                    }}
+                                                >
+                                                    ₹
+                                                    {formatCurrency(
+                                                        salaryData.payable_salary
+                                                    )}
+                                                </div>
+                                            </Col>
+                                        </Row>
+                                    </CardBody>
+                                </Card>
 
                                 <Card className="mb-4">
                                     <CardBody>
@@ -1782,21 +1858,21 @@ const StaffMonthlySalaryCalculation = () => {
 
                                                 {Number(
                                                     lateComes ||
-                                                        0
+                                                    0
                                                 ) >= 3 && (
-                                                    <div className="text-warning mt-1">
-                                                        Late
-                                                        Leave:{" "}
-                                                        {
-                                                            lateComeHalfDays
-                                                        }{" "}
-                                                        Day
-                                                        {lateComeHalfDays !==
-                                                        1
-                                                            ? "s"
-                                                            : ""}
-                                                    </div>
-                                                )}
+                                                        <div className="text-warning mt-1">
+                                                            Late
+                                                            Leave:{" "}
+                                                            {
+                                                                lateComeHalfDays
+                                                            }{" "}
+                                                            Day
+                                                            {lateComeHalfDays !==
+                                                                1
+                                                                ? "s"
+                                                                : ""}
+                                                        </div>
+                                                    )}
                                             </Col>
 
                                             {/* FINES */}
@@ -1897,7 +1973,7 @@ const StaffMonthlySalaryCalculation = () => {
                                                             <strong>
                                                                 {Number(
                                                                     lateComes ||
-                                                                        0
+                                                                    0
                                                                 )}
                                                             </strong>
                                                         </Col>
@@ -1921,6 +1997,89 @@ const StaffMonthlySalaryCalculation = () => {
                                                                     lateComeHalfDays
                                                                 }
                                                             </strong>
+                                                        </Col>
+                                                    </Row>
+                                                </div>
+                                            </Col>
+
+                                            {/* NEWLY CALCULATED SALARY */}
+
+                                            <Col
+                                                md={12}
+                                                className="mb-3"
+                                            >
+                                                <div
+                                                    className="p-3 border rounded"
+                                                    style={{
+                                                        backgroundColor:
+                                                            "#f8f9fa",
+                                                    }}
+                                                >
+                                                    <Row className="align-items-center">
+                                                        <Col
+                                                            lg={8}
+                                                            className="mb-3 mb-lg-0"
+                                                        >
+                                                            <div
+                                                                className="fw-semibold mb-1"
+                                                                style={{
+                                                                    fontSize:
+                                                                        "16px",
+                                                                }}
+                                                            >
+                                                                Newly Calculated Salary
+                                                            </div>
+
+                                                            <div className="text-muted">
+                                                                Payable Salary + Bonus + Incentives - Late Come Deduction - Fines
+                                                            </div>
+
+                                                            <div className="text-muted mt-2">
+                                                                ₹
+                                                                {formatCurrency(
+                                                                    basePayableSalary
+                                                                )}{" "}
+                                                                + ₹
+                                                                {formatCurrency(
+                                                                    bonusAmount
+                                                                )}{" "}
+                                                                + ₹
+                                                                {formatCurrency(
+                                                                    incentiveAmount
+                                                                )}{" "}
+                                                                - ₹
+                                                                {formatCurrency(
+                                                                    lateComeSalaryDeduction
+                                                                )}{" "}
+                                                                - ₹
+                                                                {formatCurrency(
+                                                                    fineAmount
+                                                                )}
+                                                            </div>
+                                                        </Col>
+
+                                                        <Col
+                                                            lg={4}
+                                                            className="text-lg-end"
+                                                        >
+                                                            <div className="text-muted mb-1">
+                                                                Final Salary
+                                                            </div>
+
+                                                            <div
+                                                                className="text-success"
+                                                                style={{
+                                                                    fontSize:
+                                                                        "30px",
+                                                                    fontWeight:
+                                                                        "700",
+                                                                }}
+                                                            >
+                                                                ₹
+                                                                {formatCurrency(
+                                                                    newlyCalculatedSalary
+                                                                )}
+                                                            </div>
                                                         </Col>
                                                     </Row>
                                                 </div>
@@ -1969,61 +2128,6 @@ const StaffMonthlySalaryCalculation = () => {
                                     </CardBody>
                                 </Card>
 
-                                {/* ========================================= */}
-                                {/* FINAL PAYABLE SALARY */}
-                                {/* ========================================= */}
-
-                                <Card className="mb-4">
-                                    <CardBody>
-                                        <Row className="align-items-center">
-                                            <Col
-                                                lg={8}
-                                                className="mb-3 mb-lg-0"
-                                            >
-                                                <CardTitle className="mb-2">
-                                                    Final
-                                                    Payable
-                                                    Salary
-                                                </CardTitle>
-
-                                                <div className="text-muted">
-                                                    Monthly
-                                                    salary
-                                                    after
-                                                    attendance
-                                                    and
-                                                    applicable
-                                                    deductions.
-                                                </div>
-                                            </Col>
-
-                                            <Col
-                                                lg={4}
-                                                className="text-lg-end"
-                                            >
-                                                <div className="text-muted mb-1">
-                                                    Payable
-                                                    Salary
-                                                </div>
-
-                                                <div
-                                                    className="text-success"
-                                                    style={{
-                                                        fontSize:
-                                                            "36px",
-                                                        fontWeight:
-                                                            "700",
-                                                    }}
-                                                >
-                                                    ₹
-                                                    {formatCurrency(
-                                                        salaryData.payable_salary
-                                                    )}
-                                                </div>
-                                            </Col>
-                                        </Row>
-                                    </CardBody>
-                                </Card>
                             </>
                         )}
                 </Container>

@@ -5,6 +5,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
 import { FaCalendarAlt } from "react-icons/fa";
+import ReactApexChart from "react-apexcharts";
 
 
 const StatisticsApplications = () => {
@@ -53,6 +54,26 @@ const StatisticsApplications = () => {
     const [orderSummary, setOrderSummary] = useState([]);
     const [mainCategorySummary, setMainCategorySummary] = useState([]);
     const [mainCategoryLoading, setMainCategoryLoading] = useState(false);
+    const [hourlyOrderData, setHourlyOrderData] = useState(null);
+    const [hourlyOrderLoading, setHourlyOrderLoading] = useState(false);
+
+    // Hourly chart date filter - default TODAY
+    const getLocalDateString = () => {
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+
+        return `${year}-${month}-${day}`;
+    };
+
+    const [hourlyStartDate, setHourlyStartDate] = useState(
+        getLocalDateString()
+    );
+
+    const [hourlyEndDate, setHourlyEndDate] = useState(
+        getLocalDateString()
+    );
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -193,6 +214,81 @@ const StatisticsApplications = () => {
             totalBdos,
         };
     };
+
+    useEffect(() => {
+
+        const fetchHourlyOrderSummary = async () => {
+
+            // Only CEO needs this API
+            if (role !== "CEO" || !token) {
+                return;
+            }
+
+            // Prevent invalid request
+            if (!hourlyStartDate || !hourlyEndDate) {
+                return;
+            }
+
+            // Prevent start date after end date
+            if (hourlyStartDate > hourlyEndDate) {
+                toast.error("Start date cannot be after end date");
+                return;
+            }
+
+            try {
+
+                setHourlyOrderLoading(true);
+
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}orders/hourly/summary/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        params: {
+                            start_date: hourlyStartDate,
+                            end_date: hourlyEndDate,
+                        },
+                    }
+                );
+
+                console.log(
+                    "CEO Hourly Order Summary Response:",
+                    response.data
+                );
+
+                setHourlyOrderData(
+                    response?.data || null
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Error fetching hourly order summary:",
+                    error
+                );
+
+                setHourlyOrderData(null);
+
+                toast.error(
+                    "Failed to fetch hourly order summary"
+                );
+
+            } finally {
+
+                setHourlyOrderLoading(false);
+
+            }
+        };
+
+        fetchHourlyOrderSummary();
+
+    }, [
+        role,
+        token,
+        hourlyStartDate,
+        hourlyEndDate
+    ]);
 
     useEffect(() => {
         const fetchStateBdoSummary = async () => {
@@ -858,7 +954,547 @@ const StatisticsApplications = () => {
     const totalBills = orderSummary.total_bills || 0;
     const totalAmount = orderSummary.total_amount || 0;
 
+    // =====================================================
+    // CEO HOURLY ORDER CHART
+    // =====================================================
 
+    const allHourlyOrders =
+        hourlyOrderData?.summary?.hourly_orders || [];
+
+    const hourlyFamilyData =
+        hourlyOrderData?.data || [];
+
+
+    // 9 AM to 7 PM should always be displayed
+    const alwaysVisibleHours = new Set([
+        "09:00-10:00",
+        "10:00-11:00",
+        "11:00-12:00",
+        "12:00-13:00",
+        "13:00-14:00",
+        "14:00-15:00",
+        "15:00-16:00",
+        "16:00-17:00",
+        "17:00-18:00",
+        "18:00-19:00",
+    ]);
+
+
+    const visibleHourlyOrders = allHourlyOrders.filter((hourItem) => {
+
+        if (alwaysVisibleHours.has(hourItem.hour)) {
+            return true;
+        }
+
+        const totalOrders = Number(hourItem?.orders || 0);
+
+        if (totalOrders > 0) {
+            return true;
+        }
+
+        const hasFamilyOrders = hourlyFamilyData.some((family) => {
+
+            const familyHour =
+                family?.summary?.hourly_orders?.find(
+                    (item) => item.hour === hourItem.hour
+                );
+
+            return Number(familyHour?.orders || 0) > 0;
+        });
+
+        return hasFamilyOrders;
+    });
+
+
+    const hourlyCategories = visibleHourlyOrders.map(
+        (item) => item.hour
+    );
+
+    const formatHourRange = (hourRange) => {
+
+        if (!hourRange) return "";
+
+        const [start, end] = hourRange.split("-");
+
+        const startHour = Number(
+            start?.split(":")[0] || 0
+        );
+
+        const endHour = Number(
+            end?.split(":")[0] || 0
+        );
+
+
+        const formatHour = (hour) => {
+
+            if (hour === 0) return "12";
+
+            if (hour > 12) {
+                return String(hour - 12);
+            }
+
+            return String(hour);
+        };
+
+
+        const startPeriod =
+            startHour >= 12 ? "PM" : "AM";
+
+        const endPeriod =
+            endHour >= 12 ? "PM" : "AM";
+
+
+        if (startPeriod === endPeriod) {
+
+            return `${formatHour(startHour)}–${formatHour(endHour)} ${endPeriod}`;
+        }
+
+
+        return `${formatHour(startHour)} ${startPeriod}–${formatHour(endHour)} ${endPeriod}`;
+    };
+
+    const hourlyFamilyConfig = {
+
+        bepocart: {
+            label: "BepoCart",
+            color: "#2563EB",
+        },
+
+        cycling: {
+            label: "Cycling",
+            color: "#10B981",
+        },
+
+        skating: {
+            label: "Skating",
+            color: "#F59E0B",
+        },
+    };
+
+
+    const allowedHourlyFamilies = [
+        "bepocart",
+        "cycling",
+        "skating",
+    ];
+
+    const sortedHourlyFamilyData =
+        allowedHourlyFamilies
+            .map((familyName) =>
+                hourlyFamilyData.find(
+                    (family) =>
+                        String(
+                            family?.family_name || ""
+                        )
+                            .trim()
+                            .toLowerCase() === familyName
+                )
+            )
+            .filter(Boolean);
+
+
+    const hourlyChartSeries =
+        sortedHourlyFamilyData.map((family) => {
+
+            const key = String(
+                family?.family_name || ""
+            )
+                .trim()
+                .toLowerCase();
+
+
+            return {
+
+                name:
+                    hourlyFamilyConfig[key]?.label ||
+                    family?.family_name ||
+                    "Unknown",
+
+                data: hourlyCategories.map((hour) => {
+
+                    const hourData =
+                        family?.summary?.hourly_orders?.find(
+                            (item) =>
+                                item.hour === hour
+                        );
+
+                    return Number(
+                        hourData?.orders || 0
+                    );
+                }),
+            };
+        });
+
+
+    const getHourlyFamilyTotal = (familyName) => {
+
+        const family =
+            hourlyFamilyData.find(
+                (item) =>
+                    String(
+                        item?.family_name || ""
+                    )
+                        .trim()
+                        .toLowerCase() === familyName
+            );
+
+
+        return Number(
+            family?.summary?.total_orders || 0
+        );
+    };
+
+
+    const bepocartHourlyTotal =
+        getHourlyFamilyTotal("bepocart");
+
+    const cyclingHourlyTotal =
+        getHourlyFamilyTotal("cycling");
+
+    const skatingHourlyTotal =
+        getHourlyFamilyTotal("skating");
+
+
+    const hourlyGrandTotal =
+        Number(
+            hourlyOrderData?.summary?.total_orders || 0
+        );
+
+    const peakHourData =
+        visibleHourlyOrders.length > 0
+            ? visibleHourlyOrders.reduce(
+                (peak, current) => {
+
+                    if (
+                        Number(current?.orders || 0) >
+                        Number(peak?.orders || 0)
+                    ) {
+                        return current;
+                    }
+
+                    return peak;
+                },
+                visibleHourlyOrders[0]
+            )
+            : null;
+
+    const hourlyChartOptions = {
+
+        chart: {
+
+            type: "bar",
+
+            height: 390,
+
+            toolbar: {
+                show: false,
+            },
+
+            zoom: {
+                enabled: false,
+            },
+
+            animations: {
+                enabled: true,
+                easing: "easeinout",
+                speed: 500,
+            },
+
+            fontFamily:
+                "Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+
+            parentHeightOffset: 0,
+        },
+
+
+        colors: [
+            "#2563EB",
+            "#10B981",
+            "#F59E0B",
+        ],
+
+
+        plotOptions: {
+
+            bar: {
+
+                horizontal: false,
+
+                columnWidth: "58%",
+
+                borderRadius: 5,
+
+                borderRadiusApplication: "end",
+
+                dataLabels: {
+                    position: "top",
+                },
+            },
+        },
+
+
+        dataLabels: {
+
+            enabled: true,
+
+            formatter: function (value) {
+
+                const number =
+                    Number(value || 0);
+
+                if (number <= 0) {
+                    return "";
+                }
+
+                return number.toLocaleString(
+                    "en-IN"
+                );
+            },
+
+            offsetY: -10,
+
+            style: {
+
+                fontSize: "11px",
+
+                fontWeight: 700,
+
+                colors: [
+                    "#334155"
+                ],
+            },
+
+            background: {
+                enabled: false,
+            },
+
+            dropShadow: {
+                enabled: false,
+            },
+        },
+
+
+        stroke: {
+            show: false,
+        },
+
+
+        xaxis: {
+
+            categories: hourlyCategories,
+
+            labels: {
+
+                rotate: 0,
+
+                trim: false,
+
+                hideOverlappingLabels: false,
+
+                formatter: function (value) {
+                    return formatHourRange(value);
+                },
+
+                style: {
+
+                    fontSize: "11px",
+
+                    fontWeight: 500,
+
+                    colors: "#64748B",
+                },
+            },
+
+            axisBorder: {
+
+                show: true,
+
+                color: "#E2E8F0",
+            },
+
+            axisTicks: {
+                show: false,
+            },
+
+            tooltip: {
+                enabled: false,
+            },
+        },
+
+
+        yaxis: {
+
+            min: 0,
+
+            forceNiceScale: true,
+
+            max: function (max) {
+
+                if (!max || max <= 0) {
+                    return 10;
+                }
+
+                return Math.ceil(
+                    max * 1.15
+                );
+            },
+
+            labels: {
+
+                formatter: function (value) {
+
+                    const number =
+                        Number(value || 0);
+
+                    if (number >= 1000000) {
+
+                        return `${(
+                            number / 1000000
+                        ).toFixed(1)}M`;
+                    }
+
+                    if (number >= 1000) {
+
+                        return `${(
+                            number / 1000
+                        ).toFixed(
+                            number >= 10000
+                                ? 0
+                                : 1
+                        )}K`;
+                    }
+
+                    return Math.round(
+                        number
+                    ).toString();
+                },
+
+                style: {
+
+                    fontSize: "11px",
+
+                    fontWeight: 500,
+
+                    colors: "#94A3B8",
+                },
+            },
+        },
+
+
+        legend: {
+            show: false,
+        },
+
+
+        grid: {
+
+            borderColor: "#EEF2F7",
+
+            strokeDashArray: 4,
+
+            padding: {
+
+                top: 30,
+
+                right: 12,
+
+                bottom: 0,
+
+                left: 8,
+            },
+
+            xaxis: {
+
+                lines: {
+                    show: false,
+                },
+            },
+
+            yaxis: {
+
+                lines: {
+                    show: true,
+                },
+            },
+        },
+
+
+        tooltip: {
+
+            shared: true,
+
+            intersect: false,
+
+            theme: "light",
+
+            x: {
+
+                formatter: function (
+                    value,
+                    { dataPointIndex }
+                ) {
+
+                    const hour =
+                        hourlyCategories[
+                        dataPointIndex
+                        ];
+
+                    return formatHourRange(
+                        hour
+                    );
+                },
+            },
+
+            y: {
+
+                formatter: function (value) {
+
+                    return `${Number(
+                        value || 0
+                    ).toLocaleString(
+                        "en-IN"
+                    )} orders`;
+                },
+            },
+        },
+
+
+        fill: {
+            opacity: 1,
+        },
+
+
+        states: {
+
+            hover: {
+
+                filter: {
+
+                    type: "darken",
+
+                    value: 0.04,
+                },
+            },
+        },
+
+
+        noData: {
+
+            text:
+                "No hourly order data available",
+
+            align: "center",
+
+            verticalAlign: "middle",
+
+            style: {
+
+                color: "#94A3B8",
+
+                fontSize: "14px",
+            },
+        },
+    };
 
     if (role !== "CEO" && role !== "COO") return null;
 
@@ -870,6 +1506,650 @@ const StatisticsApplications = () => {
                     <CardBody>
                         {(role === 'CEO' || role === 'COO') && (
                             <div className="row">
+                                {role === "CEO" && (
+
+                                    <Row className="mb-4">
+
+                                        <Col xs={12}>
+
+                                            <Card
+                                                className="border-0"
+                                                style={{
+                                                    borderRadius: "20px",
+                                                    background: "#FFFFFF",
+                                                    boxShadow:
+                                                        "0 8px 30px rgba(15,23,42,0.06)",
+                                                    border:
+                                                        "1px solid #F1F5F9",
+                                                }}
+                                            >
+
+                                                <CardBody
+                                                    style={{
+                                                        padding: "24px",
+                                                    }}
+                                                >
+
+                                                    {/* HEADER */}
+
+                                                    <div
+                                                        className="
+                                    d-flex
+                                    flex-wrap
+                                    justify-content-between
+                                    align-items-center
+                                "
+                                                        style={{
+                                                            gap: "20px",
+                                                            marginBottom: "22px",
+                                                        }}
+                                                    >
+
+                                                        <div>
+
+                                                            <h5
+                                                                className="fw-bold mb-1"
+                                                                style={{
+                                                                    color: "#0F172A",
+                                                                    fontSize: "18px",
+                                                                }}
+                                                            >
+                                                                Hourly Order Summary
+                                                            </h5>
+
+                                                            <div
+                                                                style={{
+                                                                    color: "#94A3B8",
+                                                                    fontSize: "12px",
+                                                                }}
+                                                            >
+                                                                Order distribution throughout the day
+                                                            </div>
+
+                                                        </div>
+
+
+                                                        {/* DATE FILTER */}
+
+                                                        <div
+                                                            className="
+                                        d-flex
+                                        flex-wrap
+                                        align-items-end
+                                    "
+                                                            style={{
+                                                                gap: "10px",
+                                                            }}
+                                                        >
+
+                                                            <div>
+
+                                                                <label
+                                                                    style={{
+                                                                        display: "block",
+                                                                        fontSize: "11px",
+                                                                        fontWeight: 700,
+                                                                        color: "#64748B",
+                                                                        marginBottom: "5px",
+                                                                    }}
+                                                                >
+                                                                    FROM
+                                                                </label>
+
+                                                                <Input
+                                                                    type="date"
+                                                                    value={
+                                                                        hourlyStartDate
+                                                                    }
+                                                                    max={
+                                                                        getLocalDateString()
+                                                                    }
+                                                                    onChange={(e) =>
+                                                                        setHourlyStartDate(
+                                                                            e.target.value
+                                                                        )
+                                                                    }
+                                                                    style={{
+                                                                        width: "150px",
+                                                                        height: "40px",
+                                                                        borderRadius:
+                                                                            "10px",
+                                                                    }}
+                                                                />
+
+                                                            </div>
+
+
+                                                            <div>
+
+                                                                <label
+                                                                    style={{
+                                                                        display: "block",
+                                                                        fontSize: "11px",
+                                                                        fontWeight: 700,
+                                                                        color: "#64748B",
+                                                                        marginBottom: "5px",
+                                                                    }}
+                                                                >
+                                                                    TO
+                                                                </label>
+
+                                                                <Input
+                                                                    type="date"
+                                                                    value={
+                                                                        hourlyEndDate
+                                                                    }
+                                                                    min={
+                                                                        hourlyStartDate
+                                                                    }
+                                                                    max={
+                                                                        getLocalDateString()
+                                                                    }
+                                                                    onChange={(e) =>
+                                                                        setHourlyEndDate(
+                                                                            e.target.value
+                                                                        )
+                                                                    }
+                                                                    style={{
+                                                                        width: "150px",
+                                                                        height: "40px",
+                                                                        borderRadius:
+                                                                            "10px",
+                                                                    }}
+                                                                />
+
+                                                            </div>
+
+
+                                                            <Button
+                                                                onClick={() => {
+
+                                                                    const today =
+                                                                        getLocalDateString();
+
+                                                                    setHourlyStartDate(
+                                                                        today
+                                                                    );
+
+                                                                    setHourlyEndDate(
+                                                                        today
+                                                                    );
+                                                                }}
+                                                                disabled={
+                                                                    hourlyStartDate ===
+                                                                    getLocalDateString() &&
+                                                                    hourlyEndDate ===
+                                                                    getLocalDateString()
+                                                                }
+                                                                color="primary"
+                                                                outline
+                                                                style={{
+                                                                    height: "40px",
+                                                                    borderRadius:
+                                                                        "10px",
+                                                                    fontWeight: 600,
+                                                                }}
+                                                            >
+                                                                Today
+                                                            </Button>
+
+                                                        </div>
+
+                                                    </div>
+
+
+                                                    {/* KPI CARDS */}
+
+                                                    <Row className="g-3 mb-4">
+
+                                                        <Col
+                                                            xl={3}
+                                                            md={6}
+                                                            xs={12}
+                                                        >
+
+                                                            <div
+                                                                style={{
+                                                                    padding:
+                                                                        "17px 18px",
+                                                                    borderRadius:
+                                                                        "14px",
+                                                                    background:
+                                                                        "linear-gradient(135deg,#1D4ED8,#2563EB)",
+                                                                }}
+                                                            >
+
+                                                                <small
+                                                                    style={{
+                                                                        color:
+                                                                            "#BFDBFE",
+                                                                        fontWeight:
+                                                                            700,
+                                                                    }}
+                                                                >
+                                                                    TOTAL ORDERS
+                                                                </small>
+
+                                                                <div
+                                                                    style={{
+                                                                        fontSize:
+                                                                            "28px",
+                                                                        fontWeight:
+                                                                            800,
+                                                                        color:
+                                                                            "#FFFFFF",
+                                                                        marginTop:
+                                                                            "5px",
+                                                                    }}
+                                                                >
+                                                                    {hourlyGrandTotal.toLocaleString(
+                                                                        "en-IN"
+                                                                    )}
+                                                                </div>
+
+                                                            </div>
+
+                                                        </Col>
+
+
+                                                        <Col
+                                                            xl={3}
+                                                            md={6}
+                                                            xs={12}
+                                                        >
+
+                                                            <div
+                                                                style={{
+                                                                    padding:
+                                                                        "17px 18px",
+                                                                    borderRadius:
+                                                                        "14px",
+                                                                    background:
+                                                                        "#EFF6FF",
+                                                                    border:
+                                                                        "1px solid #DBEAFE",
+                                                                }}
+                                                            >
+
+                                                                <small
+                                                                    style={{
+                                                                        color:
+                                                                            "#64748B",
+                                                                        fontWeight:
+                                                                            700,
+                                                                    }}
+                                                                >
+                                                                    BEPOCART
+                                                                </small>
+
+                                                                <div
+                                                                    style={{
+                                                                        fontSize:
+                                                                            "25px",
+                                                                        fontWeight:
+                                                                            800,
+                                                                        color:
+                                                                            "#2563EB",
+                                                                        marginTop:
+                                                                            "5px",
+                                                                    }}
+                                                                >
+                                                                    {bepocartHourlyTotal.toLocaleString(
+                                                                        "en-IN"
+                                                                    )}
+                                                                </div>
+
+                                                            </div>
+
+                                                        </Col>
+
+
+                                                        <Col
+                                                            xl={3}
+                                                            md={6}
+                                                            xs={12}
+                                                        >
+
+                                                            <div
+                                                                style={{
+                                                                    padding:
+                                                                        "17px 18px",
+                                                                    borderRadius:
+                                                                        "14px",
+                                                                    background:
+                                                                        "#ECFDF5",
+                                                                    border:
+                                                                        "1px solid #D1FAE5",
+                                                                }}
+                                                            >
+
+                                                                <small
+                                                                    style={{
+                                                                        color:
+                                                                            "#64748B",
+                                                                        fontWeight:
+                                                                            700,
+                                                                    }}
+                                                                >
+                                                                    CYCLING
+                                                                </small>
+
+                                                                <div
+                                                                    style={{
+                                                                        fontSize:
+                                                                            "25px",
+                                                                        fontWeight:
+                                                                            800,
+                                                                        color:
+                                                                            "#10B981",
+                                                                        marginTop:
+                                                                            "5px",
+                                                                    }}
+                                                                >
+                                                                    {cyclingHourlyTotal.toLocaleString(
+                                                                        "en-IN"
+                                                                    )}
+                                                                </div>
+
+                                                            </div>
+
+                                                        </Col>
+
+
+                                                        <Col
+                                                            xl={3}
+                                                            md={6}
+                                                            xs={12}
+                                                        >
+
+                                                            <div
+                                                                style={{
+                                                                    padding:
+                                                                        "17px 18px",
+                                                                    borderRadius:
+                                                                        "14px",
+                                                                    background:
+                                                                        "#FFFBEB",
+                                                                    border:
+                                                                        "1px solid #FEF3C7",
+                                                                }}
+                                                            >
+
+                                                                <small
+                                                                    style={{
+                                                                        color:
+                                                                            "#64748B",
+                                                                        fontWeight:
+                                                                            700,
+                                                                    }}
+                                                                >
+                                                                    SKATING
+                                                                </small>
+
+                                                                <div
+                                                                    style={{
+                                                                        fontSize:
+                                                                            "25px",
+                                                                        fontWeight:
+                                                                            800,
+                                                                        color:
+                                                                            "#F59E0B",
+                                                                        marginTop:
+                                                                            "5px",
+                                                                    }}
+                                                                >
+                                                                    {skatingHourlyTotal.toLocaleString(
+                                                                        "en-IN"
+                                                                    )}
+                                                                </div>
+
+                                                            </div>
+
+                                                        </Col>
+
+                                                    </Row>
+
+
+                                                    {/* CHART TITLE + LEGEND */}
+
+                                                    <div
+                                                        className="
+                                    d-flex
+                                    flex-wrap
+                                    justify-content-between
+                                    align-items-center
+                                    mb-2
+                                "
+                                                    >
+
+                                                        <div>
+
+                                                            <div
+                                                                style={{
+                                                                    fontWeight: 700,
+                                                                    color: "#334155",
+                                                                }}
+                                                            >
+                                                                Orders by Hour
+                                                            </div>
+
+                                                            {peakHourData &&
+                                                                Number(
+                                                                    peakHourData?.orders ||
+                                                                    0
+                                                                ) > 0 && (
+
+                                                                    <small
+                                                                        style={{
+                                                                            color:
+                                                                                "#94A3B8",
+                                                                        }}
+                                                                    >
+                                                                        Peak hour:{" "}
+
+                                                                        <strong>
+                                                                            {formatHourRange(
+                                                                                peakHourData.hour
+                                                                            )}
+                                                                        </strong>
+
+                                                                        {" • "}
+
+                                                                        {Number(
+                                                                            peakHourData.orders
+                                                                        ).toLocaleString(
+                                                                            "en-IN"
+                                                                        )}{" "}
+                                                                        orders
+                                                                    </small>
+                                                                )}
+
+                                                        </div>
+
+
+                                                        <div
+                                                            className="
+                                        d-flex
+                                        align-items-center
+                                        flex-wrap
+                                    "
+                                                            style={{
+                                                                gap: "18px",
+                                                            }}
+                                                        >
+
+                                                            {[
+                                                                {
+                                                                    name:
+                                                                        "BepoCart",
+                                                                    color:
+                                                                        "#2563EB",
+                                                                },
+                                                                {
+                                                                    name:
+                                                                        "Cycling",
+                                                                    color:
+                                                                        "#10B981",
+                                                                },
+                                                                {
+                                                                    name:
+                                                                        "Skating",
+                                                                    color:
+                                                                        "#F59E0B",
+                                                                },
+                                                            ].map(
+                                                                (item) => (
+
+                                                                    <div
+                                                                        key={
+                                                                            item.name
+                                                                        }
+                                                                        className="
+                                                    d-flex
+                                                    align-items-center
+                                                "
+                                                                        style={{
+                                                                            gap:
+                                                                                "6px",
+                                                                        }}
+                                                                    >
+
+                                                                        <span
+                                                                            style={{
+                                                                                width:
+                                                                                    "9px",
+                                                                                height:
+                                                                                    "9px",
+                                                                                borderRadius:
+                                                                                    "3px",
+                                                                                background:
+                                                                                    item.color,
+                                                                            }}
+                                                                        />
+
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize:
+                                                                                    "12px",
+                                                                                fontWeight:
+                                                                                    600,
+                                                                                color:
+                                                                                    "#64748B",
+                                                                            }}
+                                                                        >
+                                                                            {
+                                                                                item.name
+                                                                            }
+                                                                        </span>
+
+                                                                    </div>
+                                                                )
+                                                            )}
+
+                                                        </div>
+
+                                                    </div>
+
+
+                                                    {/* CHART */}
+
+                                                    {hourlyOrderLoading ? (
+
+                                                        <div
+                                                            className="
+                                        d-flex
+                                        align-items-center
+                                        justify-content-center
+                                    "
+                                                            style={{
+                                                                height: "390px",
+                                                            }}
+                                                        >
+
+                                                            <div
+                                                                className="
+                                            spinner-border
+                                            text-primary
+                                        "
+                                                            />
+
+                                                        </div>
+
+                                                    ) : hourlyCategories.length >
+                                                        0 ? (
+
+                                                        <div
+                                                            style={{
+                                                                width: "100%",
+                                                                overflowX:
+                                                                    "auto",
+                                                            }}
+                                                        >
+
+                                                            <div
+                                                                style={{
+                                                                    minWidth:
+                                                                        hourlyCategories.length >
+                                                                            10
+                                                                            ? `${hourlyCategories.length * 95}px`
+                                                                            : "100%",
+                                                                }}
+                                                            >
+
+                                                                <ReactApexChart
+                                                                    options={
+                                                                        hourlyChartOptions
+                                                                    }
+                                                                    series={
+                                                                        hourlyChartSeries
+                                                                    }
+                                                                    type="bar"
+                                                                    height={
+                                                                        390
+                                                                    }
+                                                                />
+
+                                                            </div>
+
+                                                        </div>
+
+                                                    ) : (
+
+                                                        <div
+                                                            className="
+                                        d-flex
+                                        align-items-center
+                                        justify-content-center
+                                    "
+                                                            style={{
+                                                                height: "300px",
+                                                                background:
+                                                                    "#F8FAFC",
+                                                                borderRadius:
+                                                                    "14px",
+                                                            }}
+                                                        >
+                                                            <span
+                                                                style={{
+                                                                    color:
+                                                                        "#94A3B8",
+                                                                }}
+                                                            >
+                                                                No hourly order data available
+                                                            </span>
+                                                        </div>
+
+                                                    )}
+
+                                                </CardBody>
+
+                                            </Card>
+
+                                        </Col>
+
+                                    </Row>
+
+                                )}
                                 {/* Left Column - Division-wise Order Statistics */}
                                 <div className="col-md-3">
                                     <div>

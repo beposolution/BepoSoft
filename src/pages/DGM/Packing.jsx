@@ -64,17 +64,24 @@ const FormLayouts = () => {
 
         if (currentStatus === "To Print") {
             return [
-                // "Packing under progress",
-                "Packed",
+                "Packing under progress",
+                // "Packed",
             ];
         }
 
-        // if (currentStatus === "Packing under progress") {
-        //     return [
-        //         "Packed",
-        //         "Ready to ship",
-        //     ];
-        // }
+        if (currentStatus === "Packing under progress") {
+            return [
+                "Packed",
+                // "Ready to ship",
+            ];
+        }
+
+        if (currentStatus === "Packed") {
+            return [
+                // "Packed",
+                "Ready to ship",
+            ];
+        }
 
         if (currentStatus === "Ready to ship") {
             return [
@@ -193,6 +200,9 @@ const FormLayouts = () => {
 
             case "To Print":
                 return "Delivery Order (DO)";
+
+            case "Packing under progress":
+                return "Printed";
 
             case "Packed":
                 return "Packed For Delivery (PFD)";

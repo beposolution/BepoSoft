@@ -220,7 +220,7 @@ const StatisticsApplications = () => {
         const fetchHourlyOrderSummary = async () => {
 
             // Only CEO needs this API
-            if (role !== "CEO" || !token) {
+            if (!token) {
                 return;
             }
 

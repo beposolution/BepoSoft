@@ -269,7 +269,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                 "Pre Booked",
                 "Waiting For Confirmation",
                 "To Print",
-                // 'Packing under progress',
+                'Packing under progress',
                 'Packed',
                 'Ready to ship',
                 'Return From Delivery',
@@ -356,6 +356,9 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
 
             case "To Print":
                 return "Delivery Order (DO)";
+
+            case "Packing under progress":
+                return "Printed";
 
             case "Packed":
                 return "Packed For Delivery (PFD)";

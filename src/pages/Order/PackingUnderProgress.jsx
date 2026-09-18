@@ -312,7 +312,7 @@ const PackingUnderProgress = () => {
                         <Col xl={12}>
                             <Card>
                                 <CardBody>
-                                    <CardTitle className="h4">PACKING UNDER PROGRESS ORDERS</CardTitle>
+                                    <CardTitle className="h4">PRINTED ORDERS</CardTitle>
                                     <div className="table-responsive">
                                         {loading ? <div>Loading...</div> : error ? <div className="text-danger">{error}</div> : (
                                             <Table className="table mb-0">
@@ -364,7 +364,11 @@ const PackingUnderProgress = () => {
                                                                         ...getStatusStyle(order?.status)
                                                                     }}
                                                                 >
-                                                                    <strong>{order?.status}</strong>
+                                                                    <strong>
+                                                                        {order?.status === "Packing under progress"
+                                                                            ? "Printed"
+                                                                            : order?.status}
+                                                                    </strong>
 
                                                                     {(["Ready to ship", "Shipped"].includes(order?.status)) &&
                                                                         (order?.warehouse_data?.length > 0 ||

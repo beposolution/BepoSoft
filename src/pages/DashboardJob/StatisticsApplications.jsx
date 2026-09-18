@@ -1215,15 +1215,10 @@ const StatisticsApplications = () => {
 
 
         plotOptions: {
-
             bar: {
-
                 horizontal: false,
-
                 columnWidth: "58%",
-
                 borderRadius: 5,
-
                 borderRadiusApplication: "end",
 
                 dataLabels: {
@@ -1234,34 +1229,25 @@ const StatisticsApplications = () => {
 
 
         dataLabels: {
-
             enabled: true,
 
             formatter: function (value) {
-
-                const number =
-                    Number(value || 0);
+                const number = Number(value || 0);
 
                 if (number <= 0) {
                     return "";
                 }
 
-                return number.toLocaleString(
-                    "en-IN"
-                );
+                return number.toLocaleString("en-IN");
             },
 
-            offsetY: -10,
+            // Moves the number ABOVE the bar
+            offsetY: -18,
 
             style: {
-
-                fontSize: "11px",
-
+                fontSize: "12px",
                 fontWeight: 700,
-
-                colors: [
-                    "#334155"
-                ],
+                colors: ["#1E293B"],
             },
 
             background: {
@@ -1323,58 +1309,39 @@ const StatisticsApplications = () => {
 
 
         yaxis: {
-
             min: 0,
 
             forceNiceScale: true,
 
             max: function (max) {
-
                 if (!max || max <= 0) {
                     return 10;
                 }
 
-                return Math.ceil(
-                    max * 1.15
-                );
+                // Extra headroom for labels above bars
+                return Math.ceil(max * 1.25);
             },
 
             labels: {
-
                 formatter: function (value) {
-
-                    const number =
-                        Number(value || 0);
+                    const number = Number(value || 0);
 
                     if (number >= 1000000) {
-
-                        return `${(
-                            number / 1000000
-                        ).toFixed(1)}M`;
+                        return `${(number / 1000000).toFixed(1)}M`;
                     }
 
                     if (number >= 1000) {
-
-                        return `${(
-                            number / 1000
-                        ).toFixed(
-                            number >= 10000
-                                ? 0
-                                : 1
+                        return `${(number / 1000).toFixed(
+                            number >= 10000 ? 0 : 1
                         )}K`;
                     }
 
-                    return Math.round(
-                        number
-                    ).toString();
+                    return Math.round(number).toString();
                 },
 
                 style: {
-
                     fontSize: "11px",
-
                     fontWeight: 500,
-
                     colors: "#94A3B8",
                 },
             },
@@ -1387,31 +1354,23 @@ const StatisticsApplications = () => {
 
 
         grid: {
-
             borderColor: "#EEF2F7",
-
             strokeDashArray: 4,
 
             padding: {
-
-                top: 30,
-
+                top: 45,
                 right: 12,
-
                 bottom: 0,
-
                 left: 8,
             },
 
             xaxis: {
-
                 lines: {
                     show: false,
                 },
             },
 
             yaxis: {
-
                 lines: {
                     show: true,
                 },
@@ -1494,6 +1453,167 @@ const StatisticsApplications = () => {
                 fontSize: "14px",
             },
         },
+    };
+
+    // =====================================================
+    // DIVISION / FAMILY DONUT CHART
+    // =====================================================
+
+    const divisionDonutSeries = [
+        bepocartHourlyTotal,
+        cyclingHourlyTotal,
+        skatingHourlyTotal,
+    ];
+
+    const divisionDonutOptions = {
+        chart: {
+            type: "donut",
+            fontFamily:
+                "Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            animations: {
+                enabled: true,
+                easing: "easeinout",
+                speed: 500,
+            },
+        },
+
+        labels: [
+            "BepoCart",
+            "Cycling",
+            "Skating",
+        ],
+
+        colors: [
+            "#2563EB",
+            "#10B981",
+            "#F59E0B",
+        ],
+
+        stroke: {
+            width: 4,
+            colors: ["#FFFFFF"],
+        },
+
+        dataLabels: {
+            enabled: false,
+        },
+
+        legend: {
+            show: false,
+        },
+
+        tooltip: {
+            enabled: true,
+            y: {
+                formatter: function (value) {
+                    return `${Number(value || 0).toLocaleString(
+                        "en-IN"
+                    )} orders`;
+                },
+            },
+        },
+
+        plotOptions: {
+            pie: {
+                expandOnClick: false,
+
+                donut: {
+                    size: "72%",
+
+                    labels: {
+                        show: true,
+
+                        name: {
+                            show: true,
+                            offsetY: -8,
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            color: "#94A3B8",
+                        },
+
+                        value: {
+                            show: true,
+                            offsetY: 6,
+                            fontSize: "28px",
+                            fontWeight: 800,
+                            color: "#0F172A",
+
+                            formatter: function (value) {
+                                return Number(
+                                    value || 0
+                                ).toLocaleString("en-IN");
+                            },
+                        },
+
+                        total: {
+                            show: true,
+                            showAlways: true,
+                            label: "Total Orders",
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            color: "#94A3B8",
+
+                            formatter: function () {
+                                return hourlyGrandTotal.toLocaleString(
+                                    "en-IN"
+                                );
+                            },
+                        },
+                    },
+                },
+            },
+        },
+
+        states: {
+            hover: {
+                filter: {
+                    type: "darken",
+                    value: 0.04,
+                },
+            },
+            active: {
+                filter: {
+                    type: "none",
+                },
+            },
+        },
+
+        responsive: [
+            {
+                breakpoint: 1200,
+                options: {
+                    chart: {
+                        height: 300,
+                    },
+                },
+            },
+        ],
+    };
+
+    const goToHourlyFamilyDetails = (familyName) => {
+        const family = hourlyFamilyData.find(
+            (item) =>
+                String(item?.family_name || "")
+                    .trim()
+                    .toLowerCase() === familyName.toLowerCase()
+        );
+
+        if (!family?.family_id) {
+            toast.error("Family information not available");
+            return;
+        }
+
+        navigate(
+            `/hourly-order-family/${family.family_id}`,
+            {
+                state: {
+                    familyId: family.family_id,
+                    familyName: family.family_name,
+                    startDate: hourlyStartDate,
+                    endDate: hourlyEndDate,
+                },
+            }
+        );
     };
 
     if (role !== "CEO" && role !== "COO") return null;
@@ -1697,219 +1817,6 @@ const StatisticsApplications = () => {
 
                                                     </div>
 
-
-                                                    {/* KPI CARDS */}
-
-                                                    <Row className="g-3 mb-4">
-
-                                                        <Col
-                                                            xl={3}
-                                                            md={6}
-                                                            xs={12}
-                                                        >
-
-                                                            <div
-                                                                style={{
-                                                                    padding:
-                                                                        "17px 18px",
-                                                                    borderRadius:
-                                                                        "14px",
-                                                                    background:
-                                                                        "linear-gradient(135deg,#1D4ED8,#2563EB)",
-                                                                }}
-                                                            >
-
-                                                                <small
-                                                                    style={{
-                                                                        color:
-                                                                            "#BFDBFE",
-                                                                        fontWeight:
-                                                                            700,
-                                                                    }}
-                                                                >
-                                                                    TOTAL ORDERS
-                                                                </small>
-
-                                                                <div
-                                                                    style={{
-                                                                        fontSize:
-                                                                            "28px",
-                                                                        fontWeight:
-                                                                            800,
-                                                                        color:
-                                                                            "#FFFFFF",
-                                                                        marginTop:
-                                                                            "5px",
-                                                                    }}
-                                                                >
-                                                                    {hourlyGrandTotal.toLocaleString(
-                                                                        "en-IN"
-                                                                    )}
-                                                                </div>
-
-                                                            </div>
-
-                                                        </Col>
-
-
-                                                        <Col
-                                                            xl={3}
-                                                            md={6}
-                                                            xs={12}
-                                                        >
-
-                                                            <div
-                                                                style={{
-                                                                    padding:
-                                                                        "17px 18px",
-                                                                    borderRadius:
-                                                                        "14px",
-                                                                    background:
-                                                                        "#EFF6FF",
-                                                                    border:
-                                                                        "1px solid #DBEAFE",
-                                                                }}
-                                                            >
-
-                                                                <small
-                                                                    style={{
-                                                                        color:
-                                                                            "#64748B",
-                                                                        fontWeight:
-                                                                            700,
-                                                                    }}
-                                                                >
-                                                                    BEPOCART
-                                                                </small>
-
-                                                                <div
-                                                                    style={{
-                                                                        fontSize:
-                                                                            "25px",
-                                                                        fontWeight:
-                                                                            800,
-                                                                        color:
-                                                                            "#2563EB",
-                                                                        marginTop:
-                                                                            "5px",
-                                                                    }}
-                                                                >
-                                                                    {bepocartHourlyTotal.toLocaleString(
-                                                                        "en-IN"
-                                                                    )}
-                                                                </div>
-
-                                                            </div>
-
-                                                        </Col>
-
-
-                                                        <Col
-                                                            xl={3}
-                                                            md={6}
-                                                            xs={12}
-                                                        >
-
-                                                            <div
-                                                                style={{
-                                                                    padding:
-                                                                        "17px 18px",
-                                                                    borderRadius:
-                                                                        "14px",
-                                                                    background:
-                                                                        "#ECFDF5",
-                                                                    border:
-                                                                        "1px solid #D1FAE5",
-                                                                }}
-                                                            >
-
-                                                                <small
-                                                                    style={{
-                                                                        color:
-                                                                            "#64748B",
-                                                                        fontWeight:
-                                                                            700,
-                                                                    }}
-                                                                >
-                                                                    CYCLING
-                                                                </small>
-
-                                                                <div
-                                                                    style={{
-                                                                        fontSize:
-                                                                            "25px",
-                                                                        fontWeight:
-                                                                            800,
-                                                                        color:
-                                                                            "#10B981",
-                                                                        marginTop:
-                                                                            "5px",
-                                                                    }}
-                                                                >
-                                                                    {cyclingHourlyTotal.toLocaleString(
-                                                                        "en-IN"
-                                                                    )}
-                                                                </div>
-
-                                                            </div>
-
-                                                        </Col>
-
-
-                                                        <Col
-                                                            xl={3}
-                                                            md={6}
-                                                            xs={12}
-                                                        >
-
-                                                            <div
-                                                                style={{
-                                                                    padding:
-                                                                        "17px 18px",
-                                                                    borderRadius:
-                                                                        "14px",
-                                                                    background:
-                                                                        "#FFFBEB",
-                                                                    border:
-                                                                        "1px solid #FEF3C7",
-                                                                }}
-                                                            >
-
-                                                                <small
-                                                                    style={{
-                                                                        color:
-                                                                            "#64748B",
-                                                                        fontWeight:
-                                                                            700,
-                                                                    }}
-                                                                >
-                                                                    SKATING
-                                                                </small>
-
-                                                                <div
-                                                                    style={{
-                                                                        fontSize:
-                                                                            "25px",
-                                                                        fontWeight:
-                                                                            800,
-                                                                        color:
-                                                                            "#F59E0B",
-                                                                        marginTop:
-                                                                            "5px",
-                                                                    }}
-                                                                >
-                                                                    {skatingHourlyTotal.toLocaleString(
-                                                                        "en-IN"
-                                                                    )}
-                                                                </div>
-
-                                                            </div>
-
-                                                        </Col>
-
-                                                    </Row>
-
-
                                                     {/* CHART TITLE + LEGEND */}
 
                                                     <div
@@ -2053,91 +1960,555 @@ const StatisticsApplications = () => {
 
                                                     {/* CHART */}
 
+                                                    {/* =====================================================
+    CHART AREA
+    LEFT  : HOURLY BAR CHART - 3/4
+    RIGHT : DIVISION DONUT CHART - 1/4
+===================================================== */}
+
                                                     {hourlyOrderLoading ? (
 
                                                         <div
                                                             className="
-                                        d-flex
-                                        align-items-center
-                                        justify-content-center
-                                    "
+            d-flex
+            align-items-center
+            justify-content-center
+        "
                                                             style={{
                                                                 height: "390px",
                                                             }}
                                                         >
-
                                                             <div
                                                                 className="
-                                            spinner-border
-                                            text-primary
-                                        "
+                spinner-border
+                text-primary
+            "
                                                             />
-
                                                         </div>
 
-                                                    ) : hourlyCategories.length >
-                                                        0 ? (
+                                                    ) : hourlyCategories.length > 0 ? (
 
-                                                        <div
-                                                            style={{
-                                                                width: "100%",
-                                                                overflowX:
-                                                                    "auto",
-                                                            }}
-                                                        >
+                                                        <Row className="g-4 align-items-stretch">
 
-                                                            <div
-                                                                style={{
-                                                                    minWidth:
-                                                                        hourlyCategories.length >
-                                                                            10
-                                                                            ? `${hourlyCategories.length * 95}px`
-                                                                            : "100%",
-                                                                }}
+                                                            {/* ==========================================
+            LEFT SIDE - HOURLY BAR CHART
+            3/4 WIDTH
+        ========================================== */}
+
+                                                            <Col
+                                                                xl={9}
+                                                                lg={8}
+                                                                md={12}
+                                                                xs={12}
                                                             >
 
-                                                                <ReactApexChart
-                                                                    options={
-                                                                        hourlyChartOptions
-                                                                    }
-                                                                    series={
-                                                                        hourlyChartSeries
-                                                                    }
-                                                                    type="bar"
-                                                                    height={
-                                                                        390
-                                                                    }
-                                                                />
+                                                                <div
+                                                                    style={{
+                                                                        height: "100%",
+                                                                        background: "#FFFFFF",
+                                                                        borderRadius: "16px",
+                                                                        border: "1px solid #F1F5F9",
+                                                                        padding: "8px 4px 0 4px",
+                                                                    }}
+                                                                >
 
-                                                            </div>
+                                                                    <div
+                                                                        style={{
+                                                                            width: "100%",
+                                                                            overflowX: "auto",
+                                                                        }}
+                                                                    >
 
-                                                        </div>
+                                                                        <div
+                                                                            style={{
+                                                                                minWidth:
+                                                                                    hourlyCategories.length > 10
+                                                                                        ? `${hourlyCategories.length * 85}px`
+                                                                                        : "100%",
+                                                                            }}
+                                                                        >
+
+                                                                            <ReactApexChart
+                                                                                options={
+                                                                                    hourlyChartOptions
+                                                                                }
+                                                                                series={
+                                                                                    hourlyChartSeries
+                                                                                }
+                                                                                type="bar"
+                                                                                height={390}
+                                                                            />
+
+                                                                        </div>
+
+                                                                    </div>
+
+                                                                </div>
+
+                                                            </Col>
+
+
+                                                            {/* ==========================================
+            RIGHT SIDE - DIVISION DONUT CHART
+            1/4 WIDTH
+        ========================================== */}
+
+                                                            <Col
+                                                                xl={3}
+                                                                lg={4}
+                                                                md={12}
+                                                                xs={12}
+                                                            >
+
+                                                                <div
+                                                                    style={{
+                                                                        height: "100%",
+                                                                        minHeight: "390px",
+                                                                        background: "#FFFFFF",
+                                                                        border: "1px solid #F1F5F9",
+                                                                        borderRadius: "18px",
+                                                                        padding: "18px",
+                                                                        display: "flex",
+                                                                        flexDirection: "column",
+                                                                    }}
+                                                                >
+
+                                                                    {/* TITLE */}
+
+                                                                    <div
+                                                                        style={{
+                                                                            marginBottom: "4px",
+                                                                        }}
+                                                                    >
+
+                                                                        <div
+                                                                            style={{
+                                                                                fontSize: "14px",
+                                                                                fontWeight: 700,
+                                                                                color: "#334155",
+                                                                            }}
+                                                                        >
+                                                                            Division Orders
+                                                                        </div>
+
+                                                                        <div
+                                                                            style={{
+                                                                                fontSize: "11px",
+                                                                                color: "#94A3B8",
+                                                                                marginTop: "2px",
+                                                                            }}
+                                                                        >
+                                                                            Total orders by division
+                                                                        </div>
+
+                                                                    </div>
+
+
+                                                                    {/* DONUT */}
+
+                                                                    <div
+                                                                        style={{
+                                                                            display: "flex",
+                                                                            alignItems: "center",
+                                                                            justifyContent: "center",
+                                                                            flex: 1,
+                                                                            minHeight: "220px",
+                                                                        }}
+                                                                    >
+
+                                                                        {hourlyGrandTotal > 0 ? (
+
+                                                                            <ReactApexChart
+                                                                                options={
+                                                                                    divisionDonutOptions
+                                                                                }
+                                                                                series={
+                                                                                    divisionDonutSeries
+                                                                                }
+                                                                                type="donut"
+                                                                                width="100%"
+                                                                                height={240}
+                                                                            />
+
+                                                                        ) : (
+
+                                                                            <div
+                                                                                style={{
+                                                                                    width: "180px",
+                                                                                    height: "180px",
+                                                                                    borderRadius: "50%",
+                                                                                    border: "22px solid #F1F5F9",
+                                                                                    display: "flex",
+                                                                                    alignItems: "center",
+                                                                                    justifyContent: "center",
+                                                                                    flexDirection: "column",
+                                                                                }}
+                                                                            >
+
+                                                                                <div
+                                                                                    style={{
+                                                                                        fontSize: "11px",
+                                                                                        fontWeight: 600,
+                                                                                        color: "#94A3B8",
+                                                                                    }}
+                                                                                >
+                                                                                    Total Orders
+                                                                                </div>
+
+                                                                                <div
+                                                                                    style={{
+                                                                                        fontSize: "28px",
+                                                                                        fontWeight: 800,
+                                                                                        color: "#0F172A",
+                                                                                        lineHeight: 1.1,
+                                                                                        marginTop: "4px",
+                                                                                    }}
+                                                                                >
+                                                                                    0
+                                                                                </div>
+
+                                                                            </div>
+
+                                                                        )}
+
+                                                                    </div>
+
+
+                                                                    {/* DIVISION TOTALS */}
+
+                                                                    <div
+                                                                        style={{
+                                                                            marginTop: "2px",
+                                                                            display: "flex",
+                                                                            flexDirection: "column",
+                                                                            gap: "8px",
+                                                                        }}
+                                                                    >
+
+                                                                        {/* BEPOCART */}
+
+                                                                        <div
+                                                                            onClick={() => goToHourlyFamilyDetails("bepocart")}
+                                                                            style={{
+                                                                                display: "flex",
+                                                                                alignItems: "center",
+                                                                                justifyContent: "space-between",
+                                                                                padding: "8px 10px",
+                                                                                background: "#EFF6FF",
+                                                                                borderRadius: "9px",
+                                                                                cursor: "pointer",
+                                                                                transition: "all 0.2s ease",
+                                                                            }}
+                                                                            title="View BepoCart hourly orders"
+                                                                        >
+
+                                                                            <div
+                                                                                style={{
+                                                                                    display: "flex",
+                                                                                    alignItems: "center",
+                                                                                    gap: "7px",
+                                                                                }}
+                                                                            >
+
+                                                                                <span
+                                                                                    style={{
+                                                                                        width: "8px",
+                                                                                        height: "8px",
+                                                                                        borderRadius: "50%",
+                                                                                        background: "#2563EB",
+                                                                                        flexShrink: 0,
+                                                                                    }}
+                                                                                />
+
+                                                                                <span
+                                                                                    style={{
+                                                                                        fontSize: "11px",
+                                                                                        fontWeight: 600,
+                                                                                        color: "#475569",
+                                                                                    }}
+                                                                                >
+                                                                                    BepoCart
+                                                                                </span>
+
+                                                                            </div>
+
+                                                                            <span
+                                                                                style={{
+                                                                                    fontSize: "13px",
+                                                                                    fontWeight: 800,
+                                                                                    color: "#2563EB",
+                                                                                }}
+                                                                            >
+                                                                                {bepocartHourlyTotal.toLocaleString(
+                                                                                    "en-IN"
+                                                                                )}
+                                                                            </span>
+
+                                                                        </div>
+
+
+                                                                        {/* CYCLING */}
+
+                                                                        <div
+                                                                            onClick={() => goToHourlyFamilyDetails("cycling")}
+                                                                            style={{
+                                                                                display: "flex",
+                                                                                alignItems: "center",
+                                                                                justifyContent: "space-between",
+                                                                                padding: "8px 10px",
+                                                                                background: "#ECFDF5",
+                                                                                borderRadius: "9px",
+                                                                                cursor: "pointer",
+                                                                                transition: "all 0.2s ease",
+                                                                            }}
+                                                                            title="View Cycling hourly orders"
+                                                                        >
+
+                                                                            <div
+                                                                                style={{
+                                                                                    display: "flex",
+                                                                                    alignItems: "center",
+                                                                                    gap: "7px",
+                                                                                }}
+                                                                            >
+
+                                                                                <span
+                                                                                    style={{
+                                                                                        width: "8px",
+                                                                                        height: "8px",
+                                                                                        borderRadius: "50%",
+                                                                                        background: "#10B981",
+                                                                                        flexShrink: 0,
+                                                                                    }}
+                                                                                />
+
+                                                                                <span
+                                                                                    style={{
+                                                                                        fontSize: "11px",
+                                                                                        fontWeight: 600,
+                                                                                        color: "#475569",
+                                                                                    }}
+                                                                                >
+                                                                                    Cycling
+                                                                                </span>
+
+                                                                            </div>
+
+                                                                            <span
+                                                                                style={{
+                                                                                    fontSize: "13px",
+                                                                                    fontWeight: 800,
+                                                                                    color: "#10B981",
+                                                                                }}
+                                                                            >
+                                                                                {cyclingHourlyTotal.toLocaleString(
+                                                                                    "en-IN"
+                                                                                )}
+                                                                            </span>
+
+                                                                        </div>
+
+
+                                                                        {/* SKATING */}
+
+                                                                        <div
+                                                                            onClick={() => goToHourlyFamilyDetails("skating")}
+                                                                            style={{
+                                                                                display: "flex",
+                                                                                alignItems: "center",
+                                                                                justifyContent: "space-between",
+                                                                                padding: "8px 10px",
+                                                                                background: "#FFFBEB",
+                                                                                borderRadius: "9px",
+                                                                                cursor: "pointer",
+                                                                                transition: "all 0.2s ease",
+                                                                            }}
+                                                                            title="View Skating hourly orders"
+                                                                        >
+                                                                            <div
+                                                                                style={{
+                                                                                    display: "flex",
+                                                                                    alignItems: "center",
+                                                                                    gap: "7px",
+                                                                                }}
+                                                                            >
+
+                                                                                <span
+                                                                                    style={{
+                                                                                        width: "8px",
+                                                                                        height: "8px",
+                                                                                        borderRadius: "50%",
+                                                                                        background: "#F59E0B",
+                                                                                        flexShrink: 0,
+                                                                                    }}
+                                                                                />
+
+                                                                                <span
+                                                                                    style={{
+                                                                                        fontSize: "11px",
+                                                                                        fontWeight: 600,
+                                                                                        color: "#475569",
+                                                                                    }}
+                                                                                >
+                                                                                    Skating
+                                                                                </span>
+
+                                                                            </div>
+
+                                                                            <span
+                                                                                style={{
+                                                                                    fontSize: "13px",
+                                                                                    fontWeight: 800,
+                                                                                    color: "#F59E0B",
+                                                                                }}
+                                                                            >
+                                                                                {skatingHourlyTotal.toLocaleString(
+                                                                                    "en-IN"
+                                                                                )}
+                                                                            </span>
+
+                                                                        </div>
+
+                                                                    </div>
+
+                                                                </div>
+
+                                                            </Col>
+
+                                                        </Row>
 
                                                     ) : (
 
-                                                        <div
-                                                            className="
-                                        d-flex
-                                        align-items-center
-                                        justify-content-center
-                                    "
-                                                            style={{
-                                                                height: "300px",
-                                                                background:
-                                                                    "#F8FAFC",
-                                                                borderRadius:
-                                                                    "14px",
-                                                            }}
-                                                        >
-                                                            <span
-                                                                style={{
-                                                                    color:
-                                                                        "#94A3B8",
-                                                                }}
+                                                        <Row className="g-4">
+
+                                                            {/* EMPTY BAR CHART */}
+
+                                                            <Col
+                                                                xl={9}
+                                                                lg={8}
+                                                                md={12}
+                                                                xs={12}
                                                             >
-                                                                No hourly order data available
-                                                            </span>
-                                                        </div>
+
+                                                                <div
+                                                                    className="
+                    d-flex
+                    align-items-center
+                    justify-content-center
+                "
+                                                                    style={{
+                                                                        height: "390px",
+                                                                        background: "#F8FAFC",
+                                                                        borderRadius: "14px",
+                                                                        border: "1px solid #F1F5F9",
+                                                                    }}
+                                                                >
+
+                                                                    <span
+                                                                        style={{
+                                                                            color: "#94A3B8",
+                                                                        }}
+                                                                    >
+                                                                        No hourly order data available
+                                                                    </span>
+
+                                                                </div>
+
+                                                            </Col>
+
+
+                                                            {/* EMPTY DONUT */}
+
+                                                            <Col
+                                                                xl={3}
+                                                                lg={4}
+                                                                md={12}
+                                                                xs={12}
+                                                            >
+
+                                                                <div
+                                                                    style={{
+                                                                        height: "390px",
+                                                                        background: "#FFFFFF",
+                                                                        border: "1px solid #F1F5F9",
+                                                                        borderRadius: "18px",
+                                                                        padding: "18px",
+                                                                        display: "flex",
+                                                                        flexDirection: "column",
+                                                                    }}
+                                                                >
+
+                                                                    <div
+                                                                        style={{
+                                                                            fontSize: "14px",
+                                                                            fontWeight: 700,
+                                                                            color: "#334155",
+                                                                        }}
+                                                                    >
+                                                                        Division Orders
+                                                                    </div>
+
+                                                                    <div
+                                                                        style={{
+                                                                            fontSize: "11px",
+                                                                            color: "#94A3B8",
+                                                                            marginTop: "2px",
+                                                                        }}
+                                                                    >
+                                                                        Total orders by division
+                                                                    </div>
+
+                                                                    <div
+                                                                        style={{
+                                                                            flex: 1,
+                                                                            display: "flex",
+                                                                            alignItems: "center",
+                                                                            justifyContent: "center",
+                                                                        }}
+                                                                    >
+
+                                                                        <div
+                                                                            style={{
+                                                                                width: "180px",
+                                                                                height: "180px",
+                                                                                borderRadius: "50%",
+                                                                                border: "22px solid #F1F5F9",
+                                                                                display: "flex",
+                                                                                flexDirection: "column",
+                                                                                alignItems: "center",
+                                                                                justifyContent: "center",
+                                                                            }}
+                                                                        >
+
+                                                                            <span
+                                                                                style={{
+                                                                                    fontSize: "11px",
+                                                                                    color: "#94A3B8",
+                                                                                    fontWeight: 600,
+                                                                                }}
+                                                                            >
+                                                                                Total Orders
+                                                                            </span>
+
+                                                                            <span
+                                                                                style={{
+                                                                                    fontSize: "28px",
+                                                                                    color: "#0F172A",
+                                                                                    fontWeight: 800,
+                                                                                }}
+                                                                            >
+                                                                                0
+                                                                            </span>
+
+                                                                        </div>
+
+                                                                    </div>
+
+                                                                </div>
+
+                                                            </Col>
+
+                                                        </Row>
 
                                                     )}
 

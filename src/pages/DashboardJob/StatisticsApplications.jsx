@@ -1626,815 +1626,429 @@ const StatisticsApplications = () => {
                     <CardBody>
                         {(role === 'CEO' || role === 'COO') && (
                             <div className="row">
-                                {role === "CEO" && (
+                                <Row className="mb-4">
 
-                                    <Row className="mb-4">
+                                    <Col xs={12}>
 
-                                        <Col xs={12}>
+                                        <Card
+                                            className="border-0"
+                                            style={{
+                                                borderRadius: "20px",
+                                                background: "#FFFFFF",
+                                                boxShadow:
+                                                    "0 8px 30px rgba(15,23,42,0.06)",
+                                                border:
+                                                    "1px solid #F1F5F9",
+                                            }}
+                                        >
 
-                                            <Card
-                                                className="border-0"
+                                            <CardBody
                                                 style={{
-                                                    borderRadius: "20px",
-                                                    background: "#FFFFFF",
-                                                    boxShadow:
-                                                        "0 8px 30px rgba(15,23,42,0.06)",
-                                                    border:
-                                                        "1px solid #F1F5F9",
+                                                    padding: "24px",
                                                 }}
                                             >
 
-                                                <CardBody
-                                                    style={{
-                                                        padding: "24px",
-                                                    }}
-                                                >
+                                                {/* HEADER */}
 
-                                                    {/* HEADER */}
-
-                                                    <div
-                                                        className="
+                                                <div
+                                                    className="
                                     d-flex
                                     flex-wrap
                                     justify-content-between
                                     align-items-center
                                 "
+                                                    style={{
+                                                        gap: "20px",
+                                                        marginBottom: "22px",
+                                                    }}
+                                                >
+
+                                                    <div>
+
+                                                        <h5
+                                                            className="fw-bold mb-1"
+                                                            style={{
+                                                                color: "#0F172A",
+                                                                fontSize: "18px",
+                                                            }}
+                                                        >
+                                                            Hourly Order Summary
+                                                        </h5>
+
+                                                        <div
+                                                            style={{
+                                                                color: "#94A3B8",
+                                                                fontSize: "12px",
+                                                            }}
+                                                        >
+                                                            Order distribution throughout the day
+                                                        </div>
+
+                                                    </div>
+
+
+                                                    {/* DATE FILTER */}
+
+                                                    <div
+                                                        className="
+                                        d-flex
+                                        flex-wrap
+                                        align-items-end
+                                    "
                                                         style={{
-                                                            gap: "20px",
-                                                            marginBottom: "22px",
+                                                            gap: "10px",
                                                         }}
                                                     >
 
                                                         <div>
 
-                                                            <h5
-                                                                className="fw-bold mb-1"
+                                                            <label
                                                                 style={{
-                                                                    color: "#0F172A",
-                                                                    fontSize: "18px",
+                                                                    display: "block",
+                                                                    fontSize: "11px",
+                                                                    fontWeight: 700,
+                                                                    color: "#64748B",
+                                                                    marginBottom: "5px",
                                                                 }}
                                                             >
-                                                                Hourly Order Summary
-                                                            </h5>
+                                                                FROM
+                                                            </label>
 
-                                                            <div
-                                                                style={{
-                                                                    color: "#94A3B8",
-                                                                    fontSize: "12px",
-                                                                }}
-                                                            >
-                                                                Order distribution throughout the day
-                                                            </div>
-
-                                                        </div>
-
-
-                                                        {/* DATE FILTER */}
-
-                                                        <div
-                                                            className="
-                                        d-flex
-                                        flex-wrap
-                                        align-items-end
-                                    "
-                                                            style={{
-                                                                gap: "10px",
-                                                            }}
-                                                        >
-
-                                                            <div>
-
-                                                                <label
-                                                                    style={{
-                                                                        display: "block",
-                                                                        fontSize: "11px",
-                                                                        fontWeight: 700,
-                                                                        color: "#64748B",
-                                                                        marginBottom: "5px",
-                                                                    }}
-                                                                >
-                                                                    FROM
-                                                                </label>
-
-                                                                <Input
-                                                                    type="date"
-                                                                    value={
-                                                                        hourlyStartDate
-                                                                    }
-                                                                    max={
-                                                                        getLocalDateString()
-                                                                    }
-                                                                    onChange={(e) =>
-                                                                        setHourlyStartDate(
-                                                                            e.target.value
-                                                                        )
-                                                                    }
-                                                                    style={{
-                                                                        width: "150px",
-                                                                        height: "40px",
-                                                                        borderRadius:
-                                                                            "10px",
-                                                                    }}
-                                                                />
-
-                                                            </div>
-
-
-                                                            <div>
-
-                                                                <label
-                                                                    style={{
-                                                                        display: "block",
-                                                                        fontSize: "11px",
-                                                                        fontWeight: 700,
-                                                                        color: "#64748B",
-                                                                        marginBottom: "5px",
-                                                                    }}
-                                                                >
-                                                                    TO
-                                                                </label>
-
-                                                                <Input
-                                                                    type="date"
-                                                                    value={
-                                                                        hourlyEndDate
-                                                                    }
-                                                                    min={
-                                                                        hourlyStartDate
-                                                                    }
-                                                                    max={
-                                                                        getLocalDateString()
-                                                                    }
-                                                                    onChange={(e) =>
-                                                                        setHourlyEndDate(
-                                                                            e.target.value
-                                                                        )
-                                                                    }
-                                                                    style={{
-                                                                        width: "150px",
-                                                                        height: "40px",
-                                                                        borderRadius:
-                                                                            "10px",
-                                                                    }}
-                                                                />
-
-                                                            </div>
-
-
-                                                            <Button
-                                                                onClick={() => {
-
-                                                                    const today =
-                                                                        getLocalDateString();
-
-                                                                    setHourlyStartDate(
-                                                                        today
-                                                                    );
-
-                                                                    setHourlyEndDate(
-                                                                        today
-                                                                    );
-                                                                }}
-                                                                disabled={
-                                                                    hourlyStartDate ===
-                                                                    getLocalDateString() &&
-                                                                    hourlyEndDate ===
+                                                            <Input
+                                                                type="date"
+                                                                value={
+                                                                    hourlyStartDate
+                                                                }
+                                                                max={
                                                                     getLocalDateString()
                                                                 }
-                                                                color="primary"
-                                                                outline
+                                                                onChange={(e) =>
+                                                                    setHourlyStartDate(
+                                                                        e.target.value
+                                                                    )
+                                                                }
                                                                 style={{
+                                                                    width: "150px",
                                                                     height: "40px",
                                                                     borderRadius:
                                                                         "10px",
-                                                                    fontWeight: 600,
                                                                 }}
-                                                            >
-                                                                Today
-                                                            </Button>
+                                                            />
 
                                                         </div>
 
+
+                                                        <div>
+
+                                                            <label
+                                                                style={{
+                                                                    display: "block",
+                                                                    fontSize: "11px",
+                                                                    fontWeight: 700,
+                                                                    color: "#64748B",
+                                                                    marginBottom: "5px",
+                                                                }}
+                                                            >
+                                                                TO
+                                                            </label>
+
+                                                            <Input
+                                                                type="date"
+                                                                value={
+                                                                    hourlyEndDate
+                                                                }
+                                                                min={
+                                                                    hourlyStartDate
+                                                                }
+                                                                max={
+                                                                    getLocalDateString()
+                                                                }
+                                                                onChange={(e) =>
+                                                                    setHourlyEndDate(
+                                                                        e.target.value
+                                                                    )
+                                                                }
+                                                                style={{
+                                                                    width: "150px",
+                                                                    height: "40px",
+                                                                    borderRadius:
+                                                                        "10px",
+                                                                }}
+                                                            />
+
+                                                        </div>
+
+
+                                                        <Button
+                                                            onClick={() => {
+
+                                                                const today =
+                                                                    getLocalDateString();
+
+                                                                setHourlyStartDate(
+                                                                    today
+                                                                );
+
+                                                                setHourlyEndDate(
+                                                                    today
+                                                                );
+                                                            }}
+                                                            disabled={
+                                                                hourlyStartDate ===
+                                                                getLocalDateString() &&
+                                                                hourlyEndDate ===
+                                                                getLocalDateString()
+                                                            }
+                                                            color="primary"
+                                                            outline
+                                                            style={{
+                                                                height: "40px",
+                                                                borderRadius:
+                                                                    "10px",
+                                                                fontWeight: 600,
+                                                            }}
+                                                        >
+                                                            Today
+                                                        </Button>
+
                                                     </div>
 
-                                                    {/* CHART TITLE + LEGEND */}
+                                                </div>
 
-                                                    <div
-                                                        className="
+                                                {/* CHART TITLE + LEGEND */}
+
+                                                <div
+                                                    className="
                                     d-flex
                                     flex-wrap
                                     justify-content-between
                                     align-items-center
                                     mb-2
                                 "
-                                                    >
+                                                >
 
-                                                        <div>
-
-                                                            <div
-                                                                style={{
-                                                                    fontWeight: 700,
-                                                                    color: "#334155",
-                                                                }}
-                                                            >
-                                                                Orders by Hour
-                                                            </div>
-
-                                                            {peakHourData &&
-                                                                Number(
-                                                                    peakHourData?.orders ||
-                                                                    0
-                                                                ) > 0 && (
-
-                                                                    <small
-                                                                        style={{
-                                                                            color:
-                                                                                "#94A3B8",
-                                                                        }}
-                                                                    >
-                                                                        Peak hour:{" "}
-
-                                                                        <strong>
-                                                                            {formatHourRange(
-                                                                                peakHourData.hour
-                                                                            )}
-                                                                        </strong>
-
-                                                                        {" • "}
-
-                                                                        {Number(
-                                                                            peakHourData.orders
-                                                                        ).toLocaleString(
-                                                                            "en-IN"
-                                                                        )}{" "}
-                                                                        orders
-                                                                    </small>
-                                                                )}
-
-                                                        </div>
-
+                                                    <div>
 
                                                         <div
-                                                            className="
-                                        d-flex
-                                        align-items-center
-                                        flex-wrap
-                                    "
                                                             style={{
-                                                                gap: "18px",
+                                                                fontWeight: 700,
+                                                                color: "#334155",
                                                             }}
                                                         >
-
-                                                            {[
-                                                                {
-                                                                    name:
-                                                                        "BepoCart",
-                                                                    color:
-                                                                        "#2563EB",
-                                                                },
-                                                                {
-                                                                    name:
-                                                                        "Cycling",
-                                                                    color:
-                                                                        "#10B981",
-                                                                },
-                                                                {
-                                                                    name:
-                                                                        "Skating",
-                                                                    color:
-                                                                        "#F59E0B",
-                                                                },
-                                                            ].map(
-                                                                (item) => (
-
-                                                                    <div
-                                                                        key={
-                                                                            item.name
-                                                                        }
-                                                                        className="
-                                                    d-flex
-                                                    align-items-center
-                                                "
-                                                                        style={{
-                                                                            gap:
-                                                                                "6px",
-                                                                        }}
-                                                                    >
-
-                                                                        <span
-                                                                            style={{
-                                                                                width:
-                                                                                    "9px",
-                                                                                height:
-                                                                                    "9px",
-                                                                                borderRadius:
-                                                                                    "3px",
-                                                                                background:
-                                                                                    item.color,
-                                                                            }}
-                                                                        />
-
-                                                                        <span
-                                                                            style={{
-                                                                                fontSize:
-                                                                                    "12px",
-                                                                                fontWeight:
-                                                                                    600,
-                                                                                color:
-                                                                                    "#64748B",
-                                                                            }}
-                                                                        >
-                                                                            {
-                                                                                item.name
-                                                                            }
-                                                                        </span>
-
-                                                                    </div>
-                                                                )
-                                                            )}
-
+                                                            Orders by Hour
                                                         </div>
+
+                                                        {peakHourData &&
+                                                            Number(
+                                                                peakHourData?.orders ||
+                                                                0
+                                                            ) > 0 && (
+
+                                                                <small
+                                                                    style={{
+                                                                        color:
+                                                                            "#94A3B8",
+                                                                    }}
+                                                                >
+                                                                    Peak hour:{" "}
+
+                                                                    <strong>
+                                                                        {formatHourRange(
+                                                                            peakHourData.hour
+                                                                        )}
+                                                                    </strong>
+
+                                                                    {" • "}
+
+                                                                    {Number(
+                                                                        peakHourData.orders
+                                                                    ).toLocaleString(
+                                                                        "en-IN"
+                                                                    )}{" "}
+                                                                    orders
+                                                                </small>
+                                                            )}
 
                                                     </div>
 
 
-                                                    {/* CHART */}
+                                                    <div
+                                                        className="
+                                        d-flex
+                                        align-items-center
+                                        flex-wrap
+                                    "
+                                                        style={{
+                                                            gap: "18px",
+                                                        }}
+                                                    >
 
-                                                    {/* =====================================================
-    CHART AREA
-    LEFT  : HOURLY BAR CHART - 3/4
-    RIGHT : DIVISION DONUT CHART - 1/4
-===================================================== */}
-
-                                                    {hourlyOrderLoading ? (
-
-                                                        <div
-                                                            className="
-            d-flex
-            align-items-center
-            justify-content-center
-        "
-                                                            style={{
-                                                                height: "390px",
-                                                            }}
-                                                        >
-                                                            <div
-                                                                className="
-                spinner-border
-                text-primary
-            "
-                                                            />
-                                                        </div>
-
-                                                    ) : hourlyCategories.length > 0 ? (
-
-                                                        <Row className="g-4 align-items-stretch">
-
-                                                            {/* ==========================================
-            LEFT SIDE - HOURLY BAR CHART
-            3/4 WIDTH
-        ========================================== */}
-
-                                                            <Col
-                                                                xl={9}
-                                                                lg={8}
-                                                                md={12}
-                                                                xs={12}
-                                                            >
+                                                        {[
+                                                            {
+                                                                name:
+                                                                    "BepoCart",
+                                                                color:
+                                                                    "#2563EB",
+                                                            },
+                                                            {
+                                                                name:
+                                                                    "Cycling",
+                                                                color:
+                                                                    "#10B981",
+                                                            },
+                                                            {
+                                                                name:
+                                                                    "Skating",
+                                                                color:
+                                                                    "#F59E0B",
+                                                            },
+                                                        ].map(
+                                                            (item) => (
 
                                                                 <div
-                                                                    style={{
-                                                                        height: "100%",
-                                                                        background: "#FFFFFF",
-                                                                        borderRadius: "16px",
-                                                                        border: "1px solid #F1F5F9",
-                                                                        padding: "8px 4px 0 4px",
-                                                                    }}
-                                                                >
-
-                                                                    <div
-                                                                        style={{
-                                                                            width: "100%",
-                                                                            overflowX: "auto",
-                                                                        }}
-                                                                    >
-
-                                                                        <div
-                                                                            style={{
-                                                                                minWidth:
-                                                                                    hourlyCategories.length > 10
-                                                                                        ? `${hourlyCategories.length * 85}px`
-                                                                                        : "100%",
-                                                                            }}
-                                                                        >
-
-                                                                            <ReactApexChart
-                                                                                options={
-                                                                                    hourlyChartOptions
-                                                                                }
-                                                                                series={
-                                                                                    hourlyChartSeries
-                                                                                }
-                                                                                type="bar"
-                                                                                height={390}
-                                                                            />
-
-                                                                        </div>
-
-                                                                    </div>
-
-                                                                </div>
-
-                                                            </Col>
-
-
-                                                            {/* ==========================================
-            RIGHT SIDE - DIVISION DONUT CHART
-            1/4 WIDTH
-        ========================================== */}
-
-                                                            <Col
-                                                                xl={3}
-                                                                lg={4}
-                                                                md={12}
-                                                                xs={12}
-                                                            >
-
-                                                                <div
-                                                                    style={{
-                                                                        height: "100%",
-                                                                        minHeight: "390px",
-                                                                        background: "#FFFFFF",
-                                                                        border: "1px solid #F1F5F9",
-                                                                        borderRadius: "18px",
-                                                                        padding: "18px",
-                                                                        display: "flex",
-                                                                        flexDirection: "column",
-                                                                    }}
-                                                                >
-
-                                                                    {/* TITLE */}
-
-                                                                    <div
-                                                                        style={{
-                                                                            marginBottom: "4px",
-                                                                        }}
-                                                                    >
-
-                                                                        <div
-                                                                            style={{
-                                                                                fontSize: "14px",
-                                                                                fontWeight: 700,
-                                                                                color: "#334155",
-                                                                            }}
-                                                                        >
-                                                                            Division Orders
-                                                                        </div>
-
-                                                                        <div
-                                                                            style={{
-                                                                                fontSize: "11px",
-                                                                                color: "#94A3B8",
-                                                                                marginTop: "2px",
-                                                                            }}
-                                                                        >
-                                                                            Total orders by division
-                                                                        </div>
-
-                                                                    </div>
-
-
-                                                                    {/* DONUT */}
-
-                                                                    <div
-                                                                        style={{
-                                                                            display: "flex",
-                                                                            alignItems: "center",
-                                                                            justifyContent: "center",
-                                                                            flex: 1,
-                                                                            minHeight: "220px",
-                                                                        }}
-                                                                    >
-
-                                                                        {hourlyGrandTotal > 0 ? (
-
-                                                                            <ReactApexChart
-                                                                                options={
-                                                                                    divisionDonutOptions
-                                                                                }
-                                                                                series={
-                                                                                    divisionDonutSeries
-                                                                                }
-                                                                                type="donut"
-                                                                                width="100%"
-                                                                                height={240}
-                                                                            />
-
-                                                                        ) : (
-
-                                                                            <div
-                                                                                style={{
-                                                                                    width: "180px",
-                                                                                    height: "180px",
-                                                                                    borderRadius: "50%",
-                                                                                    border: "22px solid #F1F5F9",
-                                                                                    display: "flex",
-                                                                                    alignItems: "center",
-                                                                                    justifyContent: "center",
-                                                                                    flexDirection: "column",
-                                                                                }}
-                                                                            >
-
-                                                                                <div
-                                                                                    style={{
-                                                                                        fontSize: "11px",
-                                                                                        fontWeight: 600,
-                                                                                        color: "#94A3B8",
-                                                                                    }}
-                                                                                >
-                                                                                    Total Orders
-                                                                                </div>
-
-                                                                                <div
-                                                                                    style={{
-                                                                                        fontSize: "28px",
-                                                                                        fontWeight: 800,
-                                                                                        color: "#0F172A",
-                                                                                        lineHeight: 1.1,
-                                                                                        marginTop: "4px",
-                                                                                    }}
-                                                                                >
-                                                                                    0
-                                                                                </div>
-
-                                                                            </div>
-
-                                                                        )}
-
-                                                                    </div>
-
-
-                                                                    {/* DIVISION TOTALS */}
-
-                                                                    <div
-                                                                        style={{
-                                                                            marginTop: "2px",
-                                                                            display: "flex",
-                                                                            flexDirection: "column",
-                                                                            gap: "8px",
-                                                                        }}
-                                                                    >
-
-                                                                        {/* BEPOCART */}
-
-                                                                        <div
-                                                                            onClick={() => goToHourlyFamilyDetails("bepocart")}
-                                                                            style={{
-                                                                                display: "flex",
-                                                                                alignItems: "center",
-                                                                                justifyContent: "space-between",
-                                                                                padding: "8px 10px",
-                                                                                background: "#EFF6FF",
-                                                                                borderRadius: "9px",
-                                                                                cursor: "pointer",
-                                                                                transition: "all 0.2s ease",
-                                                                            }}
-                                                                            title="View BepoCart hourly orders"
-                                                                        >
-
-                                                                            <div
-                                                                                style={{
-                                                                                    display: "flex",
-                                                                                    alignItems: "center",
-                                                                                    gap: "7px",
-                                                                                }}
-                                                                            >
-
-                                                                                <span
-                                                                                    style={{
-                                                                                        width: "8px",
-                                                                                        height: "8px",
-                                                                                        borderRadius: "50%",
-                                                                                        background: "#2563EB",
-                                                                                        flexShrink: 0,
-                                                                                    }}
-                                                                                />
-
-                                                                                <span
-                                                                                    style={{
-                                                                                        fontSize: "11px",
-                                                                                        fontWeight: 600,
-                                                                                        color: "#475569",
-                                                                                    }}
-                                                                                >
-                                                                                    BepoCart
-                                                                                </span>
-
-                                                                            </div>
-
-                                                                            <span
-                                                                                style={{
-                                                                                    fontSize: "13px",
-                                                                                    fontWeight: 800,
-                                                                                    color: "#2563EB",
-                                                                                }}
-                                                                            >
-                                                                                {bepocartHourlyTotal.toLocaleString(
-                                                                                    "en-IN"
-                                                                                )}
-                                                                            </span>
-
-                                                                        </div>
-
-
-                                                                        {/* CYCLING */}
-
-                                                                        <div
-                                                                            onClick={() => goToHourlyFamilyDetails("cycling")}
-                                                                            style={{
-                                                                                display: "flex",
-                                                                                alignItems: "center",
-                                                                                justifyContent: "space-between",
-                                                                                padding: "8px 10px",
-                                                                                background: "#ECFDF5",
-                                                                                borderRadius: "9px",
-                                                                                cursor: "pointer",
-                                                                                transition: "all 0.2s ease",
-                                                                            }}
-                                                                            title="View Cycling hourly orders"
-                                                                        >
-
-                                                                            <div
-                                                                                style={{
-                                                                                    display: "flex",
-                                                                                    alignItems: "center",
-                                                                                    gap: "7px",
-                                                                                }}
-                                                                            >
-
-                                                                                <span
-                                                                                    style={{
-                                                                                        width: "8px",
-                                                                                        height: "8px",
-                                                                                        borderRadius: "50%",
-                                                                                        background: "#10B981",
-                                                                                        flexShrink: 0,
-                                                                                    }}
-                                                                                />
-
-                                                                                <span
-                                                                                    style={{
-                                                                                        fontSize: "11px",
-                                                                                        fontWeight: 600,
-                                                                                        color: "#475569",
-                                                                                    }}
-                                                                                >
-                                                                                    Cycling
-                                                                                </span>
-
-                                                                            </div>
-
-                                                                            <span
-                                                                                style={{
-                                                                                    fontSize: "13px",
-                                                                                    fontWeight: 800,
-                                                                                    color: "#10B981",
-                                                                                }}
-                                                                            >
-                                                                                {cyclingHourlyTotal.toLocaleString(
-                                                                                    "en-IN"
-                                                                                )}
-                                                                            </span>
-
-                                                                        </div>
-
-
-                                                                        {/* SKATING */}
-
-                                                                        <div
-                                                                            onClick={() => goToHourlyFamilyDetails("skating")}
-                                                                            style={{
-                                                                                display: "flex",
-                                                                                alignItems: "center",
-                                                                                justifyContent: "space-between",
-                                                                                padding: "8px 10px",
-                                                                                background: "#FFFBEB",
-                                                                                borderRadius: "9px",
-                                                                                cursor: "pointer",
-                                                                                transition: "all 0.2s ease",
-                                                                            }}
-                                                                            title="View Skating hourly orders"
-                                                                        >
-                                                                            <div
-                                                                                style={{
-                                                                                    display: "flex",
-                                                                                    alignItems: "center",
-                                                                                    gap: "7px",
-                                                                                }}
-                                                                            >
-
-                                                                                <span
-                                                                                    style={{
-                                                                                        width: "8px",
-                                                                                        height: "8px",
-                                                                                        borderRadius: "50%",
-                                                                                        background: "#F59E0B",
-                                                                                        flexShrink: 0,
-                                                                                    }}
-                                                                                />
-
-                                                                                <span
-                                                                                    style={{
-                                                                                        fontSize: "11px",
-                                                                                        fontWeight: 600,
-                                                                                        color: "#475569",
-                                                                                    }}
-                                                                                >
-                                                                                    Skating
-                                                                                </span>
-
-                                                                            </div>
-
-                                                                            <span
-                                                                                style={{
-                                                                                    fontSize: "13px",
-                                                                                    fontWeight: 800,
-                                                                                    color: "#F59E0B",
-                                                                                }}
-                                                                            >
-                                                                                {skatingHourlyTotal.toLocaleString(
-                                                                                    "en-IN"
-                                                                                )}
-                                                                            </span>
-
-                                                                        </div>
-
-                                                                    </div>
-
-                                                                </div>
-
-                                                            </Col>
-
-                                                        </Row>
-
-                                                    ) : (
-
-                                                        <Row className="g-4">
-
-                                                            {/* EMPTY BAR CHART */}
-
-                                                            <Col
-                                                                xl={9}
-                                                                lg={8}
-                                                                md={12}
-                                                                xs={12}
-                                                            >
-
-                                                                <div
+                                                                    key={
+                                                                        item.name
+                                                                    }
                                                                     className="
-                    d-flex
-                    align-items-center
-                    justify-content-center
-                "
+                                                    d-flex
+                                                    align-items-center
+                                                "
                                                                     style={{
-                                                                        height: "390px",
-                                                                        background: "#F8FAFC",
-                                                                        borderRadius: "14px",
-                                                                        border: "1px solid #F1F5F9",
+                                                                        gap:
+                                                                            "6px",
                                                                     }}
                                                                 >
 
                                                                     <span
                                                                         style={{
-                                                                            color: "#94A3B8",
+                                                                            width:
+                                                                                "9px",
+                                                                            height:
+                                                                                "9px",
+                                                                            borderRadius:
+                                                                                "3px",
+                                                                            background:
+                                                                                item.color,
+                                                                        }}
+                                                                    />
+
+                                                                    <span
+                                                                        style={{
+                                                                            fontSize:
+                                                                                "12px",
+                                                                            fontWeight:
+                                                                                600,
+                                                                            color:
+                                                                                "#64748B",
                                                                         }}
                                                                     >
-                                                                        No hourly order data available
+                                                                        {
+                                                                            item.name
+                                                                        }
                                                                     </span>
 
                                                                 </div>
+                                                            )
+                                                        )}
 
-                                                            </Col>
+                                                    </div>
+
+                                                </div>
 
 
-                                                            {/* EMPTY DONUT */}
+                                                {/* CHART */}
 
-                                                            <Col
-                                                                xl={3}
-                                                                lg={4}
-                                                                md={12}
-                                                                xs={12}
+                                                {hourlyOrderLoading ? (
+
+                                                    <div className="d-flex align-items-center justify-content-center"
+                                                        style={{
+                                                            height: "390px",
+                                                        }}
+                                                    >
+                                                        <div className="spinner-border text-primary" />
+                                                    </div>
+
+                                                ) : hourlyCategories.length > 0 ? (
+
+                                                    <Row className="g-4 align-items-stretch">
+
+                                                        <Col
+                                                            xl={9}
+                                                            lg={8}
+                                                            md={12}
+                                                            xs={12}
+                                                        >
+
+                                                            <div
+                                                                style={{
+                                                                    height: "100%",
+                                                                    background: "#FFFFFF",
+                                                                    borderRadius: "16px",
+                                                                    border: "1px solid #F1F5F9",
+                                                                    padding: "8px 4px 0 4px",
+                                                                }}
                                                             >
 
                                                                 <div
                                                                     style={{
-                                                                        height: "390px",
-                                                                        background: "#FFFFFF",
-                                                                        border: "1px solid #F1F5F9",
-                                                                        borderRadius: "18px",
-                                                                        padding: "18px",
-                                                                        display: "flex",
-                                                                        flexDirection: "column",
+                                                                        width: "100%",
+                                                                        overflowX: "auto",
+                                                                    }}
+                                                                >
+
+                                                                    <div
+                                                                        style={{
+                                                                            minWidth:
+                                                                                hourlyCategories.length > 10
+                                                                                    ? `${hourlyCategories.length * 85}px`
+                                                                                    : "100%",
+                                                                        }}
+                                                                    >
+
+                                                                        <ReactApexChart
+                                                                            options={
+                                                                                hourlyChartOptions
+                                                                            }
+                                                                            series={
+                                                                                hourlyChartSeries
+                                                                            }
+                                                                            type="bar"
+                                                                            height={390}
+                                                                        />
+
+                                                                    </div>
+
+                                                                </div>
+
+                                                            </div>
+
+                                                        </Col>
+
+                                                        <Col
+                                                            xl={3}
+                                                            lg={4}
+                                                            md={12}
+                                                            xs={12}
+                                                        >
+
+                                                            <div
+                                                                style={{
+                                                                    height: "100%",
+                                                                    minHeight: "390px",
+                                                                    background: "#FFFFFF",
+                                                                    border: "1px solid #F1F5F9",
+                                                                    borderRadius: "18px",
+                                                                    padding: "18px",
+                                                                    display: "flex",
+                                                                    flexDirection: "column",
+                                                                }}
+                                                            >
+
+                                                                {/* TITLE */}
+
+                                                                <div
+                                                                    style={{
+                                                                        marginBottom: "4px",
                                                                     }}
                                                                 >
 
@@ -2458,14 +2072,36 @@ const StatisticsApplications = () => {
                                                                         Total orders by division
                                                                     </div>
 
-                                                                    <div
-                                                                        style={{
-                                                                            flex: 1,
-                                                                            display: "flex",
-                                                                            alignItems: "center",
-                                                                            justifyContent: "center",
-                                                                        }}
-                                                                    >
+                                                                </div>
+
+
+                                                                {/* DONUT */}
+
+                                                                <div
+                                                                    style={{
+                                                                        display: "flex",
+                                                                        alignItems: "center",
+                                                                        justifyContent: "center",
+                                                                        flex: 1,
+                                                                        minHeight: "220px",
+                                                                    }}
+                                                                >
+
+                                                                    {hourlyGrandTotal > 0 ? (
+
+                                                                        <ReactApexChart
+                                                                            options={
+                                                                                divisionDonutOptions
+                                                                            }
+                                                                            series={
+                                                                                divisionDonutSeries
+                                                                            }
+                                                                            type="donut"
+                                                                            width="100%"
+                                                                            height={240}
+                                                                        />
+
+                                                                    ) : (
 
                                                                         <div
                                                                             style={{
@@ -2474,53 +2110,365 @@ const StatisticsApplications = () => {
                                                                                 borderRadius: "50%",
                                                                                 border: "22px solid #F1F5F9",
                                                                                 display: "flex",
-                                                                                flexDirection: "column",
                                                                                 alignItems: "center",
                                                                                 justifyContent: "center",
+                                                                                flexDirection: "column",
+                                                                            }}
+                                                                        >
+
+                                                                            <div
+                                                                                style={{
+                                                                                    fontSize: "11px",
+                                                                                    fontWeight: 600,
+                                                                                    color: "#94A3B8",
+                                                                                }}
+                                                                            >
+                                                                                Total Orders
+                                                                            </div>
+
+                                                                            <div
+                                                                                style={{
+                                                                                    fontSize: "28px",
+                                                                                    fontWeight: 800,
+                                                                                    color: "#0F172A",
+                                                                                    lineHeight: 1.1,
+                                                                                    marginTop: "4px",
+                                                                                }}
+                                                                            >
+                                                                                0
+                                                                            </div>
+
+                                                                        </div>
+
+                                                                    )}
+
+                                                                </div>
+
+
+                                                                {/* DIVISION TOTALS */}
+
+                                                                <div
+                                                                    style={{
+                                                                        marginTop: "2px",
+                                                                        display: "flex",
+                                                                        flexDirection: "column",
+                                                                        gap: "8px",
+                                                                    }}
+                                                                >
+
+                                                                    {/* BEPOCART */}
+
+                                                                    <div
+                                                                        onClick={() => goToHourlyFamilyDetails("bepocart")}
+                                                                        style={{
+                                                                            display: "flex",
+                                                                            alignItems: "center",
+                                                                            justifyContent: "space-between",
+                                                                            padding: "8px 10px",
+                                                                            background: "#EFF6FF",
+                                                                            borderRadius: "9px",
+                                                                            cursor: "pointer",
+                                                                            transition: "all 0.2s ease",
+                                                                        }}
+                                                                        title="View BepoCart hourly orders"
+                                                                    >
+
+                                                                        <div
+                                                                            style={{
+                                                                                display: "flex",
+                                                                                alignItems: "center",
+                                                                                gap: "7px",
                                                                             }}
                                                                         >
 
                                                                             <span
                                                                                 style={{
-                                                                                    fontSize: "11px",
-                                                                                    color: "#94A3B8",
-                                                                                    fontWeight: 600,
+                                                                                    width: "8px",
+                                                                                    height: "8px",
+                                                                                    borderRadius: "50%",
+                                                                                    background: "#2563EB",
+                                                                                    flexShrink: 0,
                                                                                 }}
-                                                                            >
-                                                                                Total Orders
-                                                                            </span>
+                                                                            />
 
                                                                             <span
                                                                                 style={{
-                                                                                    fontSize: "28px",
-                                                                                    color: "#0F172A",
-                                                                                    fontWeight: 800,
+                                                                                    fontSize: "11px",
+                                                                                    fontWeight: 600,
+                                                                                    color: "#475569",
                                                                                 }}
                                                                             >
-                                                                                0
+                                                                                BepoCart
                                                                             </span>
 
                                                                         </div>
+
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize: "13px",
+                                                                                fontWeight: 800,
+                                                                                color: "#2563EB",
+                                                                            }}
+                                                                        >
+                                                                            {bepocartHourlyTotal.toLocaleString(
+                                                                                "en-IN"
+                                                                            )}
+                                                                        </span>
+
+                                                                    </div>
+
+
+                                                                    {/* CYCLING */}
+
+                                                                    <div
+                                                                        onClick={() => goToHourlyFamilyDetails("cycling")}
+                                                                        style={{
+                                                                            display: "flex",
+                                                                            alignItems: "center",
+                                                                            justifyContent: "space-between",
+                                                                            padding: "8px 10px",
+                                                                            background: "#ECFDF5",
+                                                                            borderRadius: "9px",
+                                                                            cursor: "pointer",
+                                                                            transition: "all 0.2s ease",
+                                                                        }}
+                                                                        title="View Cycling hourly orders"
+                                                                    >
+
+                                                                        <div
+                                                                            style={{
+                                                                                display: "flex",
+                                                                                alignItems: "center",
+                                                                                gap: "7px",
+                                                                            }}
+                                                                        >
+
+                                                                            <span
+                                                                                style={{
+                                                                                    width: "8px",
+                                                                                    height: "8px",
+                                                                                    borderRadius: "50%",
+                                                                                    background: "#10B981",
+                                                                                    flexShrink: 0,
+                                                                                }}
+                                                                            />
+
+                                                                            <span
+                                                                                style={{
+                                                                                    fontSize: "11px",
+                                                                                    fontWeight: 600,
+                                                                                    color: "#475569",
+                                                                                }}
+                                                                            >
+                                                                                Cycling
+                                                                            </span>
+
+                                                                        </div>
+
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize: "13px",
+                                                                                fontWeight: 800,
+                                                                                color: "#10B981",
+                                                                            }}
+                                                                        >
+                                                                            {cyclingHourlyTotal.toLocaleString(
+                                                                                "en-IN"
+                                                                            )}
+                                                                        </span>
+
+                                                                    </div>
+
+
+                                                                    {/* SKATING */}
+
+                                                                    <div
+                                                                        onClick={() => goToHourlyFamilyDetails("skating")}
+                                                                        style={{
+                                                                            display: "flex",
+                                                                            alignItems: "center",
+                                                                            justifyContent: "space-between",
+                                                                            padding: "8px 10px",
+                                                                            background: "#FFFBEB",
+                                                                            borderRadius: "9px",
+                                                                            cursor: "pointer",
+                                                                            transition: "all 0.2s ease",
+                                                                        }}
+                                                                        title="View Skating hourly orders"
+                                                                    >
+                                                                        <div
+                                                                            style={{
+                                                                                display: "flex",
+                                                                                alignItems: "center",
+                                                                                gap: "7px",
+                                                                            }}
+                                                                        >
+
+                                                                            <span
+                                                                                style={{
+                                                                                    width: "8px",
+                                                                                    height: "8px",
+                                                                                    borderRadius: "50%",
+                                                                                    background: "#F59E0B",
+                                                                                    flexShrink: 0,
+                                                                                }}
+                                                                            />
+
+                                                                            <span
+                                                                                style={{
+                                                                                    fontSize: "11px",
+                                                                                    fontWeight: 600,
+                                                                                    color: "#475569",
+                                                                                }}
+                                                                            >
+                                                                                Skating
+                                                                            </span>
+
+                                                                        </div>
+
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize: "13px",
+                                                                                fontWeight: 800,
+                                                                                color: "#F59E0B",
+                                                                            }}
+                                                                        >
+                                                                            {skatingHourlyTotal.toLocaleString(
+                                                                                "en-IN"
+                                                                            )}
+                                                                        </span>
 
                                                                     </div>
 
                                                                 </div>
 
-                                                            </Col>
+                                                            </div>
 
-                                                        </Row>
+                                                        </Col>
 
-                                                    )}
+                                                    </Row>
 
-                                                </CardBody>
+                                                ) : (
 
-                                            </Card>
+                                                    <Row className="g-4">
 
-                                        </Col>
+                                                        {/* EMPTY BAR CHART */}
 
-                                    </Row>
+                                                        <Col
+                                                            xl={9}
+                                                            lg={8}
+                                                            md={12}
+                                                            xs={12}
+                                                        >
 
-                                )}
+                                                            <div className="d-flex align-items-center justify-content-center"
+                                                                style={{
+                                                                    height: "390px",
+                                                                    background: "#F8FAFC",
+                                                                    borderRadius: "14px",
+                                                                    border: "1px solid #F1F5F9",
+                                                                }}
+                                                            >
+
+                                                                <span
+                                                                    style={{
+                                                                        color: "#94A3B8",
+                                                                    }}
+                                                                >
+                                                                    No hourly order data available
+                                                                </span>
+                                                            </div>
+                                                        </Col>
+
+
+                                                        {/* EMPTY DONUT */}
+
+                                                        <Col xl={3} lg={4} md={12} xs={12}>
+
+                                                            <div
+                                                                style={{
+                                                                    height: "390px",
+                                                                    background: "#FFFFFF",
+                                                                    border: "1px solid #F1F5F9",
+                                                                    borderRadius: "18px",
+                                                                    padding: "18px",
+                                                                    display: "flex",
+                                                                    flexDirection: "column",
+                                                                }}
+                                                            >
+
+                                                                <div
+                                                                    style={{
+                                                                        fontSize: "14px",
+                                                                        fontWeight: 700,
+                                                                        color: "#334155",
+                                                                    }}
+                                                                >
+                                                                    Division Orders
+                                                                </div>
+
+                                                                <div
+                                                                    style={{
+                                                                        fontSize: "11px",
+                                                                        color: "#94A3B8",
+                                                                        marginTop: "2px",
+                                                                    }}
+                                                                >
+                                                                    Total orders by division
+                                                                </div>
+
+                                                                <div
+                                                                    style={{
+                                                                        flex: 1,
+                                                                        display: "flex",
+                                                                        alignItems: "center",
+                                                                        justifyContent: "center",
+                                                                    }}
+                                                                >
+
+                                                                    <div
+                                                                        style={{
+                                                                            width: "180px",
+                                                                            height: "180px",
+                                                                            borderRadius: "50%",
+                                                                            border: "22px solid #F1F5F9",
+                                                                            display: "flex",
+                                                                            flexDirection: "column",
+                                                                            alignItems: "center",
+                                                                            justifyContent: "center",
+                                                                        }}
+                                                                    >
+
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize: "11px",
+                                                                                color: "#94A3B8",
+                                                                                fontWeight: 600,
+                                                                            }}
+                                                                        >
+                                                                            Total Orders
+                                                                        </span>
+
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize: "28px",
+                                                                                color: "#0F172A",
+                                                                                fontWeight: 800,
+                                                                            }}
+                                                                        >
+                                                                            0
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </Col>
+                                                    </Row>
+                                                )}
+                                            </CardBody>
+                                        </Card>
+                                    </Col>
+                                </Row>
+
                                 {/* Left Column - Division-wise Order Statistics */}
                                 <div className="col-md-3">
                                     <div>

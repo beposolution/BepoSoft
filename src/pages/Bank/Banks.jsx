@@ -37,11 +37,13 @@ const BasicTable = () => {
         branch: "",
         open_balance: "",
         account_type: "",
-        interest_rate: ""
+        interest_rate: "",
+        company: ""
     });
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [perPageData] = useState(10);
+    const [companies, setCompanies] = useState([]);
 
     // Document title
     document.title = "beposoft | bank details";
@@ -66,6 +68,30 @@ const BasicTable = () => {
         };
 
         fetchAccountTypes();
+    }, []);
+
+    useEffect(() => {
+        const fetchCompanies = async () => {
+            try {
+                const token = localStorage.getItem("token");
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}company/data/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (response.status === 200) {
+                    setCompanies(response.data.data || []);
+                }
+            } catch (error) {
+                console.error("Error fetching companies", error);
+            }
+        };
+
+        fetchCompanies();
     }, []);
 
     useEffect(() => {
@@ -104,19 +130,37 @@ const BasicTable = () => {
     const handleSave = () => {
         const token = localStorage.getItem("token");
 
-        axios.put(`${import.meta.env.VITE_APP_KEY}bank/view/${editData.id}/`, editData, {
-            headers: {
-                Authorization: `Bearer ${token}`
+        const payload = {
+            ...editData,
+            company: editData.company
+                ? Number(editData.company)
+                : null
+        };
+
+        axios.put(
+            `${import.meta.env.VITE_APP_KEY}bank/view/${editData.id}/`,
+            payload,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             }
-        })
+        )
             .then(() => {
                 toast.success("Account updated!");
+
                 setModalOpen(false);
+
                 setAccounts(prev =>
-                    prev.map(acc => (acc.id === editData.id ? editData : acc))
+                    prev.map(acc =>
+                        acc.id === editData.id
+                            ? { ...acc, ...payload }
+                            : acc
+                    )
                 );
             })
-            .catch(() => {
+            .catch((error) => {
+                console.error("Failed to update account:", error);
                 toast.error("Failed to update account");
             });
     };
@@ -125,7 +169,8 @@ const BasicTable = () => {
         setEditData({
             ...account,
             account_type: account.account_type || "",
-            interest_rate: account.interest_rate || ""
+            interest_rate: account.interest_rate || "",
+            company: account.company?.id || account.company || ""
         }); // sets all fields
         setModalOpen(true);
     };
@@ -169,6 +214,34 @@ const BasicTable = () => {
                                 value={editData.ifsc_code || ""}
                                 onChange={(e) => setEditData({ ...editData, ifsc_code: e.target.value })}
                             />
+                        </FormGroup>
+
+                        <FormGroup>
+                            <Label>Company</Label>
+
+                            <Input
+                                type="select"
+                                value={editData.company || ""}
+                                onChange={(e) =>
+                                    setEditData({
+                                        ...editData,
+                                        company: e.target.value
+                                            ? Number(e.target.value)
+                                            : ""
+                                    })
+                                }
+                            >
+                                <option value="">Select Company</option>
+
+                                {companies.map((company) => (
+                                    <option
+                                        key={company.id}
+                                        value={company.id}
+                                    >
+                                        {company.name}
+                                    </option>
+                                ))}
+                            </Input>
                         </FormGroup>
 
                         <FormGroup>
@@ -259,7 +332,7 @@ const BasicTable = () => {
                                                         <th scope="row">{indexOfFirstItem + index + 1}</th>
                                                         <td>{account.name}</td>
                                                         <td style={{ color: 'blue' }}>{account.account_number}</td>
-                                                        <td>{account?.account_type}</td>
+                                                        <td>{account?.account_type_name}</td>
                                                         <td>{account.ifsc_code}</td>
                                                         <td>{account.branch}</td>
                                                         <td>{account.open_balance}</td>

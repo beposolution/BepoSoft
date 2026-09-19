@@ -12,6 +12,7 @@ const FormLayouts = () => {
     const [message, setMessage] = useState(null); // For success or error message
     const [messageType, setMessageType] = useState(null); // For determining success or error message type
     const [accountTypes, setAccountTypes] = useState([]);
+    const [companies, setCompanies] = useState([]);
 
     const user = localStorage.getItem('name');
     const navigate = useNavigate();
@@ -40,6 +41,30 @@ const FormLayouts = () => {
         fetchAccountTypes();
     }, []);
 
+    useEffect(() => {
+        const fetchCompanies = async () => {
+            try {
+                const token = localStorage.getItem("token");
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}company/data/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (response.status === 200) {
+                    setCompanies(response.data.data || []);
+                }
+            } catch (error) {
+                console.error("Error fetching companies", error);
+            }
+        };
+
+        fetchCompanies();
+    }, []);
+
     const formik = useFormik({
 
         initialValues: {
@@ -50,6 +75,7 @@ const FormLayouts = () => {
             open_balance: "",
             check: "",
             account_type: "",
+            company: "",
             interest_rate: "",
         },
         validationSchema: Yup.object({
@@ -60,6 +86,7 @@ const FormLayouts = () => {
             branch: Yup.string().required("This field is required"),
             open_balance: Yup.string().required("This field is required"),
             check: Yup.string().required("This field is required"),
+            company: Yup.string().required("Please select a company"),
 
             interest_rate: Yup.string().when("account_type", {
                 is: (val) => {
@@ -147,7 +174,7 @@ const FormLayouts = () => {
 
                                         <Row>
 
-                                            <Col md={6}>
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-firstname-Input">Bank Name</Label>
                                                     <Input
@@ -167,7 +194,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col md={6}>
+                                            <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label>Account Type</Label>
                                                     <Input
@@ -188,6 +215,41 @@ const FormLayouts = () => {
 
                                                     {formik.errors.account_type && formik.touched.account_type && (
                                                         <FormFeedback>{formik.errors.account_type}</FormFeedback>
+                                                    )}
+                                                </div>
+                                            </Col>
+
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label>Company</Label>
+
+                                                    <Input
+                                                        type="select"
+                                                        name="company"
+                                                        value={formik.values.company}
+                                                        onChange={formik.handleChange}
+                                                        onBlur={formik.handleBlur}
+                                                        invalid={
+                                                            formik.touched.company &&
+                                                            !!formik.errors.company
+                                                        }
+                                                    >
+                                                        <option value="">Select Company</option>
+
+                                                        {companies.map((company) => (
+                                                            <option
+                                                                key={company.id}
+                                                                value={company.id}
+                                                            >
+                                                                {company.name}
+                                                            </option>
+                                                        ))}
+                                                    </Input>
+
+                                                    {formik.touched.company && formik.errors.company && (
+                                                        <FormFeedback>
+                                                            {formik.errors.company}
+                                                        </FormFeedback>
                                                     )}
                                                 </div>
                                             </Col>

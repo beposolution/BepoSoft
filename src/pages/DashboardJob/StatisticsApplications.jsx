@@ -252,11 +252,6 @@ const StatisticsApplications = () => {
                     }
                 );
 
-                console.log(
-                    "CEO Hourly Order Summary Response:",
-                    response.data
-                );
-
                 setHourlyOrderData(
                     response?.data || null
                 );

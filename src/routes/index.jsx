@@ -484,6 +484,7 @@ import StaffSalaryDetails from "../pages/Staff/StaffSalaryDetails";
 import StaffMonthlySalaryCalculation from "../pages/Staff/StaffMonthlySalaryCalculation";
 import StaffMonthlySalaryReport from "../pages/Staff/StaffMonthlySalaryReport";
 import HourlyFamilyOrderDetails from "../pages/DashboardJob/HourlyFamilyOrderDetails";
+import CompanyFinanceReport from "../pages/DashboardJob/CompanyFinanceReport";
 
 
 
@@ -497,6 +498,7 @@ const authProtectedRoutes = [
   { path: "/dashboard/", component: <DashboardJob /> },
   { path: "/dashboard/family/details", component: <FamilyDetails /> },
   { path: "/hourly-order-family/:familyId", component: <HourlyFamilyOrderDetails /> },
+  { path: "/finance/company-report/:companyId", component: <CompanyFinanceReport /> },
 
   { path: "/orders/family/date/summary", component: <FamilyDateSummary /> },
   { path: "/orders/family/:family_id/staff/summary/:start_date/:end_date", component: <FamilyStaffSummary /> },

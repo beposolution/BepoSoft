@@ -27,6 +27,8 @@ const MailBox = () => {
   const [selectedMail, setSelectedMail] = useState(null);
   const [mailType, setMailType] = useState("inbox");
   const [readStatusFilter, setReadStatusFilter] = useState("");
+  const [mailSearch, setMailSearch] = useState("");
+  const [debouncedMailSearch, setDebouncedMailSearch] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [userSearch, setUserSearch] = useState("");
@@ -284,6 +286,10 @@ const MailBox = () => {
         type: mailType,
       };
 
+      if (debouncedMailSearch.trim()) {
+        params.search = debouncedMailSearch.trim();
+      }
+
       if (mailType === "inbox" && readStatusFilter) {
         params.read_status = readStatusFilter;
       }
@@ -321,11 +327,18 @@ const MailBox = () => {
   }, [userSearch]);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedMailSearch(mailSearch);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [mailSearch]);
+
+  useEffect(() => {
     fetchMails();
     setSelectedMail(null);
     setMailThread([]);
     resetReplyForm();
-  }, [mailType, readStatusFilter]);
+  }, [mailType, readStatusFilter, debouncedMailSearch]);
 
   const formik = useFormik({
     initialValues: {
@@ -1273,6 +1286,26 @@ const MailBox = () => {
                     <Button color="secondary" size="sm" onClick={fetchMails}>
                       Refresh
                     </Button>
+                  </div>
+
+                  <div className="d-flex align-items-center gap-2 mb-3">
+                    <Input
+                      type="search"
+                      placeholder="Search mail by subject, message or person..."
+                      aria-label="Search mails"
+                      value={mailSearch}
+                      onChange={(e) => setMailSearch(e.target.value)}
+                      style={{ height: "42px", borderRadius: "10px" }}
+                    />
+                    {mailSearch && (
+                      <Button
+                        type="button"
+                        color="light"
+                        onClick={() => setMailSearch("")}
+                      >
+                        Clear
+                      </Button>
+                    )}
                   </div>
 
                   {mailType === "inbox" && (

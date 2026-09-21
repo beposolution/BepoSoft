@@ -28,6 +28,8 @@ const ChartSection = () => {
     const [teamSummary, setTeamSummary] = useState(null);
     const [teamLoading, setTeamLoading] = useState(false);
     const [teamAttendance, setTeamAttendance] = useState([]);
+    const [companies, setCompanies] = useState([]);
+
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -47,6 +49,37 @@ const ChartSection = () => {
         };
         fetchUserData();
     }, []);
+
+
+    useEffect(() => {
+        const fetchCompanies = async () => {
+            try {
+                const token = localStorage.getItem("token");
+
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}company/data/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (response.status === 200) {
+                    setCompanies(
+                        (response.data.data || []).filter(
+                            company => company.id === 5 || company.id === 6
+                        )
+                    );
+                }
+            } catch (error) {
+                console.error("Error fetching companies", error);
+            }
+        };
+
+        fetchCompanies();
+    }, []);
+
 
     useEffect(() => {
         const fetchTeamAttendance = async () => {
@@ -927,6 +960,86 @@ const ChartSection = () => {
 
                 {(role === "ADMIN" || role === "Accounts / Accounting" || role === "COO") && (
                     <Row className="g-3 mb-3">
+
+                        {companies.map((company) => (
+
+                            <Col
+                                key={company.id}
+                                xs={12}
+                                sm={6}
+                                md={6}
+                                lg={4}
+                                xl={3}
+                            >
+
+                                <Card
+                                    onClick={() =>
+                                        navigate(
+                                            `/finance/company-report/${company.id}`,
+                                            {
+                                                state: {
+                                                    companyName: company.name
+                                                }
+                                            }
+                                        )
+                                    }
+
+                                    className="h-100 border-0 shadow-sm"
+
+                                    style={{
+                                        cursor: "pointer",
+                                        borderRadius: "16px",
+                                        minHeight: "155px",
+                                        background: "#f8fbff",
+                                        borderLeft: "5px solid #3b82f6"
+                                    }}
+                                >
+
+                                    <CardBody className="p-3 p-md-4">
+
+                                        <p
+                                            className="fw-semibold mb-2"
+                                            style={{
+                                                color: "#475569",
+                                                fontSize: "14px"
+                                            }}
+                                        >
+                                            Company Reports
+                                        </p>
+
+                                        <h5
+                                            className="fw-bold mb-3"
+                                            style={{
+                                                color: "#1e3a8a",
+                                                fontSize: "17px",
+                                                lineHeight: "1.5"
+                                            }}
+                                        >
+                                            {company.name}
+                                        </h5>
+
+                                        <span
+                                            style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                backgroundColor: "#dbeafe",
+                                                color: "#1d4ed8",
+                                                padding: "7px 12px",
+                                                borderRadius: "8px",
+                                                fontSize: "13px",
+                                                fontWeight: "500"
+                                            }}
+                                        >
+                                            View Finance Report →
+                                        </span>
+
+                                    </CardBody>
+
+                                </Card>
+
+                            </Col>
+
+                        ))}
 
                         <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
                             <Card
@@ -2100,7 +2213,7 @@ const ChartSection = () => {
 
                     </Row>
                 )}
-                
+
 
                 {(role === "BDO" || role === "BDM" || role === "SD") && (
                     <>

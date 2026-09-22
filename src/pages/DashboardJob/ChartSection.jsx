@@ -29,7 +29,9 @@ const ChartSection = () => {
     const [teamLoading, setTeamLoading] = useState(false);
     const [teamAttendance, setTeamAttendance] = useState([]);
     const [companies, setCompanies] = useState([]);
-
+    const [beposoftSummary, setBeposoftSummary] = useState({});
+    const [isFinanceLoading, setIsFinanceLoading] = useState(false);
+    const [financeError, setFinanceError] = useState(null);
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -78,6 +80,51 @@ const ChartSection = () => {
         };
 
         fetchCompanies();
+    }, []);
+
+    useEffect(() => {
+        const fetchBeposoftSummary = async () => {
+            setIsFinanceLoading(true);
+            setFinanceError(null);
+
+            try {
+                const token = localStorage.getItem("token");
+
+                if (!token) {
+                    throw new Error("Please log in again to view finance.");
+                }
+
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}beposoft/summary/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                        timeout: 30000,
+                    }
+                );
+
+                if (response.status === 200) {
+                    setBeposoftSummary(response.data);
+                }
+
+            } catch (error) {
+                console.error("FINANCE SUMMARY ERROR:", error);
+
+                setFinanceError(
+                    error.response?.data?.message ||
+                    error.message ||
+                    "Unable to load finance summary."
+                );
+
+            } finally {
+                setIsFinanceLoading(false);
+            }
+        };
+
+        fetchBeposoftSummary();
+
     }, []);
 
 
@@ -556,6 +603,71 @@ const ChartSection = () => {
         }
         return sum;
     }, 0);
+
+    // ================= FINANCE DATA =================
+
+    const bankSummary = beposoftSummary?.bank_summary || {};
+
+    const todayData = bankSummary?.today_data || {};
+
+    const monthData = bankSummary?.current_month_data || {};
+
+    const todayBank = todayData?.with_internal_transfer || {};
+
+    const monthBank = monthData?.with_internal_transfer || {};
+
+
+    // ================= TODAY =================
+
+    const todayClosingBalance =
+        Number(todayBank?.closing_balance || 0);
+
+    const todayCredit =
+        Number(todayBank?.credit || 0);
+
+    const todayDebit =
+        Number(todayBank?.debit || 0);
+
+    const todayAmountChange =
+        todayCredit - todayDebit;
+
+
+    // ================= CURRENT MONTH =================
+
+    const monthCredit =
+        Number(monthBank?.credit || 0);
+
+    const monthDebit =
+        Number(monthBank?.debit || 0);
+
+    const monthAmountChange =
+        monthCredit - monthDebit;
+
+
+    // ================= AMOUNT FORMAT =================
+
+    const formatFinanceAmount = (value) => {
+
+        const number = Number(value) || 0;
+
+        const absolute = Math.abs(number);
+
+        const sign = number < 0 ? "-" : "";
+
+        if (absolute >= 10000000) {
+            return `${sign}₹${(absolute / 10000000).toFixed(2)} Cr`;
+        }
+
+        if (absolute >= 100000) {
+            return `${sign}₹${(absolute / 100000).toFixed(2)} L`;
+        }
+
+        if (absolute >= 1000) {
+            return `${sign}₹${(absolute / 1000).toFixed(2)}K`;
+        }
+
+        return `${sign}₹${absolute.toFixed(2)}`;
+    };
 
     return (
         <React.Fragment>
@@ -1040,6 +1152,215 @@ const ChartSection = () => {
                             </Col>
 
                         ))}
+
+                        {/* ================= FINANCE CARD ================= */}
+
+                        <Col xs={12} sm={12} md={12} lg={6} xl={6}>
+
+                            <Card
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    borderRadius: "20px",
+                                    minHeight: "210px",
+                                    background:
+                                        "linear-gradient(135deg, #56AFFF 0%, #2C74FF 100%)",
+                                    color: "#ffffff",
+                                    boxShadow: "0 6px 15px rgba(44,116,255,0.25)",
+                                }}
+                            >
+
+                                <CardBody className="p-3">
+
+                                    {/* HEADER */}
+
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+
+                                        <h5
+                                            className="mb-0 fw-bold"
+                                            style={{
+                                                color: "#ffffff",
+                                                fontSize: "16px",
+                                            }}
+                                        >
+                                            Finance
+                                        </h5>
+
+                                        <div
+                                            style={{
+                                                width: "35px",
+                                                height: "35px",
+                                                borderRadius: "11px",
+                                                background: "rgba(255,255,255,0.15)",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                fontSize: "19px",
+                                            }}
+                                        >
+                                            ₹
+                                        </div>
+
+                                    </div>
+
+                                    {/* LOADING */}
+
+                                    {isFinanceLoading && !beposoftSummary?.bank_summary ? (
+
+                                        <div className="text-center py-4">
+
+                                            <div
+                                                className="spinner-border spinner-border-sm text-white"
+                                                role="status"
+                                            />
+
+                                            <p className="mt-2 mb-0 text-white">
+                                                Loading finance...
+                                            </p>
+
+                                        </div>
+
+                                    ) : financeError && !beposoftSummary?.bank_summary ? (
+
+                                        <div className="text-center py-4 text-white">
+                                            Unable to load finance
+                                        </div>
+
+                                    ) : (
+
+                                        <>
+
+                                            {/* TODAY CLOSING BALANCE */}
+
+                                            <div
+                                                style={{
+                                                    background: "rgba(255,255,255,0.15)",
+                                                    borderRadius: "10px",
+                                                    padding: "10px 14px",
+                                                    marginBottom: "12px",
+                                                }}
+                                            >
+
+                                                <div
+                                                    style={{
+                                                        fontSize: "11px",
+                                                        fontWeight: "700",
+                                                        opacity: 0.85,
+                                                    }}
+                                                >
+                                                    TCB
+                                                </div>
+
+                                                <div
+                                                    style={{
+                                                        fontSize: "21px",
+                                                        fontWeight: "800",
+                                                        color: "#ffffff",
+                                                    }}
+                                                >
+                                                    {formatFinanceAmount(todayClosingBalance)}
+                                                </div>
+
+                                            </div>
+
+                                            {/* FINANCE VALUES - TWO COLUMNS */}
+
+                                            <Row className="g-3">
+
+                                                {/* LEFT COLUMN - TODAY */}
+
+                                                <Col xs={6}>
+
+                                                    {[
+                                                        ["TCT", todayCredit],
+                                                        ["TDT", todayDebit],
+                                                        ["DAC", todayAmountChange],
+
+                                                    ].map(([label, value]) => (
+
+                                                        <div
+                                                            key={label}
+                                                            className="d-flex justify-content-between align-items-center"
+                                                            style={{
+                                                                marginBottom: "10px",
+                                                                fontSize: "13px",
+                                                                fontWeight: "600",
+                                                                color: "#ffffff",
+                                                            }}
+                                                        >
+
+                                                            <span style={{ opacity: 0.85 }}>
+                                                                {label}
+                                                            </span>
+
+                                                            <span
+                                                                style={{
+                                                                    fontWeight: "700",
+                                                                    textAlign: "right",
+                                                                }}
+                                                            >
+                                                                {formatFinanceAmount(value)}
+                                                            </span>
+
+                                                        </div>
+
+                                                    ))}
+
+                                                </Col>
+
+                                                {/* RIGHT COLUMN - CURRENT MONTH */}
+
+                                                <Col xs={6}>
+
+                                                    {[
+                                                        ["MCT", monthCredit],
+                                                        ["MDT", monthDebit],
+                                                        ["MAC", monthAmountChange],
+
+                                                    ].map(([label, value]) => (
+
+                                                        <div
+                                                            key={label}
+                                                            className="d-flex justify-content-between align-items-center"
+                                                            style={{
+                                                                marginBottom: "10px",
+                                                                fontSize: "13px",
+                                                                fontWeight: "600",
+                                                                color: "#ffffff",
+                                                            }}
+                                                        >
+
+                                                            <span style={{ opacity: 0.85 }}>
+                                                                {label}
+                                                            </span>
+
+                                                            <span
+                                                                style={{
+                                                                    fontWeight: "700",
+                                                                    textAlign: "right",
+                                                                }}
+                                                            >
+                                                                {formatFinanceAmount(value)}
+                                                            </span>
+
+                                                        </div>
+
+                                                    ))}
+
+                                                </Col>
+
+                                            </Row>
+
+                                        </>
+
+                                    )}
+
+                                </CardBody>
+
+                            </Card>
+
+                        </Col>
+
+                        {/* ================= END FINANCE CARD ================= */}
 
                         <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
                             <Card

@@ -458,7 +458,7 @@ const BasicTable = () => {
                                                                 <th scope="row">{(currentPage - 1) * PAGE_SIZE + index + 1}</th>
                                                                 <td><Link to={`/order/${order.id}/items/`}>{order.invoice || order.id}</Link></td>
                                                                 <td>{asText(order.manage_staff)} ({asText(order.family)})</td>
-                                                                <td>{asText(order.customer_name) || `Customer #${order.customerID || order.customer || "—"}`}</td>
+                                                                <td>{asText(order.customerName)}</td>
                                                                 <td><span className={`badge bg-${statusColor(order.status)}`}>{order.status || "—"}</span></td>
                                                                 <td>₹{money(order.total_amount)}</td>
                                                                 <td>{order.order_date || "—"}</td>

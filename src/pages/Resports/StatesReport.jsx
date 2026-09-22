@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { Table, Row, Col, Card, CardBody, CardTitle, Input, Label, Button, Spinner } from "reactstrap";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
@@ -43,6 +43,33 @@ const BasicTable = () => {
     const [staffs, setStaffs] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedStaff, setSelectedStaff] = useState("");
+    const [staffSearch, setStaffSearch] = useState("");
+    const [staffDropdownOpen, setStaffDropdownOpen] = useState(false);
+    const staffDropdownRef = useRef(null);
+
+    const filteredStaffs = useMemo(() => {
+        const query = staffSearch.trim().toLowerCase();
+        return staffs.filter((staff) =>
+            `${asText(staff.name)} ${asText(staff.family_name)} ${staff.id}`
+                .toLowerCase()
+                .includes(query)
+        );
+    }, [staffs, staffSearch]);
+
+    const selectedStaffData = staffs.find((staff) => String(staff.id) === String(selectedStaff));
+
+    useEffect(() => {
+        if (!staffDropdownOpen) return;
+        const handleOutsideClick = (event) => {
+            if (staffDropdownRef.current && !staffDropdownRef.current.contains(event.target)) {
+                setStaffDropdownOpen(false);
+                setStaffSearch("");
+            }
+        };
+        document.addEventListener("mousedown", handleOutsideClick);
+        return () => document.removeEventListener("mousedown", handleOutsideClick);
+    }, [staffDropdownOpen]);
+    const [appliedFilters, setAppliedFilters] = useState({ search: "", staff_id: "" });
     const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -78,6 +105,8 @@ const BasicTable = () => {
         const params = {
             start_date: appliedDates.start,
             end_date: appliedDates.end,
+            ...(appliedFilters.search && { search: appliedFilters.search }),
+            ...(appliedFilters.staff_id && { staff_id: appliedFilters.staff_id }),
         };
 
         const load = async () => {
@@ -158,19 +187,10 @@ const BasicTable = () => {
             active = false;
             controller.abort();
         };
-    }, [stateName, appliedDates.start, appliedDates.end, role]);
+    }, [stateName, appliedDates.start, appliedDates.end, appliedFilters.search, appliedFilters.staff_id, role]);
 
-    const filteredOrders = useMemo(() => {
-        const query = searchQuery.trim().toLowerCase();
-        return orders.filter((order) => {
-            const staff = asText(order.manage_staff);
-            const customer = asText(order.customer_name || order.customer);
-            const matchesSearch = !query || [order.invoice, customer, staff, order.customerID]
-                .some((value) => asText(value).toLowerCase().includes(query));
-            const matchesStaff = !selectedStaff || staff.toLowerCase() === selectedStaff.toLowerCase();
-            return matchesSearch && matchesStaff;
-        });
-    }, [orders, searchQuery, selectedStaff]);
+    // Search and staff filtering are handled by the backend before pagination.
+    const filteredOrders = orders;
 
     const pageCount = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
     const visibleOrders = filteredOrders.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -186,6 +206,7 @@ const BasicTable = () => {
         }
         setError("");
         setAppliedDates({ start: startDate, end: endDate });
+        setAppliedFilters({ search: searchQuery.trim(), staff_id: selectedStaff });
         setCurrentPage(1);
     };
 
@@ -194,9 +215,12 @@ const BasicTable = () => {
         setStartDate(today);
         setEndDate(today);
         setAppliedDates({ start: today, end: today });
+        setAppliedFilters({ search: "", staff_id: "" });
         setCurrentPage(1);
         setSearchQuery("");
         setSelectedStaff("");
+        setStaffSearch("");
+        setStaffDropdownOpen(false);
     };
 
     const statusColor = (value) => ({
@@ -207,6 +231,70 @@ const BasicTable = () => {
 
     return (
         <React.Fragment>
+            <style>{`
+                .staff-picker-menu {
+                    position: absolute;
+                    top: calc(100% + 6px);
+                    left: 0;
+                    width: 100%;
+                    z-index: 1050;
+                    max-height: 280px;
+                    overflow-y: auto;
+                    background: #fff;
+                    border: 1px solid #e6eaf0;
+                    border-radius: 10px;
+                    box-shadow: 0 10px 28px rgba(31, 45, 61, 0.14);
+                    padding: 6px;
+                }
+                .staff-picker-option {
+                    width: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 10px;
+                    padding: 10px 12px;
+                    border: 0;
+                    border-radius: 7px;
+                    background: transparent;
+                    color: #344054;
+                    text-align: left;
+                    cursor: pointer;
+                    transition: background-color 0.15s ease;
+                }
+                .staff-picker-option:hover,
+                .staff-picker-option:focus-visible {
+                    background: #f0f5ff;
+                    outline: none;
+                }
+                .staff-picker-option.is-selected {
+                    background: #eaf2ff;
+                    color: #185abc;
+                }
+                .staff-picker-name {
+                    min-width: 0;
+                    font-size: 13px;
+                    font-weight: 600;
+                    line-height: 1.35;
+                    overflow-wrap: anywhere;
+                }
+                .staff-picker-family {
+                    flex-shrink: 0;
+                    max-width: 44%;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    font-size: 11px;
+                    font-weight: 500;
+                    color: #667085;
+                    background: #f2f4f7;
+                    padding: 4px 8px;
+                    border-radius: 999px;
+                }
+                .staff-picker-option.is-selected .staff-picker-family {
+                    background: #dce9ff;
+                    color: #185abc;
+                }
+            `}</style>
             <div className="page-content">
                 <div className="container-fluid">
                     <Breadcrumbs title="Tables" breadcrumbItem="STATE WISE REPORTS" />
@@ -228,20 +316,106 @@ const BasicTable = () => {
                                         </Col>
                                         <Col sm={6} lg={3}>
                                             <Label>Search</Label>
-                                            <Input type="text" placeholder="Search by Invoice or Customer"
+                                            <Input type="text" placeholder="Search by invoice, customer or staff"
                                                 value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} />
                                         </Col>
                                         <Col sm={6} lg={3}>
                                             <Label>Filter by Staff</Label>
-                                            <Input type="select" value={selectedStaff}
-                                                onChange={(e) => { setSelectedStaff(e.target.value); setCurrentPage(1); }}>
-                                                <option value="">All Staff</option>
-                                                {staffs.map((staff) => (
-                                                    <option key={staff.id} value={staff.name}>
-                                                        {staff.name} ({staff.family_name})
-                                                    </option>
-                                                ))}
-                                            </Input>
+                                            <div ref={staffDropdownRef} className="position-relative">
+                                                <div className="position-relative">
+                                                    <Input
+                                                        type="text"
+                                                        role="combobox"
+                                                        aria-label="Filter by Staff"
+                                                        aria-autocomplete="list"
+                                                        aria-expanded={staffDropdownOpen}
+                                                        autoComplete="off"
+                                                        placeholder="Search or select staff..."
+                                                        value={staffDropdownOpen
+                                                            ? staffSearch
+                                                            : selectedStaffData
+                                                                ? `${selectedStaffData.name} (${selectedStaffData.family_name || "—"})`
+                                                                : ""}
+                                                        onFocus={() => {
+                                                            setStaffSearch("");
+                                                            setStaffDropdownOpen(true);
+                                                        }}
+                                                        onChange={(e) => {
+                                                            setStaffSearch(e.target.value);
+                                                            setStaffDropdownOpen(true);
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === "Escape") {
+                                                                setStaffDropdownOpen(false);
+                                                                setStaffSearch("");
+                                                                e.currentTarget.blur();
+                                                            }
+                                                            if (e.key === "Enter" && staffDropdownOpen && filteredStaffs.length) {
+                                                                e.preventDefault();
+                                                                setSelectedStaff(String(filteredStaffs[0].id));
+                                                                setCurrentPage(1);
+                                                                setStaffDropdownOpen(false);
+                                                                setStaffSearch("");
+                                                                e.currentTarget.blur();
+                                                            }
+                                                        }}
+                                                        style={{ paddingRight: 35 }}
+                                                    />
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className="position-absolute"
+                                                        style={{ right: 13, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+                                                    >▾</span>
+                                                </div>
+                                                {staffDropdownOpen && (
+                                                    <div role="listbox" aria-label="Staff" className="staff-picker-menu">
+                                                        <button
+                                                            type="button"
+                                                            role="option"
+                                                            aria-selected={!selectedStaff}
+                                                            className={`staff-picker-option ${!selectedStaff ? "is-selected" : ""}`}
+                                                            onClick={() => {
+                                                                setSelectedStaff("");
+                                                                setCurrentPage(1);
+                                                                setStaffDropdownOpen(false);
+                                                                setStaffSearch("");
+                                                            }}
+                                                        >
+                                                            <span className="staff-picker-name">All Staff</span>
+                                                            {!selectedStaff && <span aria-hidden="true">✓</span>}
+                                                        </button>
+                                                        {filteredStaffs.map((staff) => {
+                                                            const isSelected = String(selectedStaff) === String(staff.id);
+                                                            return (
+                                                                <button
+                                                                    type="button"
+                                                                    role="option"
+                                                                    aria-selected={isSelected}
+                                                                    key={staff.id}
+                                                                    className={`staff-picker-option ${isSelected ? "is-selected" : ""}`}
+                                                                    onClick={() => {
+                                                                        setSelectedStaff(String(staff.id));
+                                                                        setCurrentPage(1);
+                                                                        setStaffDropdownOpen(false);
+                                                                        setStaffSearch("");
+                                                                    }}
+                                                                >
+                                                                    <span className="staff-picker-name">{staff.name}</span>
+                                                                    <span className="d-flex align-items-center gap-2" style={{ minWidth: 0, flexShrink: 0 }}>
+                                                                        <span className="staff-picker-family" title={staff.family_name || ""}>
+                                                                            {staff.family_name || "—"}
+                                                                        </span>
+                                                                        {isSelected && <span aria-hidden="true">✓</span>}
+                                                                    </span>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                        {!filteredStaffs.length && (
+                                                            <div className="text-muted text-center py-3">No staff found</div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </Col>
                                     </Row>
                                     <div className="d-flex gap-2 mt-3 flex-wrap">
@@ -315,7 +489,7 @@ const BasicTable = () => {
                     </Row>
                 </div>
             </div>
-        </React.Fragment>
+        </React.Fragment >
     );
 };
 

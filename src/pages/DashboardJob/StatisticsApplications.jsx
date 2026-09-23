@@ -1088,37 +1088,32 @@ const StatisticsApplications = () => {
             .filter(Boolean);
 
 
-    const hourlyChartSeries =
-        sortedHourlyFamilyData.map((family) => {
+    const hourlyChartSeries = allowedHourlyFamilies.map((familyName) => {
 
-            const key = String(
-                family?.family_name || ""
-            )
-                .trim()
-                .toLowerCase();
+        const family = hourlyFamilyData.find(
+            (item) =>
+                String(item?.family_name || "")
+                    .trim()
+                    .toLowerCase() === familyName
+        );
 
+        return {
+            name: hourlyFamilyConfig[familyName]?.label || familyName,
 
-            return {
+            color: hourlyFamilyConfig[familyName]?.color,
 
-                name:
-                    hourlyFamilyConfig[key]?.label ||
-                    family?.family_name ||
-                    "Unknown",
+            data: hourlyCategories.map((hour) => {
 
-                data: hourlyCategories.map((hour) => {
+                const hourData = family?.summary?.hourly_orders?.find(
+                    (item) => item.hour === hour
+                );
 
-                    const hourData =
-                        family?.summary?.hourly_orders?.find(
-                            (item) =>
-                                item.hour === hour
-                        );
+                return Number(hourData?.orders || 0);
 
-                    return Number(
-                        hourData?.orders || 0
-                    );
-                }),
-            };
-        });
+            }),
+        };
+
+    });
 
 
     const getHourlyFamilyTotal = (familyName) => {

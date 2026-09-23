@@ -218,6 +218,35 @@ const StaffOrderSummary = () => {
 
 
     // =========================================================
+    // STATUS DISPLAY NAME
+    // =========================================================
+    const getDisplayStatus = (status) => {
+        switch (status) {
+            case "Invoice Created":
+                return "Waiting For Approval";
+
+            case "To Print":
+                return "Delivery Order (DO)";
+
+            case "Packing under progress":
+                return "Printed";
+
+            case "Packed":
+                return "Packed For Delivery (PFD)";
+
+            case "Ready to ship":
+                return "Out For Delivery (OFD)";
+
+            case "Return From Delivery":
+                return "Return From Delivery (RFD)";
+
+            default:
+                return status || "-";
+        }
+    };
+
+
+    // =========================================================
     // FETCH STAFF ORDER SUMMARY
     // =========================================================
     const fetchStaffOrderSummary =
@@ -1423,8 +1452,7 @@ const StaffOrderSummary = () => {
                                                                                 "inline-block",
                                                                         }}
                                                                     >
-                                                                        {order.status ||
-                                                                            "-"}
+                                                                        {getDisplayStatus(order.status)}
                                                                     </span>
 
                                                                 </td>

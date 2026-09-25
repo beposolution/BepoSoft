@@ -602,7 +602,7 @@ const SidebarContent = (props) => {
               </>
             )}
 
-            {role === 'ADMIN' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'Warehouse Admin' || role === 'warehouse' || role === 'CEO' || role === 'CSO' || role === 'COO' ? (
+            {role === 'ADMIN' || role === 'BDO' || role === 'BDM' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'Warehouse Admin' || role === 'warehouse' || role === 'CEO' || role === 'CSO' || role === 'COO' ? (
 
               <li>
                 <Link to="/#" className="has-arrow">
@@ -610,11 +610,15 @@ const SidebarContent = (props) => {
                   <span>{props.t("GRV")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
+                  {role !== 'BDO' && role !== 'BDM' ? (
+                    <li>
+                      <Link to="/beposoft/new/grv/">
+                        {props.t("New GRV")}
+                      </Link>
+                    </li>
+                  ) : null}
                   <li>
-                    <Link to="/beposoft/new/grv/">{props.t("new grv")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/beposoft/grv/view/">{props.t("grv list")}</Link>
+                    <Link to="/beposoft/grv/view/">{props.t("GRV List")}</Link>
                   </li>
 
                 </ul>

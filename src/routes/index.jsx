@@ -464,7 +464,7 @@ import MainCategoryPage from "../pages/Product/MainCategoryPage";
 import AddLPO from "../pages/LocalPurchase/AddLPO";
 import MyLPO from "../pages/LocalPurchase/MyLPO";
 import AllLPO from "../pages/LocalPurchase/AllLPO";
-import LPODetail from "../pages/JobPages/LPODetail";
+import LPODetail from "../pages/LocalPurchase/LPODetail";
 import CommissionReceipt from "../pages/Receipts/CommissionReceipt";
 import CommissionReceiptList from "../pages/Receipts/CommissionReceiptList";
 import ProductRackUsabilityReport from "../pages/Resports/ProductRackUsabilityReport";

@@ -30,14 +30,8 @@ const MyLPO = () => {
                     }
                 }
             );
-
-            console.log(
-                "LPO RESPONSE",
-                res.data
-            );
-            setLpos(
-                res.data.results?.data || []
-            );
+            
+            setLpos(res.data.results?.data || []);
 
         } catch (error) {
             console.log(

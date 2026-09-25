@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-
 import {
     Card,
     CardBody,
@@ -13,125 +12,60 @@ import {
     Label,
     Spinner
 } from "reactstrap";
-
 import { Link } from "react-router-dom";
-
-import {
-    ToastContainer,
-    toast
-} from "react-toastify";
-
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-
 
 const AllLPO = () => {
 
-
     const token = localStorage.getItem("token");
-
     const baseUrl = import.meta.env.VITE_APP_KEY;
-
-
-
     const [lpos, setLpos] = useState([]);
-
     const [loading, setLoading] = useState(false);
-
-
-
     const [filters, setFilters] = useState({
-
         search: "",
         company: "",
         requested_by: "",
         approved_by: "",
         start_date: "",
         end_date: ""
-
     });
-
-
-
     const [page, setPage] = useState(1);
-
-
     const [pagination, setPagination] = useState({});
-
-
-
-
 
     const fetchLPO = async () => {
 
-
         try {
-
-
             setLoading(true);
 
-
-
             let params = {
-
                 page: page
-
             };
             Object.keys(filters).forEach(key => {
 
-
                 if (filters[key]) {
-
                     params[key] = filters[key];
-
                 }
-
 
             });
 
-            const response = await axios.get(
-
-                `${baseUrl}lpo/all/`,
-
+            const response = await axios.get(`${baseUrl}lpo/all/`,
                 {
-
                     params,
-
                     headers: {
-
                         Authorization:
                             `Bearer ${token}`
-
                     }
-
                 }
-
             );
 
-            setLpos(
-
-                response.data.results.data || []
-
-            );
-
-
-
-            setPagination(
-
-                response.data
-
-            );
-
-
+            setLpos(response.data.results.data || []);
+            setPagination(response.data);
 
         }
 
-
         catch (error) {
-            console.log(error);
-            toast.error(
-                "Failed to fetch LPO"
-            );
+            toast.error("Failed to fetch LPO");
         }
 
         finally {
@@ -170,25 +104,16 @@ const AllLPO = () => {
             >
 
                 <ToastContainer />
-
                 <Container fluid>
 
                     {/* HEADER CARD */}
 
-                    <div
-
-                        className="card border-0 mb-4"
+                    <div className="card border-0 mb-4"
 
                         style={{
-
                             borderRadius: "22px",
-
-                            background:
-                                "linear-gradient(135deg,#1f2937 0%,#334155 45%,#0f172a 100%)",
-
-                            boxShadow:
-                                "0 12px 35px rgba(15,23,42,.18)"
-
+                            background: "linear-gradient(135deg,#1f2937 0%,#334155 45%,#0f172a 100%)",
+                            boxShadow: "0 12px 35px rgba(15,23,42,.18)"
                         }}
 
                     >
@@ -447,250 +372,122 @@ const AllLPO = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {
-                                            loading ?
-                                                (
-                                                    <tr>
-                                                        <td
-                                                            colSpan="7"
-                                                            className="text-center py-5"
-                                                        >
-                                                            <Spinner size="sm" />
-                                                            <div className="mt-2 text-muted">
-                                                                Loading LPO...
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                )
-                                                :
-                                                lpos.length === 0 ?
-                                                    (
-                                                        <tr>
-                                                            <td
-                                                                colSpan="7"
-                                                                className="text-center py-5"
+                                        {loading ? (
+                                            <tr>
+                                                <td
+                                                    colSpan="7"
+                                                    className="text-center py-5"
+                                                >
+                                                    <Spinner size="sm" />
+                                                    <div className="mt-2 text-muted">
+                                                        Loading LPO...
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )
+                                            :
+                                            lpos.length === 0 ? (
+                                                <tr>
+                                                    <td
+                                                        colSpan="7"
+                                                        className="text-center py-5"
+                                                    >
+                                                        <i
+                                                            className="bx bx-file"
+                                                            style={{
+                                                                fontSize: "40px",
+                                                                color: "#94a3b8"
+                                                            }}
+                                                        ></i>
+                                                        <h5 className="mt-3 fw-bold">No LPO Found</h5>
+                                                    </td>
+                                                </tr>
+                                            ) : lpos.map((lpo) => (
+
+
+                                                <tr key={lpo.id}>
+                                                    <td>
+                                                        <span className="fw-bold text-dark">{lpo.invoice}</span>
+                                                    </td>
+                                                    <td>{lpo.date}</td>
+                                                    <td>{lpo.company_name || "-"}</td>
+                                                    <td>{lpo.requested_by_name || "-"}</td>
+                                                    <td>{lpo.approved_by_name || "-"}</td>
+                                                    <td>{lpo.confirmed_by_name || "-"}</td>
+
+                                                    <td className="text-end">
+                                                        <Link to={`/lpo/edit/${lpo.id}`}>
+                                                            <Button
+                                                                color="primary"
+                                                                size="sm"
+                                                                style={{
+                                                                    borderRadius: "10px",
+                                                                    padding: "8px 16px",
+                                                                    fontWeight: 600
+                                                                }}
                                                             >
-                                                                <i
-                                                                    className="bx bx-file"
-                                                                    style={{
-                                                                        fontSize: "40px",
-                                                                        color: "#94a3b8"
-                                                                    }}
-                                                                ></i>
-                                                                <h5 className="mt-3 fw-bold">No LPO Found</h5>
-                                                            </td>
-                                                        </tr>
-                                                    )
-                                                    :
-                                                    lpos.map((lpo) => (
-
-
-                                                        <tr key={lpo.id}>
-                                                            <td>
-                                                                <span className="fw-bold text-dark">{lpo.invoice}</span>
-                                                            </td>
-                                                            <td>{lpo.date}</td>
-                                                            <td>{lpo.company_name || "-"}</td>
-                                                            <td>{lpo.requested_by_name || "-"}</td>
-                                                            <td>{lpo.approved_by_name || "-"}</td>
-                                                            <td>{lpo.confirmed_by_name || "-"}</td>
-
-                                                            <td className="text-end">
-
-
-                                                                <Link
-
-                                                                    to={`/lpo/edit/${lpo.id}`}
-
-                                                                >
-
-
-                                                                    <Button
-
-                                                                        color="primary"
-
-                                                                        size="sm"
-
-                                                                        style={{
-
-                                                                            borderRadius: "10px",
-
-                                                                            padding:
-                                                                                "8px 16px",
-
-                                                                            fontWeight: 600
-
-                                                                        }}
-
-                                                                    >
-
-                                                                        <i className="bx bx-show me-1"></i>
-
-                                                                        View
-
-                                                                    </Button>
-
-
-                                                                </Link>
-
-
-                                                            </td>
-
-
-
-                                                        </tr>
-
-
-                                                    ))
-
-
+                                                                <i className="bx bx-show me-1"></i>
+                                                                View
+                                                            </Button>
+                                                        </Link>
+                                                    </td>
+                                                </tr>
+                                            ))
                                         }
-
-
-
                                     </tbody>
-
-
-
                                 </Table>
-
-
-
                             </div>
-
-
-
                         </CardBody>
-
-
-
                     </Card>
-
-
-
-
-
-
 
                     {/* PAGINATION */}
 
-
-
-                    <div
-
-                        className="d-flex justify-content-between align-items-center mt-4 mb-4"
-
-                    >
-
-
+                    <div className="d-flex justify-content-between align-items-center mt-4 mb-4" >
 
                         <Button
-
                             color="light"
-
                             disabled={!pagination.previous}
-
                             onClick={() => setPage(page - 1)}
-
                             style={{
-
                                 borderRadius: "12px",
-
                                 padding: "10px 22px",
-
                                 fontWeight: 600,
-
                                 border: "1px solid #e5e7eb"
-
                             }}
-
                         >
-
                             <i className="bx bx-left-arrow-alt me-1"></i>
-
                             Previous
-
                         </Button>
 
-
-
-
-
-                        <span
-
-                            className="badge"
-
+                        <span className="badge"
                             style={{
-
                                 background: "#e0e7ff",
-
                                 color: "#3730a3",
-
                                 padding: "10px 18px",
-
                                 borderRadius: "999px"
-
                             }}
-
                         >
-
                             Page {page}
-
                         </span>
 
-
-
-
-
                         <Button
-
                             color="primary"
-
                             disabled={!pagination.next}
-
                             onClick={() => setPage(page + 1)}
-
                             style={{
-
                                 borderRadius: "12px",
-
                                 padding: "10px 22px",
-
                                 fontWeight: 600
-
                             }}
-
                         >
-
                             Next
-
                             <i className="bx bx-right-arrow-alt ms-1"></i>
-
                         </Button>
-
-
-
                     </div>
-
-
-
-
-
                 </Container>
-
-
-
             </div>
-
-
-
         </React.Fragment>
-
-
     );
-
-
 };
-
 
 export default AllLPO;

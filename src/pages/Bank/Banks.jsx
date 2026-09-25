@@ -44,6 +44,12 @@ const BasicTable = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [perPageData] = useState(10);
     const [companies, setCompanies] = useState([]);
+    const [role, setRole] = useState(null);
+
+    useEffect(() => {
+        const role = localStorage.getItem("active");
+        setRole(role);
+    }, []);
 
     // Document title
     document.title = "beposoft | bank details";
@@ -323,7 +329,9 @@ const BasicTable = () => {
                                                     <th>IFSC CODE</th>
                                                     <th>BRANCH</th>
                                                     <th>OPENING BALANCE</th>
-                                                    <th>Action</th>
+                                                    {["ADMIN", "CEO", "COO", "HR"].includes(role) && (
+                                                        <th>Actions</th>
+                                                    )}
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -336,9 +344,11 @@ const BasicTable = () => {
                                                         <td>{account.ifsc_code}</td>
                                                         <td>{account.branch}</td>
                                                         <td>{account.open_balance}</td>
-                                                        <td>
-                                                            <Button color="primary" onClick={() => handleEdit(account)}>Edit</Button>
-                                                        </td>
+                                                        {["ADMIN", "CEO", "COO", "HR"].includes(role) && (
+                                                            <td>
+                                                                <Button color="primary" onClick={() => handleEdit(account)}>Edit</Button>
+                                                            </td>
+                                                        )}
                                                     </tr>
                                                 ))}
                                             </tbody>

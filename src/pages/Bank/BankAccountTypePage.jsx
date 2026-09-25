@@ -26,7 +26,7 @@ const BankAccountTypePage = () => {
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [role, setRole] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
@@ -37,6 +37,11 @@ const BankAccountTypePage = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const perPageData = 10;
+
+  useEffect(() => {
+    const role = localStorage.getItem("active");
+    setRole(role);
+  }, []);
 
   /* ---------------- FETCH LIST ---------------- */
   const fetchBankAccountTypes = async () => {
@@ -113,25 +118,25 @@ const BankAccountTypePage = () => {
   };
 
   /* ---------------- DELETE ---------------- */
-//   const handleDelete = async (id) => {
-//     if (!window.confirm("Are you sure you want to delete this record?")) return;
+  //   const handleDelete = async (id) => {
+  //     if (!window.confirm("Are you sure you want to delete this record?")) return;
 
-//     try {
-//       await axios.delete(
-//         `${import.meta.env.VITE_APP_KEY}edit/bank/account/type/${id}/`,
-//         { headers: { Authorization: `Bearer ${token}` } }
-//       );
-//       toast.success("Deleted successfully");
-//       fetchBankAccountTypes();
-//     } catch (err) {
-//       toast.error("Delete failed");
-//     }
-//   };
+  //     try {
+  //       await axios.delete(
+  //         `${import.meta.env.VITE_APP_KEY}edit/bank/account/type/${id}/`,
+  //         { headers: { Authorization: `Bearer ${token}` } }
+  //       );
+  //       toast.success("Deleted successfully");
+  //       fetchBankAccountTypes();
+  //     } catch (err) {
+  //       toast.error("Delete failed");
+  //     }
+  //   };
 
   const handleCloseModal = () => {
     setModalOpen(false);
     setEditingId(null);
-    setFormData({ account_type: ""});
+    setFormData({ account_type: "" });
   };
 
   /* ---------------- PAGINATION ---------------- */
@@ -171,7 +176,9 @@ const BankAccountTypePage = () => {
                           <tr>
                             <th>#</th>
                             <th>Account Type</th>
-                            <th>Actions</th>
+                            {["ADMIN", "CEO", "COO", "HR"].includes(role) && (
+                              <th>Actions</th>
+                            )}
                           </tr>
                         </thead>
                         <tbody>
@@ -186,23 +193,25 @@ const BankAccountTypePage = () => {
                               <tr key={item.id}>
                                 <td>{indexOfFirstItem + index + 1}</td>
                                 <td>{item.account_type}</td>
-                                <td>
-                                  <Button
-                                    size="sm"
-                                    color="info"
-                                    className="me-2"
-                                    onClick={() => handleView(item.id)}
-                                  >
-                                    Edit
-                                  </Button>
-                                  {/* <Button
+                                {["ADMIN", "CEO", "COO", "HR"].includes(role) && (
+                                  <td>
+                                    <Button
+                                      size="sm"
+                                      color="info"
+                                      className="me-2"
+                                      onClick={() => handleView(item.id)}
+                                    >
+                                      Edit
+                                    </Button>
+                                    {/* <Button
                                     size="sm"
                                     color="danger"
                                     onClick={() => handleDelete(item.id)}
                                   >
                                     Delete
                                   </Button> */}
-                                </td>
+                                  </td>
+                                )}
                               </tr>
                             ))
                           )}

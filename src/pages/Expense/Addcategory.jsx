@@ -17,8 +17,15 @@ const CategoryTable = () => {
     const [isAddMode, setIsAddMode] = useState(false); // New state to differentiate between add and edit
     const [newState, setNewState] = useState({ name: "" }); // State for the new state form
     const token = localStorage.getItem('token');
+    const [role, setRole] = useState(null);
+    const canEdit = ["ADMIN", "CEO", "COO", "HR"].includes(role);
 
     const toggleModal = () => setModal(!modal);
+
+    useEffect(() => {
+        const role = localStorage.getItem("active");
+        setRole(role);
+    }, []);
 
     const columns = useMemo(
         () => [
@@ -40,24 +47,28 @@ const CategoryTable = () => {
                     <div style={{ textAlign: 'center' }}>{row.original.category_name}</div> // Center alignment for Name
                 ),
             },
-            {
-                header: () => <div style={{ textAlign: 'center' }}>EDIT</div>,
-                accessorKey: 'editActions',
-                enableColumnFilter: false,
-                enableSorting: false,
-                cell: ({ row }) => (
-                    <div style={{ display: 'flex', justifyContent: 'center' }}>
-                        <button
-                            className="btn btn-primary d-flex align-items-center"
-                            style={{ height: '30px', padding: '0 10px' }}
-                            onClick={() => handleEdit(row.original)}
-                        >
-                            <FaEdit style={{ marginRight: '5px' }} />
-                            Edit
-                        </button>
-                    </div>
-                ),
-            },
+            ...(canEdit
+                ? [
+                    {
+                        header: () => <div style={{ textAlign: 'center' }}>EDIT</div>,
+                        accessorKey: 'editActions',
+                        enableColumnFilter: false,
+                        enableSorting: false,
+                        cell: ({ row }) => (
+                            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                <button
+                                    className="btn btn-primary d-flex align-items-center"
+                                    style={{ height: '30px', padding: '0 10px' }}
+                                    onClick={() => handleEdit(row.original)}
+                                >
+                                    <FaEdit style={{ marginRight: '5px' }} />
+                                    Edit
+                                </button>
+                            </div>
+                        ),
+                    },
+                ]
+                : []),
             // {
             //     header: () => <div style={{ textAlign: 'center' }}>DELETE</div>,
             //     accessorKey: 'deleteActions',
@@ -77,7 +88,7 @@ const CategoryTable = () => {
             //     ),
             // },
         ],
-        []
+        [canEdit],
     );
 
     const handleEdit = (customer) => {

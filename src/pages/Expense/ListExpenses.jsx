@@ -45,7 +45,7 @@ const BasicTable = () => {
 
   const [expenses, setExpenses] = useState([]);
   const [purposeOfPayment, setPurposeOfPayment] = useState([]);
-
+  const [role, setRole] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -83,6 +83,11 @@ const BasicTable = () => {
     (purposeOfPayment || []).forEach((p) => m.set(String(p.id), p.name));
     return m;
   }, [purposeOfPayment]);
+
+  useEffect(() => {
+    const role = localStorage.getItem("active");
+    setRole(role);
+  }, []);
 
   const fetchPurposeOfPayment = useCallback(async () => {
     try {
@@ -476,7 +481,9 @@ const BasicTable = () => {
                           <th>Expense Type</th>
                           <th>Description</th>
                           <th>Added By</th>
-                          <th>Action</th>
+                          {["ADMIN", "CEO", "COO", "HR"].includes(role) && (
+                            <th>Actions</th>
+                          )}
                         </tr>
                       </thead>
 
@@ -526,20 +533,21 @@ const BasicTable = () => {
                               <td style={{ fontWeight: "bold" }}>
                                 {expense?.added_by ?? ""}
                               </td>
-
-                              <td>
-                                <button
-                                  onClick={() => updateExpense(expense?.id)}
-                                  style={{
-                                    padding: "10px 20px",
-                                    border: "none",
-                                    background: "#3258a8",
-                                    color: "white",
-                                  }}
-                                >
-                                  Edit
-                                </button>
-                              </td>
+                              {["ADMIN", "CEO", "COO", "HR"].includes(role) && (
+                                <td>
+                                  <button
+                                    onClick={() => updateExpense(expense?.id)}
+                                    style={{
+                                      padding: "10px 20px",
+                                      border: "none",
+                                      background: "#3258a8",
+                                      color: "white",
+                                    }}
+                                  >
+                                    Edit
+                                  </button>
+                                </td>
+                              )}
                             </tr>
                           ))
                         ) : (

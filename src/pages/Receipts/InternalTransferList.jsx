@@ -381,7 +381,7 @@ const InternalTransferList = () => {
                                                         <th>Created By</th>
                                                         <th>Date</th>
                                                         <th>Transaction ID</th>
-                                                        {["ADMIN", "CEO", "COO", "Accounts / Accounting"].includes(role) && (
+                                                        {["ADMIN", "CEO", "COO", "HR"].includes(role) && (
                                                             <th>Actions</th>
                                                         )}
                                                     </tr>
@@ -403,7 +403,7 @@ const InternalTransferList = () => {
                                                                         : "-"}
                                                                 </td>
                                                                 <td>{item.transactionID || "-"}</td>
-                                                                {["ADMIN", "CEO", "COO", "Accounts / Accounting"].includes(role) && (
+                                                                {["ADMIN", "CEO", "COO", "HR"].includes(role) && (
                                                                     <td>
                                                                         <Button
                                                                             color="primary"

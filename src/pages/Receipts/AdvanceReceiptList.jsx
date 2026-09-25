@@ -462,7 +462,7 @@ const AdvanceReceiptList = () => {
                                                         <th>Customer</th>
                                                         <th>Bank</th>
                                                         <th>Created By</th>
-                                                        {["ADMIN", "CEO", "COO", "Accounts / Accounting"].includes(role) && (
+                                                        {["ADMIN", "CEO", "COO", "HR"].includes(role) && (
                                                             <th>Actions</th>
                                                         )}
                                                     </tr>
@@ -479,7 +479,7 @@ const AdvanceReceiptList = () => {
                                                             <td>{item.customer_name}</td>
                                                             <td>{item.bank_name}</td>
                                                             <td>{item.created_by_name}</td>
-                                                            {["ADMIN", "CEO", "COO", "Accounts / Accounting"].includes(role) && (
+                                                            {["ADMIN", "CEO", "COO", "HR"].includes(role) && (
                                                                 <td>
                                                                     <button
                                                                         className="btn btn-primary btn-sm"

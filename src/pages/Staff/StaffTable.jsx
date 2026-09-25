@@ -38,6 +38,13 @@ const DatatableTables = () => {
         approval_status: "",
     });
 
+    const [role, setRole] = useState(null);
+
+    useEffect(() => {
+        const role = localStorage.getItem("active");
+        setRole(role);
+    }, []);
+
     const token = localStorage.getItem("token");
     const navigate = useNavigate();
 
@@ -524,7 +531,9 @@ const DatatableTables = () => {
                                         <th>Start date</th>
                                         <th>Department</th>
                                         <th>Image</th>
-                                        <th>Actions</th>
+                                        {["ADMIN", "CEO", "COO", "HR"].includes(role) && (
+                                            <th>Actions</th>
+                                        )}
                                     </tr>
                                 </thead>
 
@@ -572,25 +581,27 @@ const DatatableTables = () => {
                                                         )}
                                                     </td>
 
-                                                    <td style={rowStyle}>
-                                                        <div className="d-flex gap-2">
-                                                            <button
-                                                                type="button"
-                                                                className="btn btn-primary btn-sm"
-                                                                onClick={() => handleViewClick(staff)}
-                                                            >
-                                                                Edit
-                                                            </button>
+                                                    {["ADMIN", "CEO", "COO", "HR"].includes(role) && (
+                                                        <td style={rowStyle}>
+                                                            <div className="d-flex gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-primary btn-sm"
+                                                                    onClick={() => handleViewClick(staff)}
+                                                                >
+                                                                    Edit
+                                                                </button>
 
-                                                            <button
-                                                                type="button"
-                                                                className="btn btn-success btn-sm"
-                                                                onClick={() => handleSalaryClick(staff)}
-                                                            >
-                                                                Salary Details
-                                                            </button>
-                                                        </div>
-                                                    </td>
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-success btn-sm"
+                                                                    onClick={() => handleSalaryClick(staff)}
+                                                                >
+                                                                    Salary Details
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    )}
                                                 </tr>
                                             );
                                         })

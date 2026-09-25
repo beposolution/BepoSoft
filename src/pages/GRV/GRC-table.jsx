@@ -176,6 +176,10 @@ const BasicTable = () => {
                     return `${apiBase}grv/cycling/skating/`;
                 }
 
+                if (activeRole === "BDO" || activeRole === "BDM") {
+                    return `${apiBase}my/grv/data/`;
+                }
+
                 return `${apiBase}get/grv/data/`;
             };
 

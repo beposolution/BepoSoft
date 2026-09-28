@@ -33,6 +33,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
         "CEO",
         "COO",
         "ADMIN",
+        "HR",
         "Marketing",
     ].includes(role);
 
@@ -384,7 +385,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                         <Form onSubmit={formik.handleSubmit}>
                             <Row>
                                 <>
-                                    {(role === "ADMIN" || role === "BDM" || role === "Accounts / Accounting" || role === "Marketing" || role === "CEO" || role === 'COO') && (
+                                    {(role === "ADMIN" || role === "HR" || role === "BDM" || role === "Accounts / Accounting" || role === "Marketing" || role === "CEO" || role === 'COO') && (
                                         <>
                                             <Col md={6}>
                                                 <div className="mb-3">
@@ -577,7 +578,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                     )}
                                 </>
                                 <>
-                                    {["ADMIN", "CEO", "COO", "Accounts / Accounting", "Warehouse Admin", "warehouse"].includes(role) && (
+                                    {["ADMIN", "HR", "CEO", "COO", "Accounts / Accounting", "Warehouse Admin", "warehouse"].includes(role) && (
                                         <Col md={12}>
                                             <div className="mb-3">
                                                 <Label htmlFor="formrow-note-Input">

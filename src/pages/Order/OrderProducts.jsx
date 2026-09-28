@@ -1323,6 +1323,7 @@ const FormLayouts = () => {
 
     const allowedStaffDetailsRoles = [
         "ADMIN",
+        "HR",
         "Accounts / Accounting",
         "CEO",
         "COO",
@@ -1352,6 +1353,7 @@ const FormLayouts = () => {
         "CEO",
         "COO",
         "ADMIN",
+        "HR",
         "Marketing",
     ].includes(role);
 

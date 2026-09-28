@@ -22,6 +22,7 @@ const PaymentImages = ({ status }) => {
             "Accounts / Accounting",
             "CEO",
             "COO",
+            "HR",
             "ADMIN",
         ].includes(role) ||
         (["BDM", "Marketing"].includes(role) && status === "Invoice Created");

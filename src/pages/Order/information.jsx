@@ -28,8 +28,9 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
     const [paymentImagesCount, setPaymentImagesCount] = useState(0);
     const [persistedStatus, setPersistedStatus] = useState("");
 
+    const isAccounts = role === "Accounts / Accounting";
+
     const canEditShippingDetails = [
-        "Accounts / Accounting",
         "CEO",
         "COO",
         "ADMIN",
@@ -41,6 +42,10 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
         role === "Marketing" &&
         persistedStatus === "Invoice Created";
 
+    const canEditStatus =
+        canEditShippingDetails ||
+        isAccounts;
+
     const canEditAddress =
         canEditShippingDetails ||
         canMarketingEditInvoiceCreated;
@@ -48,6 +53,16 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
     const canEditAccountsNote =
         canEditShippingDetails ||
         canMarketingEditInvoiceCreated;
+
+    const canEditWarehouseNote = [
+        "ADMIN",
+        "HR",
+        "CEO",
+        "COO",
+        "Accounts / Accounting",
+        "Warehouse Admin",
+        "warehouse",
+    ].includes(role);
 
     useEffect(() => {
         const fetchImages = async () => {
@@ -400,7 +415,8 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                         onBlur={formik.handleBlur}
                                                         invalid={formik.touched.status && formik.errors.status}
                                                         // disabled={isBlockedTransition}
-                                                        disabled={!canEditShippingDetails || isBlockedTransition}
+                                                        // disabled={!canEditShippingDetails || isBlockedTransition}
+                                                        disabled={!canEditStatus || isBlockedTransition}
                                                     >
                                                         <option value="">Select Status</option>
 
@@ -594,6 +610,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                                     value={formik.values.note}
                                                     onChange={formik.handleChange}
                                                     onBlur={formik.handleBlur}
+                                                    disabled={!canEditWarehouseNote}
                                                     invalid={formik.touched.note && formik.errors.note}
                                                 />
                                             </div>
@@ -619,13 +636,17 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                 </>
                             </Row>
 
-                            {persistedStatus !== "Shipped" && (
-                                <div>
-                                    <button type="submit" className="btn btn-primary w-md">
-                                        Save Changes
-                                    </button>
-                                </div>
-                            )}
+                            {(canEditShippingDetails || isAccounts) &&
+                                persistedStatus !== "Shipped" && (
+                                    <div>
+                                        <button
+                                            type="submit"
+                                            className="btn btn-primary w-md"
+                                        >
+                                            Save Changes
+                                        </button>
+                                    </div>
+                                )}
                         </Form>
                     </CardBody>
                     <ToastContainer />

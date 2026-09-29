@@ -19,7 +19,6 @@ const PaymentImages = ({ status }) => {
 
     const canEditPaymentSlip =
         [
-            "Accounts / Accounting",
             "CEO",
             "COO",
             "HR",

@@ -73,6 +73,15 @@ const FormLayouts = () => {
     const [parcelService, setParcelService] = useState([]);
     const [orderParcelServiceId, setOrderParcelServiceId] = useState("");
     const [orderParcelServiceNote, setOrderParcelServiceNote] = useState("");
+    const [originalAccountFields, setOriginalAccountFields] = useState({
+        shipping_mode: "",
+        cod_amount: "",
+        adv_cod_amount: "",
+        payment_status: "",
+        family: "",
+        cod_status: "",
+        company: "",
+    });
 
     const customerOptions = customers.map(c => ({
         value: c.id,
@@ -734,6 +743,15 @@ const FormLayouts = () => {
                     cod_status: data.order.cod_status || "",
                     adv_cod_amount: data.order.adv_cod_amount || "",
                 });
+                setOriginalAccountFields({
+                    shipping_mode: data.order.shipping_mode || "",
+                    cod_amount: data.order.cod_amount || "",
+                    adv_cod_amount: data.order.adv_cod_amount || "",
+                    payment_status: data.order.payment_status || "",
+                    family: data.order.family || "",
+                    cod_status: data.order.cod_status || "",
+                    company: data.order.company?.id || "",
+                });
                 setCustomerId(data?.order?.customer?.id || null);
                 setOrderItems(data?.items || []);
                 setGrvData(Array.isArray(data.grv) ? data.grv : []);
@@ -1361,6 +1379,42 @@ const FormLayouts = () => {
 
     const canModifyOrder = canEditOrder && !isShipped;
 
+    const canModifyOrderTable =
+        canModifyOrder && role !== "Accounts / Accounting";
+
+    const isAccounts = role === "Accounts / Accounting";
+
+    const isEmptyValue = (value) =>
+        value === null ||
+        value === undefined ||
+        String(value).trim() === "";
+
+    const accountsCanEditShippingMode =
+        !isAccounts || isEmptyValue(originalAccountFields.shipping_mode);
+
+    const accountsCanEditCodCharge =
+        !isAccounts || isEmptyValue(originalAccountFields.cod_amount);
+
+    const accountsCanEditCodAdvance =
+        !isAccounts || isEmptyValue(originalAccountFields.adv_cod_amount);
+
+    const accountsCanEditPaymentMethod =
+        !isAccounts || isEmptyValue(originalAccountFields.payment_status);
+
+    const accountsCanEditDivision =
+        !isAccounts || isEmptyValue(originalAccountFields.family);
+
+    const accountsCanEditCodStatus =
+        !isAccounts || isEmptyValue(originalAccountFields.cod_status);
+
+    const accountsCanEditCompany =
+        !isAccounts || isEmptyValue(originalAccountFields.company);
+
+    const accountsHasAnyEmptyField =
+        isEmptyValue(originalAccountFields.shipping_mode) ||
+        isEmptyValue(originalAccountFields.cod_amount) ||
+        isEmptyValue(originalAccountFields.adv_cod_amount);
+
     const getDisplayStatus = (status) => {
         switch (status) {
             case "Invoice Created":
@@ -1602,6 +1656,7 @@ const FormLayouts = () => {
                                                         value={formik.values.payment_status}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
+                                                        disabled={!accountsCanEditPaymentMethod}
                                                     >
                                                         <option>Select Payment Method</option>
                                                         <option value="paid">Paid</option>
@@ -1622,6 +1677,7 @@ const FormLayouts = () => {
                                                         value={formik.values.family?.toString() || ""}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
+                                                        disabled={!accountsCanEditDivision}
                                                     >
                                                         <option>Select Division</option>
                                                         {familyData.map((sta) => (
@@ -1646,6 +1702,7 @@ const FormLayouts = () => {
                                                         value={formik.values.cod_status}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
+                                                        disabled={!accountsCanEditCodStatus}
                                                     >
                                                         <option value="">Select COD Status</option>
                                                         <option value="FULL_COD">Full COD</option>
@@ -1695,6 +1752,7 @@ const FormLayouts = () => {
                                                         value={formik.values.company}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
+                                                        disabled={!accountsCanEditCompany}
                                                         invalid={formik.touched.company && formik.errors.company ? true : false}
                                                     >
                                                         <option>Select Company</option>
@@ -1721,6 +1779,7 @@ const FormLayouts = () => {
                                                         value={formik.values.shipping_mode}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
+                                                        disabled={!accountsCanEditShippingMode}
                                                         invalid={
                                                             formik.touched.shipping_mode && formik.errors.shipping_mode ? true : false
                                                         }
@@ -1744,6 +1803,7 @@ const FormLayouts = () => {
                                                         value={formik.values.cod_amount}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
+                                                        disabled={!accountsCanEditCodCharge}
                                                         invalid={
                                                             formik.touched.cod_amount && formik.errors.cod_amount ? true : false
                                                         }
@@ -1764,6 +1824,7 @@ const FormLayouts = () => {
                                                     value={formik.values.adv_cod_amount}
                                                     onChange={formik.handleChange}
                                                     onBlur={formik.handleBlur}
+                                                    disabled={!accountsCanEditCodAdvance}
                                                 />
 
                                                 {formik.touched.adv_cod_amount && formik.errors.adv_cod_amount && (
@@ -1807,7 +1868,8 @@ const FormLayouts = () => {
                                             </div>
                                         )}
                                         {/* {canEditOrder && ( */}
-                                        {canModifyOrder && (
+                                        {/* {canModifyOrder && ( */}
+                                        {(!isAccounts || accountsHasAnyEmptyField) && (
                                             <div>
                                                 <button
                                                     type="submit"
@@ -1848,7 +1910,7 @@ const FormLayouts = () => {
                                                         </span>
 
                                                         {/* {!["BDM", "BDO"].includes(role) && ( */}
-                                                        {!isShipped && !["BDM", "BDO"].includes(role) && (
+                                                        {!isShipped && !["BDM", "BDO", "Accounts / Accounting"].includes(role) && (
                                                             <Button
                                                                 size="sm"
                                                                 color="light"
@@ -1943,7 +2005,7 @@ const FormLayouts = () => {
                                     <Card className="bordered-card">
                                         <CardBody>
                                             {/* {canEditOrder && ( */}
-                                            {canModifyOrder && (
+                                            {canModifyOrderTable && (
                                                 <div className="text-end mb-3">
                                                     <Button
                                                         color="primary"
@@ -2088,7 +2150,8 @@ const FormLayouts = () => {
                                                             <th>Total Amount</th>
                                                             {showRackDetails && <th>Rack</th>}
                                                             {/* {canEditOrder && <th>Remove</th>} */}
-                                                            {canModifyOrder && <th>Remove</th>}
+                                                            {/* {canModifyOrder && <th>Remove</th>} */}
+                                                            {canModifyOrderTable && <th>Remove</th>}
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -2167,7 +2230,8 @@ const FormLayouts = () => {
 
                                                                 <td>
                                                                     {/* {canEditOrder && ( */}
-                                                                    {canModifyOrder && (
+                                                                    {/* {canModifyOrder && ( */}
+                                                                    {canModifyOrderTable && (
                                                                         <Button
                                                                             color="danger"
                                                                             onClick={() => handleRemoveItem(item.id)}
@@ -2616,7 +2680,8 @@ const FormLayouts = () => {
                                                 }
                                             `}</style>
                                             {/* {canEditOrder && ( */}
-                                            {canModifyOrder && (
+                                            {/* {canModifyOrder && ( */}
+                                            {canModifyOrderTable && (
                                                 <div
                                                     className="mb-3 mt-3"
                                                     style={{ textAlign: "right" }}

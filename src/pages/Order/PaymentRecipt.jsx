@@ -33,6 +33,7 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
         "Accounts / Accounting",
         "CEO",
         "COO",
+        "HR",
         "ADMIN",
     ].includes(role);
 

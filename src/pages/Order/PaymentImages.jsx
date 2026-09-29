@@ -22,9 +22,13 @@ const PaymentImages = ({ status }) => {
             "Accounts / Accounting",
             "CEO",
             "COO",
+            "HR",
             "ADMIN",
         ].includes(role) ||
         (["BDM", "Marketing"].includes(role) && status === "Invoice Created");
+
+    const canModifyPaymentImages =
+        canEditPaymentSlip && status !== "Shipped";
 
     const writePaymentImageLog = async (action, data = {}) => {
         const token = localStorage.getItem("token");
@@ -155,7 +159,8 @@ const PaymentImages = ({ status }) => {
                 </CardTitle>
 
                 {/* Image Upload Form */}
-                {canEditPaymentSlip && (
+                {/* {canEditPaymentSlip && ( */}
+                {canModifyPaymentImages && (
                     <Form onSubmit={handleUpload}>
                         <Row className="align-items-center mb-3">
                             <Col md={6} lg={4}>
@@ -177,7 +182,8 @@ const PaymentImages = ({ status }) => {
                 )}
 
                 {/* Selected File Previews */}
-                {canEditPaymentSlip && selectedFiles.length > 0 && (
+                {/* {canEditPaymentSlip && selectedFiles.length > 0 && ( */}
+                {canModifyPaymentImages && selectedFiles.length > 0 && (
                     <div className="mt-3">
                         <h6>Selected Files:</h6>
                         <Row>
@@ -213,7 +219,8 @@ const PaymentImages = ({ status }) => {
                                         style={{ height: '100px', objectFit: 'cover', cursor: 'pointer' }}
                                         onClick={() => openPreview(img)}
                                     />
-                                    {canEditPaymentSlip && (
+                                    {/* {canEditPaymentSlip && ( */}
+                                    {canModifyPaymentImages && (
                                         <Button
                                             color="danger"
                                             size="sm"

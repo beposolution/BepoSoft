@@ -1348,6 +1348,8 @@ const FormLayouts = () => {
                     : allowedStaffDetailsStatusesForOthers.includes(formik.values.status)
         );
 
+    const isShipped = formik.values.status === "Shipped";
+
     const canEditOrder = [
         "Accounts / Accounting",
         "CEO",
@@ -1356,6 +1358,8 @@ const FormLayouts = () => {
         "HR",
         "Marketing",
     ].includes(role);
+
+    const canModifyOrder = canEditOrder && !isShipped;
 
     const getDisplayStatus = (status) => {
         switch (status) {
@@ -1802,7 +1806,8 @@ const FormLayouts = () => {
                                                 ) : null}
                                             </div>
                                         )}
-                                        {canEditOrder && (
+                                        {/* {canEditOrder && ( */}
+                                        {canModifyOrder && (
                                             <div>
                                                 <button
                                                     type="submit"
@@ -1842,7 +1847,8 @@ const FormLayouts = () => {
                                                             {billingAddress.name}
                                                         </span>
 
-                                                        {!["BDM", "BDO"].includes(role) && (
+                                                        {/* {!["BDM", "BDO"].includes(role) && ( */}
+                                                        {!isShipped && !["BDM", "BDO"].includes(role) && (
                                                             <Button
                                                                 size="sm"
                                                                 color="light"
@@ -1936,7 +1942,8 @@ const FormLayouts = () => {
                                 <Col xl={12}>
                                     <Card className="bordered-card">
                                         <CardBody>
-                                            {canEditOrder && (
+                                            {/* {canEditOrder && ( */}
+                                            {canModifyOrder && (
                                                 <div className="text-end mb-3">
                                                     <Button
                                                         color="primary"
@@ -2080,7 +2087,8 @@ const FormLayouts = () => {
                                                             <th>Discount</th>
                                                             <th>Total Amount</th>
                                                             {showRackDetails && <th>Rack</th>}
-                                                            {canEditOrder && <th>Remove</th>}
+                                                            {/* {canEditOrder && <th>Remove</th>} */}
+                                                            {canModifyOrder && <th>Remove</th>}
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -2158,7 +2166,8 @@ const FormLayouts = () => {
                                                                 )}
 
                                                                 <td>
-                                                                    {canEditOrder && (
+                                                                    {/* {canEditOrder && ( */}
+                                                                    {canModifyOrder && (
                                                                         <Button
                                                                             color="danger"
                                                                             onClick={() => handleRemoveItem(item.id)}
@@ -2606,7 +2615,8 @@ const FormLayouts = () => {
                                                     vertical-align: middle;
                                                 }
                                             `}</style>
-                                            {canEditOrder && (
+                                            {/* {canEditOrder && ( */}
+                                            {canModifyOrder && (
                                                 <div
                                                     className="mb-3 mt-3"
                                                     style={{ textAlign: "right" }}

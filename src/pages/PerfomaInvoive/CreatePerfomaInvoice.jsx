@@ -993,7 +993,7 @@ const FormLayouts = () => {
                                                         name="order_date"
                                                         className="form-control"
                                                         id="order_date"
-                                                        readOnly
+                                                        // readOnly
                                                         value={formik.values.order_date}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}

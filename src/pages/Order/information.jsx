@@ -619,11 +619,13 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                                 </>
                             </Row>
 
-                            <div>
-                                <button type="submit" className="btn btn-primary w-md">
-                                    Save Changes
-                                </button>
-                            </div>
+                            {persistedStatus !== "Shipped" && (
+                                <div>
+                                    <button type="submit" className="btn btn-primary w-md">
+                                        Save Changes
+                                    </button>
+                                </div>
+                            )}
                         </Form>
                     </CardBody>
                     <ToastContainer />

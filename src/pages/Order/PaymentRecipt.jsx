@@ -30,7 +30,7 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
     const role = localStorage.getItem("active");
 
     const canEditShippingDetails = [
-        "Accounts / Accounting",
+        // "Accounts / Accounting",
         "CEO",
         "COO",
         "HR",

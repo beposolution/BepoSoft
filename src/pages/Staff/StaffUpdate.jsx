@@ -11,6 +11,7 @@ import { useParams } from 'react-router-dom';
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../services/auditService";
 
 const FormLayouts = () => {
     // Meta title
@@ -541,88 +542,378 @@ const FormLayouts = () => {
         setDocModal(true);
     };
 
-    const writeStaffUpdateLog = async (beforeData, afterData) => {
-        try {
-            await axios.post(
-                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                {
-                    staff: Number(afterData.id),
+    const getAuditValue = (value) => {
+        if (value === null || value === undefined) {
+            return null;
+        }
 
-                    before_data: {
-                        name: beforeData.name,
-                        username: beforeData.username,
-                        email: beforeData.email,
-                        phone: beforeData.phone,
-                        designation: beforeData.designation,
-                        department: beforeData.department?.name || "",
-                        supervisor: beforeData.supervisor?.name || "",
-                        family: beforeData.family?.name || "",
-                        approval_status: beforeData.approval_status,
-                        staff_id: beforeData.staff_id || "",
-                        place: beforeData.place || "",
-                        emergency_contact_name: beforeData.emergency_contact_name || "",
-                        emergency_contact_number: beforeData.emergency_contact_number || "",
-                        emergency_contact_name1: beforeData.emergency_contact_name1 || "",
-                        emergency_contact_number1: beforeData.emergency_contact_number1 || "",
-                        experience: beforeData.experience || "",
-                        previous_company: beforeData.previous_company || "",
-                        blood_group: beforeData.blood_group || "",
-                        education: beforeData.education || "",
-                        aadhar_no: beforeData.aadhar_no || "",
-                        pan_no: beforeData.pan_no || "",
-                        address: beforeData.address || "",
-                        paid_leaves: beforeData.paid_leaves ?? 0,
-                    },
-
-                    after_data: {
-                        action: "Staff Updated",
-
-                        name: afterData.name,
-                        username: afterData.username,
-                        email: afterData.email,
-                        phone: afterData.phone,
-                        designation: afterData.designation,
-
-                        department: afterData.department?.name || "",
-                        supervisor: afterData.supervisor?.name || "",
-                        family: afterData.family?.name || "",
-                        paid_leaves: afterData.paid_leaves ?? 0,
-                        country: afterData.country,
-                        state: afterData.state?.name || "",
-                        gender: afterData.gender,
-                        marital_status: afterData.marital_status,
-                        employment_status: afterData.employment_status,
-                        approval_status: afterData.approval_status,
-
-                        allocated_states: Array.isArray(afterData.allocated_states)
-                            ? afterData.allocated_states.map(s => s.name)
-                            : [],
-                        staff_id: afterData.staff_id || "",
-                        place: afterData.place || "",
-                        emergency_contact_name: afterData.emergency_contact_name || "",
-                        emergency_contact_number: afterData.emergency_contact_number || "",
-                        emergency_contact_name1: afterData.emergency_contact_name1 || "",
-                        emergency_contact_number1: afterData.emergency_contact_number1 || "",
-                        experience: afterData.experience || "",
-                        previous_company: afterData.previous_company || "",
-                        blood_group: afterData.blood_group || "",
-                        education: afterData.education || "",
-                        aadhar_no: afterData.aadhar_no || "",
-                        pan_no: afterData.pan_no || "",
-                        address: afterData.address || "",
-                    }
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    }
+        if (Array.isArray(value)) {
+            return value.map((item) => {
+                if (item && typeof item === "object") {
+                    return item.name ?? item.label ?? item.id ?? item.value ?? null;
                 }
+
+                return item;
+            });
+        }
+
+        if (typeof value === "object") {
+            return value.name ?? value.id ?? null;
+        }
+
+        return value;
+    };
+
+
+    const buildStaffAuditData = (staffData) => {
+        if (!staffData) {
+            return {};
+        }
+
+        // ---------------------------------------------------------
+        // Resolve Supervisor Name
+        // ---------------------------------------------------------
+        const supervisorId =
+            staffData.supervisor_id?.id ??
+            staffData.supervisor_id ??
+            staffData.supervisor?.id ??
+            null;
+
+        const supervisorName =
+            staffData.supervisor?.name ??
+            staffData.supervisor_name ??
+            supervisor.find(
+                (item) => String(item.id) === String(supervisorId)
+            )?.name ??
+            null;
+
+
+        // ---------------------------------------------------------
+        // Resolve Department Name
+        // ---------------------------------------------------------
+        const departmentId =
+            staffData.department_id?.id ??
+            staffData.department_id ??
+            staffData.department?.id ??
+            null;
+
+        const departmentName =
+            staffData.department?.name ??
+            staffData.department_name ??
+            department.find(
+                (item) => String(item.id) === String(departmentId)
+            )?.name ??
+            null;
+
+
+        // ---------------------------------------------------------
+        // Resolve Family Name
+        // ---------------------------------------------------------
+        const familyId =
+            staffData.family?.id ??
+            staffData.family_id ??
+            (
+                typeof staffData.family !== "object"
+                    ? staffData.family
+                    : null
             );
-        } catch (err) {
-            console.warn(
-                "Staff Update DataLog failed:",
-                err?.response?.data || err.message
+
+        const familyName =
+            staffData.family?.name ??
+            staffData.family_name ??
+            familys.find(
+                (item) => String(item.id) === String(familyId)
+            )?.name ??
+            (
+                typeof staffData.family === "string"
+                    ? staffData.family
+                    : null
             );
+
+
+        // ---------------------------------------------------------
+        // Resolve Warehouse Name
+        // ---------------------------------------------------------
+        const warehouseId =
+            staffData.warehouse_id?.id ??
+            staffData.warehouse_id ??
+            staffData.warehouse?.id ??
+            null;
+
+        const warehouseData = warehouseDetails.find(
+            (item) => String(item.id) === String(warehouseId)
+        );
+
+        const warehouseName =
+            staffData.warehouse?.name ??
+            staffData.warehouse_name ??
+            warehouseData?.name ??
+            null;
+
+
+        // ---------------------------------------------------------
+        // Resolve Country Code
+        // ---------------------------------------------------------
+        const countryCodeId =
+            staffData.country_code?.id ??
+            staffData.country_code ??
+            null;
+
+        const countryCodeValue =
+            staffData.country_code?.country_code ??
+            staffData.country_code_name ??
+            countryCodes.find(
+                (item) => String(item.id) === String(countryCodeId)
+            )?.country_code ??
+            null;
+
+
+        // ---------------------------------------------------------
+        // Resolve Allocated State Names
+        // ---------------------------------------------------------
+        const allocatedStateValues =
+            Array.isArray(staffData.allocated_states)
+                ? staffData.allocated_states
+                : [];
+
+        const allocatedStateNames = allocatedStateValues
+            .map((stateValue) => {
+
+                // Already an object with name
+                if (
+                    stateValue &&
+                    typeof stateValue === "object"
+                ) {
+                    return (
+                        stateValue.name ??
+                        stateValue.label ??
+                        null
+                    );
+                }
+
+                // Try to find state using ID/value
+                const matchedState =
+                    lga.find(
+                        (item) =>
+                            String(item.id) === String(stateValue)
+                    ) ??
+                    states.find(
+                        (item) =>
+                            String(item.value) === String(stateValue)
+                    );
+
+                return (
+                    matchedState?.name ??
+                    matchedState?.label ??
+                    stateValue
+                );
+            })
+            .filter(
+                (value) =>
+                    value !== null &&
+                    value !== undefined
+            );
+
+
+        // ---------------------------------------------------------
+        // FINAL AUDIT DATA
+        // NO DATABASE PK / FK IDs
+        // ---------------------------------------------------------
+        return {
+
+            name:
+                staffData.name ?? "",
+
+            username:
+                staffData.username ?? "",
+
+            email:
+                staffData.email ?? "",
+
+            staff_id:
+                staffData.staff_id ?? "",
+
+
+            // Location
+            country:
+                getAuditValue(staffData.country),
+
+            state:
+                getAuditValue(staffData.state),
+
+            allocated_states:
+                allocatedStateNames,
+
+            place:
+                staffData.place ?? "",
+
+            address:
+                staffData.address ?? "",
+
+
+            // Warehouse - NAME ONLY
+            warehouse:
+                warehouseName,
+
+
+            // Personal
+            date_of_birth:
+                staffData.date_of_birth ?? null,
+
+            gender:
+                staffData.gender ?? "",
+
+            marital_status:
+                staffData.marital_status ?? "",
+
+            blood_group:
+                staffData.blood_group ?? "",
+
+
+            // Contact
+            country_code:
+                countryCodeValue,
+
+            phone:
+                staffData.phone ?? "",
+
+            alternate_number:
+                staffData.alternate_number ?? "",
+
+
+            // Employment
+            employment_status:
+                staffData.employment_status ?? "",
+
+            designation:
+                getAuditValue(staffData.designation),
+
+            join_date:
+                staffData.join_date ?? null,
+
+            confirmation_date:
+                staffData.confirmation_date ?? null,
+
+            termination_date:
+                staffData.termination_date ?? null,
+
+            approval_status:
+                staffData.approval_status ?? "",
+
+            paid_leaves:
+                staffData.paid_leaves ?? 0,
+
+
+            // Supervisor - NAME ONLY
+            supervisor:
+                supervisorName,
+
+
+            // Department - NAME ONLY
+            department:
+                departmentName,
+
+
+            // Family - NAME ONLY
+            family:
+                familyName,
+
+
+            // Emergency Contacts
+            emergency_contact_name:
+                staffData.emergency_contact_name ?? "",
+
+            emergency_contact_number:
+                staffData.emergency_contact_number ?? "",
+
+            emergency_contact_name1:
+                staffData.emergency_contact_name1 ?? "",
+
+            emergency_contact_number1:
+                staffData.emergency_contact_number1 ?? "",
+
+
+            // Experience
+            yr_experience:
+                staffData.yr_experience ?? "",
+
+            previous_company:
+                staffData.previous_company ?? "",
+
+            education:
+                staffData.education ?? "",
+
+
+            // Documents
+            aadhar_no:
+                staffData.aadhar_no ?? "",
+
+            pan_no:
+                staffData.pan_no ?? "",
+
+            aadhar_image:
+                staffData.aadhar_image ?? null,
+
+            pan_image:
+                staffData.pan_image ?? null,
+
+            exp_letter:
+                staffData.exp_letter ?? null,
+
+            image:
+                staffData.image ?? null,
+
+
+            // Manager
+            is_manager:
+                Boolean(staffData.is_manager),
+        };
+    };
+
+
+    const writeStaffUpdateLog = async (
+        beforeData,
+        afterData
+    ) => {
+        try {
+            if (!beforeData || !afterData) {
+                console.warn(
+                    "Staff DataLog skipped: before/after data missing."
+                );
+                return false;
+            }
+
+            const beforeAuditData =
+                buildStaffAuditData(beforeData);
+
+            const afterAuditData =
+                buildStaffAuditData(afterData);
+
+            const auditCreated = await createAuditLog({
+                action: "staff_updated_website",
+
+                beforeData: beforeAuditData,
+
+                afterData: afterAuditData,
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Staff updated successfully, but DataLog creation failed."
+                );
+
+                return false;
+            }
+
+            return true;
+
+        } catch (error) {
+            console.error(
+                "Staff DataLog creation error:",
+                error
+            );
+
+            return false;
         }
     };
 

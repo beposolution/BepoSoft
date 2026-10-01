@@ -18,16 +18,17 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import axios from "axios";
+import { createAuditLog } from "../../services/auditService";
 
 const BasicTable = () => {
     const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(true);
     const token = localStorage.getItem("token")
-
     const [editModal, setEditModal] = useState(false);
     const [selectedId, setSelectedId] = useState(null);
     const [formData, setFormData] = useState({});
     const [saving, setSaving] = useState(false);
+    const [originalData, setOriginalData] = useState({});
 
     useEffect(() => {
         // Fetch companies data from an API
@@ -62,7 +63,11 @@ const BasicTable = () => {
                 }
             );
 
-            setFormData(response.data.data);
+            const companyData = response.data.data;
+
+            setFormData(companyData);
+            setOriginalData({ ...companyData });
+
             setEditModal(true);
         } catch (error) {
             toast.error("Error fetching company details");
@@ -93,16 +98,68 @@ const BasicTable = () => {
                 }
             );
 
+            const updatedCompany =
+                response?.data?.data ?? formData;
+
+            // ---------------------------------------------------------
+            // CREATE AUDIT LOG ONLY AFTER COMPANY UPDATE SUCCEEDS
+            // ---------------------------------------------------------
+
+            const auditCreated = await createAuditLog({
+                action: "company_updated_website",
+
+                beforeData: {
+                    company_id: selectedId,
+                    name: originalData?.name ?? null,
+                    gst: originalData?.gst ?? null,
+                    address: originalData?.address ?? null,
+                    zip: originalData?.zip ?? null,
+                    city: originalData?.city ?? null,
+                    country: originalData?.country ?? null,
+                    phone: originalData?.phone ?? null,
+                    email: originalData?.email ?? null,
+                    web_site: originalData?.web_site ?? null,
+                    prefix: originalData?.prefix ?? null,
+                },
+
+                afterData: {
+                    company_id: selectedId,
+                    name: updatedCompany?.name ?? null,
+                    gst: updatedCompany?.gst ?? null,
+                    address: updatedCompany?.address ?? null,
+                    zip: updatedCompany?.zip ?? null,
+                    city: updatedCompany?.city ?? null,
+                    country: updatedCompany?.country ?? null,
+                    phone: updatedCompany?.phone ?? null,
+                    email: updatedCompany?.email ?? null,
+                    web_site: updatedCompany?.web_site ?? null,
+                    prefix: updatedCompany?.prefix ?? null,
+                },
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Company updated successfully, but audit log creation failed."
+                );
+            }
+
             toast.success("Company updated successfully");
 
             setCompanies((prev) =>
                 prev.map((company) =>
-                    company.id === selectedId ? response.data.data : company
+                    company.id === selectedId
+                        ? updatedCompany
+                        : company
                 )
             );
 
             setEditModal(false);
+            setOriginalData({});
+            setFormData({});
+            setSelectedId(null);
+
         } catch (error) {
+            console.error("Company update error:", error);
             toast.error("Error updating company");
         } finally {
             setSaving(false);

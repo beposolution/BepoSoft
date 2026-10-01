@@ -5,6 +5,7 @@ import { useFormik } from "formik";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { createAuditLog } from "../../services/auditService";
 
 const FormLayouts = () => {
     document.title = "BEPOSOFT | Add Bank";
@@ -13,6 +14,7 @@ const FormLayouts = () => {
     const [messageType, setMessageType] = useState(null); // For determining success or error message type
     const [accountTypes, setAccountTypes] = useState([]);
     const [companies, setCompanies] = useState([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const user = localStorage.getItem('name');
     const navigate = useNavigate();
@@ -65,6 +67,91 @@ const FormLayouts = () => {
         fetchCompanies();
     }, []);
 
+    const createBankDataLog = async (values, responseData = null) => {
+        try {
+            // Resolve Account Type name from FK
+            const selectedAccountType = accountTypes.find(
+                (type) => String(type.id) === String(values.account_type)
+            );
+
+            // Resolve Company name from FK
+            const selectedCompany = companies.find(
+                (company) => String(company.id) === String(values.company)
+            );
+
+            const afterData = {
+                name: responseData?.name ?? values.name ?? "",
+
+                account_number:
+                    responseData?.account_number ??
+                    values.account_number ??
+                    "",
+
+                account_type:
+                    responseData?.account_type_name ??
+                    selectedAccountType?.account_type ??
+                    "",
+
+                ifsc_code:
+                    responseData?.ifsc_code ??
+                    values.ifsc_code ??
+                    "",
+
+                branch:
+                    responseData?.branch ??
+                    values.branch ??
+                    "",
+
+                open_balance:
+                    responseData?.open_balance ??
+                    values.open_balance ??
+                    "",
+
+                company:
+                    responseData?.company_name ??
+                    selectedCompany?.name ??
+                    "",
+
+                interest_rate:
+                    responseData?.interest_rate ??
+                    values.interest_rate ??
+                    "",
+
+                check:
+                    responseData?.check ??
+                    values.check ??
+                    "",
+
+                created_user:
+                    user ?? "",
+            };
+
+            const auditCreated = await createAuditLog({
+                action: "bank_created_website",
+                beforeData: {},
+                afterData: afterData,
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Bank created successfully, but DataLog creation failed."
+                );
+
+                return false;
+            }
+
+            return true;
+
+        } catch (error) {
+            console.error(
+                "Bank DataLog creation error:",
+                error
+            );
+
+            return false;
+        }
+    };
+
     const formik = useFormik({
 
         initialValues: {
@@ -98,44 +185,122 @@ const FormLayouts = () => {
             }),
         }),
 
-        onSubmit: async (values) => {
+        onSubmit: async (values, { resetForm }) => {
+
+            // Prevent double click / duplicate submission
+            if (isSubmitting) {
+                return;
+            }
+
+            setIsSubmitting(true);
+
             try {
-                // Retrieve token from localStorage
-                const token = localStorage.getItem('token');
+                const token = localStorage.getItem("token");
 
                 const response = await axios.post(
                     `${import.meta.env.VITE_APP_KEY}add/bank/`,
                     values,
                     {
                         headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`,
                         },
                     }
                 );
 
                 if (response.status === 201) {
-                    // Handle successful response
-                    setMessage("Bank account added successfully!");
+
+                    // -------------------------------------------------
+                    // BANK CREATED SUCCESSFULLY
+                    // CREATE DATALOG
+                    // -------------------------------------------------
+
+                    try {
+                        const createdBank =
+                            response?.data?.data ?? null;
+
+                        await createBankDataLog(
+                            values,
+                            createdBank
+                        );
+
+                    } catch (auditError) {
+
+                        console.error(
+                            "Bank created, but DataLog failed:",
+                            auditError
+                        );
+                    }
+
+
+                    // -------------------------------------------------
+                    // SUCCESS MESSAGE
+                    // -------------------------------------------------
+
+                    setMessage(
+                        "Bank account added successfully!"
+                    );
+
                     setMessageType("success");
+
+
+                    // -------------------------------------------------
+                    // CLEAR ALL FORM VALUES
+                    // -------------------------------------------------
+
+                    resetForm({
+                        values: {
+                            name: "",
+                            account_number: "",
+                            ifsc_code: "",
+                            branch: "",
+                            open_balance: "",
+                            check: "",
+                            account_type: "",
+                            company: "",
+                            interest_rate: "",
+                        },
+                    });
+
                 } else {
-                    setMessage(response.data.message || "Something went wrong. Please try again.");
+
+                    setMessage(
+                        response.data.message ||
+                        "Something went wrong. Please try again."
+                    );
+
                     setMessageType("error");
                 }
+
             } catch (error) {
-                if (error.response && error.response.status === 401) {
-                    // Clear invalid token
+
+                if (
+                    error.response &&
+                    error.response.status === 401
+                ) {
+
                     localStorage.removeItem("token");
 
-                    // Show message (optional)
-                    alert("Your session has expired. Please log in again.");
+                    alert(
+                        "Your session has expired. Please log in again."
+                    );
 
-                    // Redirect to login page
                     navigate("/login");
+
                 } else {
-                    setMessage("Something went wrong. Please try again.");
+
+                    setMessage(
+                        error?.response?.data?.message ||
+                        "Something went wrong. Please try again."
+                    );
+
                     setMessageType("error");
                 }
+
+            } finally {
+
+                // Re-enable only after API + audit processing finishes
+                setIsSubmitting(false);
             }
         }
     });
@@ -403,8 +568,12 @@ const FormLayouts = () => {
                                         </div>
 
                                         <div>
-                                            <button type="submit" className="btn btn-primary w-md">
-                                                Submit
+                                            <button
+                                                type="submit"
+                                                className="btn btn-primary w-md"
+                                                disabled={isSubmitting}
+                                            >
+                                                {isSubmitting ? "Submitting..." : "Submit"}
                                             </button>
                                         </div>
                                     </Form>

@@ -27,15 +27,56 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
     const [ledgerLoading, setLedgerLoading] = useState(true);
     const [ledgerError, setLedgerError] = useState(null);
 
+    const [originalBoxDetails, setOriginalBoxDetails] = useState({
+        actual_weight: "",
+        parcel_amount: "",
+        postoffice_date: "",
+    });
+
     const role = localStorage.getItem("active");
 
+    // CEO / COO / HR / ADMIN can always edit all shipping fields
     const canEditShippingDetails = [
-        // "Accounts / Accounting",
         "CEO",
         "COO",
         "HR",
         "ADMIN",
     ].includes(role);
+
+    // Accounts / Accounting special permission
+    const isAccountsDepartment = [
+        "Accounts",
+        "Accounting",
+        "Accounts / Accounting",
+    ].includes(role);
+
+    // Treat zero / blank / null as "not entered"
+    const isShippingFieldEmpty = (value) => {
+        return (
+            value === null ||
+            value === undefined ||
+            value === "" ||
+            Number(value) === 0
+        );
+    };
+
+    // Accounts can see Edit button if AT LEAST ONE field is still empty.
+    // CEO / COO / HR / ADMIN always see Edit.
+    const canEditTrackingRow = (packedItems) => {
+        if (canEditShippingDetails) {
+            return true;
+        }
+
+        if (isAccountsDepartment) {
+            return (
+                isShippingFieldEmpty(packedItems.actual_weight) ||
+                isShippingFieldEmpty(packedItems.parcel_amount) ||
+                !packedItems.postoffice_date
+            );
+        }
+
+        return false;
+    };
 
     useEffect(() => {
         if (!customerId && !id) return;
@@ -222,11 +263,18 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
         setSelectedBoxId(id);
 
         const selectedBox = packing.find((box) => box.id === id);
+
         if (selectedBox) {
-            setBoxDetails({
-                actual_weight: selectedBox.actual_weight || '',
-                parcel_amount: selectedBox.parcel_amount || '',
-                postoffice_date: selectedBox.postoffice_date || '',
+            const details = {
+                actual_weight: selectedBox.actual_weight || "",
+                parcel_amount: selectedBox.parcel_amount || "",
+                postoffice_date: selectedBox.postoffice_date || "",
+            };
+
+            setBoxDetails(details);
+
+            setOriginalBoxDetails({
+                ...details,
             });
         }
 
@@ -240,36 +288,102 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
             ...prev, [name]: value
         }))
     }
+
     const handleFormSubmit = async (event) => {
         event.preventDefault();
 
         try {
             const token = localStorage.getItem("token");
 
-            const formattedDate = boxDetails.postoffice_date
-                ? new Date(boxDetails.postoffice_date).toISOString().split('T')[0]
-                : '';
+            let updatePayload = {};
+
+            if (isAccountsDepartment) {
+                // ACCOUNTS:
+                // Only allow fields that were originally empty / zero.
+
+                if (isShippingFieldEmpty(originalBoxDetails.actual_weight)) {
+                    updatePayload.actual_weight = boxDetails.actual_weight;
+                }
+
+                if (isShippingFieldEmpty(originalBoxDetails.parcel_amount)) {
+                    updatePayload.parcel_amount = boxDetails.parcel_amount;
+                }
+
+                if (!originalBoxDetails.postoffice_date) {
+                    updatePayload.postoffice_date =
+                        boxDetails.postoffice_date
+                            ? new Date(boxDetails.postoffice_date)
+                                .toISOString()
+                                .split("T")[0]
+                            : "";
+                }
+
+            } else if (canEditShippingDetails) {
+                // CEO / COO / HR / ADMIN:
+                // Full edit access
+
+                const formattedDate = boxDetails.postoffice_date
+                    ? new Date(boxDetails.postoffice_date)
+                        .toISOString()
+                        .split("T")[0]
+                    : "";
+
+                updatePayload = {
+                    ...boxDetails,
+                    postoffice_date: formattedDate,
+                };
+
+            } else {
+                alert("You do not have permission to edit shipping details.");
+                return;
+            }
+
+            // Nothing is available for Accounts to edit
+            if (
+                isAccountsDepartment &&
+                Object.keys(updatePayload).length === 0
+            ) {
+                alert("All shipping details are already entered.");
+                return;
+            }
 
             const response = await axios.put(
                 `${import.meta.env.VITE_APP_KEY}warehouse/detail/${selectedBoxId}/`,
-                {
-                    ...boxDetails,
-                    postoffice_date: formattedDate,
-                },
+                updatePayload,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
                         "Content-Type": "application/json",
                     },
                 }
-            )
+            );
+
             if (response.status === 200 || response.status === 201) {
                 alert("Warehouse details updated successfully!");
+
                 setModalOpen(false);
-                setBoxDetails("");
+
+                setBoxDetails({
+                    actual_weight: "",
+                    parcel_amount: "",
+                    postoffice_date: "",
+                });
+
+                setOriginalBoxDetails({
+                    actual_weight: "",
+                    parcel_amount: "",
+                    postoffice_date: "",
+                });
+
                 await fetchData();
-            };
+            }
+
         } catch (error) {
+            console.error(
+                "Failed to update warehouse details:",
+                error
+            );
+
             alert("Failed to update warehouse details.");
         }
     };
@@ -611,7 +725,17 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                                     onChange={handleChange}
                                     className="form-control"
                                     placeholder="Enter actual weight"
+                                    disabled={
+                                        isAccountsDepartment &&
+                                        !isShippingFieldEmpty(originalBoxDetails.actual_weight)
+                                    }
                                 />
+                                {isAccountsDepartment &&
+                                    !isShippingFieldEmpty(originalBoxDetails.actual_weight) && (
+                                        <small className="text-muted">
+                                            Already entered. Accounts cannot edit this field.
+                                        </small>
+                                    )}
                             </div>
                             <div className="mb-3">
                                 <label className="form-label">Post Office Amount</label>
@@ -623,7 +747,17 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                                     onChange={handleChange}
                                     className="form-control"
                                     placeholder="Enter post office amount"
+                                    disabled={
+                                        isAccountsDepartment &&
+                                        !isShippingFieldEmpty(originalBoxDetails.parcel_amount)
+                                    }
                                 />
+                                {isAccountsDepartment &&
+                                    !isShippingFieldEmpty(originalBoxDetails.parcel_amount) && (
+                                        <small className="text-muted">
+                                            Already entered. Accounts cannot edit this field.
+                                        </small>
+                                    )}
                             </div>
                             <div className="mb-3">
                                 <label className="form-label">Date</label>
@@ -633,7 +767,17 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                                     value={boxDetails.postoffice_date}
                                     onChange={handleChange}
                                     className="form-control"
+                                    disabled={
+                                        isAccountsDepartment &&
+                                        Boolean(originalBoxDetails.postoffice_date)
+                                    }
                                 />
+                                {isAccountsDepartment &&
+                                    Boolean(originalBoxDetails.postoffice_date) && (
+                                        <small className="text-muted">
+                                            Already entered. Accounts cannot edit this field.
+                                        </small>
+                                    )}
                             </div>
                             <div className="text-center">
                                 <button type="submit" className="btn btn-primary">Save</button>
@@ -827,7 +971,7 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                                                                     )}
                                                                     <td>{packedItems?.postoffice_date}</td>
                                                                     <th>
-                                                                        {canEditShippingDetails ? (
+                                                                        {canEditTrackingRow(packedItems) ? (
                                                                             <button
                                                                                 onClick={() => productModal(packedItems.id)}
                                                                                 className="btn btn-primary"

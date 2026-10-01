@@ -21,6 +21,7 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Paginations from "../../components/Common/Pagination";
+import { createAuditLog } from "../../services/auditService";
 
 const BasicTable = () => {
     const [loading, setLoading] = useState(true);
@@ -45,6 +46,8 @@ const BasicTable = () => {
     const [perPageData] = useState(10);
     const [companies, setCompanies] = useState([]);
     const [role, setRole] = useState(null);
+    const [originalAuditData, setOriginalAuditData] = useState(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         const role = localStorage.getItem("active");
@@ -53,6 +56,45 @@ const BasicTable = () => {
 
     // Document title
     document.title = "beposoft | bank details";
+
+    const getAccountTypeNameById = (value) => {
+        if (value === null || value === undefined || value === "") {
+            return "";
+        }
+
+        // If backend supplied an object
+        if (typeof value === "object") {
+            return (
+                value.account_type ??
+                value.name ??
+                ""
+            );
+        }
+
+        const matchedType = accountTypes.find(
+            (type) => String(type.id) === String(value)
+        );
+
+        return matchedType?.account_type ?? "";
+    };
+
+
+    const getCompanyNameById = (value) => {
+        if (value === null || value === undefined || value === "") {
+            return "";
+        }
+
+        // If backend supplied an object
+        if (typeof value === "object") {
+            return value.name ?? "";
+        }
+
+        const matchedCompany = companies.find(
+            (company) => String(company.id) === String(value)
+        );
+
+        return matchedCompany?.name ?? "";
+    };
 
     useEffect(() => {
         const fetchAccountTypes = async () => {
@@ -133,51 +175,309 @@ const BasicTable = () => {
         return <div>Error: {error.message}</div>;
     }
 
-    const handleSave = () => {
-        const token = localStorage.getItem("token");
+    const handleSave = async () => {
 
-        const payload = {
-            ...editData,
-            company: editData.company
-                ? Number(editData.company)
-                : null
-        };
+        if (isSaving) {
+            return;
+        }
 
-        axios.put(
-            `${import.meta.env.VITE_APP_KEY}bank/view/${editData.id}/`,
-            payload,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
+        setIsSaving(true);
+
+        try {
+            const token = localStorage.getItem("token");
+
+
+            // -----------------------------------------------------
+            // CREATE AFTER SNAPSHOT BEFORE API CALL
+            //
+            // Resolve current dropdown IDs to readable names.
+            // -----------------------------------------------------
+
+            const selectedAccountTypeName =
+                getAccountTypeNameById(
+                    editData.account_type
+                );
+
+            const selectedCompanyName =
+                getCompanyNameById(
+                    editData.company
+                );
+
+
+            const afterSnapshot = {
+
+                name:
+                    editData.name ?? "",
+
+                account_number:
+                    editData.account_number ?? "",
+
+                account_type:
+                    selectedAccountTypeName,
+
+                ifsc_code:
+                    editData.ifsc_code ?? "",
+
+                branch:
+                    editData.branch ?? "",
+
+                open_balance:
+                    editData.open_balance ?? "",
+
+                company:
+                    selectedCompanyName,
+
+                interest_rate:
+                    editData.interest_rate ?? "",
+            };
+
+
+            // -----------------------------------------------------
+            // API PAYLOAD
+            //
+            // IDs are required by update API.
+            // They are NOT sent inside DataLog.
+            // -----------------------------------------------------
+
+            const payload = {
+                ...editData,
+
+                account_type:
+                    editData.account_type
+                        ? Number(editData.account_type)
+                        : null,
+
+                company:
+                    editData.company
+                        ? Number(editData.company)
+                        : null,
+            };
+
+
+            // -----------------------------------------------------
+            // UPDATE BANK
+            // -----------------------------------------------------
+
+            const response = await axios.put(
+                `${import.meta.env.VITE_APP_KEY}bank/view/${editData.id}/`,
+                payload,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                 }
-            }
-        )
-            .then(() => {
-                toast.success("Account updated!");
+            );
+
+
+            if (
+                response.status === 200 ||
+                response.status === 201
+            ) {
+
+                // -------------------------------------------------
+                // CREATE DATALOG
+                // -------------------------------------------------
+
+                try {
+
+                    const auditCreated =
+                        await createAuditLog({
+
+                            action:
+                                "bank_updated_website",
+
+                            // ORIGINAL values captured
+                            // when Edit was opened
+                            beforeData:
+                                originalAuditData ?? {},
+
+                            // CURRENT values from form
+                            afterData:
+                                afterSnapshot,
+                        });
+
+
+                    if (!auditCreated) {
+                        console.error(
+                            "Bank updated successfully, but DataLog creation failed."
+                        );
+                    }
+
+                } catch (auditError) {
+
+                    console.error(
+                        "Bank updated successfully, but DataLog creation failed:",
+                        auditError
+                    );
+                }
+
+
+                // -------------------------------------------------
+                // SUCCESS
+                // -------------------------------------------------
+
+                toast.success(
+                    "Account updated!"
+                );
 
                 setModalOpen(false);
 
-                setAccounts(prev =>
-                    prev.map(acc =>
-                        acc.id === editData.id
-                            ? { ...acc, ...payload }
-                            : acc
-                    )
+
+                // -------------------------------------------------
+                // UPDATE TABLE
+                // -------------------------------------------------
+
+                setAccounts((prev) =>
+                    prev.map((acc) => {
+
+                        if (acc.id !== editData.id) {
+                            return acc;
+                        }
+
+                        return {
+                            ...acc,
+
+                            name:
+                                editData.name,
+
+                            account_number:
+                                editData.account_number,
+
+                            account_type:
+                                editData.account_type,
+
+                            account_type_name:
+                                selectedAccountTypeName,
+
+                            ifsc_code:
+                                editData.ifsc_code,
+
+                            branch:
+                                editData.branch,
+
+                            open_balance:
+                                editData.open_balance,
+
+                            company:
+                                editData.company,
+
+                            company_name:
+                                selectedCompanyName,
+
+                            interest_rate:
+                                editData.interest_rate,
+                        };
+                    })
                 );
-            })
-            .catch((error) => {
-                console.error("Failed to update account:", error);
-                toast.error("Failed to update account");
-            });
+
+
+                // -------------------------------------------------
+                // CLEAR
+                // -------------------------------------------------
+
+                setOriginalAuditData(null);
+
+                setEditData({
+                    id: null,
+                    name: "",
+                    account_number: "",
+                    ifsc_code: "",
+                    branch: "",
+                    open_balance: "",
+                    account_type: "",
+                    interest_rate: "",
+                    company: "",
+                });
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Failed to update account:",
+                error
+            );
+
+            toast.error(
+                "Failed to update account"
+            );
+
+        } finally {
+
+            setIsSaving(false);
+        }
     };
 
     const handleEdit = (account) => {
+
+        // -----------------------------------------------------
+        // GET ORIGINAL FK VALUES
+        // -----------------------------------------------------
+
+        const originalAccountTypeId =
+            account.account_type?.id ??
+            account.account_type ??
+            "";
+
+        const originalCompanyId =
+            account.company?.id ??
+            account.company ??
+            "";
+
+
+        // -----------------------------------------------------
+        // CREATE BEFORE SNAPSHOT NOW
+        //
+        // This object will NEVER be changed by the form.
+        // -----------------------------------------------------
+
+        const beforeSnapshot = {
+            name:
+                account.name ?? "",
+
+            account_number:
+                account.account_number ?? "",
+
+            account_type:
+                account.account_type_name ??
+                getAccountTypeNameById(originalAccountTypeId),
+
+            ifsc_code:
+                account.ifsc_code ?? "",
+
+            branch:
+                account.branch ?? "",
+
+            open_balance:
+                account.open_balance ?? "",
+
+            company:
+                account.company_name ??
+                getCompanyNameById(originalCompanyId),
+
+            interest_rate:
+                account.interest_rate ?? "",
+        };
+
+        setOriginalAuditData(beforeSnapshot);
+
+
+        // -----------------------------------------------------
+        // SEPARATE EDITABLE FORM DATA
+        // -----------------------------------------------------
+
         setEditData({
             ...account,
-            account_type: account.account_type || "",
-            interest_rate: account.interest_rate || "",
-            company: account.company?.id || account.company || ""
-        }); // sets all fields
+
+            account_type:
+                originalAccountTypeId,
+
+            company:
+                originalCompanyId,
+
+            interest_rate:
+                account.interest_rate ?? "",
+        });
+
         setModalOpen(true);
     };
 
@@ -297,7 +597,13 @@ const BasicTable = () => {
                     </Form>
                 </ModalBody>
                 <ModalFooter>
-                    <Button color="primary" onClick={handleSave}>Save</Button>
+                    <Button
+                        color="primary"
+                        onClick={handleSave}
+                        disabled={isSaving}
+                    >
+                        {isSaving ? "Saving..." : "Save"}
+                    </Button>
                     <Button color="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
                 </ModalFooter>
             </Modal>

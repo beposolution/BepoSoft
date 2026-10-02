@@ -4,12 +4,18 @@ import { ToastContainer, toast } from "react-toastify";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Card, CardBody, Col, Row, Label, CardTitle, Form, Input, Button } from "reactstrap";
 import Select from 'react-select';
+import { createAuditLog } from "../../services/auditService";
 
 const OtherReceipt = () => {
   const [banks, setBanks] = useState([]);
   const token = localStorage.getItem("token");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedBank, setSelectedBank] = useState(null);
+
+  const authHeaders = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json"
+  };
 
   const [formData, setFormData] = useState({
     bank: '',
@@ -19,75 +25,172 @@ const OtherReceipt = () => {
     remark: ''
   });
 
-  const authHeaders = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // --- NEW: DataLog POST after success
-  const postDataLog = async () => {
-    const payload = {
-      // No order/customer context for "Other Receipt"; logging the action only.
-      before_data: { Action: "Creating Bank Receipt" },
-      after_data: {
-        Data: "Amount, Bank",
-        amount: Number(formData.amount || 0),
-        bank_name: selectedBank?.label || "",
-        transactionID: formData.transactionID || "",
-        received_at: formData.received_at || "",
-        remark: formData.remark || ""
-      }
-    };
-
+  const createOtherReceiptDataLog = async (
+    receiptData,
+    responseData = null,
+    bankData = null
+  ) => {
     try {
-      await axios.post(`${import.meta.env.VITE_APP_KEY}datalog/create/`, payload, {
-        headers: authHeaders
+      const afterData = {
+        amount:
+          responseData?.amount ??
+          Number(receiptData.amount || 0),
+
+        bank:
+          responseData?.bank_name ??
+          bankData?.label ??
+          "",
+
+        bank_id:
+          responseData?.bank ??
+          receiptData.bank ??
+          "",
+
+        transactionID:
+          responseData?.transactionID ??
+          receiptData.transactionID ??
+          "",
+
+        received_at:
+          responseData?.received_at ??
+          receiptData.received_at ??
+          "",
+
+        remark:
+          responseData?.remark ??
+          receiptData.remark ??
+          "",
+      };
+
+      const auditCreated = await createAuditLog({
+        action: "other_receipt_created_website",
+        beforeData: {},
+        afterData: afterData,
       });
-      // optional: toast.info("Action logged.");
-    } catch (err) {
-      toast.warn("Receipt saved, but logging to DataLog failed.");
-      console.error("DataLog error:", err?.response?.data || err.message);
+
+      if (!auditCreated) {
+        console.error(
+          "Other receipt created successfully, but DataLog creation failed."
+        );
+
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Other Receipt DataLog creation error:",
+        error
+      );
+
+      return false;
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.bank) return toast.error("Please select a bank.");
-    if (!formData.amount) return toast.error("Please enter amount.");
+    // Prevent duplicate submission
+    if (isLoading) {
+      return;
+    }
+
+    if (!formData.bank) {
+      toast.error("Please select a bank.");
+      return;
+    }
+
+    if (!formData.amount) {
+      toast.error("Please enter amount.");
+      return;
+    }
 
     setIsLoading(true);
+
     try {
+      // Keep submitted values before clearing the form
+      const submittedData = {
+        ...formData
+      };
+
+      const submittedBank = selectedBank
+        ? { ...selectedBank }
+        : null;
+
+      // Create receipt
       const response = await axios.post(
         `${import.meta.env.VITE_APP_KEY}bank-receipts/`,
-        formData,
-        { headers: authHeaders }
+        submittedData,
+        {
+          headers: authHeaders
+        }
       );
 
-      if (response.status === 201 || response.status === 200) {
-        toast.success("Receipt created successfully");
+      if (
+        response.status === 201 ||
+        response.status === 200
+      ) {
+        toast.success(
+          "Receipt created successfully"
+        );
 
-        // --- NEW: log to datalog (non-blocking to user success)
-        await postDataLog();
+        // Get backend-created receipt
+        const createdReceipt =
+          response?.data?.data ??
+          response?.data ??
+          null;
 
-        // Reset form + selector
+        // Create DataLog
+        const auditCreated =
+          await createOtherReceiptDataLog(
+            submittedData,
+            createdReceipt,
+            submittedBank
+          );
+
+        if (!auditCreated) {
+          console.error(
+            "Receipt created successfully, but DataLog creation failed."
+          );
+
+          toast.warn(
+            "Receipt saved, but logging to DataLog failed."
+          );
+        }
+
+        // Reset form
         setFormData({
-          bank: '',
-          amount: '',
-          received_at: '',
-          transactionID: '',
-          remark: ''
+          bank: "",
+          amount: "",
+          received_at: "",
+          transactionID: "",
+          remark: ""
         });
+
         setSelectedBank(null);
       }
     } catch (error) {
-      toast.error("Failed to create receipt");
+      toast.error(
+        "Failed to create receipt"
+      );
+
       if (error.response?.data) {
-        toast.error("Details: " + JSON.stringify(error.response.data));
+        toast.error(
+          "Details: " +
+          JSON.stringify(error.response.data)
+        );
       }
-      console.error("Other receipt error:", error?.response?.data || error.message);
+
+      console.error(
+        "Other receipt error:",
+        error?.response?.data ||
+        error.message
+      );
     } finally {
       setIsLoading(false);
     }

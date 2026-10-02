@@ -4,15 +4,15 @@ import { ToastContainer, toast } from "react-toastify";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Card, CardBody, Col, Row, Label, CardTitle, Form, Input, Button } from "reactstrap";
 import Select from 'react-select';
+import { createAuditLog } from "../../services/auditService";
 
 const InternalTransfer = () => {
   const [banks, setBanks] = useState([]);
   const token = localStorage.getItem("token");
-  const authHeaders = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }; // <-- NEW
 
   const [fromBank, setFromBank] = useState(null);
   const [toBank, setToBank] = useState(null);
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     sender_bank: '',
     receiver_bank: '',
@@ -38,53 +38,155 @@ const InternalTransfer = () => {
     fetchbanks();
   }, []);
 
-  // ---- NEW: DataLog POST after success
-  const postDataLog = async () => {
-    const payload = {
-      before_data: { Action: "Bank Transfer" },
-      after_data: { 
-        amount: Number(formData.amount || 0),
-        sender_bank_name: fromBank?.label || "",
-        receiver_bank_name: toBank?.label || "",
-        transactionID: formData.transactionID || "",
-        created_at: formData.created_at || "",
-        description: formData.description || ""
-      }
-    };
-
+  const createInternalTransferDataLog = async (
+    transferData,
+    responseData = null,
+    senderBank = null,
+    receiverBank = null
+  ) => {
     try {
-      await axios.post(`${import.meta.env.VITE_APP_KEY}datalog/create/`, payload, {
-        headers: authHeaders
+      const afterData = {
+        amount:
+          responseData?.amount ??
+          Number(transferData.amount || 0),
+
+        sender_bank:
+          responseData?.sender_bank_name ??
+          senderBank?.label ??
+          "",
+
+        sender_bank_id:
+          responseData?.sender_bank ??
+          transferData.sender_bank ??
+          "",
+
+        receiver_bank:
+          responseData?.receiver_bank_name ??
+          receiverBank?.label ??
+          "",
+
+        receiver_bank_id:
+          responseData?.receiver_bank ??
+          transferData.receiver_bank ??
+          "",
+
+        transactionID:
+          responseData?.transactionID ??
+          transferData.transactionID ??
+          "",
+
+        created_at:
+          responseData?.created_at ??
+          transferData.created_at ??
+          "",
+
+        description:
+          responseData?.description ??
+          transferData.description ??
+          "",
+      };
+
+      const auditCreated = await createAuditLog({
+        action: "internal_bank_transfer_website",
+        beforeData: {},
+        afterData: afterData,
       });
-      // optional: toast.info("Transfer logged");
-    } catch (err) {
-      toast.warn("Transfer saved, but logging to DataLog failed.");
+
+      if (!auditCreated) {
+        console.error(
+          "Internal transfer successful, but DataLog creation failed."
+        );
+
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Internal Transfer DataLog creation error:",
+        error
+      );
+
+      return false;
     }
   };
 
   const handleSubmit = async () => {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_APP_KEY}internal/transfers/`, formData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Keep a copy of the submitted data for DataLog
+      const submittedData = {
+        ...formData
+      };
+
+      const submittedFromBank = fromBank
+        ? { ...fromBank }
+        : null;
+
+      const submittedToBank = toBank
+        ? { ...toBank }
+        : null;
+
+      // Create internal bank transfer
+      const response = await axios.post(
+        `${import.meta.env.VITE_APP_KEY}internal/transfers/`,
+        submittedData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
       if (response.status === 201) {
         toast.success("Amount transferred successfully");
 
-        // ---- NEW: Log the action (non-blocking to user success)
-        await postDataLog();
+        // Get created transfer response
+        const createdTransfer =
+          response?.data?.data ??
+          response?.data ??
+          null;
 
+        // Create DataLog
+        const auditCreated =
+          await createInternalTransferDataLog(
+            submittedData,
+            createdTransfer,
+            submittedFromBank,
+            submittedToBank
+          );
+
+        if (!auditCreated) {
+          console.error(
+            "Transfer successful, but DataLog creation failed."
+          );
+
+          toast.warn(
+            "Transfer saved, but logging to DataLog failed."
+          );
+        }
+
+        // Clear form only after transfer + audit processing
         setFormData({
-          sender_bank: '',
-          receiver_bank: '',
-          amount: '',
-          created_at: '',
-          transactionID: '',
-          description: ''
+          sender_bank: "",
+          receiver_bank: "",
+          amount: "",
+          created_at: "",
+          transactionID: "",
+          description: ""
         });
+
         setFromBank(null);
         setToBank(null);
       }
     } catch (error) {
+      console.error(
+        "Internal transfer error:",
+        error?.response?.data ||
+        error?.message ||
+        error
+      );
+
       toast.error("Failed to transfer amount");
     }
   };
@@ -114,7 +216,7 @@ const InternalTransfer = () => {
               <Card>
                 <CardBody>
                   <CardTitle className="mb-4">INTERNAL BANK TRANSFER</CardTitle>
-                  <Form>
+                  <Form onSubmit={(e) => e.preventDefault()}>
                     <Row>
                       <Col md={4}>
                         <div className="mb-3">
@@ -179,7 +281,7 @@ const InternalTransfer = () => {
                             !formData.created_at
                           }
                         >
-                          Transfer Amount
+                          {isSubmitting ? "Transferring..." : "Transfer Amount"}
                         </Button>
                       </Col>
                     </Row>

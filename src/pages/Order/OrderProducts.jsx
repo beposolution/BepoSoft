@@ -81,6 +81,7 @@ const FormLayouts = () => {
         family: "",
         cod_status: "",
         company: "",
+        shipping_charge: "",
     });
 
     const customerOptions = customers.map(c => ({
@@ -523,7 +524,13 @@ const FormLayouts = () => {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        cod_amount: values.cod_amount,
+                        cod_amount:
+                            values.cod_amount === "" ||
+                                values.cod_amount === null ||
+                                values.cod_amount === undefined
+                                ? 0
+                                : Number(values.cod_amount),
+
                         shipping_mode: values.shipping_mode,
                         order_date: values.order_date,
                         ...(values.billing_date ? { billing_date: values.billing_date } : {}),
@@ -531,19 +538,38 @@ const FormLayouts = () => {
                         family: values.family !== "" ? parseInt(values.family) : null,
                         company: values.company,
                         cod_status: values.cod_status,
-                        adv_cod_amount: values.adv_cod_amount,
+                        adv_cod_amount:
+                            values.adv_cod_amount === "" ||
+                                values.adv_cod_amount === null ||
+                                values.adv_cod_amount === undefined
+                                ? 0
+                                : Number(values.adv_cod_amount),
                     }),
                 });
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
+                    const errorData = await response.json().catch(() => ({}));
+
+                    console.error("Order update failed:", errorData);
+
+                    throw new Error(
+                        errorData?.detail ||
+                        errorData?.message ||
+                        JSON.stringify(errorData) ||
+                        `HTTP error! Status: ${response.status}`
+                    );
                 }
 
                 const data = await response.json();
 
                 setSuccessMessage("Form submitted successfully!");
             } catch (error) {
-                setErrorMessage("Failed to submit the form. Please try again.");
+                console.error("Order update error:", error);
+
+                setErrorMessage(
+                    error.message || "Failed to submit the form. Please try again."
+                );
+
                 setSuccessMessage("");
             }
         }
@@ -751,6 +777,7 @@ const FormLayouts = () => {
                     family: data.order.family || "",
                     cod_status: data.order.cod_status || "",
                     company: data.order.company?.id || "",
+                    shipping_charge: data.order.shipping_charge ?? "",
                 });
                 setCustomerId(data?.order?.customer?.id || null);
                 setOrderItems(data?.items || []);
@@ -1136,8 +1163,11 @@ const FormLayouts = () => {
             });
             if (response.ok) {
                 const data = await response.json();
+
                 setSuccessMessage("Form submitted successfully!");
-                toast("Order updated successfully!");
+                toast.success("Order updated successfully!");
+
+                await fetchOrderData();
             } else {
                 const errorData = await response.json();
                 setErrorMessage("Failed to submit the form. Please check your input and try again.");
@@ -1389,14 +1419,32 @@ const FormLayouts = () => {
         value === undefined ||
         String(value).trim() === "";
 
+    const isEmptyOrZeroValue = (value) => {
+        if (
+            value === null ||
+            value === undefined ||
+            String(value).trim() === ""
+        ) {
+            return true;
+        }
+
+        const numericValue = Number(value);
+
+        // Editable when numeric value is 0 or less.
+        // Locked only when value is greater than 0.
+        return !isNaN(numericValue) && numericValue <= 0;
+    };
+
     const accountsCanEditShippingMode =
         !isAccounts || isEmptyValue(originalAccountFields.shipping_mode);
 
     const accountsCanEditCodCharge =
-        !isAccounts || isEmptyValue(originalAccountFields.cod_amount);
+        !isAccounts ||
+        isEmptyOrZeroValue(originalAccountFields.cod_amount);
 
     const accountsCanEditCodAdvance =
-        !isAccounts || isEmptyValue(originalAccountFields.adv_cod_amount);
+        !isAccounts ||
+        isEmptyOrZeroValue(originalAccountFields.adv_cod_amount);
 
     const accountsCanEditPaymentMethod =
         !isAccounts || isEmptyValue(originalAccountFields.payment_status);
@@ -1410,10 +1458,22 @@ const FormLayouts = () => {
     const accountsCanEditCompany =
         !isAccounts || isEmptyValue(originalAccountFields.company);
 
-    const accountsHasAnyEmptyField =
+    const accountsCanEditShippingCharge =
+        !isAccounts ||
+        isEmptyOrZeroValue(originalAccountFields.shipping_charge);
+
+    const showMainSubmitButton =
+        !isAccounts ||
+        accountsCanEditShippingCharge;
+
+    const accountsHasAnyEditableField =
         isEmptyValue(originalAccountFields.shipping_mode) ||
-        isEmptyValue(originalAccountFields.cod_amount) ||
-        isEmptyValue(originalAccountFields.adv_cod_amount);
+        isEmptyOrZeroValue(originalAccountFields.cod_amount) ||
+        isEmptyOrZeroValue(originalAccountFields.adv_cod_amount) ||
+        isEmptyValue(originalAccountFields.payment_status) ||
+        isEmptyValue(originalAccountFields.family) ||
+        isEmptyValue(originalAccountFields.cod_status) ||
+        isEmptyValue(originalAccountFields.company);
 
     const getDisplayStatus = (status) => {
         switch (status) {
@@ -1869,16 +1929,15 @@ const FormLayouts = () => {
                                         )}
                                         {/* {canEditOrder && ( */}
                                         {/* {canModifyOrder && ( */}
-                                        {(!isAccounts || accountsHasAnyEmptyField) && (
-                                            <div>
-                                                <button
+                                        {canModifyOrder &&
+                                            (!isAccounts || accountsHasAnyEditableField) && (
+                                                <Button
                                                     type="submit"
-                                                    className="btn btn-primary w-md"
+                                                    color="primary"
                                                 >
                                                     Save changes
-                                                </button>
-                                            </div>
-                                        )}
+                                                </Button>
+                                            )}
                                     </Form>
                                 </CardBody>
                                 <div style={{ display: "flex", justifyContent: "space-between", padding: "20px", gap: "20px", backgroundColor: "#f5f5f5" }}>
@@ -2596,7 +2655,7 @@ const FormLayouts = () => {
                                                                             <input
                                                                                 type="number"
                                                                                 value={shippingCharge}
-                                                                                disabled={!canEditOrder}
+                                                                                disabled={!canModifyOrder || !accountsCanEditShippingCharge}
                                                                                 onChange={(e) => setShippingCharge(Number(e.target.value))}
                                                                                 style={{ width: '80px', fontWeight: "500", border: "1px solid #ccc", borderRadius: "4px", padding: "3px" }}
                                                                             />
@@ -2681,20 +2740,21 @@ const FormLayouts = () => {
                                             `}</style>
                                             {/* {canEditOrder && ( */}
                                             {/* {canModifyOrder && ( */}
-                                            {canModifyOrderTable && (
-                                                <div
-                                                    className="mb-3 mt-3"
-                                                    style={{ textAlign: "right" }}
-                                                >
-                                                    <Button
-                                                        type="button"
-                                                        color="primary"
-                                                        onClick={handleSubmit}
+                                            {canModifyOrder &&
+                                                (!isAccounts || accountsCanEditShippingCharge) && (
+                                                    <div
+                                                        className="mb-3 mt-3"
+                                                        style={{ textAlign: "right" }}
                                                     >
-                                                        Submit
-                                                    </Button>
-                                                </div>
-                                            )}
+                                                        <Button
+                                                            color="primary"
+                                                            type="button"
+                                                            onClick={handleSubmit}
+                                                        >
+                                                            Submit
+                                                        </Button>
+                                                    </div>
+                                                )}
                                         </CardBody>
                                     </Card>
                                     <style jsx>{`

@@ -14,6 +14,7 @@ import {
     Button,
 } from "reactstrap";
 import Select from "react-select";
+import { createAuditLog } from "../../services/auditService";
 
 const CommissionReceipt = () => {
     const token = localStorage.getItem("token");
@@ -161,43 +162,84 @@ const CommissionReceipt = () => {
         }));
     };
 
-    const postDataLog = async (createdReceipt = null) => {
-        if (!formData.order) {
-            return;
-        }
-
-        const payload = {
-            order: Number(formData.order),
-
-            before_data: {
-                Action: "Adding Commission Receipt",
-            },
-
-            after_data: {
-                Data: "Commission receipt created",
-                commission_receipt_id: createdReceipt?.id || null,
-                payment_receipt: createdReceipt?.payment_receipt || "",
-                amount: Number(formData.amount || 0),
-                bank_id: formData.bank ? Number(formData.bank) : null,
-                bank_name: selectedBank?.label || "",
-                transactionID: formData.transactionID || "",
-                received_at: formData.received_at || "",
-                remark: formData.remark || "",
-            },
-        };
-
+    const createCommissionReceiptDataLog = async (
+        receiptData,
+        responseData = null,
+        orderData = null,
+        bankData = null
+    ) => {
         try {
-            await axios.post(
-                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                payload,
-                {
-                    headers: authHeaders,
-                }
-            );
+            const afterData = {
+                commission_receipt_id:
+                    responseData?.id ??
+                    null,
+
+                payment_receipt:
+                    responseData?.payment_receipt ??
+                    "",
+
+                order:
+                    orderData?.label ??
+                    "",
+
+                order_id:
+                    responseData?.order ??
+                    receiptData?.order ??
+                    "",
+
+                bank:
+                    responseData?.bank_name ??
+                    bankData?.label ??
+                    "",
+
+                bank_id:
+                    responseData?.bank ??
+                    receiptData?.bank ??
+                    "",
+
+                amount:
+                    responseData?.amount ??
+                    Number(receiptData?.amount || 0),
+
+                received_at:
+                    responseData?.received_at ??
+                    receiptData?.received_at ??
+                    "",
+
+                transactionID:
+                    responseData?.transactionID ??
+                    receiptData?.transactionID ??
+                    "",
+
+                remark:
+                    responseData?.remark ??
+                    receiptData?.remark ??
+                    "",
+            };
+
+            const auditCreated = await createAuditLog({
+                action: "commission_receipt_created_website",
+                beforeData: {},
+                afterData: afterData,
+                orderId: receiptData?.order || null,
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Commission receipt created successfully, but DataLog creation failed."
+                );
+
+                return false;
+            }
+
+            return true;
         } catch (error) {
-            toast.warn(
-                "Commission receipt was saved, but DataLog creation failed."
+            console.error(
+                "Commission Receipt DataLog creation error:",
+                error
             );
+
+            return false;
         }
     };
 
@@ -257,6 +299,11 @@ const CommissionReceipt = () => {
     const handleSubmit = async (event) => {
         event.preventDefault();
 
+        // Prevent duplicate submission
+        if (isLoading) {
+            return;
+        }
+
         if (!validateForm()) {
             return;
         }
@@ -264,7 +311,8 @@ const CommissionReceipt = () => {
         setIsLoading(true);
 
         try {
-            const payload = {
+
+            const submittedData = {
                 order: Number(formData.order),
                 bank: Number(formData.bank),
                 amount: formData.amount,
@@ -273,29 +321,73 @@ const CommissionReceipt = () => {
                 remark: formData.remark.trim(),
             };
 
+            const submittedOrder = selectedOrder
+                ? { ...selectedOrder }
+                : null;
+
+            const submittedBank = selectedBank
+                ? { ...selectedBank }
+                : null;
+
             const response = await axios.post(
                 `${import.meta.env.VITE_APP_KEY}commission/receipts/add/`,
-                payload,
+                submittedData,
                 {
                     headers: authHeaders,
                 }
             );
 
-            if (response?.status === 200 || response?.status === 201) {
-                const createdReceipt = response?.data?.data || null;
+            if (
+                response?.status === 200 ||
+                response?.status === 201
+            ) {
+                const createdReceipt =
+                    response?.data?.data ??
+                    response?.data ??
+                    null;
 
                 toast.success(
                     response?.data?.message ||
                     "Commission receipt created successfully!"
                 );
 
-                await postDataLog(createdReceipt);
+                const auditCreated =
+                    await createCommissionReceiptDataLog(
+                        submittedData,
+                        createdReceipt,
+                        submittedOrder,
+                        submittedBank
+                    );
+
+                // Commission receipt remains successfully created
+                // even if audit logging fails
+                if (!auditCreated) {
+                    console.error(
+                        "Commission receipt created successfully, but DataLog creation failed."
+                    );
+
+                    toast.warn(
+                        "Commission receipt saved, but logging to DataLog failed."
+                    );
+                }
+
 
                 resetForm();
             }
         } catch (error) {
+
+            console.error(
+                "Commission receipt creation error:",
+                error?.response?.data ||
+                error?.message ||
+                error
+            );
+
             toast.error(
-                getErrorMessage(error, "Failed to create commission receipt")
+                getErrorMessage(
+                    error,
+                    "Failed to create commission receipt"
+                )
             );
         } finally {
             setIsLoading(false);

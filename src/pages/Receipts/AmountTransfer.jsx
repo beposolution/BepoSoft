@@ -16,6 +16,7 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AsyncSelect from "react-select/async";
+import { createAuditLog } from "../../services/auditService";
 
 const AmountTransfer = () => {
     const token = localStorage.getItem("token");
@@ -66,30 +67,169 @@ const AmountTransfer = () => {
         }));
     };
 
+    const createAmountTransferDataLog = async (
+        transferData,
+        responseData = null
+    ) => {
+        try {
+            const afterData = {
+                transfer_id:
+                    responseData?.id ??
+                    "",
+
+                reference_no:
+                    responseData?.id
+                        ? `TRANSFER-${responseData.id}`
+                        : "",
+
+                send_from:
+                    responseData?.send_from_name ??
+                    transferData?.send_from?.label ??
+                    "",
+
+                send_from_id:
+                    responseData?.send_from ??
+                    transferData?.send_from?.value ??
+                    "",
+
+                send_to:
+                    responseData?.send_to_name ??
+                    transferData?.send_to?.label ??
+                    "",
+
+                send_to_id:
+                    responseData?.send_to ??
+                    transferData?.send_to?.value ??
+                    "",
+
+                amount:
+                    responseData?.amount ??
+                    Number(transferData?.amount || 0),
+
+                date:
+                    responseData?.date ??
+                    transferData?.date ??
+                    "",
+
+                note:
+                    responseData?.note ??
+                    transferData?.note ??
+                    "",
+
+                image_count:
+                    transferData?.images?.length ?? 0,
+            };
+
+            const auditCreated = await createAuditLog({
+                action: "advance_amount_transfer_created_website",
+                beforeData: {},
+                afterData: afterData,
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Advance amount transfer created successfully, but DataLog creation failed."
+                );
+
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error(
+                "Advance Amount Transfer DataLog creation error:",
+                error
+            );
+
+            return false;
+        }
+    };
+
     const handleSubmit = async () => {
-        if (!formData.send_from || !formData.send_to || !formData.amount || !formData.date) {
+        // Prevent duplicate submission
+        if (loading) {
+            return;
+        }
+
+        // ============================================================
+        // VALIDATION
+        // ============================================================
+
+        if (
+            !formData.send_from ||
+            !formData.send_to ||
+            !formData.amount ||
+            !formData.date
+        ) {
             toast.error("Please fill all required fields");
             return;
         }
 
-        if (formData.send_from.value === formData.send_to.value) {
-            toast.error("Send From and Send To cannot be the same customer");
+        if (
+            formData.send_from.value ===
+            formData.send_to.value
+        ) {
+            toast.error(
+                "Send From and Send To cannot be the same customer"
+            );
             return;
         }
 
         setLoading(true);
 
         try {
-            const payload = new FormData();
-            payload.append("send_from", formData.send_from.value);
-            payload.append("send_to", formData.send_to.value);
-            payload.append("amount", formData.amount);
-            payload.append("date", formData.date);
-            payload.append("note", formData.note);
+            // KEEP SUBMITTED DATA FOR AUDIT LOG
 
-            formData.images.forEach((img) => {
+            const submittedData = {
+                send_from: formData.send_from
+                    ? { ...formData.send_from }
+                    : null,
+
+                send_to: formData.send_to
+                    ? { ...formData.send_to }
+                    : null,
+
+                amount: formData.amount,
+                date: formData.date,
+                note: formData.note,
+
+                images: [...formData.images],
+            };
+
+            // CREATE MULTIPART PAYLOAD
+
+            const payload = new FormData();
+
+            payload.append(
+                "send_from",
+                submittedData.send_from.value
+            );
+
+            payload.append(
+                "send_to",
+                submittedData.send_to.value
+            );
+
+            payload.append(
+                "amount",
+                submittedData.amount
+            );
+
+            payload.append(
+                "date",
+                submittedData.date
+            );
+
+            payload.append(
+                "note",
+                submittedData.note || ""
+            );
+
+            submittedData.images.forEach((img) => {
                 payload.append("images", img);
             });
+
+            // CREATE ADVANCE AMOUNT TRANSFER
 
             const res = await axios.post(
                 `${import.meta.env.VITE_APP_KEY}advance/transfer/create/`,
@@ -102,30 +242,42 @@ const AmountTransfer = () => {
                 }
             );
 
-            if (res.status === 201) {
-                await axios.post(
-                    `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                    {
-                        reference_type: "ADVANCE_AMOUNT_TRANSFER",
-                        reference_no: `TRANSFER-${res.data.data.id}`,
-                        before_data: "Customer Advance Amount Transfer",
-                        after_data: {
-                            send_from: formData.send_from.label,
-                            send_to: formData.send_to.label,
-                            amount: formData.amount,
-                            date: formData.date,
-                            note: formData.note,
-                        },
-                    },
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            "Content-Type": "application/json",
-                        },
-                    }
+            // TRANSFER CREATED SUCCESSFULLY
+
+            if (
+                res.status === 201 ||
+                res.status === 200
+            ) {
+                toast.success(
+                    "Advance amount transfer created successfully"
                 );
 
-                toast.success("Advance amount transfer created successfully");
+                // Backend-created transfer
+                const createdTransfer =
+                    res?.data?.data ??
+                    res?.data ??
+                    null;
+
+                // CREATE AUDIT / DATA LOG
+
+                const auditCreated =
+                    await createAmountTransferDataLog(
+                        submittedData,
+                        createdTransfer
+                    );
+
+                // Transfer remains successful even if audit logging fails
+                if (!auditCreated) {
+                    console.error(
+                        "Advance amount transfer created successfully, but DataLog creation failed."
+                    );
+
+                    toast.warn(
+                        "Advance amount transfer saved, but logging to DataLog failed."
+                    );
+                }
+
+                // RESET FORM
 
                 setFormData({
                     send_from: null,
@@ -136,9 +288,28 @@ const AmountTransfer = () => {
                     images: [],
                 });
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Failed to create transfer");
+        } catch (error) {
+            // TRANSFER CREATION FAILED
+
+            toast.error(
+                "Failed to create transfer"
+            );
+
+            if (error.response?.data) {
+                toast.error(
+                    "Details: " +
+                    JSON.stringify(
+                        error.response.data
+                    )
+                );
+            }
+
+            console.error(
+                "Advance amount transfer error:",
+                error?.response?.data ||
+                error?.message ||
+                error
+            );
         } finally {
             setLoading(false);
         }

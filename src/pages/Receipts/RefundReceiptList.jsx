@@ -21,6 +21,7 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Paginations from '../../components/Common/Pagination';
+import { createAuditLog } from "../../services/auditService";
 
 const RefundReceiptList = () => {
 
@@ -81,22 +82,70 @@ const RefundReceiptList = () => {
     };
 
     const computeDiff = (before, after) => {
-        const before_data = { ...before };
+        const before_data = {};
         const after_data = {};
 
         REFUND_FIELDS.forEach((k) => {
-            const prev = before?.[k] ?? null;
-            const curr = after?.[k] ?? null;
+            const prev = norm(before?.[k]);
+            const curr = norm(after?.[k]);
 
+            // Prevent unnecessary differences such as:
+            // 5000 vs "5000"
             const sp = prev === null ? null : String(prev);
             const sc = curr === null ? null : String(curr);
 
             if (sp !== sc) {
-                after_data[k] = curr;
+                before_data[k] = before?.[k] ?? null;
+                after_data[k] = after?.[k] ?? null;
             }
         });
 
-        return { before_data, after_data };
+        return {
+            before_data,
+            after_data
+        };
+    };
+
+    const createRefundReceiptUpdateDataLog = async (
+        receiptId,
+        refundNo,
+        beforeData,
+        afterData
+    ) => {
+        try {
+            const auditCreated = await createAuditLog({
+                action: "refund_receipt_updated_website",
+
+                beforeData: {
+                    refund_receipt_id: receiptId,
+                    refund_no: refundNo,
+                    ...beforeData,
+                },
+
+                afterData: {
+                    refund_receipt_id: receiptId,
+                    refund_no: refundNo,
+                    ...afterData,
+                },
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Refund receipt updated successfully, but DataLog creation failed."
+                );
+
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error(
+                "Refund Receipt Update DataLog creation error:",
+                error
+            );
+
+            return false;
+        }
     };
 
     const fetchRefundReceipts = async () => {
@@ -164,9 +213,12 @@ const RefundReceiptList = () => {
     };
 
     const handleUpdate = async () => {
-        if (!selectedReceipt?.id) return;
+        if (!selectedReceipt?.id) {
+            return;
+        }
 
         try {
+
             const payload = {
                 amount: formData.amount,
                 transactionID: formData.transactionID,
@@ -185,44 +237,58 @@ const RefundReceiptList = () => {
                 }
             );
 
-            if (resp.status === 200 || resp.status === 204) {
+            if (
+                resp.status === 200 ||
+                resp.status === 204
+            ) {
 
-                // ---------------- CREATE DATALOG ----------------
                 const afterSnapshot = pickFields({
                     refund_no: formData.refund_no,
                     ...payload,
                 });
 
-                const { before_data, after_data } = computeDiff(
+                const {
+                    before_data,
+                    after_data
+                } = computeDiff(
                     beforeSnapshot,
                     afterSnapshot
                 );
 
-                if (Object.keys(before_data).length > 0) {
-                    await axios.post(
-                        `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                        {
+                if (
+                    Object.keys(after_data).length > 0
+                ) {
+                    const auditCreated =
+                        await createRefundReceiptUpdateDataLog(
+                            selectedReceipt.id,
+                            formData.refund_no,
                             before_data,
-                            after_data,
-                            reference_type: "REFUND_RECEIPT",
-                            reference_no: formData.refund_no,
-                        },
-                        {
-                            headers: {
-                                Authorization: `Bearer ${token}`,
-                                "Content-Type": "application/json",
-                            },
-                        }
-                    );
+                            after_data
+                        );
+
+                    if (!auditCreated) {
+                        console.error("Refund receipt updated successfully, but DataLog creation failed.");
+                        toast.warn("Refund receipt updated, but logging to DataLog failed.");
+                    }
                 }
 
                 toast.success("Refund receipt updated successfully");
                 setModalOpen(false);
+                setBeforeSnapshot(null);
                 fetchRefundReceipts();
             }
+
         } catch (error) {
-            console.error(error);
-            toast.error("Failed to update refund receipt");
+            console.error(
+                "Refund receipt update error:",
+                error?.response?.data ||
+                error?.message ||
+                error
+            );
+
+            toast.error(
+                "Failed to update refund receipt"
+            );
         }
     };
 

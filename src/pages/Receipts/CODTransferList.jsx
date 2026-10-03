@@ -9,6 +9,7 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Select from "react-select";
+import { createAuditLog } from "../../services/auditService";
 
 const CODTransferList = () => {
     const [data, setData] = useState([]);
@@ -183,21 +184,284 @@ const CODTransferList = () => {
         }));
     };
 
-    const handleUpdate = async () => {
+    const createCODTransferUpdateDataLog = async (
+        transferId,
+        beforeData,
+        afterData
+    ) => {
         try {
-            await axios.put(
+            const auditCreated = await createAuditLog({
+                action: "cod_transfer_updated_website",
+
+                beforeData: {
+                    transfer_id: transferId,
+                    ...beforeData,
+                },
+
+                afterData: {
+                    transfer_id: transferId,
+                    ...afterData,
+                },
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "COD transfer updated successfully, but DataLog creation failed."
+                );
+
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error(
+                "COD Transfer Update DataLog creation error:",
+                error
+            );
+
+            return false;
+        }
+    };
+
+    const handleUpdate = async () => {
+        if (!currentTransfer?.id) {
+            return;
+        }
+
+        if (!formData.receiver_bank) {
+            toast.error("Please select receiver bank");
+            return;
+        }
+
+        if (!formData.sender_bank) {
+            toast.error("Please select sender bank");
+            return;
+        }
+
+        if (!formData.amount) {
+            toast.error("Please enter amount");
+            return;
+        }
+
+        if (Number(formData.amount) <= 0) {
+            toast.error("Amount must be greater than zero");
+            return;
+        }
+
+        if (
+            String(formData.sender_bank) ===
+            String(formData.receiver_bank)
+        ) {
+            toast.error(
+                "Sender bank and receiver bank cannot be the same"
+            );
+            return;
+        }
+
+        try {
+
+            const beforeData = {
+                receiver_bank:
+                    currentTransfer?.receiver_bank ?? "",
+
+                receiver_bank_name:
+                    currentTransfer?.receiver_bank_name ?? "",
+
+                created_end:
+                    currentTransfer?.created_end
+                        ? currentTransfer.created_end.substring(0, 10)
+                        : "",
+
+                amount:
+                    currentTransfer?.amount ?? "",
+
+                sender_bank:
+                    currentTransfer?.sender_bank ?? "",
+
+                sender_bank_name:
+                    currentTransfer?.sender_bank_name ?? "",
+
+                transactionID:
+                    currentTransfer?.transactionID ?? "",
+
+                created_at:
+                    currentTransfer?.created_at
+                        ? currentTransfer.created_at.substring(0, 10)
+                        : "",
+
+                description:
+                    currentTransfer?.description ?? "",
+            };
+
+            const submittedData = {
+                ...formData,
+
+                receiver_bank:
+                    formData.receiver_bank,
+
+                created_end:
+                    formData.created_end
+                        ? formData.created_end.substring(0, 10)
+                        : "",
+
+                amount:
+                    formData.amount,
+
+                sender_bank:
+                    formData.sender_bank,
+
+                transactionID:
+                    formData.transactionID || "",
+
+                created_at:
+                    formData.created_at
+                        ? formData.created_at.substring(0, 10)
+                        : "",
+
+                description:
+                    formData.description || "",
+            };
+
+            const response = await axios.put(
                 `${import.meta.env.VITE_APP_KEY}cod/transfers/${currentTransfer.id}/`,
-                formData,
+                submittedData,
                 {
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                 }
             );
 
-            toast.success("COD Transfer updated successfully");
-            toggleModal();
-            fetchTransferData(currentPage);
+            if (
+                response.status === 200 ||
+                response.status === 204
+            ) {
+                const responseData =
+                    response?.data?.data ??
+                    response?.data ??
+                    null;
+
+                const senderBankData = banks.find(
+                    (bank) =>
+                        String(bank.id) ===
+                        String(submittedData.sender_bank)
+                );
+
+                const receiverBankData = banks.find(
+                    (bank) =>
+                        String(bank.id) ===
+                        String(submittedData.receiver_bank)
+                );
+
+                const afterData = {
+                    receiver_bank:
+                        responseData?.receiver_bank ??
+                        submittedData.receiver_bank,
+
+                    receiver_bank_name:
+                        responseData?.receiver_bank_name ??
+                        receiverBankData?.name ??
+                        modalReceiverBankOption?.label ??
+                        "",
+
+                    created_end:
+                        responseData?.created_end
+                            ? responseData.created_end.substring(0, 10)
+                            : submittedData.created_end,
+
+                    amount:
+                        responseData?.amount ??
+                        submittedData.amount,
+
+                    sender_bank:
+                        responseData?.sender_bank ??
+                        submittedData.sender_bank,
+
+                    sender_bank_name:
+                        responseData?.sender_bank_name ??
+                        senderBankData?.name ??
+                        modalSenderBankOption?.label ??
+                        "",
+
+                    transactionID:
+                        responseData?.transactionID ??
+                        submittedData.transactionID,
+
+                    created_at:
+                        responseData?.created_at
+                            ? responseData.created_at.substring(0, 10)
+                            : submittedData.created_at,
+
+                    description:
+                        responseData?.description ??
+                        submittedData.description,
+                };
+
+                const changedBeforeData = {};
+                const changedAfterData = {};
+
+                const fieldsToCompare = [
+                    "receiver_bank",
+                    "receiver_bank_name",
+                    "created_end",
+                    "amount",
+                    "sender_bank",
+                    "sender_bank_name",
+                    "transactionID",
+                    "created_at",
+                    "description",
+                ];
+
+                fieldsToCompare.forEach((field) => {
+                    const beforeValue =
+                        beforeData[field] ?? "";
+
+                    const afterValue =
+                        afterData[field] ?? "";
+
+                    if (
+                        String(beforeValue) !==
+                        String(afterValue)
+                    ) {
+                        changedBeforeData[field] =
+                            beforeValue;
+
+                        changedAfterData[field] =
+                            afterValue;
+                    }
+                });
+
+                if (
+                    Object.keys(changedAfterData).length > 0
+                ) {
+                    const auditCreated =
+                        await createCODTransferUpdateDataLog(
+                            currentTransfer.id,
+                            changedBeforeData,
+                            changedAfterData
+                        );
+
+                    if (!auditCreated) {
+                        console.error("COD transfer updated successfully, but DataLog creation failed.");
+                        toast.warn("COD transfer updated, but logging to DataLog failed.");
+                    }
+                }
+
+                toast.success("COD Transfer updated successfully");
+                toggleModal();
+                fetchTransferData(currentPage);
+            }
         } catch (error) {
-            toast.error("Error updating cod transfer");
+            console.error(
+                "COD transfer update error:",
+                error?.response?.data ||
+                error?.message ||
+                error
+            );
+
+            toast.error(
+                "Error updating cod transfer"
+            );
         }
     };
 

@@ -23,6 +23,7 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Paginations from '../../components/Common/Pagination';
+import { createAuditLog } from "../../services/auditService";
 
 const AmountTransferList = () => {
 
@@ -187,9 +188,11 @@ const AmountTransferList = () => {
 
             setBeforeSnapshot(
                 pickFields({
+                    send_from: Number(data.send_from),
+                    send_to: Number(data.send_to),
                     amount: data.amount,
                     date: data.date,
-                    note: data.note,
+                    note: data.note || "",
                 })
             );
 
@@ -200,16 +203,116 @@ const AmountTransferList = () => {
         }
     };
 
+    const createAmountTransferUpdateDataLog = async (
+        transferId,
+        beforeData,
+        afterData
+    ) => {
+        try {
+            const auditCreated = await createAuditLog({
+                action: "advance_amount_transfer_updated_website",
+                beforeData: {
+                    transfer_id: transferId,
+                    reference_no: `TRANSFER-${transferId}`,
+                    ...beforeData,
+                },
+                afterData: {
+                    transfer_id: transferId,
+                    reference_no: `TRANSFER-${transferId}`,
+                    ...afterData,
+                },
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Advance amount transfer updated successfully, but DataLog creation failed."
+                );
+
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error(
+                "Advance Amount Transfer Update DataLog creation error:",
+                error
+            );
+
+            return false;
+        }
+    };
+
     const handleUpdate = async () => {
-        if (!selectedTransfer?.id) return;
+        if (!selectedTransfer?.id) {
+            return;
+        }
+
+        if (!formData.send_from) {
+            toast.error("Please select Send From customer");
+            return;
+        }
+
+        if (!formData.send_to) {
+            toast.error("Please select Send To customer");
+            return;
+        }
+
+        if (!formData.amount) {
+            toast.error("Please enter amount");
+            return;
+        }
+
+        if (!formData.date) {
+            toast.error("Please select date");
+            return;
+        }
+
+        if (
+            Number(formData.send_from) ===
+            Number(formData.send_to)
+        ) {
+            toast.error(
+                "Send From and Send To cannot be the same customer"
+            );
+            return;
+        }
 
         try {
+
+            const submittedData = {
+                send_from: Number(formData.send_from),
+                send_to: Number(formData.send_to),
+                amount: formData.amount,
+                date: formData.date,
+                note: formData.note || "",
+            };
+
             const payload = new FormData();
-            payload.append("send_from", formData.send_from);
-            payload.append("send_to", formData.send_to);
-            payload.append("amount", formData.amount);
-            payload.append("date", formData.date);
-            payload.append("note", formData.note);
+
+            payload.append(
+                "send_from",
+                submittedData.send_from
+            );
+
+            payload.append(
+                "send_to",
+                submittedData.send_to
+            );
+
+            payload.append(
+                "amount",
+                submittedData.amount
+            );
+
+            payload.append(
+                "date",
+                submittedData.date
+            );
+
+            payload.append(
+                "note",
+                submittedData.note
+            );
 
             const res = await axios.put(
                 `${import.meta.env.VITE_APP_KEY}advance/transfer/update/${selectedTransfer.id}/`,
@@ -222,42 +325,63 @@ const AmountTransferList = () => {
             );
 
             if (res.status === 200) {
+                // Build new snapshot
                 const afterSnapshot = pickFields({
-                    amount: formData.amount,
-                    date: formData.date,
-                    note: formData.note,
+                    send_from: submittedData.send_from,
+                    send_to: submittedData.send_to,
+                    amount: submittedData.amount,
+                    date: submittedData.date,
+                    note: submittedData.note,
                 });
 
-                const { before_data, after_data } = computeDiff(
+                const {
+                    before_data,
+                    after_data,
+                } = computeDiff(
                     beforeSnapshot,
                     afterSnapshot
                 );
 
-                if (Object.keys(after_data).length > 0) {
-                    await axios.post(
-                        `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                        {
-                            reference_type: "ADVANCE_AMOUNT_TRANSFER",
-                            reference_no: `TRANSFER-${selectedTransfer.id}`,
+                if (
+                    Object.keys(after_data).length > 0
+                ) {
+                    const auditCreated =
+                        await createAmountTransferUpdateDataLog(
+                            selectedTransfer.id,
                             before_data,
-                            after_data,
-                        },
-                        {
-                            headers: {
-                                Authorization: `Bearer ${token}`,
-                                "Content-Type": "application/json",
-                            },
-                        }
-                    );
+                            after_data
+                        );
+
+                    if (!auditCreated) {
+                        console.error("Transfer updated successfully, but DataLog creation failed.");
+                        toast.warn("Transfer updated, but logging to DataLog failed.");
+                    }
                 }
 
                 toast.success("Transfer updated successfully");
                 setModalOpen(false);
                 fetchTransfers();
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Failed to update transfer");
+        } catch (error) {
+            console.error(
+                "Advance amount transfer update error:",
+                error?.response?.data ||
+                error?.message ||
+                error
+            );
+
+            toast.error(
+                "Failed to update transfer"
+            );
+
+            if (error.response?.data) {
+                toast.error(
+                    "Details: " +
+                    JSON.stringify(
+                        error.response.data
+                    )
+                );
+            }
         }
     };
 

@@ -5,6 +5,7 @@ import { ToastContainer, toast } from "react-toastify";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Card, CardBody, Col, Row, Label, CardTitle, Form, Input, Button } from "reactstrap";
 import Select from "react-select";
+import { createAuditLog } from "../../services/auditService";
 
 const OrderReceipt = () => {
   const { id } = useParams(); // get order ID from route
@@ -33,64 +34,186 @@ const OrderReceipt = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Helper: post to datalog after receipt success
-  const postDataLog = async () => {
-    if (!selectedOrderId) return; // nothing to log without order
-    const payload = {
-      order: Number(selectedOrderId),
-      before_data: { Action: "Adding Order Receipt" },
-      // You asked for: { "Data": "Amount, Bank" }
-      // also including structured fields for better debugging/reporting.
-      after_data: {
-        Data: "Amount, Bank",
-        amount: Number(formData.amount || 0),
-        bank_id: formData.bank ? Number(formData.bank) : null,
-        bank_name: selectedBank?.label || "",
-        transactionID: formData.transactionID || "",
-        received_at: formData.received_at || "",
-      },
-    };
-
+  const createOrderReceiptDataLog = async (
+    receiptData,
+    responseData = null,
+    orderData = null,
+    bankData = null
+  ) => {
     try {
-      await axios.post(`${import.meta.env.VITE_APP_KEY}datalog/create/`, payload, {
-        headers: authHeaders,
+      const afterData = {
+        receipt_id:
+          responseData?.id ??
+          null,
+
+        payment_receipt:
+          responseData?.payment_receipt ??
+          responseData?.receipt_no ??
+          "",
+
+        order:
+          orderData?.label ??
+          "",
+
+        order_id:
+          responseData?.order ??
+          receiptData?.order ??
+          "",
+
+        bank:
+          responseData?.bank_name ??
+          bankData?.label ??
+          "",
+
+        bank_id:
+          responseData?.bank ??
+          receiptData?.bank ??
+          "",
+
+        amount:
+          responseData?.amount ??
+          Number(receiptData?.amount || 0),
+
+        received_at:
+          responseData?.received_at ??
+          receiptData?.received_at ??
+          "",
+
+        transactionID:
+          responseData?.transactionID ??
+          receiptData?.transactionID ??
+          "",
+
+        remark:
+          responseData?.remark ??
+          receiptData?.remark ??
+          "",
+      };
+
+      const auditCreated = await createAuditLog({
+        action: "order_receipt_created_website",
+        beforeData: {},
+        afterData: afterData,
+        orderId: receiptData?.order || null,
       });
-      // optional: toast.info("Action logged.");
-    } catch (err) {
-      toast.warn("Receipt saved, but logging to DataLog failed.");
+
+      if (!auditCreated) {
+        console.error(
+          "Order receipt created successfully, but DataLog creation failed."
+        );
+
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Order Receipt DataLog creation error:",
+        error
+      );
+
+      return false;
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Prevent duplicate submission
+    if (isLoading) {
+      return;
+    }
+
+
     if (!selectedOrderId) {
       toast.error("Please select an order.");
       return;
     }
+
     if (!formData.bank) {
       toast.error("Please select a bank.");
       return;
     }
+
     if (!formData.amount) {
       toast.error("Please enter amount.");
       return;
     }
 
     setIsLoading(true);
+
     try {
+
+      const submittedData = {
+        order: Number(selectedOrderId),
+        bank: Number(formData.bank),
+        amount: formData.amount,
+        received_at: formData.received_at,
+        transactionID: formData.transactionID,
+        remark: formData.remark,
+      };
+
+      const submittedOrder = selectedOrder
+        ? { ...selectedOrder }
+        : null;
+
+      const submittedBank = selectedBank
+        ? { ...selectedBank }
+        : null;
+
+      const receiptPayload = {
+        bank: submittedData.bank,
+        amount: submittedData.amount,
+        received_at: submittedData.received_at,
+        transactionID: submittedData.transactionID,
+        remark: submittedData.remark,
+      };
+
       const response = await axios.post(
-        `${import.meta.env.VITE_APP_KEY}payment/${selectedOrderId}/reciept/`,
-        formData,
-        { headers: authHeaders }
+        `${import.meta.env.VITE_APP_KEY}payment/${submittedData.order}/reciept/`,
+        receiptPayload,
+        {
+          headers: authHeaders,
+        }
       );
 
-      if (response?.status === 200 || response?.status === 201) {
-        toast.success("Order receipt created successfully!");
+      if (
+        response?.status === 200 ||
+        response?.status === 201
+      ) {
+        toast.success(
+          "Order receipt created successfully!"
+        );
 
-        // ---- NEW: fire the datalog create call
-        await postDataLog();
+        // Supports APIs returning:
+        // { data: {...} }
+        // or directly {...}
+        const createdReceipt =
+          response?.data?.data ??
+          response?.data ??
+          null;
 
-        // Reset form
+
+        const auditCreated =
+          await createOrderReceiptDataLog(
+            submittedData,
+            createdReceipt,
+            submittedOrder,
+            submittedBank
+          );
+
+        // Receipt remains successfully created even if logging fails
+        if (!auditCreated) {
+          console.error(
+            "Order receipt created successfully, but DataLog creation failed."
+          );
+
+          toast.warn(
+            "Order receipt saved, but logging to DataLog failed."
+          );
+        }
+
+
         setFormData({
           bank: "",
           amount: "",
@@ -98,12 +221,30 @@ const OrderReceipt = () => {
           transactionID: "",
           remark: "",
         });
+
         setSelectedBank(null);
         setSelectedOrderId("");
         setSelectedOrder(null);
       }
     } catch (error) {
-      toast.error("Failed to create order receipt");
+
+      console.error(
+        "Order receipt creation error:",
+        error?.response?.data ||
+        error?.message ||
+        error
+      );
+
+      toast.error(
+        "Failed to create order receipt"
+      );
+
+      if (error?.response?.data) {
+        console.error(
+          "Order receipt API error details:",
+          error.response.data
+        );
+      }
     } finally {
       setIsLoading(false);
     }

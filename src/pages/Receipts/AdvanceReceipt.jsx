@@ -6,6 +6,7 @@ import { Card, CardBody, Col, Row, Label, CardTitle, Form, Input, Button } from 
 import "react-toastify/dist/ReactToastify.css";
 import Select from "react-select";
 import AsyncSelect from "react-select/async";
+import { createAuditLog } from "../../services/auditService";
 
 const AdvanceReceipt = () => {
   const [banks, setBanks] = useState([]);
@@ -31,55 +32,174 @@ const AdvanceReceipt = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ---- NEW: post to datalog after advance receipt success
-  const postDataLog = async () => {
-    // Build payload similar to the order-receipt page; here we log the customer instead of order.
-    const payload = {
-      // If your backend allows recording customer context, include it:
-      customer: formData.customer ? Number(formData.customer) : undefined,
-      before_data: { Action: "Advance Receipt Added" },
-      after_data: {
-        amount: Number(formData.amount || 0),
-        bank_name: selectedBank?.label || "",
-        customer_name: selectedCustomer?.label || "",
-        transactionID: formData.transactionID || "",
-        received_at: formData.received_at || "",
-        remark: formData.remark || "",
-      },
-    };
-
+  const createAdvanceReceiptDataLog = async (
+    receiptData,
+    responseData = null,
+    bankData = null,
+    customerData = null
+  ) => {
     try {
-      await axios.post(`${import.meta.env.VITE_APP_KEY}datalog/create/`, payload, {
-        headers: authHeaders,
+      const afterData = {
+        amount:
+          responseData?.amount ??
+          Number(receiptData.amount || 0),
+
+        bank:
+          responseData?.bank_name ??
+          bankData?.label ??
+          "",
+
+        bank_id:
+          responseData?.bank ??
+          receiptData.bank ??
+          "",
+
+        customer:
+          responseData?.customer_name ??
+          customerData?.label ??
+          "",
+
+        customer_id:
+          responseData?.customer ??
+          receiptData.customer ??
+          "",
+
+        transactionID:
+          responseData?.transactionID ??
+          receiptData.transactionID ??
+          "",
+
+        received_at:
+          responseData?.received_at ??
+          receiptData.received_at ??
+          "",
+
+        remark:
+          responseData?.remark ??
+          receiptData.remark ??
+          "",
+      };
+
+      const auditCreated = await createAuditLog({
+        action: "advance_receipt_created_website",
+        beforeData: {},
+        afterData: afterData,
       });
-      // optional: toast.info("Advance receipt action logged.");
-    } catch (err) {
-      toast.warn("Advance receipt saved, but logging to DataLog failed.");
+
+      if (!auditCreated) {
+        console.error(
+          "Advance receipt created successfully, but DataLog creation failed."
+        );
+
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Advance Receipt DataLog creation error:",
+        error
+      );
+
+      return false;
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.bank) return toast.error("Please select a bank.");
-    if (!formData.customer) return toast.error("Please select a customer.");
-    if (!formData.amount) return toast.error("Please enter amount.");
+    // Prevent duplicate submission
+    if (isLoading) {
+      return;
+    }
+
+    // Validation
+    if (!formData.bank) {
+      toast.error("Please select a bank.");
+      return;
+    }
+
+    if (!formData.customer) {
+      toast.error("Please select a customer.");
+      return;
+    }
+
+    if (!formData.amount) {
+      toast.error("Please enter amount.");
+      return;
+    }
 
     setIsLoading(true);
+
     try {
+      // Keep the submitted values before clearing/resetting the form
+      const submittedData = {
+        ...formData,
+      };
+
+      // Keep selected bank details for audit log
+      const submittedBank = selectedBank
+        ? { ...selectedBank }
+        : null;
+
+      // Keep selected customer details for audit log
+      const submittedCustomer = selectedCustomer
+        ? { ...selectedCustomer }
+        : null;
+
+      // CREATE ADVANCE RECEIPT
+
       const response = await axios.post(
         `${import.meta.env.VITE_APP_KEY}advancereceipt/`,
-        formData,
-        { headers: authHeaders }
+        submittedData,
+        {
+          headers: authHeaders,
+        }
       );
 
-      if (response.status === 201 || response.status === 200) {
-        toast.success("Advance receipt created successfully");
+      // RECEIPT CREATED SUCCESSFULLY
 
-        // ---- NEW: fire the datalog create call (does not block success)
-        await postDataLog();
+      if (
+        response.status === 201 ||
+        response.status === 200
+      ) {
+        toast.success(
+          "Advance receipt created successfully"
+        );
 
-        // reset form + selects
+        // Get backend-created receipt data.
+        // Supports APIs returning either:
+        // { data: {...} }
+        // OR directly {...}
+        const createdReceipt =
+          response?.data?.data ??
+          response?.data ??
+          null;
+
+        // CREATE AUDIT / DATA LOG
+
+        const auditCreated =
+          await createAdvanceReceiptDataLog(
+            submittedData,
+            createdReceipt,
+            submittedBank,
+            submittedCustomer
+          );
+
+        // Receipt should remain successfully created even if
+        // DataLog creation fails.
+        if (!auditCreated) {
+          console.error(
+            "Advance receipt created successfully, but DataLog creation failed."
+          );
+
+          toast.warn(
+            "Advance receipt saved, but logging to DataLog failed."
+          );
+        }
+
+        // RESET FORM
+
         setFormData({
           bank: "",
           amount: "",
@@ -88,16 +208,34 @@ const AdvanceReceipt = () => {
           customer: "",
           remark: "",
         });
+
         setSelectedBank(null);
         setSelectedCustomer(null);
       }
     } catch (error) {
-      toast.error("Failed to create advance receipt");
+      // RECEIPT CREATION FAILED
+
+      toast.error(
+        "Failed to create advance receipt"
+      );
+
       if (error.response?.data) {
-        toast.error("Details: " + JSON.stringify(error.response.data));
+        toast.error(
+          "Details: " +
+          JSON.stringify(
+            error.response.data
+          )
+        );
       }
-      console.error("Advance receipt error:", error?.response?.data || error.message);
+
+      console.error(
+        "Advance receipt error:",
+        error?.response?.data ||
+        error?.message ||
+        error
+      );
     } finally {
+      // Always unlock button
       setIsLoading(false);
     }
   };

@@ -12,7 +12,7 @@ import {
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const AddProduct = ({ isOpen, toggle, ProductsFetch }) => {
+const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
     const [products, setProducts] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(false);
@@ -80,49 +80,58 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch }) => {
         }
     };
 
-    const fetchProducts = async (search = "") => {
+    const fetchProducts = async () => {
+        if (!warehouseId) {
+            setProducts([]);
+            setError("Warehouse not found");
+            return;
+        }
+
         setLoading(true);
         setError(null);
 
         try {
             const response = await axios.get(
-                `${import.meta.env.VITE_APP_KEY}all/products/get/`,
+                `${import.meta.env.VITE_APP_KEY}warehouse/products/${warehouseId}/`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
                         "Content-Type": "application/json",
-                    },
-                    params: {
-                        search: search,
                     },
                 }
             );
 
             const data = response.data;
 
-            if (data && Array.isArray(data.results)) {
-                setProducts(data.results);
+            console.log("Warehouse Products:", data);
+
+            if (data && Array.isArray(data.data)) {
+                setProducts(data.data);
+            } else if (Array.isArray(data)) {
+                setProducts(data);
             } else {
                 setProducts([]);
                 setError("No products found");
             }
         } catch (error) {
-            console.error("Product fetch error:", error);
-            setError(error.message || "An error occurred while fetching products.");
+            console.error("Warehouse product fetch error:", error);
+
+            setProducts([]);
+
+            setError(
+                error?.response?.data?.message ||
+                "An error occurred while fetching warehouse products."
+            );
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen || !warehouseId) return;
 
-        const timer = setTimeout(() => {
-            fetchProducts(searchQuery);
-        }, 500);
-
-        return () => clearTimeout(timer);
-    }, [searchQuery]);
+        fetchProducts();
+    }, [isOpen, warehouseId]);
 
     const handleSearchChange = (event) => {
         setSearchQuery(event.target.value);
@@ -187,7 +196,13 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch }) => {
         }
     };
 
-    const filteredProducts = Array.isArray(products) ? products : [];
+    const filteredProducts = Array.isArray(products)
+        ? products.filter((product) =>
+            product?.name
+                ?.toLowerCase()
+                .includes(searchQuery.toLowerCase())
+        )
+        : [];
 
     const formatPrice = (price) => {
         const value = Number(price);

@@ -21,6 +21,7 @@ import {
 } from "reactstrap";
 import Paginations from "../../components/Common/Pagination";
 import AsyncSelect from "react-select/async";
+import { createAuditLog } from "../../services/auditService";
 
 const CommissionReceiptList = () => {
   const token = localStorage.getItem("token");
@@ -459,7 +460,54 @@ const CommissionReceiptList = () => {
     return true;
   };
 
+  const createCommissionReceiptUpdateDataLog = async (
+    receiptId,
+    orderId,
+    beforeData,
+    afterData
+  ) => {
+    try {
+      const auditCreated = await createAuditLog({
+        action: "commission_receipt_updated_website",
+
+        beforeData: {
+          commission_receipt_id: receiptId,
+          ...beforeData,
+        },
+
+        afterData: {
+          commission_receipt_id: receiptId,
+          ...afterData,
+        },
+
+        orderId: orderId || null,
+      });
+
+      if (!auditCreated) {
+        console.error(
+          "Commission receipt updated successfully, but DataLog creation failed."
+        );
+
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Commission Receipt Update DataLog creation error:",
+        error
+      );
+
+      return false;
+    }
+  };
+
   const handleUpdate = async () => {
+    // Prevent duplicate update
+    if (updateLoading) {
+      return;
+    }
+
     if (!selectedReceipt?.id || !validateUpdate()) {
       return;
     }
@@ -467,10 +515,44 @@ const CommissionReceiptList = () => {
     setUpdateLoading(true);
 
     try {
+      // ============================================================
+      // KEEP ORIGINAL VALUES BEFORE UPDATE
+      // ============================================================
+
       const beforeData = {
-        message: "Commission Receipt Updated",
-        ...selectedReceipt,
+        order:
+          selectedReceipt?.order ?? "",
+
+        order_name:
+          selectedReceipt?.order_name ?? "",
+
+        bank:
+          selectedReceipt?.bank ?? "",
+
+        bank_name:
+          selectedReceipt?.bank_name ?? "",
+
+        amount:
+          selectedReceipt?.amount ?? "",
+
+        transactionID:
+          selectedReceipt?.transactionID ?? "",
+
+        received_at:
+          selectedReceipt?.received_at
+            ? selectedReceipt.received_at.split("T")[0]
+            : "",
+
+        remark:
+          selectedReceipt?.remark ?? "",
+
+        payment_receipt:
+          selectedReceipt?.payment_receipt ?? "",
       };
+
+      // ============================================================
+      // PREPARE UPDATE PAYLOAD
+      // ============================================================
 
       const payload = {
         order: Number(formData.order),
@@ -481,6 +563,10 @@ const CommissionReceiptList = () => {
         remark: formData.remark.trim(),
       };
 
+      // ============================================================
+      // UPDATE COMMISSION RECEIPT
+      // ============================================================
+
       const response = await axios.put(
         `${import.meta.env.VITE_APP_KEY}commission/receipts/edit/${selectedReceipt.id}/`,
         payload,
@@ -489,41 +575,165 @@ const CommissionReceiptList = () => {
         }
       );
 
-      if (response.status === 200 || response.status === 204) {
-        const updatedReceipt =
-          response?.data?.data ||
-          response?.data ||
-          payload;
+      // ============================================================
+      // UPDATE SUCCESS
+      // ============================================================
+
+      if (
+        response.status === 200 ||
+        response.status === 204
+      ) {
+        const responseReceipt =
+          response?.data?.data ??
+          response?.data ??
+          null;
+
+        // Find selected bank name
+        const selectedBankData = banks.find(
+          (bank) =>
+            String(bank.id) ===
+            String(payload.bank)
+        );
+
+        // ============================================================
+        // BUILD UPDATED VALUES
+        // ============================================================
+
+        const afterData = {
+          order:
+            responseReceipt?.order ??
+            payload.order,
+
+          order_name:
+            responseReceipt?.order_name ??
+            selectedOrder?.label ??
+            "",
+
+          bank:
+            responseReceipt?.bank ??
+            payload.bank,
+
+          bank_name:
+            responseReceipt?.bank_name ??
+            selectedBankData?.name ??
+            "",
+
+          amount:
+            responseReceipt?.amount ??
+            payload.amount,
+
+          transactionID:
+            responseReceipt?.transactionID ??
+            payload.transactionID,
+
+          received_at:
+            responseReceipt?.received_at
+              ? responseReceipt.received_at.split("T")[0]
+              : payload.received_at,
+
+          remark:
+            responseReceipt?.remark ??
+            payload.remark,
+
+          payment_receipt:
+            responseReceipt?.payment_receipt ??
+            selectedReceipt?.payment_receipt ??
+            "",
+        };
+
+        // ============================================================
+        // CHECK WHAT ACTUALLY CHANGED
+        // ============================================================
+
+        const changedBeforeData = {};
+        const changedAfterData = {};
+
+        const fieldsToCompare = [
+          "order",
+          "order_name",
+          "bank",
+          "bank_name",
+          "amount",
+          "transactionID",
+          "received_at",
+          "remark",
+        ];
+
+        fieldsToCompare.forEach((field) => {
+          const beforeValue =
+            beforeData[field] ?? "";
+
+          const afterValue =
+            afterData[field] ?? "";
+
+          if (
+            String(beforeValue) !==
+            String(afterValue)
+          ) {
+            changedBeforeData[field] =
+              beforeValue;
+
+            changedAfterData[field] =
+              afterValue;
+          }
+        });
+
+        // ============================================================
+        // CREATE LOG ONLY IF DATA ACTUALLY CHANGED
+        // ============================================================
+
+        if (
+          Object.keys(changedAfterData).length > 0
+        ) {
+          const auditCreated =
+            await createCommissionReceiptUpdateDataLog(
+              selectedReceipt.id,
+              payload.order,
+              changedBeforeData,
+              changedAfterData
+            );
+
+          if (!auditCreated) {
+            console.error(
+              "Commission receipt updated successfully, but DataLog creation failed."
+            );
+
+            toast.warn(
+              "Commission receipt updated, but logging to DataLog failed."
+            );
+          }
+        }
+
+        // ============================================================
+        // SUCCESS MESSAGE
+        // ============================================================
 
         toast.success(
           response?.data?.message ||
           "Commission receipt updated successfully!"
         );
 
-        closeModal();
-        fetchReceiptData(currentPage);
+        // ============================================================
+        // CLOSE MODAL AND REFRESH
+        // ============================================================
 
-        try {
-          await axios.post(
-            `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-            {
-              order: Number(formData.order),
-              before_data: beforeData,
-              after_data: updatedReceipt,
-            },
-            {
-              headers: authHeaders,
-            }
-          );
-        } catch (logError) {
-          toast.warn(
-            "Commission receipt updated, but DataLog creation failed."
-          );
-        }
+        closeModal();
+
+        fetchReceiptData(currentPage);
       }
     } catch (error) {
+      console.error(
+        "Commission receipt update error:",
+        error?.response?.data ||
+        error?.message ||
+        error
+      );
+
       toast.error(
-        getErrorMessage(error, "Failed to update commission receipt")
+        getErrorMessage(
+          error,
+          "Failed to update commission receipt"
+        )
       );
     } finally {
       setUpdateLoading(false);

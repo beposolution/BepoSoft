@@ -4,11 +4,11 @@ import { ToastContainer, toast } from "react-toastify";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Card, CardBody, Col, Row, Label, CardTitle, Form, Input, Button } from "reactstrap";
 import Select from 'react-select';
+import { createAuditLog } from "../../services/auditService";
 
 const CODTransfer = () => {
     const [banks, setBanks] = useState([]);
     const token = localStorage.getItem("token");
-    const authHeaders = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }; // <-- NEW
 
     const [fromBank, setFromBank] = useState(null);
     const [toBank, setToBank] = useState(null);
@@ -18,7 +18,7 @@ const CODTransfer = () => {
         receiver_bank: '',
         amount: '',
         created_at: '',
-        created_end:'',
+        created_end: '',
         // transactionID: '',
         description: ''
     });
@@ -42,28 +42,76 @@ const CODTransfer = () => {
         fetchbanks();
     }, []);
 
-    // ---- NEW: DataLog POST after success
-    const postDataLog = async () => {
-        const payload = {
-            before_data: { Action: "Bank Transfer" },
-            after_data: {
-                amount: Number(formData.amount || 0),
-                sender_bank_name: fromBank?.label || "",
-                receiver_bank_name: toBank?.label || "",
-                // transactionID: formData.transactionID || "",
-                created_at: formData.created_at || "",
-                created_end: formData.created_end || "",
-                description: formData.description || ""
-            }
-        };
-
+    const createCODTransferDataLog = async (
+        transferData,
+        responseData = null,
+        senderBank = null,
+        receiverBank = null
+    ) => {
         try {
-            await axios.post(`${import.meta.env.VITE_APP_KEY}datalog/create/`, payload, {
-                headers: authHeaders
+            const afterData = {
+                amount:
+                    responseData?.amount ??
+                    Number(transferData.amount || 0),
+
+                sender_bank:
+                    responseData?.sender_bank_name ??
+                    senderBank?.label ??
+                    "",
+
+                sender_bank_id:
+                    responseData?.sender_bank ??
+                    transferData.sender_bank ??
+                    "",
+
+                receiver_bank:
+                    responseData?.receiver_bank_name ??
+                    receiverBank?.label ??
+                    "",
+
+                receiver_bank_id:
+                    responseData?.receiver_bank ??
+                    transferData.receiver_bank ??
+                    "",
+
+                send_date:
+                    responseData?.created_at ??
+                    transferData.created_at ??
+                    "",
+
+                receive_date:
+                    responseData?.created_end ??
+                    transferData.created_end ??
+                    "",
+
+                description:
+                    responseData?.description ??
+                    transferData.description ??
+                    "",
+            };
+
+            const auditCreated = await createAuditLog({
+                action: "cod_bank_transfer_website",
+                beforeData: {},
+                afterData: afterData,
             });
-            // optional: toast.info("Transfer logged");
-        } catch (err) {
-            toast.warn("Transfer saved, but logging to DataLog failed.");
+
+            if (!auditCreated) {
+                console.error(
+                    "COD transfer successful, but DataLog creation failed."
+                );
+
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error(
+                "COD Transfer DataLog creation error:",
+                error
+            );
+
+            return false;
         }
     };
 
@@ -76,16 +124,60 @@ const CODTransfer = () => {
         setIsSubmitting(true);
 
         try {
+            // Keep submitted values before clearing the form
+            const submittedData = {
+                ...formData
+            };
+
+            const submittedFromBank = fromBank
+                ? { ...fromBank }
+                : null;
+
+            const submittedToBank = toBank
+                ? { ...toBank }
+                : null;
+
+            // Create COD transfer
             const response = await axios.post(
                 `${import.meta.env.VITE_APP_KEY}cod/transfers/`,
-                formData,
-                { headers: { Authorization: `Bearer ${token}` } }
+                submittedData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                }
             );
 
             if (response.status === 201) {
-                toast.success("COD Amount transferred successfully");
+                toast.success(
+                    "COD Amount transferred successfully"
+                );
 
-                await postDataLog();
+                // Get backend-created transfer
+                const createdTransfer =
+                    response?.data?.data ??
+                    response?.data ??
+                    null;
+
+                // Create DataLog
+                const auditCreated =
+                    await createCODTransferDataLog(
+                        submittedData,
+                        createdTransfer,
+                        submittedFromBank,
+                        submittedToBank
+                    );
+
+                if (!auditCreated) {
+                    console.error(
+                        "COD transfer successful, but DataLog creation failed."
+                    );
+
+                    toast.warn(
+                        "Transfer saved, but logging to DataLog failed."
+                    );
+                }
 
                 // CLEAR FORM
                 setFormData({
@@ -93,7 +185,7 @@ const CODTransfer = () => {
                     receiver_bank: "",
                     amount: "",
                     created_at: "",
-                    created_end:"",
+                    created_end: "",
                     description: ""
                 });
 
@@ -101,7 +193,16 @@ const CODTransfer = () => {
                 setToBank(null);
             }
         } catch (error) {
-            toast.error("Failed to COD transfer amount");
+            console.error(
+                "COD transfer error:",
+                error?.response?.data ||
+                error?.message ||
+                error
+            );
+
+            toast.error(
+                "Failed to COD transfer amount"
+            );
         } finally {
             // RELEASE LOCK
             setIsSubmitting(false);

@@ -9,6 +9,7 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Select from "react-select";
+import { createAuditLog } from "../../services/auditService";
 
 const InternalTransferList = () => {
     const [data, setData] = useState([]);
@@ -177,21 +178,268 @@ const InternalTransferList = () => {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleUpdate = async () => {
+    const createInternalTransferUpdateDataLog = async (
+        transferId,
+        beforeData,
+        afterData
+    ) => {
         try {
-            await axios.put(
+            const auditCreated = await createAuditLog({
+                action: "internal_transfer_updated_website",
+
+                beforeData: {
+                    transfer_id: transferId,
+                    ...beforeData,
+                },
+
+                afterData: {
+                    transfer_id: transferId,
+                    ...afterData,
+                },
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Internal transfer updated successfully, but DataLog creation failed."
+                );
+
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error(
+                "Internal Transfer Update DataLog creation error:",
+                error
+            );
+
+            return false;
+        }
+    };
+
+    const handleUpdate = async () => {
+        if (!currentTransfer?.id) {
+            return;
+        }
+
+        if (!formData.amount) {
+            toast.error("Please enter amount");
+            return;
+        }
+
+        if (Number(formData.amount) <= 0) {
+            toast.error("Amount must be greater than zero");
+            return;
+        }
+
+        if (!formData.sender_bank) {
+            toast.error("Please select sender bank");
+            return;
+        }
+
+        if (!formData.receiver_bank) {
+            toast.error("Please select receiver bank");
+            return;
+        }
+
+        if (
+            String(formData.sender_bank) ===
+            String(formData.receiver_bank)
+        ) {
+            toast.error(
+                "Sender bank and receiver bank cannot be the same"
+            );
+            return;
+        }
+
+        try {
+
+            const beforeData = {
+                amount:
+                    currentTransfer?.amount ?? "",
+
+                description:
+                    currentTransfer?.description ?? "",
+
+                sender_bank:
+                    currentTransfer?.sender_bank ?? "",
+
+                sender_bank_name:
+                    currentTransfer?.sender_bank_name ?? "",
+
+                receiver_bank:
+                    currentTransfer?.receiver_bank ?? "",
+
+                receiver_bank_name:
+                    currentTransfer?.receiver_bank_name ?? "",
+
+                transactionID:
+                    currentTransfer?.transactionID ?? "",
+
+                created_at:
+                    currentTransfer?.created_at
+                        ? currentTransfer.created_at.substring(0, 10)
+                        : "",
+            };
+
+            const submittedData = {
+                ...formData,
+
+                sender_bank:
+                    formData.sender_bank,
+
+                receiver_bank:
+                    formData.receiver_bank,
+
+                amount:
+                    formData.amount,
+
+                description:
+                    formData.description || "",
+
+                transactionID:
+                    formData.transactionID || "",
+
+                created_at:
+                    formData.created_at
+                        ? formData.created_at.substring(0, 10)
+                        : "",
+            };
+
+            const response = await axios.put(
                 `${import.meta.env.VITE_APP_KEY}internal/transfers/${currentTransfer.id}/`,
-                formData,
+                submittedData,
                 {
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                 }
             );
 
-            toast.success("Transfer updated successfully");
-            toggleModal();
-            fetchTransferData(currentPage);
+            if (
+                response.status === 200 ||
+                response.status === 204
+            ) {
+                const responseData =
+                    response?.data?.data ??
+                    response?.data ??
+                    null;
+
+                const senderBank = banks.find(
+                    (bank) =>
+                        String(bank.id) ===
+                        String(submittedData.sender_bank)
+                );
+
+                const receiverBank = banks.find(
+                    (bank) =>
+                        String(bank.id) ===
+                        String(submittedData.receiver_bank)
+                );
+
+                const afterData = {
+                    amount:
+                        responseData?.amount ??
+                        submittedData.amount,
+
+                    description:
+                        responseData?.description ??
+                        submittedData.description,
+
+                    sender_bank:
+                        responseData?.sender_bank ??
+                        submittedData.sender_bank,
+
+                    sender_bank_name:
+                        responseData?.sender_bank_name ??
+                        senderBank?.name ??
+                        senderBankOption?.label ??
+                        "",
+
+                    receiver_bank:
+                        responseData?.receiver_bank ??
+                        submittedData.receiver_bank,
+
+                    receiver_bank_name:
+                        responseData?.receiver_bank_name ??
+                        receiverBank?.name ??
+                        receiverBankOption?.label ??
+                        "",
+
+                    transactionID:
+                        responseData?.transactionID ??
+                        submittedData.transactionID,
+
+                    created_at:
+                        responseData?.created_at
+                            ? responseData.created_at.substring(0, 10)
+                            : submittedData.created_at,
+                };
+
+                const changedBeforeData = {};
+                const changedAfterData = {};
+
+                const fieldsToCompare = [
+                    "amount",
+                    "description",
+                    "sender_bank",
+                    "sender_bank_name",
+                    "receiver_bank",
+                    "receiver_bank_name",
+                    "transactionID",
+                    "created_at",
+                ];
+
+                fieldsToCompare.forEach((field) => {
+                    const beforeValue =
+                        beforeData[field] ?? "";
+
+                    const afterValue =
+                        afterData[field] ?? "";
+
+                    if (
+                        String(beforeValue) !==
+                        String(afterValue)
+                    ) {
+                        changedBeforeData[field] =
+                            beforeValue;
+
+                        changedAfterData[field] =
+                            afterValue;
+                    }
+                });
+
+                if (
+                    Object.keys(changedAfterData).length > 0
+                ) {
+                    const auditCreated =
+                        await createInternalTransferUpdateDataLog(
+                            currentTransfer.id,
+                            changedBeforeData,
+                            changedAfterData
+                        );
+
+                    if (!auditCreated) {
+                        console.error("Internal transfer updated successfully, but DataLog creation failed.");
+                        toast.warn("Transfer updated, but logging to DataLog failed.");
+                    }
+                }
+
+                toast.success("Transfer updated successfully");
+                toggleModal();
+                fetchTransferData(currentPage);
+            }
         } catch (error) {
-            toast.error("Error updating transfer");
+            console.error(
+                "Internal transfer update error:",
+                error?.response?.data ||
+                error?.message ||
+                error
+            );
+
+            toast.error(
+                "Error updating transfer"
+            );
         }
     };
 

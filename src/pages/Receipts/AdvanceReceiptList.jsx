@@ -7,6 +7,7 @@ import "react-toastify/dist/ReactToastify.css";
 import Paginations from '../../components/Common/Pagination';
 import Select from "react-select";
 import AsyncSelect from "react-select/async";
+import { createAuditLog } from "../../services/auditService";
 
 
 const AdvanceReceiptList = () => {
@@ -196,61 +197,125 @@ const AdvanceReceiptList = () => {
     };
 
     const handleUpdate = async () => {
+        if (!selectedReceipt?.id) {
+            return;
+        }
+
         try {
             let shouldDeleteOriginal = false;
-            let convertMode = null;
 
-            // If order is selected → convert Advance Receipt → Order Receipt
-            if (formData.order) {
+            const submittedData = {
+                ...formData,
+                customer: customerId,
+            };
+
+            if (submittedData.order) {
+                const orderId = submittedData.order;
+
                 const response = await axios.post(
-                    `${import.meta.env.VITE_APP_KEY}payment/${formData.order}/reciept/`,
+                    `${import.meta.env.VITE_APP_KEY}payment/${orderId}/reciept/`,
                     {
-                        bank: formData.bank,
-                        amount: formData.amount,
-                        received_at: formData.received_at,
-                        transactionID: formData.transactionID,
-                        remark: formData.remark,
+                        bank: submittedData.bank,
+                        amount: submittedData.amount,
+                        received_at: submittedData.received_at,
+                        transactionID: submittedData.transactionID,
+                        remark: submittedData.remark,
                     },
                     {
-                        headers: { Authorization: `Bearer ${token}` },
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
                     }
                 );
 
-                if (response.status === 200 || response.status === 201) {
-                    toast.success("Converted to Order Receipt successfully!");
-                    convertMode = "toOrder";
+                if (
+                    response.status === 200 ||
+                    response.status === 201
+                ) {
+                    toast.success(
+                        "Converted to Order Receipt successfully!"
+                    );
+
                     shouldDeleteOriginal = true;
 
-                    // Log changes
                     const afterSnapshot = pickFields({
-                        ...formData,
-                        order: formData.order,
+                        ...submittedData,
                     });
-                    const { before_data, after_data } = computeDiff(beforeSnapshot, afterSnapshot);
-                    if (Object.keys(before_data).length > 0) {
-                        await axios.post(
-                            `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                            { before_data, after_data },
-                            {
-                                headers: {
-                                    Authorization: `Bearer ${token}`,
-                                    "Content-Type": "application/json",
-                                },
-                            }
+
+                    const {
+                        before_data,
+                        after_data,
+                    } = computeDiff(
+                        beforeSnapshot,
+                        afterSnapshot
+                    );
+
+                    // Conversion itself must always be recorded
+                    before_data.conversion = "";
+                    after_data.conversion = "Order Receipt";
+
+                    before_data.order = "";
+                    after_data.order = orderId;
+
+                    const selectedOrderData = orders.find(
+                        (item) =>
+                            String(item.id) ===
+                            String(orderId)
+                    );
+
+                    if (selectedOrderData) {
+                        after_data.order_name =
+                            `${selectedOrderData.invoice || ""}` +
+                            `${selectedOrderData.customer?.name
+                                ? ` - ${selectedOrderData.customer.name}`
+                                : ""}` +
+                            `${selectedOrderData.total_amount
+                                ? ` - ₹${selectedOrderData.total_amount}`
+                                : ""}`;
+                    }
+
+                    const auditCreated =
+                        await createAdvanceReceiptDataLog(
+                            selectedReceipt.id,
+                            before_data,
+                            after_data,
+                            "toOrder",
+                            orderId
+                        );
+
+                    if (!auditCreated) {
+                        toast.warn(
+                            "Order Receipt created, but logging to DataLog failed."
                         );
                     }
                 }
-            } else {
-                // Normal update
+            }
+
+            else {
                 const payload = {
-                    payment_receipt: formData.payment_receipt,
-                    bank: formData.bank,
-                    amount: formData.amount,
-                    transactionID: formData.transactionID,
-                    received_at: formData.received_at,
-                    customer: customerId,
-                    remark: formData.remark,
-                    created_by: selectedReceipt.created_by,
+                    payment_receipt:
+                        submittedData.payment_receipt,
+
+                    bank:
+                        submittedData.bank,
+
+                    amount:
+                        submittedData.amount,
+
+                    transactionID:
+                        submittedData.transactionID,
+
+                    received_at:
+                        submittedData.received_at,
+
+                    customer:
+                        customerId,
+
+                    remark:
+                        submittedData.remark,
+
+                    created_by:
+                        selectedReceipt.created_by,
                 };
 
                 const resp = await axios.put(
@@ -264,39 +329,79 @@ const AdvanceReceiptList = () => {
                     }
                 );
 
-                if (resp.status === 200 || resp.status === 204) {
-                    toast.success("Receipt updated successfully!");
-                    const afterSnapshot = pickFields(payload);
-                    const { before_data, after_data } = computeDiff(beforeSnapshot, afterSnapshot);
-                    if (Object.keys(before_data).length > 0) {
-                        await axios.post(
-                            `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                            { before_data, after_data },
-                            {
-                                headers: {
-                                    Authorization: `Bearer ${token}`,
-                                    "Content-Type": "application/json",
-                                },
-                            }
-                        );
+                if (
+                    resp.status === 200 ||
+                    resp.status === 204
+                ) {
+                    toast.success(
+                        "Receipt updated successfully!"
+                    );
+
+                    const afterSnapshot =
+                        pickFields(payload);
+
+                    const {
+                        before_data,
+                        after_data,
+                    } = computeDiff(
+                        beforeSnapshot,
+                        afterSnapshot
+                    );
+
+                    if (
+                        Object.keys(after_data).length > 0
+                    ) {
+                        const auditCreated =
+                            await createAdvanceReceiptDataLog(
+                                selectedReceipt.id,
+                                before_data,
+                                after_data,
+                                "update"
+                            );
+
+                        if (!auditCreated) {
+                            toast.warn(
+                                "Advance Receipt updated, but logging to DataLog failed."
+                            );
+                        }
                     }
                 }
             }
 
-            // If conversion succeeded, delete the original Advance Receipt
-            if (shouldDeleteOriginal && selectedReceipt?.id) {
+            if (
+                shouldDeleteOriginal &&
+                selectedReceipt?.id
+            ) {
                 await axios.delete(
                     `${import.meta.env.VITE_APP_KEY}advancereceipt/view/${selectedReceipt.id}/`,
-                    { headers: { Authorization: `Bearer ${token}` } }
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
                 );
-                toast.success("Original Advance Receipt deleted.");
+
+                toast.success(
+                    "Original Advance Receipt deleted."
+                );
             }
 
             setModalOpen(false);
+            setBeforeSnapshot(null);
+
             fetchReceiptData();
+
         } catch (error) {
-            console.error("Error updating receipt:", error);
-            toast.error("Failed to update receipt.");
+            console.error(
+                "Error updating receipt:",
+                error?.response?.data ||
+                error?.message ||
+                error
+            );
+
+            toast.error(
+                "Failed to update receipt."
+            );
         }
     };
 
@@ -354,6 +459,57 @@ const AdvanceReceiptList = () => {
         });
 
         return { before_data, after_data };
+    };
+
+    const createAdvanceReceiptDataLog = async (
+        receiptId,
+        beforeData,
+        afterData,
+        mode = "update",
+        orderId = null
+    ) => {
+        try {
+            const action =
+                mode === "toOrder"
+                    ? "advance_receipt_converted_to_order_receipt_website"
+                    : "advance_receipt_updated_website";
+
+            const auditCreated = await createAuditLog({
+                action,
+
+                beforeData: {
+                    advance_receipt_id: receiptId,
+                    ...beforeData,
+                },
+
+                afterData: {
+                    advance_receipt_id: receiptId,
+                    ...afterData,
+                },
+
+                orderId:
+                    mode === "toOrder" && orderId
+                        ? orderId
+                        : null,
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Advance receipt action completed successfully, but DataLog creation failed."
+                );
+
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error(
+                "Advance Receipt DataLog creation error:",
+                error
+            );
+
+            return false;
+        }
     };
 
     const filteredReceipts = receipts.filter((item) => {

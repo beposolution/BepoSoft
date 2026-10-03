@@ -21,6 +21,7 @@ import {
 } from "reactstrap";
 import Paginations from '../../components/Common/Pagination';
 import AsyncSelect from "react-select/async";
+import { createAuditLog } from "../../services/auditService";
 
 const OrderReceiptList = () => {
     const [receipts, setReceipts] = useState([]);
@@ -318,69 +319,290 @@ const OrderReceiptList = () => {
         }
     };
 
-    const handleUpdate = async () => {
+    const createOrderReceiptUpdateDataLog = async (
+        receiptId,
+        orderId,
+        beforeData,
+        afterData
+    ) => {
         try {
+            const auditCreated = await createAuditLog({
+                action: "order_receipt_updated_website",
+
+                beforeData: {
+                    receipt_id: receiptId,
+                    ...beforeData,
+                },
+
+                afterData: {
+                    receipt_id: receiptId,
+                    ...afterData,
+                },
+
+                orderId: orderId || null,
+            });
+
+            if (!auditCreated) {
+                console.error("Order receipt updated successfully, but DataLog creation failed.");
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error(
+                "Order Receipt Update DataLog creation error:",
+                error
+            );
+
+            return false;
+        }
+    };
+
+    const handleUpdate = async () => {
+        if (!selectedReceipt?.id) {
+            return;
+        }
+
+        if (!selectedOrderId) {
+            toast.error("Please select an order.");
+            return;
+        }
+
+        if (!formData.bank) {
+            toast.error("Please select a bank.");
+            return;
+        }
+
+        if (!formData.amount) {
+            toast.error("Please enter amount.");
+            return;
+        }
+
+        if (Number(formData.amount) <= 0) {
+            toast.error("Amount must be greater than zero.");
+            return;
+        }
+
+        try {
+
             const beforeData = {
-                message: "Order Receipt Updated",
-                ...selectedReceipt
+                payment_receipt:
+                    selectedReceipt?.payment_receipt ?? "",
+
+                order:
+                    selectedReceipt?.order ?? "",
+
+                order_name:
+                    selectedReceipt?.order_name ?? "",
+
+                bank:
+                    selectedReceipt?.bank ?? "",
+
+                bank_name:
+                    selectedReceipt?.bank_name ?? "",
+
+                amount:
+                    selectedReceipt?.amount ?? "",
+
+                transactionID:
+                    selectedReceipt?.transactionID ?? "",
+
+                received_at:
+                    selectedReceipt?.received_at
+                        ? selectedReceipt.received_at.split("T")[0]
+                        : "",
+
+                customer:
+                    selectedReceipt?.customer ?? "",
+
+                customer_name:
+                    selectedReceipt?.customer_name ?? "",
+
+                remark:
+                    selectedReceipt?.remark ?? "",
+            };
+
+            const payload = {
+                payment_receipt:
+                    formData.payment_receipt,
+
+                order:
+                    selectedOrderId,
+
+                bank:
+                    formData.bank,
+
+                amount:
+                    formData.amount,
+
+                transactionID:
+                    formData.transactionID,
+
+                received_at:
+                    formData.received_at,
+
+                customer:
+                    selectedCustomer?.value || null,
+
+                remark:
+                    formData.remark,
+
+                created_by:
+                    selectedReceipt.created_by,
             };
 
             const response = await axios.put(
                 `${import.meta.env.VITE_APP_KEY}orderreceipt/view/${selectedReceipt.id}/`,
-                {
-                    payment_receipt: formData.payment_receipt,
-                    order: selectedOrderId,
-                    bank: formData.bank,
-                    amount: formData.amount,
-                    transactionID: formData.transactionID,
-                    received_at: formData.received_at,
-                    customer: selectedCustomer?.value,
-                    remark: formData.remark,
-                    created_by: selectedReceipt.created_by,
-                },
+                payload,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    }
+                        "Content-Type": "application/json",
+                    },
                 }
             );
 
-            if (response.status === 200 || response.status === 204) {
-                toast.success("Receipt updated successfully!");
-                setModalOpen(false);
-                fetchReceiptData(currentPage);
+            if (
+                response.status === 200 ||
+                response.status === 204
+            ) {
+                const responseData =
+                    response?.data?.data ??
+                    response?.data ??
+                    null;
 
-                const afterData = response.data ? response.data : {
-                    payment_receipt: formData.payment_receipt,
-                    order: selectedOrderId,
-                    bank: formData.bank,
-                    amount: formData.amount,
-                    transactionID: formData.transactionID,
-                    received_at: formData.received_at,
-                    customer: selectedCustomer?.value,
-                    remark: formData.remark,
-                    created_by: selectedReceipt.created_by,
+                // Find selected bank name
+                const selectedBankData = banks.find(
+                    (bank) =>
+                        String(bank.id) ===
+                        String(payload.bank)
+                );
+
+                const afterData = {
+                    payment_receipt:
+                        responseData?.payment_receipt ??
+                        payload.payment_receipt ??
+                        "",
+
+                    order:
+                        responseData?.order ??
+                        payload.order,
+
+                    order_name:
+                        responseData?.order_name ??
+                        selectedReceipt?.order_name ??
+                        "",
+
+                    bank:
+                        responseData?.bank ??
+                        payload.bank,
+
+                    bank_name:
+                        responseData?.bank_name ??
+                        selectedBankData?.name ??
+                        "",
+
+                    amount:
+                        responseData?.amount ??
+                        payload.amount,
+
+                    transactionID:
+                        responseData?.transactionID ??
+                        payload.transactionID ??
+                        "",
+
+                    received_at:
+                        responseData?.received_at
+                            ? responseData.received_at.split("T")[0]
+                            : payload.received_at,
+
+                    customer:
+                        responseData?.customer ??
+                        payload.customer ??
+                        "",
+
+                    customer_name:
+                        responseData?.customer_name ??
+                        selectedCustomer?.label ??
+                        "",
+
+                    remark:
+                        responseData?.remark ??
+                        payload.remark ??
+                        "",
                 };
 
-                await axios.post(
-                    `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                    {
-                        order: selectedOrderId,
-                        before_data: beforeData,
-                        after_data: afterData,
-                    },
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            "Content-Type": "application/json"
-                        }
-                    }
-                );
-            }
+                const changedBeforeData = {};
+                const changedAfterData = {};
 
+                const fieldsToCompare = [
+                    "order",
+                    "order_name",
+                    "bank",
+                    "bank_name",
+                    "amount",
+                    "transactionID",
+                    "received_at",
+                    "customer",
+                    "customer_name",
+                    "remark",
+                ];
+
+                fieldsToCompare.forEach((field) => {
+                    const beforeValue =
+                        beforeData[field] ?? "";
+
+                    const afterValue =
+                        afterData[field] ?? "";
+
+                    if (
+                        String(beforeValue) !==
+                        String(afterValue)
+                    ) {
+                        changedBeforeData[field] =
+                            beforeValue;
+
+                        changedAfterData[field] =
+                            afterValue;
+                    }
+                });
+
+                if (
+                    Object.keys(changedAfterData).length > 0
+                ) {
+                    const auditCreated =
+                        await createOrderReceiptUpdateDataLog(
+                            selectedReceipt.id,
+                            payload.order,
+                            changedBeforeData,
+                            changedAfterData
+                        );
+
+                    if (!auditCreated) {
+                        console.error("Order receipt updated successfully, but DataLog creation failed.");
+                        toast.warn("Order receipt updated, but logging to DataLog failed.");
+                    }
+                }
+
+                toast.success(
+                    "Receipt updated successfully!"
+                );
+
+                setModalOpen(false);
+
+                fetchReceiptData(currentPage);
+            }
         } catch (error) {
-            toast.error("Failed to update receipt.");
+            console.error(
+                "Order receipt update error:",
+                error?.response?.data ||
+                error?.message ||
+                error
+            );
+
+            toast.error(
+                "Failed to update receipt."
+            );
         }
     };
 
@@ -539,7 +761,7 @@ const OrderReceiptList = () => {
                                                         <th>Customer</th>
                                                         <th>Bank</th>
                                                         <th>Created By</th>
-                                                        {["ADMIN", "CEO", "COO","HR"].includes(role) && (
+                                                        {["ADMIN", "CEO", "COO", "HR"].includes(role) && (
                                                             <th>Actions</th>
                                                         )}
                                                     </tr>

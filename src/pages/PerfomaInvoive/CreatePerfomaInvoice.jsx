@@ -1131,6 +1131,7 @@ const FormLayouts = () => {
                                                                 isOpen={modalOpen}
                                                                 toggle={toggleModal}
                                                                 onSelectProduct={handleProductSelect}
+                                                                warehouseId={formik.values.warehouse_id}
                                                             />
                                                         </CardBody>
                                                     </Card>

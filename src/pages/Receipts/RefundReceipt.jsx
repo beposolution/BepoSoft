@@ -16,6 +16,7 @@ import {
 import "react-toastify/dist/ReactToastify.css";
 import Select from "react-select";
 import AsyncSelect from "react-select/async";
+import { createAuditLog } from "../../services/auditService";
 
 const RefundReceipt = () => {
     const token = localStorage.getItem("token");
@@ -166,65 +167,195 @@ const RefundReceipt = () => {
         }));
     };
 
-    // post to datalog after refund receipt success
-    const postDataLog = async (refundNo) => {
-        const payload = {
-            customer: formData.customer ? Number(formData.customer) : undefined,
-            invoice: formData.invoice ? Number(formData.invoice) : undefined,
-
-            before_data: { Action: "Refund Receipt Added" },
-
-            after_data: {
-                refund_no: refundNo,
-                amount: Number(formData.amount || 0),
-                bank_name: selectedBank?.label || "",
-                customer_name: selectedCustomer?.label || "",
-                invoice_no: selectedInvoice?.label || "",
-                transactionID: formData.transactionID || "",
-                date: formData.date || "",
-                note: formData.note || "",
-            },
-        };
-
+    const createRefundReceiptDataLog = async (
+        receiptData,
+        responseData = null,
+        bankData = null,
+        customerData = null,
+        invoiceData = null
+    ) => {
         try {
-            await axios.post(
-                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                payload,
-                { headers: authHeaders }
+            const afterData = {
+                refund_no:
+                    responseData?.refund_no ??
+                    "",
+
+                amount:
+                    responseData?.amount ??
+                    Number(receiptData.amount || 0),
+
+                bank:
+                    responseData?.bank_name ??
+                    bankData?.label ??
+                    "",
+
+                bank_id:
+                    responseData?.bank ??
+                    receiptData.bank ??
+                    "",
+
+                customer:
+                    responseData?.customer_name ??
+                    customerData?.label ??
+                    "",
+
+                customer_id:
+                    responseData?.customer ??
+                    receiptData.customer ??
+                    "",
+
+                invoice:
+                    responseData?.invoice_no ??
+                    invoiceData?.label ??
+                    "",
+
+                invoice_id:
+                    responseData?.invoice ??
+                    receiptData.invoice ??
+                    "",
+
+                transactionID:
+                    responseData?.transactionID ??
+                    receiptData.transactionID ??
+                    "",
+
+                date:
+                    responseData?.date ??
+                    receiptData.date ??
+                    "",
+
+                note:
+                    responseData?.note ??
+                    receiptData.note ??
+                    "",
+            };
+
+            const auditCreated = await createAuditLog({
+                action: "refund_receipt_created_website",
+                beforeData: {},
+                afterData: afterData,
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Refund receipt created successfully, but DataLog creation failed."
+                );
+
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error(
+                "Refund Receipt DataLog creation error:",
+                error
             );
-        } catch (err) {
-            toast.warn("Refund receipt saved, but DataLog creation failed.");
+
+            return false;
         }
     };
 
-    // ---------------- SUBMIT ----------------
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!formData.bank) return toast.error("Please select bank");
-        if (!formData.customer) return toast.error("Please select customer");
-        if (!formData.amount) return toast.error("Please enter amount");
-        if (!formData.date) return toast.error("Please select date");
+        // Prevent duplicate submission
+        if (isLoading) {
+            return;
+        }
+
+        // VALIDATION
+
+        if (!formData.bank) {
+            toast.error("Please select bank");
+            return;
+        }
+
+        if (!formData.customer) {
+            toast.error("Please select customer");
+            return;
+        }
+
+        if (!formData.amount) {
+            toast.error("Please enter amount");
+            return;
+        }
+
+        if (!formData.date) {
+            toast.error("Please select date");
+            return;
+        }
 
         setIsLoading(true);
 
         try {
+            // KEEP SUBMITTED VALUES
+
+            const submittedData = {
+                ...formData,
+            };
+
+            const submittedBank = selectedBank
+                ? { ...selectedBank }
+                : null;
+
+            const submittedCustomer = selectedCustomer
+                ? { ...selectedCustomer }
+                : null;
+
+            const submittedInvoice = selectedInvoice
+                ? { ...selectedInvoice }
+                : null;
+
+            // CREATE REFUND RECEIPT
+
             const res = await axios.post(
                 `${import.meta.env.VITE_APP_KEY}refund/receipts/`,
-                formData,
-                { headers: authHeaders }
+                submittedData,
+                {
+                    headers: authHeaders,
+                }
             );
 
-            if (res.status === 200 || res.status === 201) {
+            // REFUND CREATED SUCCESSFULLY
 
-                const refundData = res.data?.data;
+            if (
+                res.status === 200 ||
+                res.status === 201
+            ) {
+                toast.success(
+                    "Refund receipt created successfully"
+                );
 
-                toast.success("Refund receipt created successfully");
+                // Backend-created refund receipt
+                const createdRefund =
+                    res?.data?.data ??
+                    res?.data ??
+                    null;
 
-                // fire datalog creation (non-blocking logic already handled)
-                await postDataLog(refundData?.refund_no);
+                // CREATE AUDIT / DATA LOG
 
-                // RESET
+                const auditCreated =
+                    await createRefundReceiptDataLog(
+                        submittedData,
+                        createdRefund,
+                        submittedBank,
+                        submittedCustomer,
+                        submittedInvoice
+                    );
+
+                // Refund remains successful even if audit log fails
+                if (!auditCreated) {
+                    console.error(
+                        "Refund receipt created successfully, but DataLog creation failed."
+                    );
+
+                    toast.warn(
+                        "Refund receipt saved, but logging to DataLog failed."
+                    );
+                }
+
+                // RESET FORM
+
                 setFormData({
                     bank: "",
                     customer: "",
@@ -234,12 +365,33 @@ const RefundReceipt = () => {
                     transactionID: "",
                     note: "",
                 });
+
                 setSelectedBank(null);
                 setSelectedCustomer(null);
                 setSelectedInvoice(null);
             }
-        } catch (err) {
-            toast.error("Failed to create refund receipt");
+        } catch (error) {
+            // REFUND CREATION FAILED
+
+            toast.error(
+                "Failed to create refund receipt"
+            );
+
+            if (error.response?.data) {
+                toast.error(
+                    "Details: " +
+                    JSON.stringify(
+                        error.response.data
+                    )
+                );
+            }
+
+            console.error(
+                "Refund receipt error:",
+                error?.response?.data ||
+                error?.message ||
+                error
+            );
         } finally {
             setIsLoading(false);
         }

@@ -80,7 +80,7 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
         }
     };
 
-    const fetchProducts = async () => {
+    const fetchProducts = async (search = "") => {
         if (!warehouseId) {
             setProducts([]);
             setError("Warehouse not found");
@@ -92,29 +92,139 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
 
         try {
             const response = await axios.get(
-                `${import.meta.env.VITE_APP_KEY}warehouse/products/${warehouseId}/`,
+                `${import.meta.env.VITE_APP_KEY}warehouse/products/${warehouseId}/get/`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
                         "Content-Type": "application/json",
                     },
+                    params: {
+                        search: search,
+                    },
                 }
             );
 
-            const data = response.data;
+            console.log(
+                "Warehouse Products API Response:",
+                response.data
+            );
 
-            console.log("Warehouse Products:", data);
+            const data =
+                response?.data?.results?.data ||
+                response?.data?.data ||
+                response?.data?.results ||
+                [];
 
-            if (data && Array.isArray(data.data)) {
-                setProducts(data.data);
-            } else if (Array.isArray(data)) {
-                setProducts(data);
-            } else {
+            if (!Array.isArray(data)) {
                 setProducts([]);
                 setError("No products found");
+                return;
             }
+
+            // =========================================================
+            // VARIANT LOGIC
+            //
+            // If product has variants -> show variants only
+            // If product has no variants -> show main product
+            // =========================================================
+
+            const displayProducts = data.flatMap((product) => {
+                const variants = Array.isArray(product?.variantIDs)
+                    ? product.variantIDs
+                    : [];
+
+                // -----------------------------------------------------
+                // PRODUCT HAS VARIANTS
+                // -----------------------------------------------------
+
+                if (variants.length > 0) {
+                    return variants.map((variant) => ({
+                        // Keep main-product data as fallback
+                        ...product,
+
+                        // Variant data must override main-product data
+                        ...variant,
+
+                        // Useful references
+                        parent_product_id: product.id,
+                        parent_product_name: product.name,
+
+                        is_variant: true,
+
+                        // Explicitly prefer variant fields
+                        id: variant.id,
+                        name: variant.name || product.name,
+
+                        image:
+                            variant.image ||
+                            product.image ||
+                            null,
+
+                        selling_price:
+                            variant.selling_price ??
+                            product.selling_price ??
+                            0,
+
+                        stock:
+                            variant.stock ?? 0,
+
+                        available_stock:
+                            variant.available_stock ?? 0,
+
+                        locked_stock:
+                            variant.locked_stock ?? 0,
+
+                        damaged_stock:
+                            variant.damaged_stock ?? 0,
+
+                        partially_damaged_stock:
+                            variant.partially_damaged_stock ?? 0,
+
+                        liquidation_stock:
+                            variant.liquidation_stock ?? 0,
+
+                        size:
+                            variant.size ||
+                            product.size ||
+                            "",
+
+                        color:
+                            variant.color ||
+                            product.color ||
+                            "",
+                    }));
+                }
+
+                // -----------------------------------------------------
+                // SINGLE / NORMAL PRODUCT
+                // -----------------------------------------------------
+
+                return [
+                    {
+                        ...product,
+
+                        parent_product_id: null,
+                        parent_product_name: null,
+
+                        is_variant: false,
+                    },
+                ];
+            });
+
+            console.log(
+                "Products prepared for table:",
+                displayProducts
+            );
+
+            setProducts(displayProducts);
+
         } catch (error) {
-            console.error("Warehouse product fetch error:", error);
+            console.error(
+                "Warehouse product fetch error:",
+                error?.response?.data ||
+                error?.message ||
+                error
+            );
 
             setProducts([]);
 
@@ -130,8 +240,13 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
     useEffect(() => {
         if (!isOpen || !warehouseId) return;
 
-        fetchProducts();
-    }, [isOpen, warehouseId]);
+        const timer = setTimeout(() => {
+            fetchProducts(searchQuery);
+        }, 500);
+
+        return () => clearTimeout(timer);
+
+    }, [searchQuery, isOpen, warehouseId]);
 
     const handleSearchChange = (event) => {
         setSearchQuery(event.target.value);
@@ -195,14 +310,6 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
             );
         }
     };
-
-    const filteredProducts = Array.isArray(products)
-        ? products.filter((product) =>
-            product?.name
-                ?.toLowerCase()
-                .includes(searchQuery.toLowerCase())
-        )
-        : [];
 
     const formatPrice = (price) => {
         const value = Number(price);
@@ -350,8 +457,8 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
                             </tbody> */}
 
                             <tbody>
-                                {filteredProducts.length > 0 ? (
-                                    filteredProducts.map((product, index) => (
+                                {products.length > 0 ? (
+                                    products.map((product, index) => (
                                         <React.Fragment key={product.id}>
 
                                             {/* PRODUCT ROW */}

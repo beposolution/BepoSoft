@@ -3,6 +3,7 @@ import axios from "axios";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../services/auditService";
 
 const WaitingProducts = () => {
     const warehouseId = localStorage.getItem("warehouseId");
@@ -70,9 +71,30 @@ const WaitingProducts = () => {
 
     const handleApprove = async (productId) => {
         try {
-            await axios.put(
+            // Find the product BEFORE changing its status.
+            // This gives us the original values for before_data.
+            const product = waitingProducts.find(
+                (item) => String(item.id) === String(productId)
+            );
+
+            const beforeData = {
+                product_id: productId,
+                product_name: product?.name ?? "",
+                hsn_code: product?.hsn_code ?? "",
+                approval_status: product?.approval_status ?? "",
+                stock: product?.stock ?? 0,
+                partially_damaged_stock:
+                    product?.partially_damaged_stock ?? 0,
+                damaged_stock:
+                    product?.damaged_stock ?? 0,
+                warehouse_id: warehouseId,
+            };
+
+            const response = await axios.put(
                 `${apiBaseUrl}product/confirmation/${productId}/`,
-                { approval_status: "Approved" },
+                {
+                    approval_status: "Approved",
+                },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -81,10 +103,51 @@ const WaitingProducts = () => {
                 }
             );
 
-            toast.success("Product approved successfully.");
-            setRefresh((prev) => !prev);
+            if (
+                response.status === 200 ||
+                response.status === 201
+            ) {
+                try {
+                    const auditCreated = await createAuditLog({
+                        action: "product_approved_website",
+
+                        beforeData,
+
+                        afterData: {
+                            ...beforeData,
+                            approval_status: "Approved",
+                        },
+                    });
+
+                    if (!auditCreated) {
+                        console.error(
+                            "Product approved successfully, but DataLog creation failed."
+                        );
+                    }
+                } catch (auditError) {
+                    console.error(
+                        "Product approved successfully, but DataLog creation failed:",
+                        auditError
+                    );
+                }
+
+                toast.success(
+                    "Product approved successfully."
+                );
+
+                setRefresh((prev) => !prev);
+            }
         } catch (error) {
-            toast.error("Failed to approve product.");
+            console.error(
+                "Failed to approve product:",
+                error?.response?.data ||
+                error?.message ||
+                error
+            );
+
+            toast.error(
+                "Failed to approve product."
+            );
         }
     };
 
@@ -95,9 +158,36 @@ const WaitingProducts = () => {
 
     const handleVariantApprove = async (variantId) => {
         try {
-            await axios.put(
+            // Find variant BEFORE approval so the original
+            // information can be stored in before_data.
+            const variant = selectedVariants.find(
+                (item) => String(item.id) === String(variantId)
+            );
+
+            const beforeData = {
+                variant_id: variantId,
+                variant_name: variant?.name ?? "",
+                approval_status:
+                    variant?.approval_status ?? "",
+                stock:
+                    variant?.stock ?? 0,
+                partially_damaged_stock:
+                    variant?.partially_damaged_stock ?? 0,
+                damaged_stock:
+                    variant?.damaged_stock ?? 0,
+                selling_price:
+                    variant?.selling_price ?? "",
+                retail_price:
+                    variant?.retail_price ?? "",
+                warehouse_id:
+                    warehouseId,
+            };
+
+            const response = await axios.put(
                 `${apiBaseUrl}product/confirmation/${variantId}/`,
-                { approval_status: "Approved" },
+                {
+                    approval_status: "Approved",
+                },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -106,17 +196,62 @@ const WaitingProducts = () => {
                 }
             );
 
-            toast.success("Variant approved successfully.");
+            if (
+                response.status === 200 ||
+                response.status === 201
+            ) {
+                try {
+                    const auditCreated = await createAuditLog({
+                        action: "product_variant_approved_website",
 
-            setSelectedVariants((prevVariants) =>
-                prevVariants.map((v) =>
-                    v.id === variantId ? { ...v, approval_status: "Approved" } : v
-                )
+                        beforeData,
+
+                        afterData: {
+                            ...beforeData,
+                            approval_status: "Approved",
+                        },
+                    });
+
+                    if (!auditCreated) {
+                        console.error(
+                            "Variant approved successfully, but DataLog creation failed."
+                        );
+                    }
+                } catch (auditError) {
+                    console.error(
+                        "Variant approved successfully, but DataLog creation failed:",
+                        auditError
+                    );
+                }
+
+                toast.success(
+                    "Variant approved successfully."
+                );
+
+                setSelectedVariants((prevVariants) =>
+                    prevVariants.map((v) =>
+                        String(v.id) === String(variantId)
+                            ? {
+                                ...v,
+                                approval_status: "Approved",
+                            }
+                            : v
+                    )
+                );
+
+                setRefresh((prev) => !prev);
+            }
+        } catch (error) {
+            console.error(
+                "Failed to approve variant:",
+                error?.response?.data ||
+                error?.message ||
+                error
             );
 
-            setRefresh((prev) => !prev);
-        } catch (error) {
-            toast.error("Failed to approve variant.");
+            toast.error(
+                "Failed to approve variant."
+            );
         }
     };
 
@@ -1154,7 +1289,7 @@ const WaitingProducts = () => {
                                                             >
                                                                 Name
                                                             </th>
-                                                           
+
                                                             <th
                                                                 style={{
                                                                     padding: "16px 18px",
@@ -1259,7 +1394,7 @@ const WaitingProducts = () => {
                                                                     </span>
                                                                 </td>
 
-                                                                
+
 
                                                                 <td style={{ padding: "16px 18px" }}>
                                                                     <strong>{variant?.stock ?? 0}</strong>

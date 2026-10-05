@@ -18,6 +18,7 @@ import { Link } from 'react-router-dom';
 import PaymentImages from "./PaymentImages";
 import Select from "react-select";
 import AsyncSelect from "react-select/async";
+import { createAuditLog } from "../../services/auditService";
 
 const FormLayouts = () => {
 
@@ -83,6 +84,10 @@ const FormLayouts = () => {
         company: "",
         shipping_charge: "",
     });
+    const [originalParcelService, setOriginalParcelService] = useState({
+        parcel_service: "",
+        parcel_service_note: "",
+    });
 
     const customerOptions = customers.map(c => ({
         value: c.id,
@@ -131,34 +136,39 @@ const FormLayouts = () => {
     };
 
     const writeCustomerChangeLog = async (beforeCustomer, afterCustomer) => {
-        const token = localStorage.getItem("token");
-
         try {
-            await axios.post(
-                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                {
-                    order: Number(id),
-                    before_data: {
-                        customer_id: beforeCustomer.id,
-                        customer_name: beforeCustomer.name,
-                        phone: beforeCustomer.phone,
-                        gst: beforeCustomer.gst || "nil",
-                        address: beforeCustomer.address || "",
-                    },
-                    after_data: {
-                        customer_id: afterCustomer.id,
-                        customer_name: afterCustomer.name,
-                        phone: afterCustomer.phone,
-                        gst: afterCustomer.gst || "nil",
-                        address: afterCustomer.address || "",
-                    },
+            const auditCreated = await createAuditLog({
+                action: "order_customer_updated_website",
+
+                beforeData: {
+                    customer_id: beforeCustomer.id,
+                    customer_name: beforeCustomer.name,
+                    phone: beforeCustomer.phone,
+                    gst: beforeCustomer.gst || "nil",
+                    address: beforeCustomer.address || "",
                 },
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
+
+                afterData: {
+                    customer_id: afterCustomer.id,
+                    customer_name: afterCustomer.name,
+                    phone: afterCustomer.phone,
+                    gst: afterCustomer.gst || "nil",
+                    address: afterCustomer.address || "",
+                },
+
+                orderId: Number(id),
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Customer updated successfully, but DataLog creation failed."
+                );
+            }
+        } catch (auditError) {
+            console.error(
+                "Customer updated successfully, but DataLog creation failed:",
+                auditError
             );
-        } catch (err) {
-            console.warn("Customer change DataLog failed:", err?.response?.data || err.message);
         }
     };
 
@@ -562,6 +572,186 @@ const FormLayouts = () => {
 
                 const data = await response.json();
 
+                // ============================================================
+                // BUILD ORDER INFORMATION DATALOG
+                // ============================================================
+
+                try {
+                    const beforeData = {};
+                    const afterData = {};
+
+
+                    // ========================================================
+                    // PAYMENT METHOD
+                    // ========================================================
+
+                    if (
+                        String(originalAccountFields.payment_status ?? "") !==
+                        String(values.payment_status ?? "")
+                    ) {
+                        beforeData.payment_method =
+                            originalAccountFields.payment_status || "";
+
+                        afterData.payment_method =
+                            values.payment_status || "";
+                    }
+
+
+                    // ========================================================
+                    // DIVISION
+                    // ========================================================
+
+                    const oldFamily = familyData.find(
+                        family =>
+                            String(family.name ?? "").trim().toLowerCase() ===
+                            String(originalAccountFields.family ?? "").trim().toLowerCase()
+                    );
+
+                    const newFamily = familyData.find(
+                        family =>
+                            String(family.id) === String(values.family)
+                    );
+
+                    const oldFamilyName =
+                        oldFamily?.name ||
+                        originalAccountFields.family ||
+                        "";
+
+                    const newFamilyName =
+                        newFamily?.name || "";
+
+
+                    if (
+                        String(oldFamilyName ?? "") !==
+                        String(newFamilyName ?? "")
+                    ) {
+                        beforeData.division = oldFamilyName;
+                        afterData.division = newFamilyName;
+                    }
+
+
+                    // ========================================================
+                    // COD STATUS
+                    // ========================================================
+
+                    if (
+                        String(originalAccountFields.cod_status ?? "") !==
+                        String(values.cod_status ?? "")
+                    ) {
+                        beforeData.cod_status =
+                            originalAccountFields.cod_status || "";
+
+                        afterData.cod_status =
+                            values.cod_status || "";
+                    }
+
+
+                    // ========================================================
+                    // COMPANY
+                    // ========================================================
+
+                    if (
+                        String(originalAccountFields.company ?? "") !==
+                        String(values.company ?? "")
+                    ) {
+                        const oldCompany = companyData.find(
+                            company =>
+                                String(company.id) ===
+                                String(originalAccountFields.company)
+                        );
+
+                        const newCompany = companyData.find(
+                            company =>
+                                String(company.id) ===
+                                String(values.company)
+                        );
+
+                        beforeData.company =
+                            oldCompany?.name ||
+                            originalAccountFields.company ||
+                            "";
+
+                        afterData.company =
+                            newCompany?.name ||
+                            values.company ||
+                            "";
+                    }
+
+
+                    // ========================================================
+                    // SHIPPING MODE
+                    // ========================================================
+
+                    if (
+                        String(originalAccountFields.shipping_mode ?? "") !==
+                        String(values.shipping_mode ?? "")
+                    ) {
+                        beforeData.shipping_mode =
+                            originalAccountFields.shipping_mode || "";
+
+                        afterData.shipping_mode =
+                            values.shipping_mode || "";
+                    }
+
+
+                    // ========================================================
+                    // COD AMOUNT
+                    // ========================================================
+
+                    if (
+                        Number(originalAccountFields.cod_amount || 0) !==
+                        Number(values.cod_amount || 0)
+                    ) {
+                        beforeData.cod_amount =
+                            Number(originalAccountFields.cod_amount || 0);
+
+                        afterData.cod_amount =
+                            Number(values.cod_amount || 0);
+                    }
+
+
+                    // ========================================================
+                    // ADVANCE COD AMOUNT
+                    // ========================================================
+
+                    if (
+                        Number(originalAccountFields.adv_cod_amount || 0) !==
+                        Number(values.adv_cod_amount || 0)
+                    ) {
+                        beforeData.adv_cod_amount =
+                            Number(originalAccountFields.adv_cod_amount || 0);
+
+                        afterData.adv_cod_amount =
+                            Number(values.adv_cod_amount || 0);
+                    }
+
+
+                    // ========================================================
+                    // CREATE LOG ONLY WHEN SOMETHING ACTUALLY CHANGED
+                    // ========================================================
+
+                    if (Object.keys(afterData).length > 0) {
+                        const auditCreated = await createAuditLog({
+                            action: "order_information_updated_website",
+                            beforeData,
+                            afterData,
+                            orderId: Number(id),
+                        });
+
+                        if (!auditCreated) {
+                            console.error(
+                                "Order information updated, but DataLog creation failed."
+                            );
+                        }
+                    }
+
+                } catch (auditError) {
+                    console.error(
+                        "Order information updated, but DataLog creation failed:",
+                        auditError
+                    );
+                }
+
                 setSuccessMessage("Form submitted successfully!");
             } catch (error) {
                 console.error("Order update error:", error);
@@ -830,6 +1020,11 @@ const FormLayouts = () => {
                 setOrderParcelServiceId(data.order.parcel_service || "");
                 setOrderParcelServiceNote(data.order.parcel_service_note || "");
 
+                setOriginalParcelService({
+                    parcel_service: data.order.parcel_service || "",
+                    parcel_service_note: data.order.parcel_service_note || "",
+                });
+
             }
         } catch (error) {
             toast.error("Error fetching order data:");
@@ -892,65 +1087,69 @@ const FormLayouts = () => {
     }, [id]);
 
     const writeRemoveItemLog = async (item) => {
-        const token = localStorage.getItem("token");
         try {
-            await axios.post(
-                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                {
-                    order: Number(id),
-                    before_data: {
-                        item_id: item.id,
-                        product_name: item.name,
-                        quantity: item.quantity,
-                        rate: item.rate,
-                        discount: item.discount,
-                    },
-                    after_data: {
-                        action: "Order item removed",
-                    },
+            const auditCreated = await createAuditLog({
+                action: "order_item_removed_website",
+
+                beforeData: {
+                    item_id: item.id,
+                    product_name: item.name,
+                    quantity: item.quantity,
+                    rate: item.rate,
+                    discount: item.discount,
                 },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-        } catch (err) {
-            console.warn(
-                "Remove Item DataLog failed:",
-                err?.response?.data || err.message
+
+                afterData: {},
+
+                orderId: Number(id),
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Order item removed successfully, but DataLog creation failed."
+                );
+            }
+        } catch (auditError) {
+            console.error(
+                "Order item removed successfully, but DataLog creation failed:",
+                auditError
             );
         }
     };
 
-    const writeRackChangeLog = async (item, beforeRacks, afterRacks) => {
-        const token = localStorage.getItem("token");
-
+    const writeRackChangeLog = async (
+        item,
+        beforeRacks,
+        afterRacks
+    ) => {
         try {
-            await axios.post(
-                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                {
-                    order: Number(id),
-                    before_data: {
-                        item_id: item.id,
-                        product_name: item.name,
-                        rack_details: beforeRacks,
-                    },
-                    after_data: {
-                        rack_details: afterRacks,
-                        action: "Rack allocation updated",
-                    },
+            const auditCreated = await createAuditLog({
+                action: "rack_allocation_updated_website",
+
+                beforeData: {
+                    item_id: item.id,
+                    product_name: item.name,
+                    rack_details: beforeRacks,
                 },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-        } catch (err) {
-            console.warn(
-                "Rack DataLog failed:",
-                err?.response?.data || err.message
+
+                afterData: {
+                    item_id: item.id,
+                    product_name: item.name,
+                    rack_details: afterRacks,
+                },
+
+                orderId: Number(id),
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Rack allocation updated successfully, but DataLog creation failed."
+                );
+            }
+        } catch (auditError) {
+            console.error(
+                "Rack allocation updated successfully, but DataLog creation failed:",
+                auditError
             );
         }
     };
@@ -1037,45 +1236,57 @@ const FormLayouts = () => {
     };
 
 
-    const writeOrderItemChangeLog = async (item, beforeData, afterData) => {
+    const writeOrderItemChangeLog = async (
+        item,
+        beforeData,
+        afterData
+    ) => {
         const changedBefore = {};
         const changedAfter = {};
 
         Object.keys(afterData).forEach((key) => {
-            if (String(beforeData[key] ?? "") !== String(afterData[key] ?? "")) {
+            if (
+                String(beforeData[key] ?? "") !==
+                String(afterData[key] ?? "")
+            ) {
                 changedBefore[key] = beforeData[key];
                 changedAfter[key] = afterData[key];
             }
         });
 
-        if (Object.keys(changedAfter).length === 0) return;
+        if (Object.keys(changedAfter).length === 0) {
+            return;
+        }
 
         try {
-            await axios.post(
-                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                {
-                    order: Number(id),
-                    before_data: {
-                        action: "Order item updated",
-                        item_id: item.id,
-                        product_name: item.name,
-                        ...changedBefore,
-                    },
-                    after_data: {
-                        action: "Order item updated",
-                        item_id: item.id,
-                        product_name: item.name,
-                        ...changedAfter,
-                    },
+            const auditCreated = await createAuditLog({
+                action: "order_item_updated_website",
+
+                beforeData: {
+                    item_id: item.id,
+                    product_name: item.name,
+                    ...changedBefore,
                 },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
+
+                afterData: {
+                    item_id: item.id,
+                    product_name: item.name,
+                    ...changedAfter,
+                },
+
+                orderId: Number(id),
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Order item updated successfully, but DataLog creation failed."
+                );
+            }
+        } catch (auditError) {
+            console.error(
+                "Order item updated successfully, but DataLog creation failed:",
+                auditError
             );
-        } catch (err) {
-            console.warn("Order item DataLog failed:", err?.response?.data || err.message);
         }
     };
 
@@ -1334,11 +1545,89 @@ const FormLayouts = () => {
     const handleParcelServiceUpdate = async () => {
         try {
             const payload = {
-                parcel_service: orderParcelServiceId ? Number(orderParcelServiceId) : null,
-                parcel_service_note: orderParcelServiceNote || "",
+                parcel_service: orderParcelServiceId
+                    ? Number(orderParcelServiceId)
+                    : null,
+
+                parcel_service_note:
+                    orderParcelServiceNote || "",
             };
 
-            const response = await axios.put(
+            const beforeData = {};
+            const afterData = {};
+
+            const oldService = parcelService.find(
+                service =>
+                    Number(service.id) ===
+                    Number(originalParcelService.parcel_service)
+            );
+
+            const newService = parcelService.find(
+                service =>
+                    Number(service.id) ===
+                    Number(orderParcelServiceId)
+            );
+
+
+            // ============================================================
+            // PARCEL SERVICE CHANGED
+            // ============================================================
+
+            if (
+                String(originalParcelService.parcel_service ?? "") !==
+                String(orderParcelServiceId ?? "")
+            ) {
+                beforeData.parcel_service_id =
+                    originalParcelService.parcel_service || null;
+
+                beforeData.parcel_service_name =
+                    oldService
+                        ? `${oldService.name} (${oldService.label})`
+                        : "";
+
+                afterData.parcel_service_id =
+                    orderParcelServiceId
+                        ? Number(orderParcelServiceId)
+                        : null;
+
+                afterData.parcel_service_name =
+                    newService
+                        ? `${newService.name} (${newService.label})`
+                        : "";
+            }
+
+
+            // ============================================================
+            // PARCEL SERVICE NOTE CHANGED
+            // ============================================================
+
+            if (
+                String(originalParcelService.parcel_service_note ?? "") !==
+                String(orderParcelServiceNote ?? "")
+            ) {
+                beforeData.parcel_service_note =
+                    originalParcelService.parcel_service_note || "";
+
+                afterData.parcel_service_note =
+                    orderParcelServiceNote || "";
+            }
+
+
+            // ============================================================
+            // NOTHING CHANGED
+            // ============================================================
+
+            if (Object.keys(afterData).length === 0) {
+                toast.info("No parcel service changes to save.");
+                return;
+            }
+
+
+            // ============================================================
+            // UPDATE ORDER
+            // ============================================================
+
+            await axios.put(
                 `${import.meta.env.VITE_APP_KEY}shipping/${id}/order/`,
                 payload,
                 {
@@ -1349,12 +1638,44 @@ const FormLayouts = () => {
                 }
             );
 
-            toast.success("Parcel service details updated successfully");
-            fetchOrderData();
+
+            // ============================================================
+            // CREATE DATALOG
+            // ============================================================
+
+            try {
+                await createAuditLog({
+                    action: "parcel_service_updated_website",
+
+                    beforeData,
+
+                    afterData,
+
+                    orderId: Number(id),
+                });
+            } catch (auditError) {
+                console.error(
+                    "Parcel service updated, but DataLog failed:",
+                    auditError
+                );
+            }
+
+
+            toast.success(
+                "Parcel service details updated successfully"
+            );
+
+            await fetchOrderData();
 
         } catch (error) {
-            console.error("Parcel service update failed:", error?.response?.data || error);
-            toast.error("Failed to update parcel service details");
+            console.error(
+                "Parcel service update failed:",
+                error?.response?.data || error
+            );
+
+            toast.error(
+                "Failed to update parcel service details"
+            );
         }
     };
 

@@ -5,6 +5,7 @@ import axios from 'axios';
 import Receipt from "./Reciept";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../services/auditService";
 
 
 const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }) => {
@@ -297,9 +298,12 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
 
             let updatePayload = {};
 
+            // ============================================================
+            // ACCOUNTS / ACCOUNTING
+            // Only fields originally empty / zero can be entered
+            // ============================================================
+
             if (isAccountsDepartment) {
-                // ACCOUNTS:
-                // Only allow fields that were originally empty / zero.
 
                 if (isShippingFieldEmpty(originalBoxDetails.actual_weight)) {
                     updatePayload.actual_weight = boxDetails.actual_weight;
@@ -319,8 +323,11 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                 }
 
             } else if (canEditShippingDetails) {
-                // CEO / COO / HR / ADMIN:
+
+                // ========================================================
+                // CEO / COO / HR / ADMIN
                 // Full edit access
+                // ========================================================
 
                 const formattedDate = boxDetails.postoffice_date
                     ? new Date(boxDetails.postoffice_date)
@@ -334,18 +341,73 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                 };
 
             } else {
-                alert("You do not have permission to edit shipping details.");
+
+                alert(
+                    "You do not have permission to edit shipping details."
+                );
+
                 return;
             }
 
-            // Nothing is available for Accounts to edit
+
+            // ============================================================
+            // ACCOUNTS - NOTHING AVAILABLE TO EDIT
+            // ============================================================
+
             if (
                 isAccountsDepartment &&
                 Object.keys(updatePayload).length === 0
             ) {
-                alert("All shipping details are already entered.");
+                alert(
+                    "All shipping details are already entered."
+                );
+
                 return;
             }
+
+
+            // ============================================================
+            // BUILD BEFORE / AFTER AUDIT DATA
+            // Only log fields being submitted
+            // ============================================================
+
+            const beforeData = {};
+            const afterData = {};
+
+            Object.keys(updatePayload).forEach((key) => {
+
+                const beforeValue =
+                    originalBoxDetails?.[key] ?? "";
+
+                const afterValue =
+                    updatePayload?.[key] ?? "";
+
+                // Only log actual changes
+                if (
+                    String(beforeValue ?? "") !==
+                    String(afterValue ?? "")
+                ) {
+                    beforeData[key] = beforeValue;
+                    afterData[key] = afterValue;
+                }
+            });
+
+
+            // ============================================================
+            // NO ACTUAL CHANGES
+            // ============================================================
+
+            if (Object.keys(afterData).length === 0) {
+
+                alert("No changes to update.");
+
+                return;
+            }
+
+
+            // ============================================================
+            // UPDATE WAREHOUSE DETAILS
+            // ============================================================
 
             const response = await axios.put(
                 `${import.meta.env.VITE_APP_KEY}warehouse/detail/${selectedBoxId}/`,
@@ -358,10 +420,81 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                 }
             );
 
-            if (response.status === 200 || response.status === 201) {
-                alert("Warehouse details updated successfully!");
+
+            // ============================================================
+            // UPDATE SUCCESS
+            // ============================================================
+
+            if (
+                response.status === 200 ||
+                response.status === 201
+            ) {
+
+                // ========================================================
+                // CREATE DATALOG
+                // ========================================================
+
+                try {
+
+                    const auditCreated = await createAuditLog({
+
+                        action:
+                            "warehouse_shipping_details_updated_website",
+
+                        beforeData: {
+                            warehouse_detail_id:
+                                selectedBoxId,
+
+                            ...beforeData,
+                        },
+
+                        afterData: {
+                            warehouse_detail_id:
+                                selectedBoxId,
+
+                            ...afterData,
+                        },
+
+                        orderId:
+                            Number(id),
+                    });
+
+
+                    if (!auditCreated) {
+
+                        console.error(
+                            "Warehouse details updated successfully, but DataLog creation failed."
+                        );
+                    }
+
+                } catch (auditError) {
+
+                    console.error(
+                        "Warehouse details updated successfully, but DataLog creation failed:",
+                        auditError
+                    );
+                }
+
+
+                // ========================================================
+                // SUCCESS MESSAGE
+                // ========================================================
+
+                alert(
+                    "Warehouse details updated successfully!"
+                );
+
+
+                // ========================================================
+                // CLOSE MODAL
+                // ========================================================
 
                 setModalOpen(false);
+
+
+                // ========================================================
+                // RESET FORM
+                // ========================================================
 
                 setBoxDetails({
                     actual_weight: "",
@@ -369,22 +502,31 @@ const ReceiptFormPage = ({ billingPhone, customerId, totalPayableAmountDisplay }
                     postoffice_date: "",
                 });
 
+
                 setOriginalBoxDetails({
                     actual_weight: "",
                     parcel_amount: "",
                     postoffice_date: "",
                 });
 
+
+                // ========================================================
+                // REFRESH DATA
+                // ========================================================
+
                 await fetchData();
             }
 
         } catch (error) {
+
             console.error(
                 "Failed to update warehouse details:",
                 error
             );
 
-            alert("Failed to update warehouse details.");
+            alert(
+                "Failed to update warehouse details."
+            );
         }
     };
 

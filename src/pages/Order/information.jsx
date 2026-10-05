@@ -16,6 +16,7 @@ import {
     Label,
     FormFeedback,
 } from 'reactstrap';
+import { createAuditLog } from "../../services/auditService";
 
 
 const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
@@ -89,21 +90,7 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
         setRole(role);
     }, []);
 
-    const logChanges = async (beforeObj, afterObj) => {
-        try {
-            await axios.post(
-                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                {
-                    order: Number(id),
-                    before_data: beforeObj,
-                    after_data: afterObj,
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-        } catch (err) {
-            console.warn("DataLog write failed:", err?.response?.data || err.message);
-        }
-    };
+
 
     const formik = useFormik({
         initialValues: {
@@ -170,36 +157,6 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                 return;
             }
 
-            // build delta snapshots for the log
-            const beforeDelta = {};
-            const afterDelta = {};
-
-            Object.keys(payload).forEach((k) => {
-                let beforeVal = original?.[k] ?? null;
-                let afterVal = values?.[k] ?? null;
-
-                // billing_address: convert ID → readable address
-                if (k === "billing_address") {
-                    const beforeObj = customerAddresses.find(
-                        a => a.id === Number(beforeVal)
-                    );
-                    const afterObj = customerAddresses.find(
-                        a => a.id === Number(afterVal)
-                    );
-
-                    beforeVal = beforeObj
-                        ? `${beforeObj.name}-${beforeObj.city}-${beforeObj.state}-${beforeObj.zipcode}-${beforeObj.address}-${beforeObj.phone}-${beforeObj.email}`
-                        : beforeVal;
-
-                    afterVal = afterObj
-                        ? `${afterObj.name}-${afterObj.city}-${afterObj.state}-${afterObj.zipcode}-${afterObj.address}-${afterObj.phone}-${afterObj.email}`
-                        : afterVal;
-                }
-
-                beforeDelta[k] = beforeVal;
-                afterDelta[k] = afterVal;
-            });
-
             // READ CURRENT ORDER VALUES
             const paymentMethod = localStorage.getItem("order_payment_method");
             const codStatus = localStorage.getItem("order_cod_status");
@@ -260,7 +217,29 @@ const UpdateInformationPage = ({ refreshData, hasUnallocated }) => {
                 });
 
                 // then send to datalog
-                await logChanges(beforeDelta, afterDelta);
+                try {
+
+                    const auditCreated = await createAuditLog({
+
+                        action: "order_information_updated_website",
+                        beforeData: beforeDelta,
+                        afterData: afterDelta,
+                        orderId: Number(id),
+                    });
+
+                    if (!auditCreated) {
+                        console.error(
+                            "Order updated successfully, but DataLog creation failed."
+                        );
+                    }
+
+                } catch (auditError) {
+
+                    console.error(
+                        "Order updated successfully, but DataLog creation failed:",
+                        auditError
+                    );
+                }
 
                 toast.success("Order information updated successfully!");
                 if (refreshData) refreshData();

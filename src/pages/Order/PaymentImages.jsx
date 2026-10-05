@@ -6,6 +6,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../services/auditService";
 
 const PaymentImages = ({ status }) => {
     const { id } = useParams(); // order id from route
@@ -29,30 +30,34 @@ const PaymentImages = ({ status }) => {
     const canModifyPaymentImages =
         canEditPaymentSlip && status !== "Shipped";
 
-    const writePaymentImageLog = async (action, data = {}) => {
-        const token = localStorage.getItem("token");
-
+    const writePaymentImageLog = async ({
+        action,
+        beforeData = {},
+        afterData = {},
+    }) => {
         try {
-            await axios.post(
-                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                {
-                    order: Number(id),
-                    before_data: data,
-                    after_data: {
-                        action: action,
-                    },
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
+            const auditCreated = await createAuditLog({
+                action,
+                beforeData,
+                afterData,
+                orderId: Number(id),
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Payment image operation succeeded, but DataLog creation failed."
+                );
+            }
+
+            return auditCreated;
+
+        } catch (auditError) {
+            console.error(
+                "Payment image operation succeeded, but DataLog creation failed:",
+                auditError
             );
-        } catch (err) {
-            console.warn(
-                "Payment Image DataLog failed:",
-                err?.response?.data || err.message
-            );
+
+            return false;
         }
     };
 
@@ -104,9 +109,17 @@ const PaymentImages = ({ status }) => {
                     }
                 }
             );
-            await writePaymentImageLog("Payment images uploaded", {
-                image_count: selectedFiles.length,
-                image_names: selectedFiles.map(file => file.name),
+            await writePaymentImageLog({
+                action: "payment_images_uploaded_website",
+
+                beforeData: {},
+
+                afterData: {
+                    image_count: selectedFiles.length,
+                    image_names: selectedFiles.map(file => file.name),
+                    image_sizes: selectedFiles.map(file => file.size),
+                    image_types: selectedFiles.map(file => file.type),
+                },
             });
 
             toast.success("Images uploaded successfully!");
@@ -121,23 +134,59 @@ const PaymentImages = ({ status }) => {
 
     // Delete image handler
     const handleDeleteImage = async (imageId) => {
-        if (!window.confirm("Are you sure you want to delete this image?")) return;
+        if (!window.confirm(
+            "Are you sure you want to delete this image?"
+        )) {
+            return;
+        }
 
         const token = localStorage.getItem('token');
+
+        // Get image information BEFORE deletion
+        const imageToDelete = images.find(
+            img => Number(img.id) === Number(imageId)
+        );
+
+        const deletedImageData = {
+            image_id: imageId,
+            image: imageToDelete?.image || null,
+        };
+
         try {
+
             await axios.delete(
                 `${import.meta.env.VITE_APP_KEY}order/payment/images/delete/${imageId}/`,
-                { headers: { 'Authorization': `Bearer ${token}` } }
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
             );
 
-            await writePaymentImageLog("Payment image removed", {
-                image_id: imageId,
+            await writePaymentImageLog({
+                action: "payment_image_deleted_website",
+
+                beforeData: deletedImageData,
+
+                afterData: {},
             });
 
-            toast.success('Image deleted successfully!');
+            toast.success(
+                'Image deleted successfully!'
+            );
+
             fetchImages();
+
         } catch (error) {
-            toast.error('Image deletion failed!');
+
+            console.error(
+                "Payment image deletion failed:",
+                error
+            );
+
+            toast.error(
+                'Image deletion failed!'
+            );
         }
     };
 

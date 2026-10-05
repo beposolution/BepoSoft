@@ -7,6 +7,7 @@ import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../services/auditService";
 
 const validationSchema = Yup.object({
     received_at: Yup.date().required('Date is required'),
@@ -58,44 +59,197 @@ const ReceiptFormPage = ({ toggleReciptModal, refreshParentData }) => {
 
     const handleSubmit = async (values, { resetForm }) => {
         setIsSubmitting(true);
+
         try {
             const token = localStorage.getItem('token');
-            const headers = { Authorization: `Bearer ${token}` };
 
-            const formattedDate = values.received_at || getCurrentDate();
-            const selectedBank = banks.find(bank => bank.id === values.bank);
-            localStorage.setItem('selectedBank', selectedBank ? selectedBank.name : '');
+            const headers = {
+                Authorization: `Bearer ${token}`
+            };
 
-            // Optionally, modify orderItems here if needed
-            const updatedOrderItems = orderItems.map(item => ({
-                ...item,
-                status: 'processed', // Example: mark items as processed after receipt is submitted
-            }));
+            const formattedDate =
+                values.received_at || getCurrentDate();
 
-            // Submit the receipt data along with order items
-            const response = await axios.post(
-                `${import.meta.env.VITE_APP_KEY}payment/${id}/reciept/`,
-                { ...values, received_at: formattedDate, id, orderItems: updatedOrderItems },
-                { headers }
+            const selectedBank = banks.find(
+                bank => String(bank.id) === String(values.bank)
             );
 
-            if (response.status === 200 || response.status === 201) {
-                alert('Receipt and order items updated successfully');
+            localStorage.setItem(
+                'selectedBank',
+                selectedBank ? selectedBank.name : ''
+            );
+
+
+            // ============================================================
+            // UPDATE ORDER ITEMS
+            // ============================================================
+
+            const updatedOrderItems = orderItems.map(item => ({
+                ...item,
+                status: 'processed',
+            }));
+
+
+            // ============================================================
+            // CREATE RECEIPT
+            // ============================================================
+
+            const response = await axios.post(
+                `${import.meta.env.VITE_APP_KEY}payment/${id}/reciept/`,
+                {
+                    ...values,
+                    received_at: formattedDate,
+                    id,
+                    orderItems: updatedOrderItems
+                },
+                {
+                    headers
+                }
+            );
+
+
+            // ============================================================
+            // RECEIPT CREATED SUCCESSFULLY
+            // ============================================================
+
+            if (
+                response.status === 200 ||
+                response.status === 201
+            ) {
+
+                // ========================================================
+                // CREATE DATALOG
+                // ========================================================
+
+                try {
+
+                    const receiptData = response?.data?.data || response?.data || {};
+
+                    const afterData = {
+                        receipt_id:
+                            receiptData?.id || null,
+
+                        payment_receipt:
+                            receiptData?.payment_receipt || null,
+
+                        received_at:
+                            formattedDate,
+
+                        amount:
+                            values.amount,
+
+                        bank_id:
+                            values.bank,
+
+                        bank_name:
+                            selectedBank?.name || "",
+
+                        transaction_id:
+                            values.transactionID,
+
+                        created_by:
+                            values.createdBy,
+
+                        remark:
+                            values.remark || "",
+                    };
+
+
+                    const auditCreated = await createAuditLog({
+
+                        action:
+                            "payment_receipt_created_website",
+
+                        // This is CREATE, so there is no previous receipt
+                        beforeData: {},
+
+                        afterData: afterData,
+
+                        // Link DataLog to this order
+                        orderId:
+                            Number(id),
+                    });
+
+
+                    if (!auditCreated) {
+
+                        console.error(
+                            "Receipt created successfully, but DataLog creation failed."
+                        );
+                    }
+
+                } catch (auditError) {
+
+                    console.error(
+                        "Receipt created successfully, but DataLog creation failed:",
+                        auditError
+                    );
+                }
+
+
+                // ========================================================
+                // SUCCESS
+                // ========================================================
+
+                alert(
+                    'Receipt and order items updated successfully'
+                );
+
+
+                // ========================================================
+                // RESET FORM
+                // ========================================================
+
                 resetForm();
+
+
+                // ========================================================
+                // CLOSE RECEIPT MODAL
+                // ========================================================
+
                 toggleReciptModal();
-                await refreshParentData();
+
+
+                // ========================================================
+                // REFRESH PARENT PAGE
+                // ========================================================
+
+                if (refreshParentData) {
+                    await refreshParentData();
+                }
+
             } else {
-                throw new Error('Unexpected response status');
+
+                throw new Error(
+                    'Unexpected response status'
+                );
             }
+
         } catch (error) {
+
             if (error.response) {
-                alert(`Failed to submit form: ${error.response.data.message || 'Please try again later.'}`);
+
+                alert(
+                    `Failed to submit form: ${error.response.data.message ||
+                    'Please try again later.'
+                    }`
+                );
+
             } else if (error.request) {
-                alert('Network error: Please check your internet connection and try again.');
+
+                alert(
+                    'Network error: Please check your internet connection and try again.'
+                );
+
             } else {
-                alert('Failed to submit form. Please try again.');
+
+                alert(
+                    'Failed to submit form. Please try again.'
+                );
             }
+
         } finally {
+
             setIsSubmitting(false);
         }
     };
@@ -223,6 +377,7 @@ const ReceiptFormPage = ({ toggleReciptModal, refreshParentData }) => {
                                         onBlur={handleBlur}
                                         className={`border-secondary ${errors.remark && touched.remark ? 'is-invalid' : ''}`}
                                         placeholder="Enter any additional remarks here"
+                                        required
                                     />
                                     {errors.remark && touched.remark && (
                                         <div className="invalid-feedback">{errors.remark}</div>

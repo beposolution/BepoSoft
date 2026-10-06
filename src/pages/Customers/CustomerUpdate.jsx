@@ -7,6 +7,7 @@ import axios from 'axios';
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../services/auditService";
 
 
 const FormLayouts = () => {
@@ -176,29 +177,7 @@ const FormLayouts = () => {
         return { before, after };
     };
 
-    const writeCustomerUpdateLog = async (customerId, beforeData, afterData, customerName) => {
-        if (Object.keys(beforeData).length === 0) return; // nothing changed
 
-        try {
-            await axios.post(
-                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                {
-                    customer: Number(customerId),
-                    customer_name: customerName || "",   // always send customer name
-                    before_data: beforeData,
-                    after_data: afterData,
-                },
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
-        } catch (err) {
-            console.warn(
-                "Customer update DataLog failed:",
-                err?.response?.data || err.message
-            );
-        }
-    };
 
     const formik = useFormik({
         initialValues: {
@@ -268,8 +247,26 @@ const FormLayouts = () => {
                     }
                 );
 
-                // WRITE DATALOG ONLY IF CHANGED
-                await writeCustomerUpdateLog(id, before, after, payload.name || customerData?.name);
+                if (Object.keys(before).length > 0) {
+                    try {
+                        const auditCreated = await createAuditLog({
+                            action: "customer_updated_website",
+                            beforeData: before,
+                            afterData: after,
+                        });
+
+                        if (!auditCreated) {
+                            console.error(
+                                "Customer updated successfully, but DataLog creation failed."
+                            );
+                        }
+                    } catch (auditError) {
+                        console.error(
+                            "Customer updated successfully, but DataLog creation failed:",
+                            auditError
+                        );
+                    }
+                }
 
                 toast.success("Customer data updated successfully!");
 

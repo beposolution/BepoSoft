@@ -21,6 +21,11 @@ const DataLog = () => {
   const [searchInput, setSearchInput] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [selectedStaff, setSelectedStaff] = useState("");
+  const [staffSearch, setStaffSearch] = useState("");
+  const [staffOptions, setStaffOptions] = useState([]);
+  const [staffLoading, setStaffLoading] = useState(false);
+  const [showStaffDropdown, setShowStaffDropdown] = useState(false);
 
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("active");
@@ -32,12 +37,54 @@ const DataLog = () => {
 
   document.title = "Data Log Details | Beposoft";
 
+  const fetchStaffs = async (searchValue = "") => {
+    try {
+      setStaffLoading(true);
+
+      const params = new URLSearchParams();
+      params.append("page", "1");
+      params.append("page_size", "50");
+
+      if (searchValue.trim()) {
+        params.append("search", searchValue.trim());
+      }
+
+      const { data } = await axios.get(
+        `${import.meta.env.VITE_APP_KEY}get/staffs/?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const staffData = data?.results?.data || [];
+
+      setStaffOptions(staffData);
+    } catch (error) {
+      console.error("Error fetching staffs:", error);
+      setStaffOptions([]);
+    } finally {
+      setStaffLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!showStaffDropdown) return;
+
+    const timer = setTimeout(() => {
+      fetchStaffs(staffSearch);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [staffSearch, showStaffDropdown]);
+
   const parseLooseJSON = (s) => {
     if (typeof s !== "string") return null;
 
     try {
       return JSON.parse(s);
-    } catch (_) {}
+    } catch (_) { }
 
     try {
       let t = s.trim();
@@ -101,11 +148,15 @@ const DataLog = () => {
       }
 
       if (startDate) {
-        params.append("start_date", startDate);
+        params.append("from", startDate);
       }
 
       if (endDate) {
-        params.append("end_date", endDate);
+        params.append("to", endDate);
+      }
+
+      if (selectedStaff) {
+        params.append("user", selectedStaff);
       }
 
       const { data } = await axios.get(
@@ -144,11 +195,11 @@ const DataLog = () => {
     if (token) {
       fetchLogs();
     }
-  }, [token, currentPage, searchQuery, startDate, endDate]);
+  }, [token, currentPage, searchQuery, startDate, endDate, selectedStaff]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, startDate, endDate]);
+  }, [searchQuery, startDate, endDate, selectedStaff]);
 
   const formatDateTime = (iso) => {
     try {
@@ -257,9 +308,9 @@ const DataLog = () => {
       const day = isNaN(dateObj.getTime())
         ? "Invalid"
         : `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(
-            2,
-            "0"
-          )}-${String(dateObj.getDate()).padStart(2, "0")}`;
+          2,
+          "0"
+        )}-${String(dateObj.getDate()).padStart(2, "0")}`;
 
       byDateMap.set(day, (byDateMap.get(day) || 0) + 1);
     });
@@ -277,462 +328,921 @@ const DataLog = () => {
     };
   };
 
-  const exportToExcel = () => {
-    const rows = logs;
+  const exportToExcel = async () => {
+    try {
+      toast.info("Preparing complete Excel export...");
 
-    if (!rows || rows.length === 0) {
-      toast.warning("No data available to export");
-      return;
-    }
+      // ============================================================
+      // FETCH ALL PAGINATED DATA FROM BACKEND
+      // ============================================================
 
-    toast.info("Exporting current page data only");
+      let allLogs = [];
+      let page = 1;
+      let hasNextPage = true;
 
-    const wb = XLSX.utils.book_new();
+      while (hasNextPage) {
+        const params = new URLSearchParams();
 
-    const borderThin = {
-      top: { style: "thin", color: { rgb: "CBD5E1" } },
-      bottom: { style: "thin", color: { rgb: "CBD5E1" } },
-      left: { style: "thin", color: { rgb: "CBD5E1" } },
-      right: { style: "thin", color: { rgb: "CBD5E1" } },
-    };
+        params.append("page", page);
+        params.append("page_size", perPageData);
 
-    const mainTitleStyle = {
-      font: {
-        bold: true,
-        sz: 18,
-        color: { rgb: "111827" },
-      },
-      alignment: {
-        horizontal: "center",
-        vertical: "center",
-      },
-      fill: {
-        fgColor: { rgb: "EAF0FB" },
-      },
-      border: borderThin,
-    };
+        // Keep current general search filter
+        if (searchQuery.trim()) {
+          params.append("search", searchQuery.trim());
+        }
 
-    const subTitleStyle = {
-      font: {
-        bold: true,
-        sz: 11,
-        color: { rgb: "475569" },
-      },
-      alignment: {
-        horizontal: "center",
-        vertical: "center",
-      },
-      fill: {
-        fgColor: { rgb: "F3F6FB" },
-      },
-      border: borderThin,
-    };
+        // Keep current start date filter
+        if (startDate) {
+          params.append("from", startDate);
+        }
 
-    const headerStyle = {
-      font: {
-        bold: true,
-        sz: 11,
-        color: { rgb: "1E293B" },
-      },
-      alignment: {
-        horizontal: "center",
-        vertical: "center",
-        wrapText: true,
-      },
-      fill: {
-        fgColor: { rgb: "EAF0FB" },
-      },
-      border: borderThin,
-    };
+        // Keep current end date filter
+        if (endDate) {
+          params.append("to", endDate);
+        }
 
-    const oldHeaderStyle = {
-      font: {
-        bold: true,
-        sz: 11,
-        color: { rgb: "991B1B" },
-      },
-      alignment: {
-        horizontal: "center",
-        vertical: "center",
-        wrapText: true,
-      },
-      fill: {
-        fgColor: { rgb: "FEE2E2" },
-      },
-      border: borderThin,
-    };
+        // Keep current staff filter
+        if (selectedStaff) {
+          params.append("user", selectedStaff);
+        }
 
-    const newHeaderStyle = {
-      font: {
-        bold: true,
-        sz: 11,
-        color: { rgb: "166534" },
-      },
-      alignment: {
-        horizontal: "center",
-        vertical: "center",
-        wrapText: true,
-      },
-      fill: {
-        fgColor: { rgb: "DCFCE7" },
-      },
-      border: borderThin,
-    };
+        const { data } = await axios.get(
+          `${import.meta.env.VITE_APP_KEY}datalog/?${params.toString()}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-    const normalCellStyle = {
-      font: {
-        bold: true,
-        sz: 10,
-        color: { rgb: "0F172A" },
-      },
-      alignment: {
-        vertical: "top",
-        wrapText: true,
-      },
-      border: borderThin,
-    };
+        const pageLogs = Array.isArray(data)
+          ? data
+          : data.results || [];
 
-    const numberCellStyle = {
-      font: {
-        bold: true,
-        sz: 10,
-        color: { rgb: "334155" },
-      },
-      alignment: {
-        horizontal: "center",
-        vertical: "top",
-        wrapText: true,
-      },
-      border: borderThin,
-    };
+        const normalizedPageLogs = pageLogs.map((log) => {
+          const before = unwrapDataIfLoose(
+            normalizeAny(log.before_data)
+          );
 
-    const staffCellStyle = {
-      font: {
-        bold: true,
-        sz: 10,
-        color: { rgb: "1D4ED8" },
-      },
-      alignment: {
-        vertical: "top",
-        wrapText: true,
-      },
-      fill: {
-        fgColor: { rgb: "DBEAFE" },
-      },
-      border: borderThin,
-    };
+          const after = unwrapDataIfLoose(
+            normalizeAny(log.after_data)
+          );
 
-    const invoiceCellStyle = {
-      font: {
-        bold: true,
-        sz: 10,
-        color: { rgb: "0F172A" },
-      },
-      alignment: {
-        horizontal: "center",
-        vertical: "top",
-        wrapText: true,
-      },
-      fill: {
-        fgColor: { rgb: "F1F5F9" },
-      },
-      border: borderThin,
-    };
+          return {
+            ...log,
+            before_data: before,
+            after_data: after,
+          };
+        });
 
-    const oldDataStyle = {
-      font: {
-        bold: true,
-        sz: 10,
-        color: { rgb: "991B1B" },
-      },
-      alignment: {
-        vertical: "top",
-        wrapText: true,
-      },
-      fill: {
-        fgColor: { rgb: "FFF7F7" },
-      },
-      border: borderThin,
-    };
+        allLogs = [...allLogs, ...normalizedPageLogs];
 
-    const newDataStyle = {
-      font: {
-        bold: true,
-        sz: 10,
-        color: { rgb: "166534" },
-      },
-      alignment: {
-        vertical: "top",
-        wrapText: true,
-      },
-      fill: {
-        fgColor: { rgb: "F0FDF4" },
-      },
-      border: borderThin,
-    };
-
-    const dateCellStyle = {
-      font: {
-        bold: true,
-        sz: 10,
-        color: { rgb: "334155" },
-      },
-      alignment: {
-        horizontal: "center",
-        vertical: "top",
-        wrapText: true,
-      },
-      fill: {
-        fgColor: { rgb: "F8FAFC" },
-      },
-      border: borderThin,
-    };
-
-    const sectionStyle = {
-      font: {
-        bold: true,
-        sz: 12,
-        color: { rgb: "FFFFFF" },
-      },
-      alignment: {
-        horizontal: "center",
-        vertical: "center",
-      },
-      fill: {
-        fgColor: { rgb: "1D4ED8" },
-      },
-      border: borderThin,
-    };
-
-    const formatExcelValue = (value) => {
-      if (value == null) return "-";
-
-      if (Array.isArray(value)) {
-        return value.map((item) => formatExcelValue(item)).join(", ");
+        // DRF pagination
+        if (data.next) {
+          page += 1;
+        } else {
+          hasNextPage = false;
+        }
       }
 
-      if (typeof value === "object") {
-        return Object.entries(value)
-          .map(([key, val]) => `${key}: ${formatExcelValue(val)}`)
+      // ============================================================
+      // CHECK DATA
+      // ============================================================
+
+      if (!allLogs || allLogs.length === 0) {
+        toast.warning("No data available to export");
+        return;
+      }
+
+      const rows = allLogs;
+
+      toast.info(`Exporting ${rows.length} records...`);
+
+      // ============================================================
+      // CREATE WORKBOOK
+      // ============================================================
+
+      const wb = XLSX.utils.book_new();
+
+      const borderThin = {
+        top: {
+          style: "thin",
+          color: {
+            rgb: "CBD5E1",
+          },
+        },
+        bottom: {
+          style: "thin",
+          color: {
+            rgb: "CBD5E1",
+          },
+        },
+        left: {
+          style: "thin",
+          color: {
+            rgb: "CBD5E1",
+          },
+        },
+        right: {
+          style: "thin",
+          color: {
+            rgb: "CBD5E1",
+          },
+        },
+      };
+
+      // ============================================================
+      // STYLES
+      // ============================================================
+
+      const mainTitleStyle = {
+        font: {
+          bold: true,
+          sz: 18,
+          color: {
+            rgb: "111827",
+          },
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+        },
+        fill: {
+          fgColor: {
+            rgb: "EAF0FB",
+          },
+        },
+        border: borderThin,
+      };
+
+      const subTitleStyle = {
+        font: {
+          bold: true,
+          sz: 11,
+          color: {
+            rgb: "475569",
+          },
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+        },
+        fill: {
+          fgColor: {
+            rgb: "F3F6FB",
+          },
+        },
+        border: borderThin,
+      };
+
+      const headerStyle = {
+        font: {
+          bold: true,
+          sz: 11,
+          color: {
+            rgb: "1E293B",
+          },
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+          wrapText: true,
+        },
+        fill: {
+          fgColor: {
+            rgb: "EAF0FB",
+          },
+        },
+        border: borderThin,
+      };
+
+      const oldHeaderStyle = {
+        font: {
+          bold: true,
+          sz: 11,
+          color: {
+            rgb: "991B1B",
+          },
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+          wrapText: true,
+        },
+        fill: {
+          fgColor: {
+            rgb: "FEE2E2",
+          },
+        },
+        border: borderThin,
+      };
+
+      const newHeaderStyle = {
+        font: {
+          bold: true,
+          sz: 11,
+          color: {
+            rgb: "166534",
+          },
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+          wrapText: true,
+        },
+        fill: {
+          fgColor: {
+            rgb: "DCFCE7",
+          },
+        },
+        border: borderThin,
+      };
+
+      const normalCellStyle = {
+        font: {
+          bold: true,
+          sz: 10,
+          color: {
+            rgb: "0F172A",
+          },
+        },
+        alignment: {
+          vertical: "top",
+          wrapText: true,
+        },
+        border: borderThin,
+      };
+
+      const numberCellStyle = {
+        font: {
+          bold: true,
+          sz: 10,
+          color: {
+            rgb: "334155",
+          },
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "top",
+          wrapText: true,
+        },
+        border: borderThin,
+      };
+
+      const staffCellStyle = {
+        font: {
+          bold: true,
+          sz: 10,
+          color: {
+            rgb: "1D4ED8",
+          },
+        },
+        alignment: {
+          vertical: "top",
+          wrapText: true,
+        },
+        fill: {
+          fgColor: {
+            rgb: "DBEAFE",
+          },
+        },
+        border: borderThin,
+      };
+
+      const invoiceCellStyle = {
+        font: {
+          bold: true,
+          sz: 10,
+          color: {
+            rgb: "0F172A",
+          },
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "top",
+          wrapText: true,
+        },
+        fill: {
+          fgColor: {
+            rgb: "F1F5F9",
+          },
+        },
+        border: borderThin,
+      };
+
+      const oldDataStyle = {
+        font: {
+          bold: true,
+          sz: 10,
+          color: {
+            rgb: "991B1B",
+          },
+        },
+        alignment: {
+          vertical: "top",
+          wrapText: true,
+        },
+        fill: {
+          fgColor: {
+            rgb: "FFF7F7",
+          },
+        },
+        border: borderThin,
+      };
+
+      const newDataStyle = {
+        font: {
+          bold: true,
+          sz: 10,
+          color: {
+            rgb: "166534",
+          },
+        },
+        alignment: {
+          vertical: "top",
+          wrapText: true,
+        },
+        fill: {
+          fgColor: {
+            rgb: "F0FDF4",
+          },
+        },
+        border: borderThin,
+      };
+
+      const dateCellStyle = {
+        font: {
+          bold: true,
+          sz: 10,
+          color: {
+            rgb: "334155",
+          },
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "top",
+          wrapText: true,
+        },
+        fill: {
+          fgColor: {
+            rgb: "F8FAFC",
+          },
+        },
+        border: borderThin,
+      };
+
+      const sectionStyle = {
+        font: {
+          bold: true,
+          sz: 12,
+          color: {
+            rgb: "FFFFFF",
+          },
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+        },
+        fill: {
+          fgColor: {
+            rgb: "1D4ED8",
+          },
+        },
+        border: borderThin,
+      };
+
+      // ============================================================
+      // FORMAT EXCEL VALUES
+      // ============================================================
+
+      const formatExcelValue = (value) => {
+        if (value == null) {
+          return "-";
+        }
+
+        if (Array.isArray(value)) {
+          return value
+            .map((item) => formatExcelValue(item))
+            .join(", ");
+        }
+
+        if (typeof value === "object") {
+          return Object.entries(value)
+            .map(
+              ([key, val]) =>
+                `${key}: ${formatExcelValue(val)}`
+            )
+            .join("\n");
+        }
+
+        return String(value);
+      };
+
+      const formatDataBlock = (data) => {
+        const safeData = safeObj(data);
+
+        if (
+          !safeData ||
+          typeof safeData !== "object" ||
+          Array.isArray(safeData)
+        ) {
+          return formatExcelValue(safeData);
+        }
+
+        const entries = Object.entries(safeData);
+
+        if (entries.length === 0) {
+          return "-";
+        }
+
+        return entries
+          .map(
+            ([key, value]) =>
+              `${key}: ${formatExcelValue(value)}`
+          )
           .join("\n");
-      }
+      };
 
-      return String(value);
-    };
+      // ============================================================
+      // MAIN DATA SHEET
+      // ============================================================
 
-    const formatDataBlock = (data) => {
-      const safeData = safeObj(data);
+      const excelData = [];
 
-      if (!safeData || typeof safeData !== "object" || Array.isArray(safeData)) {
-        return formatExcelValue(safeData);
-      }
-
-      const entries = Object.entries(safeData);
-
-      if (entries.length === 0) {
-        return "-";
-      }
-
-      return entries
-        .map(([key, value]) => `${key}: ${formatExcelValue(value)}`)
-        .join("\n");
-    };
-
-    const excelData = [];
-
-    excelData.push(["Data Log Details", "", "", "", "", ""]);
-    excelData.push([
-      "Compact audit table with before and after values",
-      "",
-      "",
-      "",
-      "",
-      "",
-    ]);
-    excelData.push([
-      `Total Logs: ${totalCount}`,
-      "",
-      `Current Page Showing: ${logs.length}`,
-      "",
-      `Exported: ${formatDateTime(new Date().toISOString())}`,
-      "",
-    ]);
-    excelData.push([]);
-    excelData.push(["#", "Staff", "Invoice", "Old Data", "Changed To", "Date & Time"]);
-
-    rows.forEach((log, index) => {
       excelData.push([
-        (currentPage - 1) * perPageData + index + 1,
-        log.user_name || "-",
-        log.order_name || "-",
-        formatDataBlock(log.before_data),
-        formatDataBlock(log.after_data),
-        formatDateTime(log.created_at),
+        "Data Log Details",
+        "",
+        "",
+        "",
+        "",
+        "",
       ]);
-    });
 
-    const ws = XLSX.utils.aoa_to_sheet(excelData);
+      excelData.push([
+        "Complete audit table with before and after values",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ]);
 
-    ws["!merges"] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 1 } },
-      { s: { r: 2, c: 2 }, e: { r: 2, c: 3 } },
-      { s: { r: 2, c: 4 }, e: { r: 2, c: 5 } },
-    ];
+      excelData.push([
+        `Total Logs: ${rows.length}`,
+        "",
+        `Filtered Total: ${totalCount}`,
+        "",
+        `Exported: ${formatDateTime(
+          new Date().toISOString()
+        )}`,
+        "",
+      ]);
 
-    ws["!cols"] = [
-      { wch: 8 },
-      { wch: 26 },
-      { wch: 18 },
-      { wch: 55 },
-      { wch: 55 },
-      { wch: 24 },
-    ];
+      excelData.push([]);
 
-    ws["!rows"] = [
-      { hpt: 30 },
-      { hpt: 24 },
-      { hpt: 26 },
-      { hpt: 8 },
-      { hpt: 30 },
-      ...rows.map((log) => {
-        const beforeText = formatDataBlock(log.before_data);
-        const afterText = formatDataBlock(log.after_data);
+      excelData.push([
+        "#",
+        "Staff",
+        "Invoice",
+        "Old Data",
+        "Changed To",
+        "Date & Time",
+      ]);
 
-        const beforeLines = beforeText.split("\n").length;
-        const afterLines = afterText.split("\n").length;
-
-        const maxLines = Math.max(beforeLines, afterLines, 2);
-
-        return {
-          hpt: Math.min(Math.max(maxLines * 18, 48), 220),
-        };
-      }),
-    ];
-
-    const range = XLSX.utils.decode_range(ws["!ref"]);
-
-    for (let row = range.s.r; row <= range.e.r; row++) {
-      for (let col = range.s.c; col <= range.e.c; col++) {
-        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-
-        if (!ws[cellAddress]) {
-          ws[cellAddress] = { t: "s", v: "" };
-        }
-
-        if (row === 0) {
-          ws[cellAddress].s = mainTitleStyle;
-        } else if (row === 1) {
-          ws[cellAddress].s = subTitleStyle;
-        } else if (row === 2) {
-          ws[cellAddress].s = sectionStyle;
-        } else if (row === 4) {
-          if (col === 3) {
-            ws[cellAddress].s = oldHeaderStyle;
-          } else if (col === 4) {
-            ws[cellAddress].s = newHeaderStyle;
-          } else {
-            ws[cellAddress].s = headerStyle;
-          }
-        } else if (row >= 5) {
-          if (col === 0) {
-            ws[cellAddress].s = numberCellStyle;
-          } else if (col === 1) {
-            ws[cellAddress].s = staffCellStyle;
-          } else if (col === 2) {
-            ws[cellAddress].s = invoiceCellStyle;
-          } else if (col === 3) {
-            ws[cellAddress].s = oldDataStyle;
-          } else if (col === 4) {
-            ws[cellAddress].s = newDataStyle;
-          } else if (col === 5) {
-            ws[cellAddress].s = dateCellStyle;
-          } else {
-            ws[cellAddress].s = normalCellStyle;
-          }
-        }
-      }
-    }
-
-    ws["!freeze"] = {
-      xSplit: 0,
-      ySplit: 5,
-    };
-
-    XLSX.utils.book_append_sheet(wb, ws, "Data Log Details");
-
-    const { byStaff, byDate } = buildSummarySheets(rows);
-
-    const createSummarySheet = (title, subtitle, data, headers) => {
-      const sheetData = [];
-
-      sheetData.push([title, ""]);
-      sheetData.push([subtitle, ""]);
-      sheetData.push([]);
-      sheetData.push(headers);
-
-      data.forEach((item) => {
-        sheetData.push(headers.map((header) => item[header] ?? "-"));
+      rows.forEach((log, index) => {
+        excelData.push([
+          index + 1,
+          log.user_name || "-",
+          log.order_name || "-",
+          formatDataBlock(log.before_data),
+          formatDataBlock(log.after_data),
+          formatDateTime(log.created_at),
+        ]);
       });
 
-      const sheet = XLSX.utils.aoa_to_sheet(sheetData);
+      const ws = XLSX.utils.aoa_to_sheet(excelData);
 
-      sheet["!merges"] = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } },
-        { s: { r: 1, c: 0 }, e: { r: 1, c: headers.length - 1 } },
+      // ============================================================
+      // MERGES
+      // ============================================================
+
+      ws["!merges"] = [
+        {
+          s: {
+            r: 0,
+            c: 0,
+          },
+          e: {
+            r: 0,
+            c: 5,
+          },
+        },
+        {
+          s: {
+            r: 1,
+            c: 0,
+          },
+          e: {
+            r: 1,
+            c: 5,
+          },
+        },
+        {
+          s: {
+            r: 2,
+            c: 0,
+          },
+          e: {
+            r: 2,
+            c: 1,
+          },
+        },
+        {
+          s: {
+            r: 2,
+            c: 2,
+          },
+          e: {
+            r: 2,
+            c: 3,
+          },
+        },
+        {
+          s: {
+            r: 2,
+            c: 4,
+          },
+          e: {
+            r: 2,
+            c: 5,
+          },
+        },
       ];
 
-      sheet["!cols"] = headers.map(() => ({ wch: 28 }));
+      // ============================================================
+      // COLUMN WIDTHS
+      // ============================================================
 
-      const summaryRange = XLSX.utils.decode_range(sheet["!ref"]);
+      ws["!cols"] = [
+        {
+          wch: 8,
+        },
+        {
+          wch: 26,
+        },
+        {
+          wch: 18,
+        },
+        {
+          wch: 55,
+        },
+        {
+          wch: 55,
+        },
+        {
+          wch: 24,
+        },
+      ];
 
-      for (let row = summaryRange.s.r; row <= summaryRange.e.r; row++) {
-        for (let col = summaryRange.s.c; col <= summaryRange.e.c; col++) {
-          const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+      // ============================================================
+      // ROW HEIGHTS
+      // ============================================================
 
-          if (!sheet[cellAddress]) {
-            sheet[cellAddress] = { t: "s", v: "" };
+      ws["!rows"] = [
+        {
+          hpt: 30,
+        },
+        {
+          hpt: 24,
+        },
+        {
+          hpt: 26,
+        },
+        {
+          hpt: 8,
+        },
+        {
+          hpt: 30,
+        },
+
+        ...rows.map((log) => {
+          const beforeText = formatDataBlock(
+            log.before_data
+          );
+
+          const afterText = formatDataBlock(
+            log.after_data
+          );
+
+          const beforeLines =
+            beforeText.split("\n").length;
+
+          const afterLines =
+            afterText.split("\n").length;
+
+          const maxLines = Math.max(
+            beforeLines,
+            afterLines,
+            2
+          );
+
+          return {
+            hpt: Math.min(
+              Math.max(maxLines * 18, 48),
+              220
+            ),
+          };
+        }),
+      ];
+
+      // ============================================================
+      // APPLY STYLES
+      // ============================================================
+
+      const range = XLSX.utils.decode_range(
+        ws["!ref"]
+      );
+
+      for (
+        let row = range.s.r;
+        row <= range.e.r;
+        row++
+      ) {
+        for (
+          let col = range.s.c;
+          col <= range.e.c;
+          col++
+        ) {
+          const cellAddress =
+            XLSX.utils.encode_cell({
+              r: row,
+              c: col,
+            });
+
+          if (!ws[cellAddress]) {
+            ws[cellAddress] = {
+              t: "s",
+              v: "",
+            };
           }
 
           if (row === 0) {
-            sheet[cellAddress].s = mainTitleStyle;
+            ws[cellAddress].s = mainTitleStyle;
           } else if (row === 1) {
-            sheet[cellAddress].s = subTitleStyle;
-          } else if (row === 3) {
-            sheet[cellAddress].s = headerStyle;
-          } else if (row >= 4) {
-            sheet[cellAddress].s = normalCellStyle;
+            ws[cellAddress].s = subTitleStyle;
+          } else if (row === 2) {
+            ws[cellAddress].s = sectionStyle;
+          } else if (row === 4) {
+            if (col === 3) {
+              ws[cellAddress].s =
+                oldHeaderStyle;
+            } else if (col === 4) {
+              ws[cellAddress].s =
+                newHeaderStyle;
+            } else {
+              ws[cellAddress].s =
+                headerStyle;
+            }
+          } else if (row >= 5) {
+            if (col === 0) {
+              ws[cellAddress].s =
+                numberCellStyle;
+            } else if (col === 1) {
+              ws[cellAddress].s =
+                staffCellStyle;
+            } else if (col === 2) {
+              ws[cellAddress].s =
+                invoiceCellStyle;
+            } else if (col === 3) {
+              ws[cellAddress].s =
+                oldDataStyle;
+            } else if (col === 4) {
+              ws[cellAddress].s =
+                newDataStyle;
+            } else if (col === 5) {
+              ws[cellAddress].s =
+                dateCellStyle;
+            } else {
+              ws[cellAddress].s =
+                normalCellStyle;
+            }
           }
         }
       }
 
-      return sheet;
-    };
+      // ============================================================
+      // FREEZE HEADER
+      // ============================================================
 
-    const staffSheet = createSummarySheet(
-      "Summary by Staff",
-      "Log count grouped by staff for current page only",
-      byStaff,
-      ["Staff", "Log Count"]
-    );
+      ws["!freeze"] = {
+        xSplit: 0,
+        ySplit: 5,
+      };
 
-    const dateSheet = createSummarySheet(
-      "Summary by Date",
-      "Log count grouped by date for current page only",
-      byDate,
-      ["Date", "Log Count"]
-    );
+      XLSX.utils.book_append_sheet(
+        wb,
+        ws,
+        "Data Log Details"
+      );
 
-    XLSX.utils.book_append_sheet(wb, staffSheet, "Summary by Staff");
-    XLSX.utils.book_append_sheet(wb, dateSheet, "Summary by Date");
+      // ============================================================
+      // SUMMARY SHEETS
+      // ============================================================
 
-    const datePart =
-      startDate || endDate
-        ? `${startDate || "start"}_to_${endDate || "end"}`
-        : "All";
+      const {
+        byStaff,
+        byDate,
+      } = buildSummarySheets(rows);
 
-    XLSX.writeFile(wb, `DataLog_Page_${currentPage}_${datePart}.xlsx`);
+      const createSummarySheet = (
+        title,
+        subtitle,
+        data,
+        headers
+      ) => {
+        const sheetData = [];
+
+        sheetData.push([
+          title,
+          "",
+        ]);
+
+        sheetData.push([
+          subtitle,
+          "",
+        ]);
+
+        sheetData.push([]);
+
+        sheetData.push(headers);
+
+        data.forEach((item) => {
+          sheetData.push(
+            headers.map(
+              (header) =>
+                item[header] ?? "-"
+            )
+          );
+        });
+
+        const sheet =
+          XLSX.utils.aoa_to_sheet(
+            sheetData
+          );
+
+        sheet["!merges"] = [
+          {
+            s: {
+              r: 0,
+              c: 0,
+            },
+            e: {
+              r: 0,
+              c:
+                headers.length - 1,
+            },
+          },
+          {
+            s: {
+              r: 1,
+              c: 0,
+            },
+            e: {
+              r: 1,
+              c:
+                headers.length - 1,
+            },
+          },
+        ];
+
+        sheet["!cols"] =
+          headers.map(() => ({
+            wch: 28,
+          }));
+
+        const summaryRange =
+          XLSX.utils.decode_range(
+            sheet["!ref"]
+          );
+
+        for (
+          let row = summaryRange.s.r;
+          row <= summaryRange.e.r;
+          row++
+        ) {
+          for (
+            let col = summaryRange.s.c;
+            col <= summaryRange.e.c;
+            col++
+          ) {
+            const cellAddress =
+              XLSX.utils.encode_cell({
+                r: row,
+                c: col,
+              });
+
+            if (!sheet[cellAddress]) {
+              sheet[cellAddress] = {
+                t: "s",
+                v: "",
+              };
+            }
+
+            if (row === 0) {
+              sheet[cellAddress].s =
+                mainTitleStyle;
+            } else if (row === 1) {
+              sheet[cellAddress].s =
+                subTitleStyle;
+            } else if (row === 3) {
+              sheet[cellAddress].s =
+                headerStyle;
+            } else if (row >= 4) {
+              sheet[cellAddress].s =
+                normalCellStyle;
+            }
+          }
+        }
+
+        return sheet;
+      };
+
+      // ============================================================
+      // STAFF SUMMARY
+      // ============================================================
+
+      const staffSheet =
+        createSummarySheet(
+          "Summary by Staff",
+          "Log count grouped by staff for complete filtered data",
+          byStaff,
+          [
+            "Staff",
+            "Log Count",
+          ]
+        );
+
+      // ============================================================
+      // DATE SUMMARY
+      // ============================================================
+
+      const dateSheet =
+        createSummarySheet(
+          "Summary by Date",
+          "Log count grouped by date for complete filtered data",
+          byDate,
+          [
+            "Date",
+            "Log Count",
+          ]
+        );
+
+      XLSX.utils.book_append_sheet(
+        wb,
+        staffSheet,
+        "Summary by Staff"
+      );
+
+      XLSX.utils.book_append_sheet(
+        wb,
+        dateSheet,
+        "Summary by Date"
+      );
+
+      // ============================================================
+      // FILE NAME
+      // ============================================================
+
+      const datePart =
+        startDate || endDate
+          ? `${startDate || "start"}_to_${endDate || "end"
+          }`
+          : "All";
+
+      const staffPart = selectedStaff
+        ? `_Staff_${selectedStaff}`
+        : "";
+
+      XLSX.writeFile(
+        wb,
+        `DataLog_All_${datePart}${staffPart}.xlsx`
+      );
+
+      toast.success(
+        `${rows.length} records exported successfully`
+      );
+    } catch (error) {
+      console.error(
+        "Excel export error:",
+        error
+      );
+
+      toast.error(
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Failed to export Excel"
+      );
+    }
   };
 
   const handleDeleteOldLogs = async () => {
@@ -775,6 +1285,10 @@ const DataLog = () => {
     setSearchQuery("");
     setStartDate("");
     setEndDate("");
+    setSelectedStaff("");
+    setStaffSearch("");
+    setStaffOptions([]);
+    setShowStaffDropdown(false);
     setCurrentPage(1);
   };
 
@@ -1042,6 +1556,133 @@ const DataLog = () => {
                       >
                         Search
                       </Button>
+                    </Col>
+
+                    <Col xl={2} md={6}>
+                      <label
+                        className="form-label"
+                        style={{
+                          fontSize: "14px",
+                          fontWeight: "800",
+                          color: "#111827",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        Staff
+                      </label>
+
+                      <div style={{ position: "relative" }}>
+                        <Input
+                          type="text"
+                          value={staffSearch}
+                          placeholder="Search staff..."
+                          autoComplete="off"
+                          onFocus={() => {
+                            setShowStaffDropdown(true);
+
+                            if (staffOptions.length === 0) {
+                              fetchStaffs(staffSearch);
+                            }
+                          }}
+                          onChange={(e) => {
+                            setStaffSearch(e.target.value);
+                            setSelectedStaff("");
+                            setShowStaffDropdown(true);
+                          }}
+                          style={{
+                            height: "48px",
+                            borderRadius: "10px",
+                            border: "1.5px solid #b8c2d6",
+                            color: "#111827",
+                            fontSize: "14px",
+                            fontWeight: "600",
+                            backgroundColor: "#ffffff",
+                          }}
+                        />
+
+                        {showStaffDropdown && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: "52px",
+                              left: 0,
+                              right: 0,
+                              zIndex: 1000,
+                              backgroundColor: "#ffffff",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "10px",
+                              boxShadow: "0 10px 25px rgba(15, 23, 42, 0.15)",
+                              maxHeight: "280px",
+                              overflowY: "auto",
+                            }}
+                          >
+                            {staffLoading ? (
+                              <div
+                                style={{
+                                  padding: "14px",
+                                  textAlign: "center",
+                                  color: "#64748b",
+                                  fontWeight: "700",
+                                }}
+                              >
+                                Searching staff...
+                              </div>
+                            ) : staffOptions.length === 0 ? (
+                              <div
+                                style={{
+                                  padding: "14px",
+                                  textAlign: "center",
+                                  color: "#64748b",
+                                  fontWeight: "700",
+                                }}
+                              >
+                                No staff found
+                              </div>
+                            ) : (
+                              staffOptions.map((staff) => (
+                                <div
+                                  key={staff.id}
+                                  onMouseDown={() => {
+                                    setSelectedStaff(String(staff.id));
+                                    setStaffSearch(staff.name || "");
+                                    setShowStaffDropdown(false);
+                                    setCurrentPage(1);
+                                  }}
+                                  style={{
+                                    padding: "10px 12px",
+                                    cursor: "pointer",
+                                    borderBottom: "1px solid #e2e8f0",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      fontSize: "13px",
+                                      fontWeight: "800",
+                                      color: "#0f172a",
+                                    }}
+                                  >
+                                    {staff.name || "-"}
+                                  </div>
+
+                                  <div
+                                    style={{
+                                      fontSize: "11px",
+                                      fontWeight: "600",
+                                      color: "#64748b",
+                                      marginTop: "2px",
+                                    }}
+                                  >
+                                    {staff.eid || "-"}
+                                    {staff.designation
+                                      ? ` • ${staff.designation}`
+                                      : ""}
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </Col>
 
                     <Col xl={2} md={6}>

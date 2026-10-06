@@ -21,6 +21,7 @@ import Select from "react-select";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Paginations from "../../components/Common/Pagination";
+import { createAuditLog } from "../../services/auditService";
 
 const AddRack = () => {
     const [warehouseDetails, setWarehouseDetails] = useState([]);
@@ -34,7 +35,7 @@ const AddRack = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRack, setEditingRack] = useState(null);
-
+    const [originalEditingRack, setOriginalEditingRack] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const perPageData = 25;
 
@@ -137,19 +138,6 @@ const AddRack = () => {
         }
     };
 
-    const postDataLog = async (payload) => {
-        try {
-            await axios.post(
-                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                payload,
-                axiosCfg
-            );
-        } catch (err) {
-            console.warn("DataLog create failed:", err?.response?.data || err?.message);
-            toast.warn("Rack created, but logging failed.");
-        }
-    };
-
     const resetForm = () => {
         setRackName("");
         setNumberOfColumns("");
@@ -181,6 +169,10 @@ const AddRack = () => {
                 number_of_columns: Number(numberOfColumns),
             };
 
+            // ============================================================
+            // CREATE RACK
+            // ============================================================
+
             const createRes = await axios.post(
                 `${import.meta.env.VITE_APP_KEY}rack/add/`,
                 payload,
@@ -189,29 +181,63 @@ const AddRack = () => {
 
             const created = createRes?.data;
 
-            const ORDER_ID_FOR_LOG = null;
+            // ============================================================
+            // READABLE WAREHOUSE NAME
+            // ============================================================
+
+            const warehouseName =
+                warehouseDetails.find(
+                    (warehouse) =>
+                        String(warehouse.id) === String(selectedWarehouse)
+                )?.name || "";
+
+            // ============================================================
+            // AFTER SNAPSHOT
+            // ============================================================
 
             const afterSnapshot = {
                 id: created?.id,
-                warehouse: created?.warehouse ?? payload.warehouse,
-                warehouse_name: created?.warehouse_name,
-                rack_name: created?.rack_name ?? payload.rack_name,
+                warehouse:
+                    created?.warehouse ?? payload.warehouse,
+                warehouse_name:
+                    created?.warehouse_name ?? warehouseName,
+                rack_name:
+                    created?.rack_name ?? payload.rack_name,
                 number_of_columns:
-                    created?.number_of_columns ?? payload.number_of_columns,
-                column_names: created?.column_names ?? [],
+                    created?.number_of_columns ??
+                    payload.number_of_columns,
+                column_names:
+                    created?.column_names ?? [],
             };
 
-            const datalogPayload = {
-                ...(ORDER_ID_FOR_LOG ? { order: ORDER_ID_FOR_LOG } : {}),
-                before_data: { Action: "New rack Adding" },
-                after_data: { Data: afterSnapshot },
-            };
+            // ============================================================
+            // AUDIT LOG
+            // ============================================================
 
-            postDataLog(datalogPayload);
+            try {
+                const auditCreated = await createAuditLog({
+                    action: "rack_created_website",
+                    beforeData: {},
+                    afterData: afterSnapshot,
+                });
+
+                if (!auditCreated) {
+                    console.error(
+                        "Rack created successfully, but DataLog creation failed."
+                    );
+                }
+            } catch (auditError) {
+                console.error(
+                    "Rack created successfully, but DataLog creation failed:",
+                    auditError
+                );
+            }
 
             toast.success("Rack added successfully");
+
             resetForm();
             viewRacks();
+
         } catch (error) {
             const msg =
                 error?.response?.data?.detail ||
@@ -219,7 +245,11 @@ const AddRack = () => {
                 error?.message ||
                 "Failed to add rack";
 
-            console.error("Rack create failed:", error?.response || error);
+            console.error(
+                "Rack create failed:",
+                error?.response || error
+            );
+
             toast.error(msg);
         }
     };
@@ -235,8 +265,19 @@ const AddRack = () => {
                 `${import.meta.env.VITE_APP_KEY}rack/add/${id}/`,
                 axiosCfg
             );
+
             setEditingRack(res.data);
+
+            // Store original rack data for audit comparison
+            setOriginalEditingRack({
+                ...res.data,
+                column_names: Array.isArray(res.data?.column_names)
+                    ? [...res.data.column_names]
+                    : [],
+            });
+
             setIsModalOpen(true);
+
         } catch (error) {
             toast.error("Failed to fetch rack details");
         }
@@ -250,20 +291,101 @@ const AddRack = () => {
         if (!editingRack) return;
 
         try {
-            await axios.put(
+            // ============================================================
+            // BEFORE / AFTER
+            // ============================================================
+
+            const oldNumberOfColumns = Number(
+                originalEditingRack?.number_of_columns || 0
+            );
+
+            const newNumberOfColumns = Number(
+                editingRack?.number_of_columns || 0
+            );
+
+            const hasChanged =
+                oldNumberOfColumns !== newNumberOfColumns;
+
+            // ============================================================
+            // UPDATE RACK
+            // ============================================================
+
+            const updateRes = await axios.put(
                 `${import.meta.env.VITE_APP_KEY}rack/add/${editingRack.id}/`,
                 {
-                    number_of_columns: editingRack.number_of_columns,
+                    number_of_columns:
+                        editingRack.number_of_columns,
                 },
                 axiosCfg
             );
 
+            // ============================================================
+            // AUDIT LOG
+            // ============================================================
+
+            if (hasChanged) {
+                try {
+                    const auditCreated = await createAuditLog({
+                        action: "rack_updated_website",
+
+                        beforeData: {
+                            rack_id: originalEditingRack?.id,
+                            warehouse_name:
+                                originalEditingRack?.warehouse_name || "",
+                            rack_name:
+                                originalEditingRack?.rack_name || "",
+                            number_of_columns:
+                                oldNumberOfColumns,
+                            column_names:
+                                originalEditingRack?.column_names || [],
+                        },
+
+                        afterData: {
+                            rack_id: editingRack?.id,
+                            warehouse_name:
+                                editingRack?.warehouse_name || "",
+                            rack_name:
+                                editingRack?.rack_name || "",
+                            number_of_columns:
+                                newNumberOfColumns,
+                            column_names:
+                                updateRes?.data?.column_names ??
+                                editingRack?.column_names ??
+                                [],
+                        },
+                    });
+
+                    if (!auditCreated) {
+                        console.error(
+                            "Rack updated successfully, but DataLog creation failed."
+                        );
+                    }
+
+                } catch (auditError) {
+                    console.error(
+                        "Rack updated successfully, but DataLog creation failed:",
+                        auditError
+                    );
+                }
+            }
+
+            // ============================================================
+            // SUCCESS
+            // ============================================================
+
             toast.success("Rack updated successfully");
+
             setIsModalOpen(false);
             setEditingRack(null);
+            setOriginalEditingRack(null);
+
             viewRacks();
+
         } catch (error) {
-            toast.error(error?.response?.data?.error || "Update failed");
+            toast.error(
+                error?.response?.data?.error ||
+                "Update failed"
+            );
         }
     };
 

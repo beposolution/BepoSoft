@@ -21,6 +21,7 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Paginations from "../../components/Common/Pagination";
+import { createAuditLog } from "../../services/auditService";
 
 const CustomerType = () => {
   // List & loading
@@ -33,6 +34,7 @@ const CustomerType = () => {
   // Modal for View/Edit
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingType, setEditingType] = useState(null);
+  const [originalEditingType, setOriginalEditingType] = useState(null);
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
   // Search + pagination
@@ -82,7 +84,7 @@ const CustomerType = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
 
-    if (creating) return; // prevents double submit
+    if (creating) return;
 
     const name = typeName.trim();
 
@@ -94,13 +96,39 @@ const CustomerType = () => {
     try {
       setCreating(true);
 
-      await axios.post(
+      const res = await axios.post(
         `${BASE}customer-types/`,
         { type_name: name },
         authHeader
       );
 
+      // ============================================================
+      // AUDIT LOG - CUSTOMER TYPE CREATED
+      // ============================================================
+
+      try {
+        const auditCreated = await createAuditLog({
+          action: "customer_type_created_website",
+          beforeData: {},
+          afterData: {
+            type_name: name,
+          },
+        });
+
+        if (!auditCreated) {
+          console.error(
+            "Customer type created successfully, but DataLog creation failed."
+          );
+        }
+      } catch (auditError) {
+        console.error(
+          "Customer type created successfully, but DataLog creation failed:",
+          auditError
+        );
+      }
+
       toast.success("Customer type created");
+
       setTypeName("");
       setCurrentPage(1);
 
@@ -124,6 +152,12 @@ const CustomerType = () => {
     try {
       const res = await axios.get(`${BASE}customer-types/${id}/`, authHeader);
       setEditingType(res.data);
+
+      // Keep original data for audit comparison
+      setOriginalEditingType({
+        ...res.data,
+      });
+
       setIsModalOpen(true);
     } catch (err) {
       console.error(err);
@@ -134,28 +168,81 @@ const CustomerType = () => {
   // Update (from modal)
   const handleUpdate = async () => {
     if (!editingType?.id) return;
+
     const updatedName = (editingType.type_name || "").trim();
+
     if (!updatedName) {
       toast.warn("Type name is required");
       return;
     }
+
     setSaving(true);
+
     try {
+      // ============================================================
+      // BEFORE / AFTER VALUES
+      // ============================================================
+
+      const oldName = (originalEditingType?.type_name || "").trim();
+
+      const hasChanged = oldName !== updatedName;
+
+      // ============================================================
+      // UPDATE CUSTOMER TYPE
+      // ============================================================
+
       await axios.put(
         `${BASE}customer-types/${editingType.id}/`,
-        { type_name: updatedName },
+        {
+          type_name: updatedName,
+        },
         authHeader
       );
+
+      // ============================================================
+      // AUDIT LOG - ONLY WHEN VALUE ACTUALLY CHANGED
+      // ============================================================
+
+      if (hasChanged) {
+        try {
+          const auditCreated = await createAuditLog({
+            action: "customer_type_updated_website",
+            beforeData: {
+              type_name: oldName,
+            },
+            afterData: {
+              type_name: updatedName,
+            },
+          });
+
+          if (!auditCreated) {
+            console.error(
+              "Customer type updated successfully, but DataLog creation failed."
+            );
+          }
+        } catch (auditError) {
+          console.error(
+            "Customer type updated successfully, but DataLog creation failed:",
+            auditError
+          );
+        }
+      }
+
       toast.success("Customer type updated");
+
       setIsModalOpen(false);
       setEditingType(null);
-      fetchList();
+      setOriginalEditingType(null);
+
+      await fetchList();
     } catch (err) {
       console.error(err);
+
       const msg =
         err.response?.data?.detail ||
         Object.values(err.response?.data || {})?.[0]?.[0] ||
         "Update failed";
+
       toast.error(String(msg));
     } finally {
       setSaving(false);

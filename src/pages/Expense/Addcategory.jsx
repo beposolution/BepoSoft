@@ -1,21 +1,24 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PropTypes from 'prop-types';
 import axios from 'axios';
-import {
-    Modal, ModalHeader, ModalBody, ModalFooter, Button, Input, Label, Form
-} from "reactstrap";
+import { Modal, ModalHeader, ModalBody, ModalFooter, Button, Input, Label, Form } from "reactstrap";
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import Breadcrumbs from '../../components/Common/Breadcrumb';
 import TableContainer from '../../components/Common/TableContainer';
+import { createAuditLog } from "../../services/auditService";
 
 const CategoryTable = () => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
+    const [originalCustomer, setOriginalCustomer] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [modal, setModal] = useState(false);
-    const [isAddMode, setIsAddMode] = useState(false); // New state to differentiate between add and edit
-    const [newState, setNewState] = useState({ name: "" }); // State for the new state form
+    const [isAddMode, setIsAddMode] = useState(false); // state to differentiate between add and edit
+    const [newState, setNewState] = useState({
+        category_name: ""
+    });
     const token = localStorage.getItem('token');
     const [role, setRole] = useState(null);
     const canEdit = ["ADMIN", "CEO", "COO", "HR"].includes(role);
@@ -92,7 +95,8 @@ const CategoryTable = () => {
     );
 
     const handleEdit = (customer) => {
-        setSelectedCustomer(customer);
+        setSelectedCustomer({ ...customer });
+        setOriginalCustomer({ ...customer });
         setIsAddMode(false);
         toggleModal();
     };
@@ -121,37 +125,222 @@ const CategoryTable = () => {
         }
     };
 
+    const createCategoryAddLog = async (categoryData) => {
+        try {
+            const auditCreated = await createAuditLog({
+                action: "asset_category_created_website",
+
+                beforeData: {},
+
+                afterData: {
+                    id: categoryData?.id ?? null,
+                    category_name:
+                        categoryData?.category_name ??
+                        newState.category_name ??
+                        "",
+                },
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Asset Category created successfully, but DataLog creation failed."
+                );
+                return false;
+            }
+
+            return true;
+
+        } catch (error) {
+            console.error(
+                "Asset Category create DataLog error:",
+                error
+            );
+
+            return false;
+        }
+    };
+
+    const createCategoryUpdateLog = async (
+        beforeCategory,
+        afterCategory
+    ) => {
+        try {
+            const auditCreated = await createAuditLog({
+                action: "asset_category_updated_website",
+
+                beforeData: {
+                    id: beforeCategory?.id ?? null,
+                    category_name:
+                        beforeCategory?.category_name ?? "",
+                },
+
+                afterData: {
+                    id:
+                        afterCategory?.id ??
+                        beforeCategory?.id ??
+                        null,
+
+                    category_name:
+                        afterCategory?.category_name ??
+                        beforeCategory?.category_name ??
+                        "",
+                },
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Asset Category updated successfully, but DataLog creation failed."
+                );
+                return false;
+            }
+
+            return true;
+
+        } catch (error) {
+            console.error(
+                "Asset Category update DataLog error:",
+                error
+            );
+
+            return false;
+        }
+    };
+
     const handleSubmit = async () => {
-        if (isAddMode) {
-            try {
-                const response = await axios.post(`${import.meta.env.VITE_APP_IMAGE}/apis/add/assetcategory/`, newState, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                setData([...data, response.data]); // Add new state to table data
+
+        // Prevent double click
+        if (isSubmitting) {
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+
+            if (isAddMode) {
+
+                const response = await axios.post(
+                    `${import.meta.env.VITE_APP_IMAGE}/apis/add/assetcategory/`,
+                    newState,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }
+                );
+
+                // Preserve submitted category name if backend
+                // does not return the complete category object
+                const createdCategory = {
+                    ...newState,
+                    ...(response?.data || {}),
+
+                    id:
+                        response?.data?.id ??
+                        null,
+
+                    category_name:
+                        response?.data?.category_name ??
+                        newState.category_name,
+                };
+
+                try {
+                    await createCategoryAddLog(
+                        createdCategory
+                    );
+                } catch (auditError) {
+                    console.error(
+                        "Asset Category created, but DataLog failed:",
+                        auditError
+                    );
+                }
+
+                setData((prevData) => [
+                    ...prevData,
+                    createdCategory
+                ]);
+
                 toggleModal();
-                setTimeout(() => {
-                    window.location.reload();
-                });
-            } catch (error) {
-                setError(error.message || "Failed to add state");
-            }
-        } else {
-            // Handle Update State
-            try {
-                const response = await axios.put(`${import.meta.env.VITE_APP_IMAGE}/apis/update/delete/assetcategory/${selectedCustomer.id}/`, selectedCustomer, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                setData(data.map(customer => customer.id === selectedCustomer.id ? response.data : customer));
+
+            } else {
+
+                const response = await axios.put(
+                    `${import.meta.env.VITE_APP_IMAGE}/apis/update/delete/assetcategory/${selectedCustomer.id}/`,
+                    selectedCustomer,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }
+                );
+
+                // Preserve the edited frontend value if backend
+                // doesn't return category_name
+                const updatedCategory = {
+                    ...selectedCustomer,
+                    ...(response?.data || {}),
+
+                    id:
+                        response?.data?.id ??
+                        selectedCustomer.id,
+
+                    category_name:
+                        response?.data?.category_name ??
+                        selectedCustomer.category_name,
+                };
+
+                try {
+                    await createCategoryUpdateLog(
+                        originalCustomer,
+                        updatedCategory
+                    );
+                } catch (auditError) {
+                    console.error(
+                        "Asset Category updated, but DataLog failed:",
+                        auditError
+                    );
+                }
+
+                setData((prevData) =>
+                    prevData.map((customer) =>
+                        customer.id === selectedCustomer.id
+                            ? updatedCategory
+                            : customer
+                    )
+                );
+
                 toggleModal();
-            } catch (error) {
-                setError(error.message || "Failed to update customer");
             }
+
+        } catch (error) {
+
+            console.error(
+                isAddMode
+                    ? "Failed to add Asset Category:"
+                    : "Failed to update Asset Category:",
+                error
+            );
+
+            setError(
+                error?.response?.data?.message ||
+                error?.message ||
+                (
+                    isAddMode
+                        ? "Failed to add Asset Category"
+                        : "Failed to update Asset Category"
+                )
+            );
+
+        } finally {
+
+            // Always stop button loading
+            setIsSubmitting(false);
         }
     };
 
     const handleAddState = () => {
         setIsAddMode(true);
-        setNewState({ name: "" }); // Clear the new state form
+        setNewState({ category_name: "" });
         toggleModal();
     };
 
@@ -220,9 +409,37 @@ const CategoryTable = () => {
                         </Form>
                     </ModalBody>
                     <ModalFooter>
-                        <Button color="secondary" onClick={toggleModal}>Cancel</Button>
-                        <Button color="primary" onClick={handleSubmit}>
-                            {isAddMode ? "Add" : "Save"}
+                        <Button
+                            color="secondary"
+                            onClick={toggleModal}
+                            disabled={isSubmitting}
+                        >
+                            Cancel
+                        </Button>
+
+                        <Button
+                            color="primary"
+                            onClick={handleSubmit}
+                            disabled={isSubmitting}
+                            className="d-flex align-items-center justify-content-center"
+                            style={{ minWidth: "100px" }}
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <span
+                                        className="spinner-border spinner-border-sm me-2"
+                                        role="status"
+                                        aria-hidden="true"
+                                    ></span>
+
+                                    {isAddMode
+                                        ? "Creating..."
+                                        : "Saving..."
+                                    }
+                                </>
+                            ) : (
+                                isAddMode ? "Add" : "Save"
+                            )}
                         </Button>
                     </ModalFooter>
                 </Modal>

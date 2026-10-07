@@ -485,6 +485,7 @@ import StaffMonthlySalaryCalculation from "../pages/Staff/StaffMonthlySalaryCalc
 import StaffMonthlySalaryReport from "../pages/Staff/StaffMonthlySalaryReport";
 import HourlyFamilyOrderDetails from "../pages/DashboardJob/HourlyFamilyOrderDetails";
 import CompanyFinanceReport from "../pages/DashboardJob/CompanyFinanceReport";
+import PendingForPacking from "../pages/Order/PendingForPacking";
 
 
 
@@ -646,6 +647,7 @@ const authProtectedRoutes = [
   { path: "/order/:id/stafforder/", component: <Stafforder /> },
   { path: "/warehouseorder/:id/items", component: <OrderwarehouseConform /> },
   { path: "/orders/invoicecreated", component: <InvoiceCreated /> },
+  { path: "/orders/pendingforpacking", component: <PendingForPacking /> },
   { path: "/orders/invoiceapproved", component: <InvoiceApproved /> },
   { path: "/orders/prebooked", component: <PreBookedOrders /> },
   { path: "/orders/waitingforconfirmation", component: <WaitingForConfirmation /> },

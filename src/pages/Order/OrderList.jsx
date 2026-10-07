@@ -377,6 +377,7 @@ const BasicTable = () => {
                                         "Waiting For Confirmation",
                                         "To Print",
                                         "Packing under progress",
+                                        "Pending For Packing",
                                         "Packed",
                                         "Return From Delivery",
                                         "Ready to ship",

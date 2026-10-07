@@ -258,6 +258,12 @@ const ChartSection = () => {
     const todayToPrint =
         todayOrderData?.["To Print"] ?? 0;
 
+    const todayPackingunderprogress =
+        todayOrderData?.["Packing under progress"] ?? 0;
+
+    const todayPendingForPacking =
+        todayOrderData?.["Pending For Packing"] ?? 0;
+
     const todayPackedForDelivery =
         todayOrderData?.["Packed"] ?? 0;
 
@@ -273,6 +279,12 @@ const ChartSection = () => {
 
     const toPrintThisMonth =
         monthOrderData?.["To Print"] ?? 0;
+
+    const PackingunderprogressThisMonth =
+        monthOrderData?.["Packing under progress"] ?? 0;
+
+    const pendingForPackingThisMonth =
+        monthOrderData?.["Pending For Packing"] ?? 0;
 
     const packedForDeliveryThisMonth =
         monthOrderData?.["Packed"] ?? 0;
@@ -677,395 +689,537 @@ const ChartSection = () => {
                 {/* warehouse & Warehouse Admin dashboard */}
 
                 {(role === "warehouse" || role === "Warehouse Admin") && (
-                    <Row className="g-3 mb-3">
+                    <>
+                        <Row className="g-3 mb-3">
 
-                        {/* DELIVERY ORDER */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
-                            <Card
-                                onClick={() => navigate("/orders/toprint")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#f8fbff",
-                                    borderLeft: "5px solid #3b82f6"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
+                            {/* DELIVERY ORDER */}
+                            <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                                <Card
+                                    onClick={() => navigate("/orders/toprint")}
+                                    className="h-100 border-0 shadow-sm"
+                                    style={{
+                                        cursor: "pointer",
+                                        borderRadius: "16px",
+                                        minHeight: "155px",
+                                        background: "#f8fbff",
+                                        borderLeft: "5px solid #3b82f6"
+                                    }}
+                                >
+                                    <CardBody className="p-3 p-md-4">
 
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Delivery Order (DO)
-                                    </p>
-
-                                    <div className="mb-3">
-                                        <span
+                                        <p
+                                            className="fw-semibold mb-2"
                                             style={{
-                                                color: "#64748b",
-                                                fontSize: "12px",
-                                                fontWeight: "600",
+                                                color: "#475569",
+                                                fontSize: "14px"
                                             }}
                                         >
-                                            This Month
-                                        </span>
+                                            Delivery Order (DO)
+                                        </p>
 
-                                        <h2
-                                            className="fw-bold mb-3"
+                                        <div className="mb-3">
+                                            <span
+                                                style={{
+                                                    color: "#64748b",
+                                                    fontSize: "12px",
+                                                    fontWeight: "600",
+                                                }}
+                                            >
+                                                This Month
+                                            </span>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#1e3a8a",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {toPrintThisMonth}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#dbeafe",
+                                                    color: "#1d4ed8",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                Today:&nbsp;
+                                                <strong style={{ fontWeight: "700" }}>
+                                                    {todayToPrint}
+                                                </strong>
+                                            </span>
+
+                                        </div>
+
+                                    </CardBody>
+                                </Card>
+                            </Col>
+
+
+                            <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                                <Card
+                                    onClick={() => navigate("/orders/packingunderprogress")}
+                                    className="h-100 border-0 shadow-sm"
+                                    style={{
+                                        cursor: "pointer",
+                                        borderRadius: "16px",
+                                        minHeight: "155px",
+                                        background: "#f8fbff",
+                                        borderLeft: "5px solid #3b82f6"
+                                    }}
+                                >
+                                    <CardBody className="p-3 p-md-4">
+
+                                        <p
+                                            className="fw-semibold mb-2"
                                             style={{
-                                                color: "#1e3a8a",
-                                                fontSize: "30px"
+                                                color: "#475569",
+                                                fontSize: "14px"
                                             }}
                                         >
-                                            {toPrintThisMonth}
-                                        </h2>
+                                            Printed List
+                                        </p>
 
-                                        <span
+                                        <div className="mb-3">
+                                            <span
+                                                style={{
+                                                    color: "#64748b",
+                                                    fontSize: "12px",
+                                                    fontWeight: "600",
+                                                }}
+                                            >
+                                                This Month
+                                            </span>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#1e3a8a",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {PackingunderprogressThisMonth}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#dbeafe",
+                                                    color: "#1d4ed8",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                Today:&nbsp;
+                                                <strong style={{ fontWeight: "700" }}>
+                                                    {todayPackingunderprogress}
+                                                </strong>
+                                            </span>
+
+                                        </div>
+
+                                    </CardBody>
+                                </Card>
+                            </Col>
+
+                            <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                                <Card
+                                    onClick={() => navigate("/orders/pendingforpacking")}
+                                    className="h-100 border-0 shadow-sm"
+                                    style={{
+                                        cursor: "pointer",
+                                        borderRadius: "16px",
+                                        minHeight: "155px",
+                                        background: "#f8fbff",
+                                        borderLeft: "5px solid #3b82f6"
+                                    }}
+                                >
+                                    <CardBody className="p-3 p-md-4">
+
+                                        <p
+                                            className="fw-semibold mb-2"
                                             style={{
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                backgroundColor: "#dbeafe",
-                                                color: "#1d4ed8",
-                                                padding: "7px 12px",
-                                                borderRadius: "8px",
-                                                fontSize: "13px",
-                                                fontWeight: "500"
+                                                color: "#475569",
+                                                fontSize: "14px"
                                             }}
                                         >
-                                            Today:&nbsp;
-                                            <strong style={{ fontWeight: "700" }}>
-                                                {todayToPrint}
-                                            </strong>
-                                        </span>
+                                            Pending For Packing
+                                        </p>
 
-                                    </div>
+                                        <div className="mb-3">
+                                            <span
+                                                style={{
+                                                    color: "#64748b",
+                                                    fontSize: "12px",
+                                                    fontWeight: "600",
+                                                }}
+                                            >
+                                                This Month
+                                            </span>
 
-                                </CardBody>
-                            </Card>
-                        </Col>
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#1e3a8a",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {pendingForPackingThisMonth}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#dbeafe",
+                                                    color: "#1d4ed8",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                Today:&nbsp;
+                                                <strong style={{ fontWeight: "700" }}>
+                                                    {todayPendingForPacking}
+                                                </strong>
+                                            </span>
+
+                                        </div>
+
+                                    </CardBody>
+                                </Card>
+                            </Col>
 
 
-                        {/* PACKED FOR DELIVERY */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
-                            <Card
-                                onClick={() => navigate("/orders/packed")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#f5fdff",
-                                    borderLeft: "5px solid #06b6d4"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
+                            {/* PACKED FOR DELIVERY */}
+                            <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                                <Card
+                                    onClick={() => navigate("/orders/packed")}
+                                    className="h-100 border-0 shadow-sm"
+                                    style={{
+                                        cursor: "pointer",
+                                        borderRadius: "16px",
+                                        minHeight: "155px",
+                                        background: "#f5fdff",
+                                        borderLeft: "5px solid #06b6d4"
+                                    }}
+                                >
+                                    <CardBody className="p-3 p-md-4">
 
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Packed For Delivery (PFD)
-                                    </p>
-
-                                    <div className="mb-3">
-                                        <span
+                                        <p
+                                            className="fw-semibold mb-2"
                                             style={{
-                                                color: "#64748b",
-                                                fontSize: "12px",
-                                                fontWeight: "600",
+                                                color: "#475569",
+                                                fontSize: "14px"
                                             }}
                                         >
-                                            This Month
-                                        </span>
+                                            Packed For Delivery (PFD)
+                                        </p>
 
-                                        <h2
-                                            className="fw-bold mb-3"
+                                        <div className="mb-3">
+                                            <span
+                                                style={{
+                                                    color: "#64748b",
+                                                    fontSize: "12px",
+                                                    fontWeight: "600",
+                                                }}
+                                            >
+                                                This Month
+                                            </span>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#155e75",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {packedForDeliveryThisMonth}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#cffafe",
+                                                    color: "#0e7490",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                Today:&nbsp;
+                                                <strong style={{ fontWeight: "700" }}>
+                                                    {todayPackedForDelivery}
+                                                </strong>
+                                            </span>
+
+                                        </div>
+
+                                    </CardBody>
+                                </Card>
+                            </Col>
+                        </Row>
+                        <Row className="g-3 mb-3">
+                            {/* DGM */}
+                            <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                                <Card
+                                    onClick={() => navigate("/daily/good/movment/")}
+                                    className="h-100 border-0 shadow-sm"
+                                    style={{
+                                        cursor: "pointer",
+                                        borderRadius: "16px",
+                                        minHeight: "155px",
+                                        background: "#fff7f7",
+                                        borderLeft: "5px solid #ef4444"
+                                    }}
+                                >
+                                    <CardBody className="p-3 p-md-4">
+
+                                        <p
+                                            className="fw-semibold mb-2"
                                             style={{
-                                                color: "#155e75",
-                                                fontSize: "30px"
+                                                color: "#475569",
+                                                fontSize: "14px"
                                             }}
                                         >
-                                            {packedForDeliveryThisMonth}
-                                        </h2>
+                                            Daily Goods Movement
+                                        </p>
 
-                                        <span
+                                        <h2>DGM</h2>
+                                        <span>Check daily goods movement</span>
+
+                                    </CardBody>
+                                </Card>
+                            </Col>
+
+
+                            {/* OUT FOR DELIVERY */}
+                            <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                                <Card
+                                    onClick={() => navigate("/orders/readytoship")}
+                                    className="h-100 border-0 shadow-sm"
+                                    style={{
+                                        cursor: "pointer",
+                                        borderRadius: "16px",
+                                        minHeight: "155px",
+                                        background: "#fffaf3",
+                                        borderLeft: "5px solid #f59e0b"
+                                    }}
+                                >
+                                    <CardBody className="p-3 p-md-4">
+
+                                        <p
+                                            className="fw-semibold mb-2"
                                             style={{
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                backgroundColor: "#cffafe",
-                                                color: "#0e7490",
-                                                padding: "7px 12px",
-                                                borderRadius: "8px",
-                                                fontSize: "13px",
-                                                fontWeight: "500"
+                                                color: "#475569",
+                                                fontSize: "14px"
                                             }}
                                         >
-                                            Today:&nbsp;
-                                            <strong style={{ fontWeight: "700" }}>
-                                                {todayPackedForDelivery}
-                                            </strong>
-                                        </span>
+                                            Out For Delivery (OFD)
+                                        </p>
 
-                                    </div>
+                                        <div className="mb-3">
+                                            <span
+                                                style={{
+                                                    color: "#64748b",
+                                                    fontSize: "12px",
+                                                    fontWeight: "600",
+                                                }}
+                                            >
+                                                This Month
+                                            </span>
 
-                                </CardBody>
-                            </Card>
-                        </Col>
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#92400e",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {outForDeliveryThisMonth}
+                                            </h2>
 
-                        {/* DGM */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
-                            <Card
-                                onClick={() => navigate("/daily/good/movment/")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#fff7f7",
-                                    borderLeft: "5px solid #ef4444"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#fef3c7",
+                                                    color: "#b45309",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                Today:&nbsp;
+                                                <strong style={{ fontWeight: "700" }}>
+                                                    {todayOutForDelivery}
+                                                </strong>
+                                            </span>
 
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Daily Goods Movement
-                                    </p>
+                                        </div>
 
-                                    <h2>DGM</h2>
-                                    <span>Check daily goods movement</span>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
+                                    </CardBody>
+                                </Card>
+                            </Col>
 
 
-                        {/* OUT FOR DELIVERY */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
-                            <Card
-                                onClick={() => navigate("/orders/readytoship")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#fffaf3",
-                                    borderLeft: "5px solid #f59e0b"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
+                            {/* RETURN FROM DELIVERY */}
+                            <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                                <Card
+                                    onClick={() => navigate("/orders/returnfromdelivery")}
+                                    className="h-100 border-0 shadow-sm"
+                                    style={{
+                                        cursor: "pointer",
+                                        borderRadius: "16px",
+                                        minHeight: "155px",
+                                        background: "#fff7f7",
+                                        borderLeft: "5px solid #ef4444"
+                                    }}
+                                >
+                                    <CardBody className="p-3 p-md-4">
 
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Out For Delivery (OFD)
-                                    </p>
-
-                                    <div className="mb-3">
-                                        <span
+                                        <p
+                                            className="fw-semibold mb-2"
                                             style={{
-                                                color: "#64748b",
-                                                fontSize: "12px",
-                                                fontWeight: "600",
+                                                color: "#475569",
+                                                fontSize: "14px"
                                             }}
                                         >
-                                            This Month
-                                        </span>
+                                            Return From Delivery (RFD)
+                                        </p>
 
-                                        <h2
-                                            className="fw-bold mb-3"
+                                        <div className="mb-3">
+                                            <span
+                                                style={{
+                                                    color: "#64748b",
+                                                    fontSize: "12px",
+                                                    fontWeight: "600",
+                                                }}
+                                            >
+                                                This Month
+                                            </span>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#991b1b",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {returnFromDeliveryThisMonth}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#fee2e2",
+                                                    color: "#b91c1c",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                Today:&nbsp;
+                                                <strong style={{ fontWeight: "700" }}>
+                                                    {todayReturnFromDelivery}
+                                                </strong>
+                                            </span>
+
+                                        </div>
+
+                                    </CardBody>
+                                </Card>
+                            </Col>
+
+
+                            {/* SHIPPED */}
+                            <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                                <Card
+                                    onClick={() => navigate("/orders/shipped")}
+                                    className="h-100 border-0 shadow-sm"
+                                    style={{
+                                        cursor: "pointer",
+                                        borderRadius: "16px",
+                                        minHeight: "155px",
+                                        background: "#f5fff8",
+                                        borderLeft: "5px solid #22c55e"
+                                    }}
+                                >
+                                    <CardBody className="p-3 p-md-4">
+
+                                        <p
+                                            className="fw-semibold mb-2"
                                             style={{
-                                                color: "#92400e",
-                                                fontSize: "30px"
+                                                color: "#475569",
+                                                fontSize: "14px"
                                             }}
                                         >
-                                            {outForDeliveryThisMonth}
-                                        </h2>
+                                            Shipped
+                                        </p>
 
-                                        <span
-                                            style={{
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                backgroundColor: "#fef3c7",
-                                                color: "#b45309",
-                                                padding: "7px 12px",
-                                                borderRadius: "8px",
-                                                fontSize: "13px",
-                                                fontWeight: "500"
-                                            }}
-                                        >
-                                            Today:&nbsp;
-                                            <strong style={{ fontWeight: "700" }}>
-                                                {todayOutForDelivery}
-                                            </strong>
-                                        </span>
+                                        <div className="mb-3">
+                                            <span
+                                                style={{
+                                                    color: "#64748b",
+                                                    fontSize: "12px",
+                                                    fontWeight: "600",
+                                                }}
+                                            >
+                                                This Month
+                                            </span>
 
-                                    </div>
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#166534",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {shippedThisMonth}
+                                            </h2>
 
-                                </CardBody>
-                            </Card>
-                        </Col>
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#dcfce7",
+                                                    color: "#15803d",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                Today:&nbsp;
+                                                <strong style={{ fontWeight: "700" }}>
+                                                    {todayShipped}
+                                                </strong>
+                                            </span>
 
+                                        </div>
 
-                        {/* RETURN FROM DELIVERY */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
-                            <Card
-                                onClick={() => navigate("/orders/returnfromdelivery")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#fff7f7",
-                                    borderLeft: "5px solid #ef4444"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
+                                    </CardBody>
+                                </Card>
+                            </Col>
 
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Return From Delivery (RFD)
-                                    </p>
-
-                                    <div className="mb-3">
-                                        <span
-                                            style={{
-                                                color: "#64748b",
-                                                fontSize: "12px",
-                                                fontWeight: "600",
-                                            }}
-                                        >
-                                            This Month
-                                        </span>
-
-                                        <h2
-                                            className="fw-bold mb-3"
-                                            style={{
-                                                color: "#991b1b",
-                                                fontSize: "30px"
-                                            }}
-                                        >
-                                            {returnFromDeliveryThisMonth}
-                                        </h2>
-
-                                        <span
-                                            style={{
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                backgroundColor: "#fee2e2",
-                                                color: "#b91c1c",
-                                                padding: "7px 12px",
-                                                borderRadius: "8px",
-                                                fontSize: "13px",
-                                                fontWeight: "500"
-                                            }}
-                                        >
-                                            Today:&nbsp;
-                                            <strong style={{ fontWeight: "700" }}>
-                                                {todayReturnFromDelivery}
-                                            </strong>
-                                        </span>
-
-                                    </div>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-
-                        {/* SHIPPED */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
-                            <Card
-                                onClick={() => navigate("/orders/shipped")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#f5fff8",
-                                    borderLeft: "5px solid #22c55e"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Shipped
-                                    </p>
-
-                                    <div className="mb-3">
-                                        <span
-                                            style={{
-                                                color: "#64748b",
-                                                fontSize: "12px",
-                                                fontWeight: "600",
-                                            }}
-                                        >
-                                            This Month
-                                        </span>
-
-                                        <h2
-                                            className="fw-bold mb-3"
-                                            style={{
-                                                color: "#166534",
-                                                fontSize: "30px"
-                                            }}
-                                        >
-                                            {shippedThisMonth}
-                                        </h2>
-
-                                        <span
-                                            style={{
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                backgroundColor: "#dcfce7",
-                                                color: "#15803d",
-                                                padding: "7px 12px",
-                                                borderRadius: "8px",
-                                                fontSize: "13px",
-                                                fontWeight: "500"
-                                            }}
-                                        >
-                                            Today:&nbsp;
-                                            <strong style={{ fontWeight: "700" }}>
-                                                {todayShipped}
-                                            </strong>
-                                        </span>
-
-                                    </div>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-                    </Row>
+                        </Row>
+                    </>
                 )}
 
                 {/* ADMIN & Accounts / Accounting dashboard */}

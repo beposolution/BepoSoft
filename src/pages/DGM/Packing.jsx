@@ -71,6 +71,13 @@ const FormLayouts = () => {
 
         if (currentStatus === "Packing under progress") {
             return [
+                "Pending For Packing",
+                // "Ready to ship",
+            ];
+        }
+
+        if (currentStatus === "Pending For Packing") {
+            return [
                 "Packed",
                 // "Ready to ship",
             ];

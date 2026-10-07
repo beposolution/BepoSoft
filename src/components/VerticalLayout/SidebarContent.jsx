@@ -357,6 +357,9 @@ const SidebarContent = (props) => {
                         <Link to="/orders/packingunderprogress">{props.t("Printed List")}</Link>
                       </li>
                       <li>
+                        <Link to="/orders/pendingforpacking">{props.t("Pending For Packing List")}</Link>
+                      </li>
+                      <li>
                         <Link to="/orders/packed">{props.t("Packed For Delivery (PFD)")}</Link>
                       </li>
                       <li>
@@ -776,6 +779,9 @@ const SidebarContent = (props) => {
                 <ul className="sub-menu" aria-expanded="false">
                   <li><Link to="/orders/toprint">{props.t("Delivery Order (DO)")}</Link></li>
                   <li><Link to="/orders/packingunderprogress">{props.t("Printed List")}</Link></li>
+                  <li>
+                    <Link to="/orders/pendingforpacking">{props.t("Pending For Packing List")}</Link>
+                  </li>
                   <li><Link to="/orders/packed">{props.t("Packed For Delivery (PFD)")}</Link></li>
                   <li><Link to="/orders/readytoship">{props.t("Out For Delivery (OFD)")}</Link></li>
                   <li><Link to="/orders/returnfromdelivery">{props.t("Return From Delivery (RFD)")}</Link></li>

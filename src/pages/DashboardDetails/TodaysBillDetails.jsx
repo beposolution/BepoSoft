@@ -143,6 +143,36 @@ const TodaysBillDetails = () => {
         })
         : [];
 
+
+    const getDisplayStatus = (status) => {
+        switch (status) {
+            case "Invoice Created":
+                return "Waiting For Approval";
+
+            case "To Print":
+                return "Delivery Order (DO)";
+
+            case "Packing under progress":
+                return "Printed";
+
+            case "Pending For Packing":
+                return "Pending For Packing";
+
+            case "Packed":
+                return "Packed For Delivery (PFD)";
+
+            case "Ready to ship":
+                return "Out For Delivery (OFD)";
+
+            case "Return From Delivery":
+                return "Return From Delivery (RFD)";
+
+            default:
+                return status;
+        }
+    };
+
+
     return (
         <React.Fragment>
             <ToastContainer />
@@ -152,7 +182,7 @@ const TodaysBillDetails = () => {
                     <Breadcrumbs title="Tables" breadcrumbItem="TODAYS BILL" />
 
                     <Row className="mb-3">
-                        <Col md={6} xl={3}>
+                        {/* <Col md={6} xl={3}>
                             <Card>
                                 <CardBody>
                                     <h6 className="text-muted mb-2">
@@ -176,7 +206,7 @@ const TodaysBillDetails = () => {
                                     </h4>
                                 </CardBody>
                             </Card>
-                        </Col>
+                        </Col> */}
 
                         <Col md={6} xl={3}>
                             <Card>
@@ -270,16 +300,13 @@ const TodaysBillDetails = () => {
                                                             </td>
 
                                                             <td style={getStatusColor(order.status)}>
-                                                                {order.status}
+                                                                {getDisplayStatus(order.status)}
                                                             </td>
 
                                                             <td>
                                                                 ₹ {Number(order?.total_amount || 0).toLocaleString("en-IN")}
                                                             </td>
-
-                                                            <td>
-                                                                {order?.order_date || "-"}
-                                                            </td>
+                                                            <td>{order?.order_date || "-"}</td>
                                                         </tr>
                                                     ))
                                                 )}

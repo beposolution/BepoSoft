@@ -681,6 +681,15 @@ const ChartSection = () => {
         return `${sign}₹${absolute.toFixed(2)}`;
     };
 
+
+    const currentMonthLabel = new Date()
+        .toLocaleDateString("en-US", {
+            month: "short",
+            year: "numeric",
+        })
+        .toUpperCase();
+
+
     return (
         <React.Fragment>
 
@@ -720,12 +729,17 @@ const ChartSection = () => {
                                         <div className="mb-3">
                                             <span
                                                 style={{
-                                                    color: "#64748b",
-                                                    fontSize: "12px",
-                                                    fontWeight: "600",
+                                                    color: "#334155",
+                                                    fontSize: "clamp(13px, 1vw, 15px)",
+                                                    fontWeight: "700",
+                                                    letterSpacing: "0.4px",
+                                                    lineHeight: "1.5",
+                                                    display: "inline-block",
+                                                    marginBottom: "4px",
+                                                    whiteSpace: "nowrap",
                                                 }}
                                             >
-                                                This Month
+                                                {currentMonthLabel}
                                             </span>
 
                                             <h2
@@ -790,12 +804,17 @@ const ChartSection = () => {
                                         <div className="mb-3">
                                             <span
                                                 style={{
-                                                    color: "#64748b",
-                                                    fontSize: "12px",
-                                                    fontWeight: "600",
+                                                    color: "#334155",
+                                                    fontSize: "clamp(13px, 1vw, 15px)",
+                                                    fontWeight: "700",
+                                                    letterSpacing: "0.4px",
+                                                    lineHeight: "1.5",
+                                                    display: "inline-block",
+                                                    marginBottom: "4px",
+                                                    whiteSpace: "nowrap",
                                                 }}
                                             >
-                                                This Month
+                                                {currentMonthLabel}
                                             </span>
 
                                             <h2
@@ -859,12 +878,17 @@ const ChartSection = () => {
                                         <div className="mb-3">
                                             <span
                                                 style={{
-                                                    color: "#64748b",
-                                                    fontSize: "12px",
-                                                    fontWeight: "600",
+                                                    color: "#334155",
+                                                    fontSize: "clamp(13px, 1vw, 15px)",
+                                                    fontWeight: "700",
+                                                    letterSpacing: "0.4px",
+                                                    lineHeight: "1.5",
+                                                    display: "inline-block",
+                                                    marginBottom: "4px",
+                                                    whiteSpace: "nowrap",
                                                 }}
                                             >
-                                                This Month
+                                                {currentMonthLabel}
                                             </span>
 
                                             <h2
@@ -930,12 +954,17 @@ const ChartSection = () => {
                                         <div className="mb-3">
                                             <span
                                                 style={{
-                                                    color: "#64748b",
-                                                    fontSize: "12px",
-                                                    fontWeight: "600",
+                                                    color: "#334155",
+                                                    fontSize: "clamp(13px, 1vw, 15px)",
+                                                    fontWeight: "700",
+                                                    letterSpacing: "0.4px",
+                                                    lineHeight: "1.5",
+                                                    display: "inline-block",
+                                                    marginBottom: "4px",
+                                                    whiteSpace: "nowrap",
                                                 }}
                                             >
-                                                This Month
+                                                {currentMonthLabel}
                                             </span>
 
                                             <h2
@@ -1034,12 +1063,17 @@ const ChartSection = () => {
                                         <div className="mb-3">
                                             <span
                                                 style={{
-                                                    color: "#64748b",
-                                                    fontSize: "12px",
-                                                    fontWeight: "600",
+                                                    color: "#334155",
+                                                    fontSize: "clamp(13px, 1vw, 15px)",
+                                                    fontWeight: "700",
+                                                    letterSpacing: "0.4px",
+                                                    lineHeight: "1.5",
+                                                    display: "inline-block",
+                                                    marginBottom: "4px",
+                                                    whiteSpace: "nowrap",
                                                 }}
                                             >
-                                                This Month
+                                                {currentMonthLabel}
                                             </span>
 
                                             <h2
@@ -1105,12 +1139,17 @@ const ChartSection = () => {
                                         <div className="mb-3">
                                             <span
                                                 style={{
-                                                    color: "#64748b",
-                                                    fontSize: "12px",
-                                                    fontWeight: "600",
+                                                    color: "#334155",
+                                                    fontSize: "clamp(13px, 1vw, 15px)",
+                                                    fontWeight: "700",
+                                                    letterSpacing: "0.4px",
+                                                    lineHeight: "1.5",
+                                                    display: "inline-block",
+                                                    marginBottom: "4px",
+                                                    whiteSpace: "nowrap",
                                                 }}
                                             >
-                                                This Month
+                                                {currentMonthLabel}
                                             </span>
 
                                             <h2
@@ -1176,12 +1215,17 @@ const ChartSection = () => {
                                         <div className="mb-3">
                                             <span
                                                 style={{
-                                                    color: "#64748b",
-                                                    fontSize: "12px",
-                                                    fontWeight: "600",
+                                                    color: "#334155",
+                                                    fontSize: "clamp(13px, 1vw, 15px)",
+                                                    fontWeight: "700",
+                                                    letterSpacing: "0.4px",
+                                                    lineHeight: "1.5",
+                                                    display: "inline-block",
+                                                    marginBottom: "4px",
+                                                    whiteSpace: "nowrap",
                                                 }}
                                             >
-                                                This Month
+                                                {currentMonthLabel}
                                             </span>
 
                                             <h2

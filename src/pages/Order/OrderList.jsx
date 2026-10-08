@@ -295,7 +295,7 @@ const BasicTable = () => {
             "Invoice No": order.invoice,
             "Company Name": order.company,
             "Order Date": order.order_date,
-            "Status": order.status,
+            "Status": getDisplayStatus(order.status) || "-",
             "Customer Name": order.customer?.name,
             "Customer Phone": order.customer?.phone,
             "Customer Email": order.customer?.email,

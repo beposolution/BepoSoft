@@ -10,6 +10,7 @@ import html2canvas from "html2canvas";
 import { Link } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../services/auditService";
 
 const FormLayouts = () => {
     // Meta title
@@ -47,197 +48,247 @@ const FormLayouts = () => {
 
     const toggleModal = () => setModalOpen(!modalOpen);
 
-    const createProformaLog = async (proformaInvoice, postedData) => {
+
+
+    const createProformaLog = async (
+        proformaInvoice,
+        postedData,
+        submittedProducts
+    ) => {
         try {
-            const safeStates = Array.isArray(states) ? states : [];
-            const safeCompanies = Array.isArray(companys) ? companys : [];
-            const safeFamilies = Array.isArray(familys) ? familys : [];
-            const safeCustomers = Array.isArray(customers) ? customers : [];
-            const safeCustomerResults = Array.isArray(customerResults)
-                ? customerResults
-                : [];
-            const safeStaffs = Array.isArray(staffs) ? staffs : [];
-            const safeAddresses = Array.isArray(customerAddresses)
-                ? customerAddresses
-                : [];
-            const safeWarehouses = Array.isArray(warehouseDetails)
-                ? warehouseDetails
-                : [];
-            const safeProducts = Array.isArray(cartProducts)
-                ? cartProducts
+            const products = Array.isArray(submittedProducts)
+                ? submittedProducts
                 : [];
 
-            const selectedState = safeStates.find(
-                (item) => Number(item?.id) === Number(postedData?.state)
+            const toNumber = (value, fallback = 0) => {
+                if (
+                    value === null ||
+                    value === undefined ||
+                    value === ""
+                ) {
+                    return fallback;
+                }
+
+                const parsed = Number(value);
+
+                return Number.isFinite(parsed)
+                    ? parsed
+                    : fallback;
+            };
+
+            const roundAmount = (value) =>
+                Number(value.toFixed(2));
+
+            // Complete product details from the cart at submission
+            const productDetails = products.map((product) => {
+                const quantity = toNumber(product.quantity, 1);
+                const unitPrice = toNumber(product.price);
+                const discountPerUnit = toNumber(product.discount);
+                const taxPercentage = toNumber(product.tax);
+
+                const grossAmount = roundAmount(
+                    unitPrice * quantity
+                );
+
+                const totalDiscount = roundAmount(
+                    discountPerUnit * quantity
+                );
+
+                const netAmount = roundAmount(
+                    grossAmount - totalDiscount
+                );
+
+                return {
+                    ...product,
+
+                    cart_id: product.id ?? null,
+
+                    product_id:
+                        product.product_id ??
+                        product.product ??
+                        null,
+
+                    product_name:
+                        product.name ??
+                        product.product_name ??
+                        "Unknown Product",
+
+                    quantity,
+
+                    base_rate: roundAmount(
+                        toNumber(product.exclude_price)
+                    ),
+
+                    tax_percentage: taxPercentage,
+
+                    unit_price: roundAmount(unitPrice),
+
+                    discount_per_unit:
+                        roundAmount(discountPerUnit),
+
+                    gross_amount: grossAmount,
+
+                    total_discount: totalDiscount,
+
+                    net_amount: netAmount,
+
+                    description: product.note ?? "",
+
+                    size: product.size ?? "",
+
+                    color: product.color ?? "",
+
+                    image: product.image ?? null
+                };
+            });
+
+            // Resolve readable order information
+            const findById = (items, id) =>
+                (Array.isArray(items) ? items : []).find(
+                    (item) =>
+                        String(item.id) === String(id)
+                );
+
+            const selectedState = findById(
+                states,
+                postedData.state
             );
 
-            const selectedCompany = safeCompanies.find(
-                (item) => Number(item?.id) === Number(postedData?.company)
+            const selectedCompany = findById(
+                companys,
+                postedData.company
             );
 
-            const selectedFamily = safeFamilies.find(
-                (item) => Number(item?.id) === Number(postedData?.family)
+            const selectedFamily = findById(
+                familys,
+                postedData.family
             );
 
             const selectedCustomer =
-                safeCustomers.find(
-                    (item) =>
-                        Number(item?.id) === Number(postedData?.customer)
-                ) ||
-                safeCustomerResults.find(
-                    (item) =>
-                        Number(item?.id) === Number(postedData?.customer)
-                );
+                findById(customers, postedData.customer) ||
+                findById(customerResults, postedData.customer);
 
             const selectedStaff =
-                safeStaffs.find(
-                    (item) =>
-                        Number(item?.id) === Number(postedData?.manage_staff)
-                ) ||
+                findById(staffs, postedData.manage_staff) ||
                 (
-                    loggedUser &&
-                        Number(loggedUser?.id) ===
-                        Number(postedData?.manage_staff)
+                    String(loggedUser?.id) ===
+                        String(postedData.manage_staff)
                         ? loggedUser
                         : null
                 );
 
-            const selectedAddress = safeAddresses.find(
-                (item) =>
-                    Number(item?.id) ===
-                    Number(postedData?.billing_address)
+            const selectedAddress = findById(
+                customerAddresses,
+                postedData.billing_address
             );
 
-            const selectedWarehouse = safeWarehouses.find(
-                (item) =>
-                    Number(item?.id) ===
-                    Number(postedData?.warehouse_id)
+            const selectedWarehouse = findById(
+                warehouseDetails,
+                postedData.warehouse_id
             );
 
-            const productDetails = safeProducts.map((product) => {
-                const quantity = Number(product?.quantity) || 1;
-                const price = Number(product?.price) || 0;
-                const discount = Number(product?.discount) || 0;
+            const orderDetails = {
+                ...postedData,
 
-                return {
-                    product_name:
-                        product?.name || "Unknown Product",
+                proforma_invoice: proformaInvoice ?? null,
 
-                    quantity: quantity,
+                state_name:
+                    selectedState?.name ?? null,
 
-                    rate:
-                        Number(product?.exclude_price) || 0,
+                company_name:
+                    selectedCompany?.name ?? null,
 
-                    tax:
-                        Number(product?.tax) || 0,
+                division_name:
+                    selectedFamily?.name ?? null,
 
-                    price: price,
+                customer_name:
+                    selectedCustomer?.name ??
+                    customerSearch ??
+                    null,
 
-                    discount: discount,
+                staff_name:
+                    selectedStaff?.name ?? null,
 
-                    size:
-                        product?.size || "N/A",
+                warehouse_name:
+                    selectedWarehouse?.name ?? null,
 
-                    description:
-                        product?.note || "",
-
-                    total: (
-                        (price * quantity) -
-                        (discount * quantity)
-                    ).toFixed(2),
-                };
-            });
-
-            const readableData = {
-                proforma_invoice: proformaInvoice,
-
-                state:
-                    selectedState?.name ||
-                    postedData?.state ||
-                    "",
-
-                family:
-                    selectedFamily?.name ||
-                    postedData?.family ||
-                    "",
-
-                company:
-                    selectedCompany?.name ||
-                    postedData?.company ||
-                    "",
-
-                customer:
-                    selectedCustomer?.name ||
-                    customerSearch ||
-                    postedData?.customer ||
-                    "",
-
-                order_date:
-                    postedData?.order_date || "",
-
-                manage_staff:
-                    selectedStaff?.name ||
-                    postedData?.manage_staff ||
-                    "",
-
-                total_amount:
-                    postedData?.total_amount || 0,
-
-                warehouse:
-                    selectedWarehouse?.name ||
-                    postedData?.warehouse_id ||
-                    "",
-
-                billing_address: selectedAddress
-                    ? [
-                        selectedAddress?.name,
-                        selectedAddress?.address,
-                        selectedAddress?.city,
-                        selectedAddress?.zipcode,
-                        selectedAddress?.state,
-                        selectedAddress?.phone,
-                    ]
-                        .filter(Boolean)
-                        .join(" - ")
-                    : postedData?.billing_address || "",
-
-                products: productDetails,
+                shipping_address_details:
+                    selectedAddress
+                        ? { ...selectedAddress }
+                        : null
             };
 
-            const logData = {
-                before_data: {
-                    Action: "Proforma Invoice Creation - website",
+            const totalQuantity = productDetails.reduce(
+                (sum, product) => sum + product.quantity,
+                0
+            );
+
+            const productsGrossAmount = productDetails.reduce(
+                (sum, product) => sum + product.gross_amount,
+                0
+            );
+
+            const productsTotalDiscount = productDetails.reduce(
+                (sum, product) => sum + product.total_discount,
+                0
+            );
+
+            const productsNetAmount = productDetails.reduce(
+                (sum, product) => sum + product.net_amount,
+                0
+            );
+
+            await createAuditLog({
+                action: "proforma_invoice_created_website",
+
+                beforeData: {
+                    action: "Create Proforma Invoice",
+                    proforma_invoice: null,
+                    products: []
                 },
 
-                after_data: {
-                    Action:
-                        "Proforma invoice created successfully",
+                afterData: {
+                    action: "Proforma Invoice Created Successfully",
 
-                    Data: readableData,
-                },
-            };
+                    proforma_invoice:
+                        proformaInvoice ?? null,
 
-            const logResponse = await axios.post(
-                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                logData,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
+                    order_details: orderDetails,
+
+                    products: productDetails,
+
+                    product_summary: {
+                        total_products: productDetails.length,
+                        total_quantity: totalQuantity,
+
+                        gross_amount: roundAmount(
+                            productsGrossAmount
+                        ),
+
+                        total_discount: roundAmount(
+                            productsTotalDiscount
+                        ),
+
+                        net_amount: roundAmount(
+                            productsNetAmount
+                        )
                     },
+
+                    // Exact payload sent to invoice creation POST
+                    submitted_payload: {
+                        ...postedData
+                    }
                 }
-            );
+            });
 
         } catch (error) {
             console.error(
-                "Proforma datalog creation failed:",
-                error?.response?.status,
-                error?.response?.data || error?.message
+                "Proforma invoice audit logging failed:",
+                error
             );
-
-            console.error("FULL DATALOG ERROR:", error);
         }
     };
+
 
     // Formik setup
     const formik = useFormik({
@@ -278,6 +329,12 @@ const FormLayouts = () => {
                 ...values,
                 total_amount: updatedTotalAmount.toFixed(2),  // Ensure correct value is used
             };
+
+            // Capture products used when submitting the Proforma Invoice
+            const productsForLog = cartProducts.map((product) => ({
+                ...product
+            }));
+
             setIsLoading(true);
 
             try {
@@ -290,17 +347,14 @@ const FormLayouts = () => {
                 if (response.status === 201) {
 
                     // Try all possible locations for created order/proforma ID
-                    const proformaId =
-                        response?.data?.invoice;
+                    const proformaId = response?.data?.invoice ?? null;
 
-                    if (proformaId) {
-                        await createProformaLog(proformaId, dataToSubmit);
-                    } else {
-                        console.error(
-                            "Datalog not created because order/proforma ID was not found.",
-                            response.data
-                        );
-                    }
+                    // Create one complete log after successful Proforma creation
+                    await createProformaLog(
+                        proformaId,
+                        dataToSubmit,
+                        productsForLog
+                    );
 
                     toast.success("Performa invoice created successfully!", {
                         position: "top-right",

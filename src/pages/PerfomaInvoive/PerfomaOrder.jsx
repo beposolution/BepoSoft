@@ -8,6 +8,7 @@ import * as Yup from 'yup';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Select from "react-select";
+import { createAuditLog } from "../../services/auditService";
 
 const PerfomaOrder = () => {
     const { invoice } = useParams();
@@ -28,40 +29,37 @@ const PerfomaOrder = () => {
     const [cartTotalDiscount, setCartTotalDiscount] = useState(0);
     const [finalAmount, setFinalAmount] = useState(0);
 
-    const writeCreateLog = async (orderId, token, proformaData, createdOrderData) => {
+
+    const createDataLog = async (
+        action,
+        beforeData = {},
+        afterData = {},
+        orderId = null
+    ) => {
         try {
-            const logPayload = {
-                order: Number(orderId),
+            const linkedOrderId = orderId ?? null;
 
-                before_data: {
-                    Action: "Proforma converting to Invoice - website",
-                    Data: proformaData,
+            await createAuditLog({
+                action,
+                order: linkedOrderId
+                    ? Number(linkedOrderId)
+                    : undefined,
+                beforeData: {
+                    proforma_invoice: orders?.invoice ?? invoice,
+                    ...beforeData,
                 },
-
-                after_data: {
-                    Action: "Proforma added to Waiting For Approval",
-                    Data: createdOrderData,
+                afterData: {
+                    proforma_invoice: orders?.invoice ?? invoice,
+                    ...afterData,
                 },
-            };
+            });
 
-            const logResponse = await axios.post(
-                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                logPayload,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                }
+            console.log("Audit log created:", action);
+        } catch (error) {
+            console.error(
+                "Audit log creation failed:",
+                error?.response?.data || error
             );
-
-
-            return logResponse.data;
-
-        } catch (err) {
-            console.error("======= DATALOG FAILED =======");
-
-            return null;
         }
     };
 
@@ -203,65 +201,35 @@ const PerfomaOrder = () => {
                 if (response.status === 201) {
 
 
-                    // Created order is inside response.data.data
-                    const createdOrderData = response?.data?.data;
-                    const createdOrderId = createdOrderData?.id;
+                    const createdOrderData = response?.data?.data ?? {};
+                    const createdOrderId = createdOrderData?.id ?? null;
 
+                    await createDataLog(
+                        "Proforma Converted to Invoice",
+                        {
+                            action: "Proforma converting to Invoice",
+                            proforma_id: orders?.id ?? null,
+                            proforma_order_data: { ...orders },
+                            proforma_products: orders?.perfoma_items ?? [],
+                        },
+                        {
+                            action: "Proforma added to Waiting For Approval",
+                            created_order_id: createdOrderId,
+                            created_order_data: createdOrderData,
+                            submitted_order_payload: { ...payload },
+                            submitted_products: cartProducts.map(
+                                (product) => ({ ...product })
+                            ),
+                            payment_slips: paymentImages.map(({ file }) => ({
+                                file_name: file.name,
+                                file_size: file.size,
+                                file_type: file.type,
+                            })),
+                            status: "Waiting For Approval",
+                        },
+                        createdOrderId
+                    );
 
-                    if (createdOrderId) {
-
-                        try {
-                            const logPayload = {
-                                order: Number(createdOrderId),
-
-                                before_data: {
-                                    Action: "Proforma converting to Invoice",
-                                    Data: {
-                                        proforma_id: orders?.id,
-                                        proforma_invoice: orders?.invoice,
-                                        status: orders?.status,
-                                        customer: orders?.customer,
-                                        customer_id: orders?.customerID,
-                                        company: orders?.company,
-                                        family: orders?.family,
-                                        manage_staff: orders?.manage_staff,
-                                        billing_address: orders?.billing_address,
-                                        warehouse_id: orders?.warehouse_id,
-                                        total_amount: orders?.total_amount,
-                                        perfoma_items: orders?.perfoma_items,
-                                    }
-                                },
-
-                                after_data: {
-                                    Action: "Proforma added to Waiting For Approval",
-                                    Data: {
-                                        ...createdOrderData,
-                                        status: "Waiting For Approval"
-                                    }
-                                }
-                            };
-
-                            const logResponse = await axios.post(
-                                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                                logPayload,
-                                {
-                                    headers: {
-                                        Authorization: `Bearer ${token}`,
-                                        "Content-Type": "application/json",
-                                    },
-                                }
-                            );
-
-                        } catch (logError) {
-                            console.error("======= DATALOG CREATION FAILED =======");
-                        }
-
-                    } else {
-
-                        console.error(
-                            "Order created but created order ID is missing:"
-                        );
-                    }
 
                     toast.success(
                         response?.data?.message ||
@@ -381,6 +349,16 @@ const PerfomaOrder = () => {
             }
 
             const data = await response.json();
+
+            await createDataLog(
+                "Product Added to Cart from Proforma",
+                {},
+                {
+                    submitted_payload: { ...payload },
+                    api_response: data,
+                }
+            );
+
             alert("Product added to cart successfully!");
 
             fetchOrderData();
@@ -439,6 +417,19 @@ const PerfomaOrder = () => {
                         } to cart`
                     );
                 }
+
+
+                await createDataLog(
+                    "Proforma Product Added to Cart",
+                    {},
+                    {
+                        product_id: item.product,
+                        product_name: item.name,
+                        proforma_item: { ...item },
+                        submitted_payload: { ...payload },
+                    }
+                );
+
             }
 
             setInvoiceItemsAdded(true);
@@ -592,12 +583,30 @@ const PerfomaOrder = () => {
     const handleUpdateEntireCart = async () => {
         try {
             for (const product of cartProducts) {
-                await updateCartProduct(product.id, {
+                const updatePayload = {
                     quantity: product.quantity,
                     price: product.price,
                     discount: product.discount,
                     note: product.note,
-                });
+                };
+
+                await updateCartProduct(
+                    product.id,
+                    updatePayload
+                );
+
+                await createDataLog(
+                    "Proforma Cart Product Updated",
+                    {
+                        product_id: product.id,
+                        product_name: product.name,
+                    },
+                    {
+                        product_id: product.id,
+                        product_name: product.name,
+                        submitted_payload: updatePayload,
+                    }
+                );
             }
 
             toast.success("Cart updated successfully!");
@@ -611,6 +620,13 @@ const PerfomaOrder = () => {
 
 
     const handleRemoveProduct = async (productId) => {
+
+        // Capture product details before deleting
+        const removedProduct = cartProducts.find(
+            (product) =>
+                String(product.id) === String(productId)
+        );
+
         try {
             const response = await axios.delete(
                 `${import.meta.env.VITE_APP_KEY}cart/update/${productId}/`,
@@ -623,6 +639,21 @@ const PerfomaOrder = () => {
 
             if (response.status === 204 || response.status === 200) {
                 toast.success("Product removed from cart");
+
+
+                await createDataLog(
+                    "Product Removed from Proforma Cart",
+                    {
+                        product_id: productId,
+                        product_details: removedProduct
+                            ? { ...removedProduct }
+                            : null,
+                    },
+                    {
+                        action: "Product Removed from Proforma Cart",
+                        product_id: productId,
+                    }
+                );
 
                 await fetchCartProducts();
             }

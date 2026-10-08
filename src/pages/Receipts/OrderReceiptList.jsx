@@ -378,10 +378,10 @@ const OrderReceiptList = () => {
             return;
         }
 
-        if (Number(formData.amount) <= 0) {
-            toast.error("Amount must be greater than zero.");
-            return;
-        }
+        // if (Number(formData.amount) <= 0) {
+        //     toast.error("Amount must be greater than zero.");
+        //     return;
+        // }
 
         try {
 

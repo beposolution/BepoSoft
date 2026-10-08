@@ -373,15 +373,22 @@ const OrderReceiptList = () => {
             return;
         }
 
-        if (!formData.amount) {
+        if (
+            formData.amount === "" ||
+            formData.amount === null ||
+            formData.amount === undefined
+        ) {
             toast.error("Please enter amount.");
             return;
         }
 
-        // if (Number(formData.amount) <= 0) {
-        //     toast.error("Amount must be greater than zero.");
-        //     return;
-        // }
+        if (
+            !Number.isFinite(Number(formData.amount)) ||
+            Number(formData.amount) < 0
+        ) {
+            toast.error("Please enter a valid non-negative amount.");
+            return;
+        }
 
         try {
 
@@ -894,7 +901,9 @@ const OrderReceiptList = () => {
                                                                 <Input
                                                                     type="number"
                                                                     name="amount"
-                                                                    value={formData.amount || ""}
+                                                                    min="0"
+                                                                    step="any"
+                                                                    value={formData.amount ?? ""}
                                                                     onChange={handleChange}
                                                                 />
                                                             </div>

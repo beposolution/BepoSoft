@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import {
     Table,
     Row,
@@ -289,27 +289,419 @@ const BasicTable = () => {
         setSelectedImages([]);
     };
 
-    const exportToExcel = () => {
-        const formattedData = orders.map((order, index) => ({
-            "Order #": index + 1,
-            "Invoice No": order.invoice,
-            "Company Name": order.company,
-            "Order Date": order.order_date,
-            "Status": getDisplayStatus(order.status) || "-",
-            "Customer Name": order.customer?.name,
-            "Customer Phone": order.customer?.phone,
-            "Customer Email": order.customer?.email,
-            "Staff": order.manage_staff,
-            "Family": order.family,
-            "Total Amount": order.total_amount,
-            "Payment Method": order.payment_method
-        }));
 
-        const worksheet = XLSX.utils.json_to_sheet(formattedData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
-        XLSX.writeFile(workbook, "Orders_List.xlsx");
+    const exportToExcel = async () => {
+        try {
+            const allOrders = [];
+            const seenIds = new Set();
+            const visitedUrls = new Set();
+
+            let nextUrl = buildOrdersUrl();
+
+            // Fetch all orders matching the selected filters
+            while (nextUrl) {
+                const currentUrl = new URL(
+                    nextUrl,
+                    window.location.href
+                ).href;
+
+                if (visitedUrls.has(currentUrl)) break;
+                visitedUrls.add(currentUrl);
+
+                const response = await axios.get(currentUrl, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+
+                const data = response.data;
+
+                const results = Array.isArray(data)
+                    ? data
+                    : Array.isArray(data.results)
+                        ? data.results
+                        : Array.isArray(data.results?.results)
+                            ? data.results.results
+                            : [];
+
+                results.forEach((order) => {
+                    const key = order.id ?? order.invoice;
+
+                    if (!seenIds.has(key)) {
+                        seenIds.add(key);
+                        allOrders.push(order);
+                    }
+                });
+
+                const next = data.next ?? data.results?.next;
+
+                nextUrl = next
+                    ? new URL(next, currentUrl).href
+                    : null;
+            }
+
+            const statuses = [
+                "Invoice Created",
+                "Invoice Approved",
+                "Pre Booked",
+                "Waiting For Confirmation",
+                "To Print",
+                "Packing under progress",
+                "Pending For Packing",
+                "Packed",
+                "Return From Delivery",
+                "Ready to ship",
+                "Shipped",
+                "Invoice Rejected"
+            ];
+
+            const statusCounts = {};
+
+            statuses.forEach((status) => {
+                statusCounts[status] = 0;
+            });
+
+            allOrders.forEach((order) => {
+                const status = order.status || "Unknown";
+
+                statusCounts[status] =
+                    (statusCounts[status] || 0) + 1;
+            });
+
+            const totalAmount = allOrders.reduce(
+                (sum, order) =>
+                    sum + (Number(order.total_amount) || 0),
+                0
+            );
+
+            const statusColors = {
+                "Invoice Created": "DCEBFF",
+                "Invoice Approved": "D9EAD3",
+                "Pre Booked": "E4E0FF",
+                "Waiting For Confirmation": "FFF2CC",
+                "To Print": "D9EAF7",
+                "Packing under progress": "EADCF8",
+                "Pending For Packing": "FFE5CC",
+                "Packed": "D9EAD3",
+                "Return From Delivery": "FCE4D6",
+                "Ready to ship": "D9EAF7",
+                "Shipped": "C6EFCE",
+                "Invoice Rejected": "FFC7CE"
+            };
+
+            const headerStyle = {
+                fill: {
+                    patternType: "solid",
+                    fgColor: { rgb: "17365D" }
+                },
+                font: {
+                    bold: true,
+                    color: { rgb: "FFFFFF" },
+                    sz: 11
+                },
+                alignment: {
+                    horizontal: "center",
+                    vertical: "center",
+                    wrapText: true
+                },
+                border: {
+                    bottom: {
+                        style: "thin",
+                        color: { rgb: "B4C6E7" }
+                    }
+                }
+            };
+
+            const totalStyle = {
+                fill: {
+                    patternType: "solid",
+                    fgColor: { rgb: "198754" }
+                },
+                font: {
+                    bold: true,
+                    color: { rgb: "FFFFFF" },
+                    sz: 12
+                },
+                alignment: {
+                    vertical: "center"
+                }
+            };
+
+            const styleRow = (sheet, rowIndex, count, style) => {
+                for (let col = 0; col < count; col++) {
+                    const address = XLSX.utils.encode_cell({
+                        r: rowIndex,
+                        c: col
+                    });
+
+                    if (!sheet[address]) {
+                        sheet[address] = { t: "s", v: "" };
+                    }
+
+                    sheet[address].s = structuredClone(style);
+                }
+            };
+
+            // =================================
+            // SHEET 1 - STATUS SUMMARY
+            // =================================
+
+
+            // =================================
+            // SHEET 1 - STATUS SUMMARY
+            // =================================
+
+            const summaryData = [
+                ["BEPOSOFT - ORDER STATUS REPORT", ""],
+                [
+                    `Generated: ${new Date().toLocaleString("en-IN")}`,
+                    ""
+                ],
+                [],
+                ["TOTAL ORDERS", allOrders.length],
+                ["TOTAL ORDER AMOUNT", totalAmount],
+                [],
+                ["ORDER STATUS", "COUNT"]
+            ];
+
+            Object.entries(statusCounts).forEach(([status, count]) => {
+                summaryData.push([
+                    getDisplayStatus(status),
+                    count
+                ]);
+            });
+
+            const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+
+            summarySheet["!merges"] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } },
+                { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } }
+            ];
+
+            summarySheet["!cols"] = [
+                { wch: 38 },
+                { wch: 22 }
+            ];
+
+            summarySheet["!rows"] = [
+                { hpt: 35 },
+                { hpt: 24 },
+                {},
+                { hpt: 28 },
+                { hpt: 26 },
+                {},
+                { hpt: 28 }
+            ];
+
+            styleRow(summarySheet, 0, 2, headerStyle);
+            styleRow(summarySheet, 3, 2, totalStyle);
+            styleRow(summarySheet, 6, 2, headerStyle);
+
+            summarySheet["B5"].z = "#,##0.00";
+
+            Object.entries(statusCounts).forEach(
+                ([status], index) => {
+                    const row = index + 7;
+                    const color = statusColors[status] || "E7E6E6";
+
+                    const statusCell = `A${row + 1}`;
+                    const countCell = `B${row + 1}`;
+
+                    summarySheet[statusCell].s = {
+                        fill: {
+                            patternType: "solid",
+                            fgColor: { rgb: color }
+                        },
+                        font: {
+                            bold: true,
+                            color: { rgb: "203040" }
+                        },
+                        alignment: {
+                            vertical: "center"
+                        }
+                    };
+
+                    summarySheet[countCell].s = {
+                        alignment: {
+                            horizontal: "center",
+                            vertical: "center"
+                        },
+                        font: {
+                            bold: true,
+                            color: { rgb: "203040" }
+                        }
+                    };
+                }
+            );
+
+
+            // =================================
+            // SHEET 2 - ORDER DETAILS
+            // =================================
+
+            const headers = [
+                "Order #",
+                "Invoice No",
+                "Company Name",
+                "Order Date",
+                "Status",
+                "Customer Name",
+                "Staff",
+                "Family",
+                "Total Amount",
+                "Payment Method"
+            ];
+
+            const orderData = [
+                headers,
+                ...allOrders.map((order, index) => [
+                    index + 1,
+                    order.invoice || "-",
+                    order.company || "-",
+                    order.order_date?.substring(0, 10) || "-",
+                    getDisplayStatus(order.status) || "-",
+                    order.customer?.name || "-",
+                    order.manage_staff || "-",
+                    order.family || "-",
+                    Number(order.total_amount) || 0,
+                    order.payment_method || "-"
+                ]),
+                [
+                    "",
+                    "GRAND TOTAL",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    totalAmount,
+                    ""
+                ]
+            ];
+
+            const ordersSheet = XLSX.utils.aoa_to_sheet(orderData);
+
+            ordersSheet["!cols"] = [
+                { wch: 12 },
+                { wch: 22 },
+                { wch: 26 },
+                { wch: 18 },
+                { wch: 34 },
+                { wch: 30 },
+                { wch: 26 },
+                { wch: 20 },
+                { wch: 20 },
+                { wch: 22 }
+            ];
+
+            ordersSheet["!autofilter"] = {
+                ref: `A1:J${orderData.length}`
+            };
+
+            styleRow(ordersSheet, 0, headers.length, headerStyle);
+
+            allOrders.forEach((order, index) => {
+                const rowIndex = index + 1;
+
+                const background = index % 2 === 0
+                    ? "FFFFFF"
+                    : "F2F6FC";
+
+                for (let col = 0; col < headers.length; col++) {
+                    const address = XLSX.utils.encode_cell({
+                        r: rowIndex,
+                        c: col
+                    });
+
+                    const cell = ordersSheet[address];
+
+                    if (!cell) continue;
+
+                    cell.s = {
+                        fill: {
+                            patternType: "solid",
+                            fgColor: { rgb: background }
+                        },
+                        alignment: {
+                            vertical: "center"
+                        }
+                    };
+                }
+
+                const statusAddress = `E${rowIndex + 1}`;
+                const statusColor =
+                    statusColors[order.status] || "E7E6E6";
+
+                ordersSheet[statusAddress].s = {
+                    fill: {
+                        patternType: "solid",
+                        fgColor: { rgb: statusColor }
+                    },
+                    font: {
+                        bold: true,
+                        color: { rgb: "203040" }
+                    }
+                };
+
+                const amountAddress = `I${rowIndex + 1}`;
+
+                ordersSheet[amountAddress].z = "#,##0.00";
+                ordersSheet[amountAddress].s = {
+                    fill: {
+                        patternType: "solid",
+                        fgColor: { rgb: background }
+                    },
+                    font: {
+                        bold: true,
+                        color: { rgb: "198754" }
+                    },
+                    numFmt: "#,##0.00"
+                };
+            });
+
+            const totalRowIndex = orderData.length - 1;
+
+            styleRow(
+                ordersSheet,
+                totalRowIndex,
+                headers.length,
+                headerStyle
+            );
+
+            ordersSheet[`I${totalRowIndex + 1}`].z = "#,##0.00";
+
+            // =================================
+            // CREATE AND DOWNLOAD WORKBOOK
+            // =================================
+
+            const workbook = XLSX.utils.book_new();
+
+            XLSX.utils.book_append_sheet(
+                workbook,
+                summarySheet,
+                "Status Summary"
+            );
+
+            XLSX.utils.book_append_sheet(
+                workbook,
+                ordersSheet,
+                "Orders"
+            );
+
+            XLSX.writeFile(
+                workbook,
+                `Beposoft_Orders_${new Date()
+                    .toISOString()
+                    .slice(0, 10)}.xlsx`
+            );
+
+        } catch (error) {
+            console.error("Excel export failed:", error);
+            alert("Failed to export orders to Excel.");
+        }
     };
+
 
     const getDisplayStatus = (status) => {
         switch (status) {

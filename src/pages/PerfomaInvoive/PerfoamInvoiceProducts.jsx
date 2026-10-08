@@ -8,6 +8,7 @@ import axios from 'axios';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { createAuditLog } from "../../services/auditService";
 
 const FormLayouts = () => {
 
@@ -77,58 +78,46 @@ const FormLayouts = () => {
         zipcode: "",
     })
 
-    const createDataLog = async (action, beforeData = {}, afterData = {}) => {
+
+    const createDataLog = async (
+        action,
+        beforeData = {},
+        afterData = {}
+    ) => {
         try {
-            const token = localStorage.getItem("token");
+            const orderId = orderItems?.[0]?.order ?? id;
+            const proformaInvoice =
+                formik.values.invoice || invoice || null;
 
-            if (!token) {
-                console.error("Datalog: Authorization token missing");
-                return;
-            }
+            await createAuditLog({
+                action: action,
 
-            // Product item order ID is the actual Proforma order ID.
-            const orderId = orderItems?.[0]?.order;
+                order: orderId ? Number(orderId) : undefined,
 
-            if (!orderId) {
-                console.error("Datalog: Order ID missing");
-                return;
-            }
-
-            const logPayload = {
-                order: Number(orderId),
-
-                before_data: {
-                    Action: action,
-                    Data: beforeData,
+                beforeData: {
+                    ...beforeData,
+                    proforma_invoice: proformaInvoice,
                 },
 
-                after_data: {
-                    Action: action,
-                    Data: afterData,
+                afterData: {
+                    ...afterData,
+                    proforma_invoice: proformaInvoice,
                 },
-            };
+            });
 
-            await axios.post(
-                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                logPayload,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                }
+            console.log(
+                "Audit log created:",
+                action,
+                proformaInvoice
             );
-
-            console.log("Datalog created:", action);
-
         } catch (error) {
-            // Datalog failure should NOT stop the main operation.
             console.error(
-                "Datalog creation failed:",
+                "Audit log creation failed:",
                 error?.response?.data || error
             );
         }
     };
+
 
 
     const formik = useFormik({
@@ -525,11 +514,6 @@ const FormLayouts = () => {
                 }
             );
 
-            console.log(
-                "ADD PRODUCT RESPONSE:",
-                response.data
-            );
-
             toast.success(
                 response?.data?.message ||
                 "Product added successfully"
@@ -544,13 +528,7 @@ const FormLayouts = () => {
                 "Product Added to Proforma",
                 {},
                 {
-                    product_id: product.id,
-                    product_name: product.name,
-                    quantity: quantity,
-                    rate: rate,
-                    discount: 0,
-                    tax: tax,
-                    description: payload.description,
+                    ...payload
                 }
             );
 
@@ -712,18 +690,18 @@ const FormLayouts = () => {
             const changedField = Object.keys(updateData)[0];
 
             await createDataLog(
-                `Product ${changedField} Updated`,
+                "Proforma Product Updated",
                 {
                     item_id: itemId,
-                    product_id: oldItem?.product,
-                    product_name: oldItem?.name,
-                    [changedField]: oldItem?.[changedField],
+                    ...Object.fromEntries(
+                        Object.keys(updateData).map((key) => [
+                            key,
+                            oldItem?.[key]
+                        ])
+                    )
                 },
                 {
-                    item_id: itemId,
-                    product_id: oldItem?.product,
-                    product_name: oldItem?.name,
-                    [changedField]: updateData[changedField],
+                    ...updateData
                 }
             );
 
@@ -792,14 +770,14 @@ const FormLayouts = () => {
                 setSuccessMessage("Form submitted successfully!");
 
                 await createDataLog(
-                    "Shipping / Total Information Updated",
+                    "Proforma Order Information Updated",
                     {
-                        shipping_charge: shippingCharge,
-                        total_amount: totalAmount,
+                        code_charge: formik.initialValues.code_charge,
+                        shipping_mode: formik.initialValues.shipping_mode
                     },
                     {
-                        shipping_charge: payload.shipping_charge,
-                        total_amount: payload.total_amount,
+                        code_charge: values.code_charge,
+                        shipping_mode: values.shipping_mode
                     }
                 );
 

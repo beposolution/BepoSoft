@@ -357,6 +357,7 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
                                     {(role === "Accounts / Accounting" ||
                                         role === "CEO" ||
                                         role === "COO" ||
+                                        role === "IT" ||
                                         role === "ADMIN") && (
                                             <th>Stock</th>
                                         )}
@@ -494,6 +495,7 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
                                                 {(role === "Accounts / Accounting" ||
                                                     role === "CEO" ||
                                                     role === "COO" ||
+                                                    role === "IT" ||
                                                     role === "ADMIN") && (
                                                         <td>{Number(product.stock || 0)}</td>
                                                     )}

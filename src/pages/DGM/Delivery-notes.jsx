@@ -108,6 +108,7 @@ const BasicTable = () => {
                 const warehouseStatuses = [
                     "To Print",
                     "Packing under progress",
+                    "Pending For Packing",
                     "Packed",
                     "Ready to ship",
                     "Return From Delivery",
@@ -148,6 +149,7 @@ const BasicTable = () => {
     const statusOptions = [
         "To Print",
         "Packing under progress",
+        "Pending For Packing",
         "Packed",
         "Return From Delivery",
         "Ready to ship",
@@ -244,6 +246,16 @@ const BasicTable = () => {
                         color: "#7c3aed",
                         backgroundColor: "#f5f3ff",
                         border: "1px solid #ddd6fe",
+                    },
+                };
+
+            case "Pending For Packing":
+                return {
+                    label: "Pending For Packing",
+                    style: {
+                        color: "#4a5101",
+                        backgroundColor: "#d6d7d3",
+                        border: "1px solid #505604",
                     },
                 };
 

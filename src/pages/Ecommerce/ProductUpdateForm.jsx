@@ -28,6 +28,11 @@ const EcommerenceAddProduct = () => {
 
     const token = localStorage.getItem('token');
 
+    const userRole = localStorage.getItem("active");
+    const canEditStockLocks = ["COO", "IT"].includes(
+        String(userRole || "").trim().toUpperCase()
+    );
+
     const formik = useFormik({
         initialValues: {
             name: '',
@@ -50,6 +55,7 @@ const EcommerenceAddProduct = () => {
             rack_details: [],
             final_price: '',
             duty_charge: '',
+            locked_stock: 0,
         },
         validationSchema: yup.object().shape({
             name: yup.string().required('Please Enter Your Product Name'),
@@ -65,7 +71,7 @@ const EcommerenceAddProduct = () => {
             // color: yup.string().required('Please Enter Color'),
             // size: yup.string().required('Please Enter Size'),
             main_category: yup.string().required('Please select a Main Category'),
-            groupID: yup.string().required('Please Enter groupID')
+            groupID: yup.string().required('Please Enter groupID'),
 
         }),
         onSubmit: async (values) => {
@@ -77,7 +83,7 @@ const EcommerenceAddProduct = () => {
                     values[key].forEach((value) => {
                         formData.append('family', value);
                     });
-                } else {
+                } else if (key !== "locked_stock" || canEditStockLocks) {
                     formData.append(key, values[key]);
                 }
             }
@@ -105,7 +111,16 @@ const EcommerenceAddProduct = () => {
                             column_name: r.column_name,
                             usability: r.usability,
                             rack_stock: Number(r.rack_stock),
-                            rack_lock: Number(r.rack_lock || 0)
+                            rack_lock: canEditStockLocks
+                                ? Number(r.rack_lock ?? 0)
+                                : Number(
+                                    (beforeData?.rack_details || []).find(
+                                        (original) =>
+                                            String(original.rack_id) === String(r.rack_id) &&
+                                            String(original.column_name) === String(r.column_name) &&
+                                            String(original.usability) === String(r.usability)
+                                    )?.rack_lock ?? r.rack_lock ?? 0
+                                )
                         };
                     })
             ));
@@ -123,7 +138,6 @@ const EcommerenceAddProduct = () => {
                 );
 
                 const data = await response.json();
-                // console.log("data", data)
                 if (!response.ok) {
                     throw new Error(data.message || 'Error updating product');
                 }
@@ -134,11 +148,6 @@ const EcommerenceAddProduct = () => {
                 const nextSnap = buildAfterSnapshot(values, rackDetails);
 
                 const { before, after } = diffObjects(prevSnap, nextSnap);
-
-                // console.log("PREV RACK", prevSnap.rack_details);
-                // console.log("NEXT RACK", nextSnap.rack_details);
-                // console.log("FINAL BEFORE", before);
-                // console.log("FINAL AFTER", after);
 
                 if (Object.keys(before).length > 0) {
                     await axios.post(
@@ -314,6 +323,7 @@ const EcommerenceAddProduct = () => {
 
                     formik.setValues({
                         name: productData.data.name || '',
+                        locked_stock: productData.data.locked_stock ?? 0,
                         hsn_code: productData.data.hsn_code || '',
                         family: productData.data.family.map(id => id.toString()) || [],
                         purchase_rate: productData.data.purchase_rate || '',
@@ -438,6 +448,7 @@ const EcommerenceAddProduct = () => {
         unit: values.unit || "",
         selling_price: Number(values.selling_price ?? 0),
         stock: Number(values.stock ?? 0),
+        locked_stock: Number(values.locked_stock ?? 0),
         partially_damaged_stock: Number(values.partially_damaged_stock ?? 0),
         damaged_stock: Number(values.damaged_stock ?? 0),
         liquidation_stock: Number(values.liquidation_stock ?? 0),
@@ -467,6 +478,7 @@ const EcommerenceAddProduct = () => {
             unit: raw.unit || "",
             selling_price: Number(raw.selling_price ?? 0),
             stock: Number(raw.stock ?? 0),
+            locked_stock: Number(raw.locked_stock ?? 0),
             partially_damaged_stock: Number(raw.partially_damaged_stock ?? 0),
             liquidation_stock: Number(raw.liquidation_stock ?? 0),
             damaged_stock: Number(raw.damaged_stock ?? 0),
@@ -1148,6 +1160,56 @@ const EcommerenceAddProduct = () => {
                                                 </div>
                                             </Col>
 
+                                            {canEditStockLocks && (
+                                                <Col md={4}>
+                                                    <div
+                                                        className="mb-3 p-3"
+                                                        style={{
+                                                            backgroundColor: "#fff1f2",
+                                                            border: "2px solid #dc3545",
+                                                            borderRadius: "8px",
+                                                        }}
+                                                    >
+                                                        <div className="d-flex align-items-center justify-content-between mb-2">
+                                                            <Label
+                                                                className="mb-0"
+                                                                style={{
+                                                                    color: "#dc3545",
+                                                                    fontWeight: "bold",
+                                                                }}
+                                                            >
+                                                                No of Products in Invoices
+                                                            </Label>
+
+                                                            <span
+                                                                style={{
+                                                                    color: "#dc3545",
+                                                                    fontSize: "12px",
+                                                                    fontWeight: "bold",
+                                                                    whiteSpace: "nowrap",
+                                                                    marginLeft: "10px",
+                                                                }}
+                                                            >
+                                                                ⚠ DO NOT EDIT
+                                                            </span>
+                                                        </div>
+
+                                                        <Input
+                                                            type="number"
+                                                            name="locked_stock"
+                                                            min="0"
+                                                            step="1"
+                                                            value={formik.values.locked_stock ?? 0}
+                                                            onChange={formik.handleChange}
+                                                            onBlur={formik.handleBlur}
+                                                            style={{
+                                                                borderColor: "#dc3545",
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </Col>
+                                            )}
+
                                         </Row>
 
                                         <Row>
@@ -1339,7 +1401,7 @@ const EcommerenceAddProduct = () => {
                                                                     ))}
                                                                 </select>
                                                             </Col>
-                                                            <Col md={3}>
+                                                            <Col md={2}>
                                                                 <Input
                                                                     type="select"
                                                                     value={rack.usability}
@@ -1381,6 +1443,65 @@ const EcommerenceAddProduct = () => {
                                                                     Remove
                                                                 </Button>
                                                             </Col> */}
+                                                            {canEditStockLocks && (
+                                                                <Col md={2}>
+                                                                    <div
+                                                                        className="p-2"
+                                                                        style={{
+                                                                            backgroundColor: "#fff1f2",
+                                                                            border: "2px solid #dc3545",
+                                                                            borderRadius: "8px",
+                                                                        }}
+                                                                    >
+                                                                        <div className="d-flex align-items-center justify-content-between mb-2">
+                                                                            <Label
+                                                                                className="mb-0"
+                                                                                style={{
+                                                                                    color: "#dc3545",
+                                                                                    fontWeight: "bold",
+                                                                                }}
+                                                                            >
+                                                                                Rack Lock
+                                                                            </Label>
+
+                                                                            <span
+                                                                                style={{
+                                                                                    color: "#dc3545",
+                                                                                    fontSize: "11px",
+                                                                                    fontWeight: "bold",
+                                                                                    whiteSpace: "nowrap",
+                                                                                    marginLeft: "5px",
+                                                                                }}
+                                                                            >
+                                                                                ⚠ DO NOT EDIT
+                                                                            </span>
+                                                                        </div>
+
+                                                                        <Input
+                                                                            type="number"
+                                                                            placeholder="Rack Lock"
+                                                                            min="0"
+                                                                            step="1"
+                                                                            value={rack.rack_lock ?? 0}
+                                                                            onChange={(e) => {
+                                                                                const arr = rackDetails.map((item, i) =>
+                                                                                    i === idx
+                                                                                        ? {
+                                                                                            ...item,
+                                                                                            rack_lock: e.target.value
+                                                                                        }
+                                                                                        : item
+                                                                                );
+
+                                                                                setRackDetails(arr);
+                                                                            }}
+                                                                            style={{
+                                                                                borderColor: "#dc3545",
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                </Col>
+                                                            )}
                                                         </Row>
                                                     );
                                                 })}
@@ -1390,7 +1511,7 @@ const EcommerenceAddProduct = () => {
                                                     className="mb-2"
                                                     onClick={() => setRackDetails([
                                                         ...rackDetails,
-                                                        { rack_id: '', column_name: '', usability: '', rack_stock: '' }
+                                                        { rack_id: '', column_name: '', usability: '', rack_stock: '', rack_lock: 0 }
                                                     ])}
                                                 >
                                                     Add Rack

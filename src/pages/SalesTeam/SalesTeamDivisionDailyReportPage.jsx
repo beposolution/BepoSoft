@@ -23,6 +23,7 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { createAuditLog } from "../../services/auditService";
 
 const SalesTeamDivisionDailyReportPage = () => {
     document.title = "Sales Team Division Daily Report | Beposoft";
@@ -85,6 +86,97 @@ const SalesTeamDivisionDailyReportPage = () => {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
     });
+
+
+    const sendDatalog = async ({
+        action,
+        beforeData = {},
+        afterData = {},
+    }) => {
+        try {
+            const auditCreated = await createAuditLog({
+                action,
+                beforeData,
+                afterData,
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "DSR status update succeeded, but audit logging failed."
+                );
+            }
+
+            return auditCreated;
+        } catch (auditError) {
+            console.error(
+                "Sales Team Division Daily Report audit error:",
+                auditError
+            );
+
+            return false;
+        }
+    };
+
+
+    const buildDSRAuditSnapshot = (report = {}) => {
+        return {
+            report_id: report?.id ?? null,
+
+            team_id: report?.team_id ?? report?.team?.id ?? null,
+            team_name: report?.team_name ?? "",
+
+            created_by_id:
+                report?.created_by_id ??
+                report?.created_by?.id ??
+                null,
+
+            created_by_name: report?.created_by_name ?? "",
+
+            state_id:
+                report?.state_id ??
+                report?.state?.id ??
+                null,
+
+            state_name: report?.state_name ?? "",
+
+            district_id:
+                report?.district_id ??
+                report?.district?.id ??
+                null,
+
+            district_name: report?.district_name ?? "",
+
+            invoice_id:
+                report?.invoice_id ??
+                report?.invoice_details?.id ??
+                null,
+
+            invoice_number:
+                report?.invoice_number ??
+                report?.invoice_details?.invoice ??
+                report?.invoice_details?.invoice_number ??
+                (typeof report?.invoice === "string"
+                    ? report.invoice
+                    : "") ??
+                "",
+
+            customer_name: report?.customer_name ?? "",
+            phone: report?.phone ?? "",
+
+            call_status: report?.call_status ?? "",
+            status: report?.status ?? "",
+
+            call_duration: report?.call_duration ?? "",
+
+            call_duration_percentage_8hrs:
+                report?.call_duration_percentage_8hrs ?? null,
+
+            note: report?.note ?? "",
+
+            created_at: report?.created_at ?? null,
+        };
+    };
+
 
     const parsePaginatedResponse = (response) => {
         const responseData = response?.data || {};
@@ -563,6 +655,7 @@ const SalesTeamDivisionDailyReportPage = () => {
         setSelectedNewStatus("");
     };
 
+
     const handleUpdateStatus = async () => {
         if (!selectedReportForStatus?.id) {
             toast.error("Invalid report selected");
@@ -591,6 +684,13 @@ const SalesTeamDivisionDailyReportPage = () => {
                 status: selectedNewStatus,
             };
 
+            // Capture original values before updating.
+            const beforeSnapshot = buildDSRAuditSnapshot(
+                selectedReportForStatus
+            );
+
+            const previousStatus = selectedReportForStatus.status;
+
             const response = await axios.patch(
                 `${baseUrl}sales/team/member/daily/report/status/${selectedReportForStatus.id}/`,
                 payload,
@@ -599,19 +699,67 @@ const SalesTeamDivisionDailyReportPage = () => {
                 }
             );
 
+            // Log only after successful API update.
+            if (response.status >= 200 && response.status < 300) {
+                const afterSnapshot = {
+                    ...beforeSnapshot,
+                    status: selectedNewStatus,
+                };
+
+                await sendDatalog({
+                    action: "sales_team_division_dsr_status_updated_website",
+
+                    beforeData: {
+                        operation: "DSR Status Update",
+                        report_id: selectedReportForStatus.id,
+                        role: role,
+
+                        previous_status: previousStatus,
+                        previous_status_label:
+                            formatStatusLabel(previousStatus),
+
+                        ...beforeSnapshot,
+                    },
+
+                    afterData: {
+                        operation: "DSR Status Update",
+                        report_id: selectedReportForStatus.id,
+                        role: role,
+
+                        previous_status: previousStatus,
+                        new_status: selectedNewStatus,
+
+                        previous_status_label:
+                            formatStatusLabel(previousStatus),
+
+                        new_status_label:
+                            formatStatusLabel(selectedNewStatus),
+
+                        ...afterSnapshot,
+
+                        submitted_payload: payload,
+
+                        api_response: response.data ?? null,
+                    },
+                });
+            }
+
+            // Keep the existing report update behavior.
             setReports((prevReports) =>
                 prevReports.map((item) =>
                     item.id === selectedReportForStatus.id
                         ? {
-                              ...item,
-                              status: selectedNewStatus,
-                          }
+                            ...item,
+                            status: selectedNewStatus,
+                        }
                         : item
                 )
             );
 
             toast.success(
-                `Status updated to ${formatStatusLabel(selectedNewStatus)} successfully`
+                `Status updated to ${formatStatusLabel(
+                    selectedNewStatus
+                )} successfully`
             );
 
             closeStatusModal();
@@ -628,6 +776,7 @@ const SalesTeamDivisionDailyReportPage = () => {
             setStatusUpdating(false);
         }
     };
+
 
     const statusOptionsForModal = useMemo(() => {
         return getAllowedStatusOptions(
@@ -1067,11 +1216,11 @@ const SalesTeamDivisionDailyReportPage = () => {
                                                                                     <td>
                                                                                         {item?.call_duration_percentage_8hrs !==
                                                                                             null &&
-                                                                                        item?.call_duration_percentage_8hrs !==
+                                                                                            item?.call_duration_percentage_8hrs !==
                                                                                             undefined
                                                                                             ? `${Number(
-                                                                                                  item.call_duration_percentage_8hrs
-                                                                                              ).toFixed(2)}%`
+                                                                                                item.call_duration_percentage_8hrs
+                                                                                            ).toFixed(2)}%`
                                                                                             : "-"}
                                                                                     </td>
                                                                                     <td>{formatCreatedAt(item?.created_at)}</td>
@@ -1164,7 +1313,7 @@ const SalesTeamDivisionDailyReportPage = () => {
                                     <h6 className="mb-3">Products</h6>
 
                                     {Array.isArray(selectedInvoiceDetails?.items) &&
-                                    selectedInvoiceDetails.items.length > 0 ? (
+                                        selectedInvoiceDetails.items.length > 0 ? (
                                         <div className="table-responsive">
                                             <Table bordered className="align-middle mb-0">
                                                 <thead className="table-light">

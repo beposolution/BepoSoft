@@ -23,6 +23,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import Select from "react-select";
+import { createAuditLog } from "../../services/auditService";
 
 const AddTeamMembers = () => {
     document.title = "Sales Team Members | Beposoft";
@@ -46,6 +47,7 @@ const AddTeamMembers = () => {
 
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedMemberId, setSelectedMemberId] = useState(null);
+    const [originalAuditData, setOriginalAuditData] = useState(null);
 
     const [deleteLoadingId, setDeleteLoadingId] = useState(null);
 
@@ -165,9 +167,86 @@ const AddTeamMembers = () => {
         }));
     }, [staffList]);
 
+
+    const getAuditName = (items, value) => {
+        if (value === null || value === undefined || value === "") {
+            return "";
+        }
+
+        const id =
+            typeof value === "object"
+                ? value.id
+                : value;
+
+        const matched = items.find(
+            (item) => String(item.id) === String(id)
+        );
+
+        return (
+            matched?.name ??
+            (typeof value === "object" ? value.name : "") ??
+            ""
+        );
+    };
+
+    const getAuditId = (value) => {
+        if (value === null || value === undefined || value === "") {
+            return null;
+        }
+
+        return typeof value === "object"
+            ? value.id ?? null
+            : value;
+    };
+
+    const buildMemberAuditSnapshot = (data = {}) => {
+        return {
+            team_id: getAuditId(data.team),
+            team_name:
+                data.team_name ||
+                getAuditName(teams, data.team),
+
+            staff_id: getAuditId(data.user),
+            staff_name:
+                data.user_name ||
+                getAuditName(staffList, data.user),
+        };
+    };
+
+    const sendDatalog = async ({
+        action,
+        beforeData = {},
+        afterData = {},
+    }) => {
+        try {
+            const auditCreated = await createAuditLog({
+                action,
+                beforeData,
+                afterData,
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Team member operation succeeded, but audit logging failed."
+                );
+            }
+
+            return auditCreated;
+        } catch (auditError) {
+            console.error(
+                "Sales team member audit error:",
+                auditError
+            );
+
+            return false;
+        }
+    };
+
+
     const clearFormAndMode = () => {
         setIsEditMode(false);
         setSelectedMemberId(null);
+        setOriginalAuditData(null);
         setPageError("");
         formik.resetForm();
     };
@@ -218,6 +297,46 @@ const AddTeamMembers = () => {
                 }
 
                 if (response.status === 200 || response.status === 201) {
+
+                    const isUpdating = Boolean(
+                        isEditMode && selectedMemberId
+                    );
+
+                    const memberId = isUpdating
+                        ? selectedMemberId
+                        : response.data?.data?.id ??
+                        response.data?.id ??
+                        null;
+
+                    const afterSnapshot = buildMemberAuditSnapshot(payload);
+
+                    await sendDatalog({
+                        action: isUpdating
+                            ? "sales_team_member_updated_website"
+                            : "sales_team_member_created_website",
+
+                        beforeData: isUpdating
+                            ? {
+                                status: "Existing",
+                                member_id: memberId,
+                                ...(originalAuditData ?? {}),
+                            }
+                            : {
+                                status: "Not Created",
+                            },
+
+                        afterData: {
+                            status: isUpdating ? "Updated" : "Created",
+                            member_id: memberId,
+
+                            ...afterSnapshot,
+
+                            submitted_payload: payload,
+
+                            api_response: response.data,
+                        },
+                    });
+
                     toast.success(
                         isEditMode
                             ? "Sales team member updated successfully"
@@ -227,6 +346,8 @@ const AddTeamMembers = () => {
                     resetForm();
                     setIsEditMode(false);
                     setSelectedMemberId(null);
+                    setOriginalAuditData(null);
+
                     await fetchMyTeams();
                 } else {
                     toast.error(
@@ -288,6 +409,10 @@ const AddTeamMembers = () => {
             if (response.status === 200) {
                 const memberData = response?.data?.data;
 
+                setOriginalAuditData(
+                    buildMemberAuditSnapshot(memberData)
+                );
+
                 formik.setValues({
                     team: memberData?.team ? String(memberData.team) : "",
                     user: memberData?.user ? String(memberData.user) : "",
@@ -345,6 +470,42 @@ const AddTeamMembers = () => {
                 response.status === 202
             ) {
                 toast.success("Sales team member deleted successfully");
+
+                // Find original member details before refreshing the list.
+                const existingMember = members.find(
+                    (member) => String(member.id) === String(memberId)
+                );
+
+                const beforeSnapshot = existingMember
+                    ? buildMemberAuditSnapshot(existingMember)
+                    : {
+                        team_id: null,
+                        team_name: "",
+                        staff_id: null,
+                        staff_name: memberName,
+                    };
+
+                await sendDatalog({
+                    action: "sales_team_member_deleted_website",
+
+                    beforeData: {
+                        status: "Existing",
+                        member_id: memberId,
+
+                        ...beforeSnapshot,
+
+                        member_details: existingMember ?? null,
+                    },
+
+                    afterData: {
+                        status: "Deleted",
+                        member_id: memberId,
+                        deleted: true,
+
+                        api_response: response.data ?? null,
+                    },
+                });
+
 
                 if (String(selectedMemberId) === String(memberId)) {
                     clearFormAndMode();

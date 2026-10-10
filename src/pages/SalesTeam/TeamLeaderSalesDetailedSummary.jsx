@@ -24,6 +24,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import * as XLSX from "xlsx-js-style";
+import { createAuditLog } from "../../services/auditService";
 
 const TeamLeaderSalesDetailedSummary = () => {
     document.title = "Team Leader Sales Detailed Summary | Beposoft";
@@ -76,6 +77,37 @@ const TeamLeaderSalesDetailedSummary = () => {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
     });
+
+
+    const sendDatalog = async ({
+        action,
+        beforeData = {},
+        afterData = {},
+    }) => {
+        try {
+            const auditCreated = await createAuditLog({
+                action,
+                beforeData,
+                afterData,
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "DSR status updated, but audit log creation failed."
+                );
+            }
+
+            return auditCreated;
+        } catch (auditError) {
+            console.error(
+                "Team Leader Sales Detailed Summary audit error:",
+                auditError
+            );
+
+            return false;
+        }
+    };
+
 
     const normalize = (value) => String(value ?? "").trim().toLowerCase();
     const normalizeRole = (value) => String(value ?? "").trim().toUpperCase();
@@ -208,6 +240,82 @@ const TeamLeaderSalesDetailedSummary = () => {
         if (item?.invoice) return item.invoice;
         return "-";
     };
+
+
+    const buildDSRAuditSnapshot = (item = {}) => {
+        const invoiceDetails =
+            item?.invoice && typeof item.invoice === "object"
+                ? item.invoice
+                : item?.invoice_details || {};
+
+        return {
+            report_id: item?.id ?? null,
+
+            team_name: item?.team_name ?? "",
+
+            staff_name:
+                item?.staff_name ||
+                item?.created_by_name ||
+                (typeof item?.created_by === "string"
+                    ? item.created_by
+                    : "") ||
+                "",
+
+            created_by_id:
+                item?.created_by_id ??
+                item?.created_by?.id ??
+                null,
+
+            state_name:
+                item?.state_name ||
+                item?.state?.name ||
+                (typeof item?.state === "string"
+                    ? item.state
+                    : "") ||
+                "",
+
+            district_name:
+                item?.district_name ||
+                item?.district?.name ||
+                (typeof item?.district === "string"
+                    ? item.district
+                    : "") ||
+                "",
+
+            invoice_id:
+                invoiceDetails?.id ??
+                item?.invoice_id ??
+                null,
+
+            invoice_number:
+                invoiceDetails?.invoice ||
+                invoiceDetails?.invoice_number ||
+                item?.invoice_number ||
+                (typeof item?.invoice === "string"
+                    ? item.invoice
+                    : "") ||
+                "",
+
+            customer_name:
+                item?.customer_name ||
+                invoiceDetails?.customer?.name ||
+                "",
+
+            call_status: item?.call_status ?? "",
+
+            call_duration: item?.call_duration ?? "",
+
+            call_duration_percentage_8hrs:
+                item?.call_duration_percentage_8hrs ??
+                item?.member_summary?.call_duration_percentage_8hrs ??
+                null,
+
+            status: item?.status ?? "",
+
+            created_at: item?.created_at ?? null,
+        };
+    };
+
 
     const formatCreatedAt = (value) => {
         if (!value) return "-";
@@ -484,6 +592,7 @@ const TeamLeaderSalesDetailedSummary = () => {
         setSelectedNewStatus("");
     };
 
+
     const handleUpdateStatus = async () => {
         if (!selectedRowForStatus?.id) {
             toast.error("Invalid row selected");
@@ -495,9 +604,10 @@ const TeamLeaderSalesDetailedSummary = () => {
             return;
         }
 
-        const allowedValues = getAllowedStatusOptions(role, selectedRowForStatus?.status).map(
-            (item) => item.value
-        );
+        const allowedValues = getAllowedStatusOptions(
+            role,
+            selectedRowForStatus?.status
+        ).map((item) => item.value);
 
         if (!allowedValues.includes(selectedNewStatus)) {
             toast.error("This status change is not allowed for your role");
@@ -507,20 +617,97 @@ const TeamLeaderSalesDetailedSummary = () => {
         try {
             setStatusUpdating(true);
 
-            await axios.patch(
-                `${cleanBaseUrl}sales/team/member/daily/report/status/${selectedRowForStatus.id}/`,
-                { status: selectedNewStatus },
-                { headers: getAuthHeaders() }
+            const reportId = selectedRowForStatus.id;
+            const previousStatus = selectedRowForStatus.status;
+
+            const payload = {
+                status: selectedNewStatus,
+            };
+
+            // STEP 1: Capture original report details.
+            const beforeSnapshot = buildDSRAuditSnapshot(
+                selectedRowForStatus
             );
 
+            // STEP 2: Update status through existing API.
+            const response = await axios.patch(
+                `${cleanBaseUrl}sales/team/member/daily/report/status/${reportId}/`,
+                payload,
+                {
+                    headers: getAuthHeaders(),
+                }
+            );
+
+            // STEP 3: Capture audit log after successful update.
+            if (response.status >= 200 && response.status < 300) {
+                const afterSnapshot = {
+                    ...beforeSnapshot,
+                    status: selectedNewStatus,
+                };
+
+                await sendDatalog({
+                    action:
+                        "team_leader_sales_dsr_status_updated_website",
+
+                    beforeData: {
+                        operation: "DSR Status Update",
+                        report_id: reportId,
+
+                        updated_by_role: role,
+
+                        previous_status: previousStatus,
+                        previous_status_label:
+                            formatLabel(previousStatus),
+
+                        ...beforeSnapshot,
+                    },
+
+                    afterData: {
+                        operation: "DSR Status Update",
+                        report_id: reportId,
+
+                        updated_by_role: role,
+
+                        previous_status: previousStatus,
+                        new_status: selectedNewStatus,
+
+                        previous_status_label:
+                            formatLabel(previousStatus),
+
+                        new_status_label:
+                            formatLabel(selectedNewStatus),
+
+                        ...afterSnapshot,
+
+                        submitted_payload: payload,
+                    },
+                });
+            }
+
+            // STEP 4: Update existing table state.
             setRows((prev) =>
                 prev.map((item) =>
-                    item.id === selectedRowForStatus.id ? { ...item, status: selectedNewStatus } : item
+                    item.id === reportId
+                        ? {
+                            ...item,
+                            status: selectedNewStatus,
+                        }
+                        : item
                 )
             );
 
-            toast.success(`Status updated to ${formatLabel(selectedNewStatus)} successfully`);
-            closeStatusModal();
+            // STEP 5: Show existing success notification.
+            toast.success(
+                `Status updated to ${formatLabel(
+                    selectedNewStatus
+                )} successfully`
+            );
+
+            // STEP 6: Close modal after successful update.
+            setStatusModalOpen(false);
+            setSelectedRowForStatus(null);
+            setSelectedNewStatus("");
+
         } catch (error) {
             const message =
                 error?.response?.data?.message ||
@@ -528,11 +715,14 @@ const TeamLeaderSalesDetailedSummary = () => {
                 error?.response?.data?.detail ||
                 error?.message ||
                 "Failed to update status";
+
             toast.error(message);
+
         } finally {
             setStatusUpdating(false);
         }
     };
+
 
     const handleSearch = async () => {
         setCurrentPage(1);

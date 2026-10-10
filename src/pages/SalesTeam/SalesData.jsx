@@ -23,6 +23,7 @@ import Select from "react-select";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { createAuditLog } from "../../services/auditService";
 
 const SalesData = () => {
     document.title = "Sales Team Daily Report | Beposoft";
@@ -49,6 +50,7 @@ const SalesData = () => {
 
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedReportId, setSelectedReportId] = useState(null);
+    const [originalAuditData, setOriginalAuditData] = useState(null);
     const [viewLoadingId, setViewLoadingId] = useState(null);
     const [showForm, setShowForm] = useState(false);
 
@@ -317,6 +319,91 @@ const SalesData = () => {
         }));
     }, [filteredStates]);
 
+
+    const getAuditName = (items, value, idField = "id", nameField = "name") => {
+        if (value === null || value === undefined || value === "") {
+            return "";
+        }
+
+        const id =
+            typeof value === "object"
+                ? value[idField] ?? value.id
+                : value;
+
+        const matched = items.find(
+            (item) => String(item[idField]) === String(id)
+        );
+
+        return (
+            matched?.[nameField] ??
+            (typeof value === "object"
+                ? value[nameField] ?? value.name
+                : "") ??
+            ""
+        );
+    };
+
+    const buildReportAuditSnapshot = (data = {}) => {
+        const teamId = getDisplayId(data.team);
+        const stateId = getDisplayId(data.state);
+        const districtId = getDisplayId(data.district);
+
+        return {
+            team_id: teamId || null,
+            team_name:
+                data.team_name ||
+                getAuditName(teams, teamId, "team_id", "team_name"),
+
+            state_id: stateId || null,
+            state_name:
+                data.state_name ||
+                getAuditName(states, stateId),
+
+            district_id: districtId || null,
+            district_name:
+                data.district_name ||
+                getAuditName(districts, districtId),
+
+            new_leads: data.new_leads ?? null,
+            md: data.md ?? null,
+            sd: data.sd ?? null,
+            unbilled: data.unbilled ?? null,
+            billed: data.billed ?? null,
+            new_customers: data.new_customers ?? null,
+            new_conversions: data.new_conversions ?? null,
+        };
+    };
+
+    const sendDatalog = async ({
+        action,
+        beforeData = {},
+        afterData = {},
+    }) => {
+        try {
+            const auditCreated = await createAuditLog({
+                action,
+                beforeData,
+                afterData,
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Daily report saved, but audit log creation failed."
+                );
+            }
+
+            return auditCreated;
+        } catch (auditError) {
+            console.error(
+                "Sales Team Daily Report audit error:",
+                auditError
+            );
+
+            return false;
+        }
+    };
+
+
     const formik = useFormik({
         initialValues: {
             team: "",
@@ -402,6 +489,46 @@ const SalesData = () => {
                 }
 
                 if (response.status === 200 || response.status === 201) {
+
+                    const isUpdating = Boolean(
+                        isEditMode && selectedReportId
+                    );
+
+                    const reportId = isUpdating
+                        ? selectedReportId
+                        : response.data?.data?.id ??
+                        response.data?.id ??
+                        null;
+
+                    const afterSnapshot = buildReportAuditSnapshot(payload);
+
+                    await sendDatalog({
+                        action: isUpdating
+                            ? "sales_team_daily_report_updated_website"
+                            : "sales_team_daily_report_created_website",
+
+                        beforeData: isUpdating
+                            ? {
+                                status: "Existing",
+                                report_id: reportId,
+                                ...(originalAuditData ?? {}),
+                            }
+                            : {
+                                status: "Not Created",
+                            },
+
+                        afterData: {
+                            status: isUpdating ? "Updated" : "Created",
+                            report_id: reportId,
+
+                            ...afterSnapshot,
+
+                            submitted_payload: payload,
+
+                            api_response: response.data,
+                        },
+                    });
+
                     toast.success(
                         isEditMode
                             ? "Sales team daily report updated successfully"
@@ -411,6 +538,7 @@ const SalesData = () => {
                     resetForm();
                     setIsEditMode(false);
                     setSelectedReportId(null);
+                    setOriginalAuditData(null);
                     setShowForm(false);
                     await fetchReports(currentPage);
                 } else {
@@ -480,6 +608,7 @@ const SalesData = () => {
     const clearFormAndMode = () => {
         setIsEditMode(false);
         setSelectedReportId(null);
+        setOriginalAuditData(null);
         setPageError("");
         setShowForm(false);
         formik.resetForm();
@@ -488,6 +617,7 @@ const SalesData = () => {
     const handleAddButtonClick = () => {
         setIsEditMode(false);
         setSelectedReportId(null);
+        setOriginalAuditData(null);
         setPageError("");
         formik.resetForm();
         setShowForm(true);
@@ -541,6 +671,11 @@ const SalesData = () => {
             );
 
             const data = response?.data?.data || {};
+
+            // Preserve original report details before editing.
+            setOriginalAuditData(
+                buildReportAuditSnapshot(data)
+            );
 
             const editStateId = String(getDisplayId(data?.state) || "");
             const editDistrictId = String(getDisplayId(data?.district) || "");

@@ -481,7 +481,7 @@ const BasicTable = () => {
                           <th>Expense Type</th>
                           <th>Description</th>
                           <th>Added By</th>
-                          {["ADMIN", "CEO", "COO", "HR"].includes(role) && (
+                          {["ADMIN", "CEO", "COO", "HR", "IT"].includes(role) && (
                             <th>Actions</th>
                           )}
                         </tr>
@@ -533,7 +533,7 @@ const BasicTable = () => {
                               <td style={{ fontWeight: "bold" }}>
                                 {expense?.added_by ?? ""}
                               </td>
-                              {["ADMIN", "CEO", "COO", "HR"].includes(role) && (
+                              {["ADMIN", "CEO", "COO", "HR", "IT"].includes(role) && (
                                 <td>
                                   <button
                                     onClick={() => updateExpense(expense?.id)}

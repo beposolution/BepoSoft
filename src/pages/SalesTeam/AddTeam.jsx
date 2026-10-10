@@ -23,6 +23,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import Select from "react-select";
+import { createAuditLog } from "../../services/auditService";
 
 const AddTeam = () => {
     document.title = "Sales Team Management | Beposoft";
@@ -46,6 +47,7 @@ const AddTeam = () => {
 
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedTeamId, setSelectedTeamId] = useState(null);
+    const [originalAuditData, setOriginalAuditData] = useState(null);
 
     const fetchSalesTeams = async () => {
         try {
@@ -171,9 +173,82 @@ const AddTeam = () => {
         }));
     }, [familyList]);
 
+
+    const sendDatalog = async ({
+        action,
+        beforeData = {},
+        afterData = {},
+    }) => {
+        try {
+            const auditCreated = await createAuditLog({
+                action,
+                beforeData,
+                afterData,
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Sales team saved successfully, but audit log creation failed."
+                );
+            }
+
+            return auditCreated;
+        } catch (auditError) {
+            console.error(
+                "Failed to create sales team audit log:",
+                auditError
+            );
+
+            return false;
+        }
+    };
+
+    // Convert team IDs into readable names for audit logs.
+    const buildTeamAuditSnapshot = (data = {}) => {
+        const getName = (items, value, field = "name") => {
+            if (value === null || value === undefined || value === "") {
+                return "";
+            }
+
+            if (typeof value === "object") {
+                return value[field] ?? value.name ?? "";
+            }
+
+            const matched = items.find(
+                (item) => String(item.id) === String(value)
+            );
+
+            return matched?.[field] ?? "";
+        };
+
+        return {
+            name: data.name ?? "",
+
+            team_leader_id:
+                data.team_leader?.id ??
+                data.team_leader ??
+                null,
+
+            team_leader_name:
+                data.team_leader_name ||
+                getName(staffList, data.team_leader),
+
+            division_id:
+                data.division?.id ??
+                data.division ??
+                null,
+
+            division_name:
+                data.division_name ||
+                getName(familyList, data.division),
+        };
+    };
+
+
     const clearFormAndMode = () => {
         setIsEditMode(false);
         setSelectedTeamId(null);
+        setOriginalAuditData(null);
         setPageError("");
         formik.resetForm();
     };
@@ -236,6 +311,8 @@ const AddTeam = () => {
                     resetForm();
                     setIsEditMode(false);
                     setSelectedTeamId(null);
+                    setOriginalAuditData(null);
+
                     await fetchSalesTeams();
                 } else {
                     toast.error(
@@ -296,6 +373,10 @@ const AddTeam = () => {
 
             if (response.status === 200) {
                 const teamData = response?.data?.data;
+
+                setOriginalAuditData(
+                    buildTeamAuditSnapshot(teamData)
+                );
 
                 formik.setValues({
                     name: teamData?.name ? String(teamData.name) : "",
@@ -453,7 +534,7 @@ const AddTeam = () => {
                                                     classNamePrefix="react-select"
                                                     className={
                                                         formik.touched.team_leader &&
-                                                        formik.errors.team_leader
+                                                            formik.errors.team_leader
                                                             ? "is-invalid"
                                                             : ""
                                                     }
@@ -462,7 +543,7 @@ const AddTeam = () => {
                                                     }
                                                 />
                                                 {formik.touched.team_leader &&
-                                                formik.errors.team_leader ? (
+                                                    formik.errors.team_leader ? (
                                                     <div className="invalid-feedback d-block">
                                                         {formik.errors.team_leader}
                                                     </div>
@@ -509,7 +590,7 @@ const AddTeam = () => {
                                                     classNamePrefix="react-select"
                                                     className={
                                                         formik.touched.division &&
-                                                        formik.errors.division
+                                                            formik.errors.division
                                                             ? "is-invalid"
                                                             : ""
                                                     }
@@ -518,7 +599,7 @@ const AddTeam = () => {
                                                     }
                                                 />
                                                 {formik.touched.division &&
-                                                formik.errors.division ? (
+                                                    formik.errors.division ? (
                                                     <div className="invalid-feedback d-block">
                                                         {formik.errors.division}
                                                     </div>
@@ -536,8 +617,8 @@ const AddTeam = () => {
                                                             ? "Updating..."
                                                             : "Saving..."
                                                         : isEditMode
-                                                        ? "Update Team"
-                                                        : "Create Team"}
+                                                            ? "Update Team"
+                                                            : "Create Team"}
                                                 </Button>
 
                                                 <Button

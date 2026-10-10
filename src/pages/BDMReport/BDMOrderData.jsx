@@ -15,6 +15,7 @@ import {
 } from "reactstrap";
 import "react-toastify/dist/ReactToastify.css";
 import Select from "react-select";
+import { createAuditLog } from "../../services/auditService";
 
 const BDMOrderData = () => {
     const token = localStorage.getItem("token");
@@ -45,6 +46,37 @@ const BDMOrderData = () => {
     const [loadingSelections, setLoadingSelections] = useState(false);
 
     const [viewOrders, setViewOrders] = useState(null);
+
+
+    const sendDatalog = async ({
+        action,
+        beforeData = {},
+        afterData = {},
+    }) => {
+        try {
+            const auditCreated = await createAuditLog({
+                action,
+                beforeData,
+                afterData,
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "BDM Order Report action succeeded, but audit log creation failed."
+                );
+            }
+
+            return auditCreated;
+        } catch (error) {
+            console.error(
+                "Failed to create BDM Order Report audit log:",
+                error
+            );
+
+            return false;
+        }
+    };
+
 
     const cellStyle = {
         padding: "10px 10px",
@@ -288,6 +320,41 @@ const BDMOrderData = () => {
                 },
             });
 
+            // Create audit log after successful submission.
+            await sendDatalog({
+                action: "bdm_order_selection_created_website",
+
+                beforeData: {
+                    status: "Not Created",
+                },
+
+                afterData: {
+                    status: "Created",
+
+                    selection_id:
+                        response.data?.data?.id ??
+                        response.data?.id ??
+                        null,
+
+                    bdm_id: selectedBDM.value,
+                    bdm_name: selectedBDM.label,
+
+                    note: note,
+
+                    total_orders: selectedOrders.length,
+
+                    selected_orders: selectedOrders.map((item) => ({
+                        order_id: item.value,
+                        invoice: item.invoice,
+                        order_label: item.label,
+                    })),
+
+                    submitted_payload: payload,
+
+                    api_response: response.data,
+                },
+            });
+
             toast.success("Submitted successfully");
 
             setSelectedBDM(null);
@@ -317,6 +384,48 @@ const BDMOrderData = () => {
             await axios.delete(url, {
                 headers: {
                     Authorization: `Bearer ${token}`,
+                },
+            });
+
+            // Capture the deleted selection's original details.
+            await sendDatalog({
+                action: "bdm_order_selection_deleted_website",
+
+                beforeData: {
+                    status: "Existing",
+
+                    selection_id: itemId,
+
+                    bdm_id: item.bdm ?? null,
+                    bdm_name: item.bdm_name ?? "",
+
+                    note: item.note ?? "",
+
+                    total_orders: item.items?.length ?? 0,
+
+                    selected_orders: (item.items || []).map((order) => ({
+                        order_id:
+                            order.order?.id ??
+                            order.order_id ??
+                            order.order ??
+                            null,
+
+                        invoice:
+                            order.order_invoice ??
+                            order.invoice ??
+                            order.order?.invoice ??
+                            "",
+                    })),
+                },
+
+                afterData: {
+                    status: "Deleted",
+
+                    selection_id: itemId,
+
+                    deleted: true,
+
+                    api_response: response.data ?? null,
                 },
             });
 

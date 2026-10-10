@@ -7,6 +7,7 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { init } from "echarts";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../services/auditService";
 
 const FormLayouts = () => {
     document.title = "Expenses | Beposoft";
@@ -97,18 +98,110 @@ const FormLayouts = () => {
         fetchData();
     }, [token]);
 
-    const sendDatalog = async (formData) => {
+
+    const sendDatalog = async (formData, recordType, apiResponse = null) => {
         try {
-            await axios.post(
-                `${import.meta.env.VITE_APP_KEY}datalog/create/`,
-                {
-                    before_data: { status: "Expense Created" },
-                    after_data: { data: formData },
+            const getName = (items, id, field = "name") => {
+                const matched = items.find(
+                    (item) => String(item.id) === String(id)
+                );
+
+                return matched?.[field] ?? "";
+            };
+
+            const afterSnapshot = {
+                record_type: recordType,
+
+                company: getName(
+                    companies,
+                    formData.company
+                ),
+
+                payed_by: getName(
+                    staffs,
+                    formData.payed_by
+                ),
+
+                bank: getName(
+                    banks,
+                    formData.bank
+                ),
+
+                purpose_of_payment: getName(
+                    purposeOfPayment,
+                    formData.purpose_of_payment
+                ),
+
+                purpose_name: formData.purpose_name ?? "",
+
+                amount: formData.amount ?? "",
+
+                expense_date: formData.expense_date ?? "",
+
+                transaction_id: formData.transaction_id ?? "",
+
+                description: formData.description ?? "",
+
+                added_by: formData.added_by ?? "",
+
+                asset_types: formData.asset_types ?? "",
+
+                expense_type: formData.expense_type ?? "",
+
+                name: formData.name ?? "",
+
+                quantity: formData.quantity ?? "",
+
+                category: formData.category
+                    ? getName(
+                        category,
+                        formData.category,
+                        "category_name"
+                    )
+                    : "",
+
+                loan: formData.loan
+                    ? getName(
+                        EmiDetails,
+                        formData.loan,
+                        "emi_name"
+                    )
+                    : "",
+
+                api_response: apiResponse,
+            };
+
+            const auditCreated = await createAuditLog({
+                action:
+                    recordType === "asset"
+                        ? "asset_created_website"
+                        : "expense_created_website",
+
+                beforeData: {
+                    status: "Not Created",
                 },
-                { headers: { Authorization: `Bearer ${token}` } }
+
+                afterData: {
+                    status: "Created",
+                    ...afterSnapshot,
+                },
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Record created successfully, but DataLog creation failed."
+                );
+            }
+
+            return auditCreated;
+
+        } catch (auditError) {
+            console.error(
+                "Failed to create expense/asset audit log:",
+                auditError
             );
-        } catch (err) {
-            console.error("Failed to send datalog:", err?.response || err);
+
+            return false;
         }
     };
 
@@ -187,7 +280,11 @@ const FormLayouts = () => {
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
                     toast.success("Expense with EMI submitted successfully!");
-                    await sendDatalog(formData);
+                    await sendDatalog(
+                        formData,
+                        "expense",
+                        response.data
+                    );
                 } else if (values.asset_types === "expenses") {
                     // non-EMI expense
                     delete formData.name;
@@ -200,7 +297,11 @@ const FormLayouts = () => {
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
                     toast.success("Expense submitted successfully!");
-                    await sendDatalog(formData);
+                    await sendDatalog(
+                        formData,
+                        "expense",
+                        response.data
+                    );
                 } else if (values.asset_types === "assets") {
                     await axios.post(
                         `${import.meta.env.VITE_APP_KEY}assest/`,
@@ -208,7 +309,11 @@ const FormLayouts = () => {
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
                     toast.success("Asset submitted successfully!");
-                    await sendDatalog(formData);
+                    await sendDatalog(
+                        formData,
+                        "asset",
+                        response.data
+                    );
                 }
 
                 setErrorMessage('');

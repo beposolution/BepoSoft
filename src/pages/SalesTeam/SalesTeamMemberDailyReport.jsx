@@ -25,6 +25,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import * as XLSX from "xlsx-js-style";
+import { createAuditLog } from "../../services/auditService";
 
 const SalesTeamMemberDailyReportPage = () => {
     document.title = "Sales Team Member Daily Report | Beposoft";
@@ -65,6 +66,7 @@ const SalesTeamMemberDailyReportPage = () => {
 
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedReportId, setSelectedReportId] = useState(null);
+    const [originalAuditData, setOriginalAuditData] = useState(null);
     const [viewLoadingId, setViewLoadingId] = useState(null);
     const [deleteLoadingId, setDeleteLoadingId] = useState(null);
     const [showForm, setShowForm] = useState(false);
@@ -416,6 +418,112 @@ const SalesTeamMemberDailyReportPage = () => {
 
     const dsrStatusOptions = [{ value: "dsr created", label: "DSR Created" }];
 
+
+    const getAuditId = (value) => {
+        if (value === null || value === undefined || value === "") {
+            return null;
+        }
+
+        return typeof value === "object"
+            ? value.id ?? null
+            : value;
+    };
+
+    const getAuditOptionLabel = (options, value) => {
+        const id = getAuditId(value);
+
+        if (id === null) return "";
+
+        const matched = options.find(
+            (option) => String(option.value) === String(id)
+        );
+
+        return matched?.label ?? "";
+    };
+
+    const buildReportAuditSnapshot = (data = {}) => {
+        const teamId = getAuditId(data.team);
+        const stateId = getAuditId(data.state);
+        const districtId = getAuditId(data.district);
+        const invoiceId = getAuditId(data.invoice);
+
+        const invoiceRecord = orders.find(
+            (item) => String(item.id) === String(invoiceId)
+        );
+
+        return {
+            team_id: teamId,
+            team_name:
+                data.team_name ||
+                getAuditOptionLabel(teamOptions, teamId),
+
+            state_id: stateId,
+            state_name:
+                data.state_name ||
+                getAuditOptionLabel(stateOptions, stateId) ||
+                states.find(
+                    (item) => String(item.id) === String(stateId)
+                )?.name ||
+                "",
+
+            district_id: districtId,
+            district_name:
+                data.district_name ||
+                districts.find(
+                    (item) => String(item.id) === String(districtId)
+                )?.name ||
+                "",
+
+            invoice_id: invoiceId,
+            invoice_number:
+                data.invoice_number ||
+                data.invoice_details?.invoice ||
+                data.invoice_details?.invoice_number ||
+                invoiceRecord?.invoice ||
+                invoiceRecord?.invoice_number ||
+                "",
+
+            phone: data.phone ?? "",
+            customer_name: data.customer_name ?? "",
+
+            call_status: data.call_status ?? "",
+            status: data.status ?? "",
+
+            call_duration: data.call_duration ?? "",
+            note: data.note ?? "",
+        };
+    };
+
+    const sendDatalog = async ({
+        action,
+        beforeData = {},
+        afterData = {},
+    }) => {
+        try {
+            const auditCreated = await createAuditLog({
+                action,
+                beforeData,
+                afterData,
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Report operation succeeded, but audit logging failed."
+                );
+            }
+
+            return auditCreated;
+        } catch (auditError) {
+            console.error(
+                "Sales Team Member Daily Report audit error:",
+                auditError
+            );
+
+            return false;
+        }
+    };
+
+
     const formik = useFormik({
         initialValues: {
             team: "",
@@ -501,6 +609,49 @@ const SalesTeamMemberDailyReportPage = () => {
                 }
 
                 if (response.status === 200 || response.status === 201) {
+
+                    const isUpdating = Boolean(
+                        isEditMode && selectedReportId
+                    );
+
+                    const reportId = isUpdating
+                        ? selectedReportId
+                        : response.data?.data?.id ??
+                        response.data?.id ??
+                        null;
+
+                    const afterSnapshot = buildReportAuditSnapshot(payload);
+
+                    await sendDatalog({
+                        action: isUpdating
+                            ? "sales_team_member_daily_report_updated_website"
+                            : "sales_team_member_daily_report_created_website",
+
+                        beforeData: isUpdating
+                            ? {
+                                status: "Existing",
+                                report_id: reportId,
+                                ...(originalAuditData ?? {}),
+                            }
+                            : {
+                                status: "Not Created",
+                            },
+
+                        afterData: {
+                            operation_status: isUpdating
+                                ? "Updated"
+                                : "Created",
+
+                            report_id: reportId,
+
+                            ...afterSnapshot,
+
+                            submitted_payload: payload,
+
+                            api_response: response.data,
+                        },
+                    });
+
                     toast.success(
                         isEditMode
                             ? "Sales team member daily report updated successfully"
@@ -510,6 +661,7 @@ const SalesTeamMemberDailyReportPage = () => {
                     resetForm();
                     setIsEditMode(false);
                     setSelectedReportId(null);
+                    setOriginalAuditData(null);
                     setShowForm(false);
                     await fetchReports(currentPage);
                 } else {
@@ -579,6 +731,7 @@ const SalesTeamMemberDailyReportPage = () => {
     const clearFormAndMode = () => {
         setIsEditMode(false);
         setSelectedReportId(null);
+        setOriginalAuditData(null);
         setPageError("");
         setShowForm(false);
         formik.resetForm();
@@ -587,6 +740,7 @@ const SalesTeamMemberDailyReportPage = () => {
     const handleAddButtonClick = () => {
         setIsEditMode(false);
         setSelectedReportId(null);
+        setOriginalAuditData(null);
         setPageError("");
         formik.resetForm();
         formik.setFieldValue("call_status", "active");
@@ -662,6 +816,11 @@ const SalesTeamMemberDailyReportPage = () => {
                 response?.data ||
                 {};
 
+            // Preserve original report values for audit comparison.
+            setOriginalAuditData(
+                buildReportAuditSnapshot(data)
+            );
+
             const editStateId = String(getDisplayId(data?.state) || "");
             const editDistrictId = String(getDisplayId(data?.district) || "");
             const stateAllowed = allocatedStateIds.includes(editStateId);
@@ -725,6 +884,36 @@ const SalesTeamMemberDailyReportPage = () => {
             );
 
             if (response.status === 200) {
+
+                const existingReport = reports.find(
+                    (item) => String(item.id) === String(id)
+                );
+
+                const beforeSnapshot = existingReport
+                    ? buildReportAuditSnapshot(existingReport)
+                    : {};
+
+                await sendDatalog({
+                    action: "sales_team_member_daily_report_deleted_website",
+
+                    beforeData: {
+                        status: "Existing",
+                        report_id: id,
+
+                        ...beforeSnapshot,
+
+                        report_details: existingReport ?? null,
+                    },
+
+                    afterData: {
+                        status: "Deleted",
+                        report_id: id,
+                        deleted: true,
+
+                        api_response: response.data ?? null,
+                    },
+                });
+
                 toast.success("Report deleted successfully");
 
                 if (reports.length === 1 && currentPage > 1) {

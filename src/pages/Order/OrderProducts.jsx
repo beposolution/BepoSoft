@@ -1414,7 +1414,7 @@ const FormLayouts = () => {
     ) + shippingCharge;
 
     const showRackDetails =
-        (role === "ADMIN" || role === "Accounts / Accounting") &&
+        (role === "ADMIN" || role === "IT" || role === "COO" || role === "Accounts / Accounting") &&
         ["Invoice Approved", "Pre Booked", "Waiting For Confirmation", "To Print", "Packed", "Packing under progress", "Ready to ship",].includes(formik.values.status);
 
     // ADD ONLY: cap per-rack input so total never exceeds the order line quantity
@@ -1692,6 +1692,7 @@ const FormLayouts = () => {
 
     const allowedStaffDetailsRoles = [
         "ADMIN",
+        "IT",
         "HR",
         "Accounts / Accounting",
         "CEO",
@@ -1724,6 +1725,7 @@ const FormLayouts = () => {
         "CEO",
         "COO",
         "ADMIN",
+        "IT",
         "HR",
         "Marketing",
     ].includes(role);

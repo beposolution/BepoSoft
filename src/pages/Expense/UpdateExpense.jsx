@@ -5,6 +5,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../services/auditService";
 
 const UpdateExpense = () => {
     const { id } = useParams(); // Get expense ID from URL
@@ -23,6 +24,7 @@ const UpdateExpense = () => {
 
     // For editable form fields
     const [formData, setFormData] = useState({});
+    const [originalAuditData, setOriginalAuditData] = useState(null);
 
     useEffect(() => {
         const fetchExpense = async () => {
@@ -34,6 +36,26 @@ const UpdateExpense = () => {
                 const allExpenses = response.data.data;
                 const matchedExpense = allExpenses.find(item => String(item.id) === String(expenseId));
                 setExpense(matchedExpense);
+
+                if (matchedExpense) {
+                    setOriginalAuditData({
+                        company: matchedExpense.company,
+                        payed_by: matchedExpense.payed_by,
+                        bank: matchedExpense.bank,
+                        asset_types: matchedExpense.asset_types,
+                        name: matchedExpense.name,
+                        quantity: matchedExpense.quantity,
+                        category: matchedExpense.category_id,
+                        purpose_of_payment: matchedExpense.purpose_of_payment,
+                        expense_date: matchedExpense.expense_date,
+                        loan: matchedExpense.loan,
+                        transaction_id: matchedExpense.transaction_id,
+                        description: matchedExpense.description,
+                        amount: matchedExpense.amount,
+                        expense_type: matchedExpense.expense_type,
+                    });
+                }
+
                 // Initialize formData with matchedExpense
                 setFormData({
                     company: matchedExpense?.company?.id || "",
@@ -134,6 +156,103 @@ const UpdateExpense = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+
+    const sendDatalog = async (
+        beforeData,
+        updatedPayload,
+        apiResponse,
+        recordType
+    ) => {
+        try {
+            // Resolve dropdown IDs to readable names.
+            const getName = (items, value, field = "name") => {
+                if (value === null || value === undefined || value === "") {
+                    return "";
+                }
+
+                if (typeof value === "object") {
+                    return value[field] ?? value.name ?? "";
+                }
+
+                const matched = items.find(
+                    item => String(item.id) === String(value)
+                );
+
+                return matched?.[field] ?? "";
+            };
+
+            const buildSnapshot = (data) => ({
+                company: getName(companies, data.company),
+                payed_by: getName(staffs, data.payed_by),
+                bank: getName(banks, data.bank),
+
+                purpose_of_payment: getName(
+                    purposeOfPayment,
+                    data.purpose_of_payment
+                ),
+
+                amount: data.amount ?? "",
+                expense_date: data.expense_date ?? "",
+                transaction_id: data.transaction_id ?? "",
+                description: data.description ?? "",
+                expense_type: data.expense_type ?? "",
+                asset_types: data.asset_types ?? "",
+
+                name: data.name ?? "",
+                quantity: data.quantity ?? "",
+
+                category: getName(
+                    category,
+                    data.category,
+                    "category_name"
+                ),
+
+                loan: getName(
+                    EmiDetails,
+                    data.loan,
+                    "emi_name"
+                ),
+            });
+
+            const beforeSnapshot = buildSnapshot(beforeData);
+            const afterSnapshot = buildSnapshot(updatedPayload);
+
+            const auditCreated = await createAuditLog({
+                action: recordType === "asset"
+                    ? "asset_updated_website"
+                    : "expense_updated_website",
+
+                beforeData: {
+                    expense_id: expenseId,
+                    ...beforeSnapshot,
+                },
+
+                afterData: {
+                    expense_id: expenseId,
+                    ...afterSnapshot,
+                    api_response: apiResponse,
+                },
+            });
+
+            if (!auditCreated) {
+                console.error(
+                    "Expense/asset updated, but DataLog creation failed."
+                );
+            }
+
+            return auditCreated;
+
+        } catch (auditError) {
+            console.error(
+                "Expense/asset update audit failed:",
+                auditError
+            );
+
+            return false;
+        }
+    };
+
+
     // Handle update submit
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -185,6 +304,18 @@ const UpdateExpense = () => {
 
         try {
             await axios.put(apiUrl, payload, { headers: { Authorization: `Bearer ${token}` } });
+
+            // Create audit log only after successful update.
+            const recordType =
+                assetType === "assets" ? "asset" : "expense";
+
+            await sendDatalog(
+                originalAuditData ?? {},
+                payload,
+                response.data,
+                recordType
+            );
+
             alert("Expense updated successfully!");
             navigate("/expense/list");
         } catch (error) {

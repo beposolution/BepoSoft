@@ -2,7 +2,7 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import { useMemo } from "react";
 
 const Movement = () => {
@@ -283,19 +283,182 @@ const Movement = () => {
     const exportToExcel = () => {
         const wb = XLSX.utils.book_new();
         const wsData = [];
+        const merges = [];
+        const styles = {};
+        const rowHeights = {};
 
-        let globalSerial = 1;
+        // ======================================================
+        // COLORS - MATCH PDF PRINT COLORS
+        // ======================================================
+
+        const COLORS = {
+            yellow: "FFEB3B",
+            turquoise: "40E0D0",
+            red: "FF0000",
+            white: "FFFFFF",
+            black: "000000",
+        };
+
+        const HEADERS = [
+            "SL No",
+            "Invoice No",
+            "Customer",
+            "Phone",
+            "State",
+            "Pincode",
+            "Box",
+            "COD (₹)",
+            "Weight (gram)",
+            "Length (cm)",
+            "Breadth (cm)",
+            "Height (cm)",
+            "Volume (cm³)",
+            "Actual Weight (gram)",
+            "Parcel Amount (₹)",
+            "Tracking ID",
+            "Parcel Service",
+            "Packed By",
+            "Verified By",
+        ];
+
+        const border = {
+            top: { style: "thin", color: { rgb: COLORS.black } },
+            bottom: { style: "thin", color: { rgb: COLORS.black } },
+            left: { style: "thin", color: { rgb: COLORS.black } },
+            right: { style: "thin", color: { rgb: COLORS.black } },
+        };
+
+        const makeStyle = (
+            bg = COLORS.white,
+            fontColor = COLORS.black,
+            bold = false,
+            align = "center"
+        ) => ({
+            fill: {
+                patternType: "solid",
+                fgColor: { rgb: bg },
+            },
+            font: {
+                name: "Arial",
+                sz: 10,
+                bold,
+                color: { rgb: fontColor },
+            },
+            alignment: {
+                horizontal: align,
+                vertical: "center",
+                wrapText: true,
+            },
+            border,
+        });
+
+        const setStyle = (row, col, style) => {
+            styles[`${row}:${col}`] = style;
+        };
+
+        const addRow = (values = [], height = 25) => {
+            const row = wsData.length;
+            wsData.push(values);
+            rowHeights[row] = height;
+            return row;
+        };
+
+        const addMergedCell = (
+            row,
+            startCol,
+            endCol,
+            value,
+            bg = COLORS.white,
+            fontColor = COLORS.black,
+            bold = true
+        ) => {
+            while (wsData[row].length <= endCol) {
+                wsData[row].push("");
+            }
+
+            wsData[row][startCol] = value;
+
+            if (endCol > startCol) {
+                merges.push({
+                    s: { r: row, c: startCol },
+                    e: { r: row, c: endCol },
+                });
+            }
+
+            for (let col = startCol; col <= endCol; col++) {
+                setStyle(
+                    row,
+                    col,
+                    makeStyle(bg, fontColor, bold)
+                );
+            }
+        };
+
+        const addMergedTitle = (
+            title,
+            bg = COLORS.yellow,
+            fontColor = COLORS.black,
+            endCol = 18
+        ) => {
+            const row = addRow([], 30);
+
+            addMergedCell(
+                row,
+                0,
+                endCol,
+                title,
+                bg,
+                fontColor,
+                true
+            );
+
+            return row;
+        };
+
+        const toNumber = (value) => {
+            const num = Number(value);
+            return Number.isFinite(num) ? num : 0;
+        };
+
+        const round2 = (value) =>
+            Math.round((toNumber(value) + Number.EPSILON) * 100) / 100;
+
+        // ======================================================
+        // MAIN TITLE
+        // ======================================================
+
+        addMergedTitle(
+            `DAILY GOODS MOVEMENT (DGM) ON ${id}`,
+            COLORS.yellow
+        );
+
+        addRow([], 12);
+
+        // ======================================================
+        // FAMILY-WISE MOVEMENT DETAILS
+        // ======================================================
 
         data.forEach((category) => {
-            // Title row
-            wsData.push([`${category.family?.toUpperCase()} FAMILY`]);
-            // Header
-            wsData.push([
-                "SL No", "Invoice No", "Customer", "Phone", "Pincode", "State", "Box", "COD (₹)", "Weight (g)",
-                "Volume Weight (kg)", "Actual Weight (g)", "Parcel Amount (₹)", "Tracking ID",
-                "Parcel Service", "Packed By", "Verified By"
-            ]);
+            addMergedTitle(
+                `${String(category.family || "").toUpperCase()} FAMILY`,
+                COLORS.yellow
+            );
 
+            const headerRow = addRow(HEADERS, 42);
+
+            HEADERS.forEach((_, col) => {
+                setStyle(
+                    headerRow,
+                    col,
+                    makeStyle(
+                        col === 7 ? COLORS.yellow : COLORS.turquoise,
+                        COLORS.black,
+                        true
+                    )
+                );
+            });
+
+            let serialNo = 1;
             let boxTotal = 0;
             let codTotal = 0;
             let weightTotal = 0;
@@ -303,79 +466,473 @@ const Movement = () => {
             let actualWeightTotal = 0;
             let parcelAmountTotal = 0;
 
-            category.orders.forEach(order => {
+            (category.orders || []).forEach((order) => {
                 const codSplit = getRoundedCODSplit(order);
 
-                // add divided COD ONCE per order
-                codSplit.forEach(v => {
-                    codTotal = +(codTotal + v).toFixed(2);
+                codSplit.forEach((value) => {
+                    codTotal = round2(codTotal + toNumber(value));
                 });
 
-                order.warehouses.forEach((warehouse, idx) => {
-                    const volumeWeight =
-                        warehouse.length && warehouse.breadth && warehouse.height
-                            ? (warehouse.length * warehouse.breadth * warehouse.height) / 6000
-                            : 0;
+                (order.warehouses || []).forEach((warehouse, idx) => {
+                    const hasDimensions =
+                        warehouse.length &&
+                        warehouse.breadth &&
+                        warehouse.height;
 
-                    wsData.push([
-                        globalSerial++,
-                        order.invoice,
-                        warehouse.customer,
-                        warehouse.phone,
-                        warehouse.zip_code,
-                        warehouse.order_state,
-                        warehouse.box,
-                        (codSplit[idx] || 0).toFixed(2),
-                        warehouse.weight,
-                        volumeWeight.toFixed(2),
-                        warehouse.actual_weight,
-                        warehouse.parcel_amount,
-                        warehouse.tracking_id,
-                        warehouse.parcel_service,
-                        warehouse.packed_by,
-                        warehouse.verified_by || "N/A"
-                    ]);
+                    const volumeWeight = hasDimensions
+                        ? (
+                            toNumber(warehouse.length) *
+                            toNumber(warehouse.breadth) *
+                            toNumber(warehouse.height)
+                        ) / 6000
+                        : 0;
 
-                    boxTotal += 1;
-                    weightTotal += parseFloat(warehouse.weight || 0);
+                    const row = addRow(
+                        [
+                            serialNo++,
+                            order.invoice || "",
+                            warehouse.customer || "",
+                            warehouse.phone == null
+                                ? ""
+                                : String(warehouse.phone),
+                            warehouse.order_state || "",
+                            warehouse.zip_code == null
+                                ? ""
+                                : String(warehouse.zip_code),
+                            warehouse.box ?? "",
+                            roundRupee(codSplit[idx] || 0),
+                            toNumber(warehouse.weight),
+                            warehouse.length ?? "",
+                            warehouse.breadth ?? "",
+                            warehouse.height ?? "",
+                            hasDimensions
+                                ? round2(volumeWeight)
+                                : "N/A",
+                            toNumber(warehouse.actual_weight),
+                            toNumber(warehouse.parcel_amount),
+                            warehouse.tracking_id || "",
+                            warehouse.parcel_service_name || "Unknown",
+                            warehouse.packed_by || "",
+                            warehouse.verified_by || "N/A",
+                        ],
+                        32
+                    );
+
+                    for (let col = 0; col < 19; col++) {
+                        setStyle(
+                            row,
+                            col,
+                            makeStyle(
+                                col === 7 ? COLORS.yellow : COLORS.white,
+                                COLORS.black,
+                                true
+                            )
+                        );
+                    }
+
+                    if (warehouse.box) {
+                        boxTotal++;
+                    }
+
+                    weightTotal += toNumber(warehouse.weight);
                     volumeTotal += volumeWeight;
-                    actualWeightTotal += parseFloat(warehouse.actual_weight || 0);
-                    parcelAmountTotal += parseFloat(warehouse.parcel_amount || 0);
+                    actualWeightTotal += toNumber(warehouse.actual_weight);
+                    parcelAmountTotal += toNumber(warehouse.parcel_amount);
                 });
             });
 
-            // Family Total Row
-            wsData.push([
-                "TOTAL", "", "", "", "", "", boxTotal, codTotal.toFixed(2), weightTotal.toFixed(2),
-                volumeTotal.toFixed(2), actualWeightTotal.toFixed(2), parcelAmountTotal.toFixed(2),
-                "", "", "", ""
-            ]);
-            wsData.push([]); // Blank row between families
+            // FAMILY TOTAL ROW
+
+            const totalRow = addRow([], 30);
+
+            addMergedCell(
+                totalRow,
+                0,
+                5,
+                "TOTAL",
+                COLORS.yellow,
+                COLORS.red
+            );
+
+            const totalValues = {
+                6: boxTotal,
+                7: roundRupee(codTotal),
+                8: weightTotal,
+                12: round2(volumeTotal),
+                13: actualWeightTotal,
+                14: round2(parcelAmountTotal),
+            };
+
+            for (let col = 6; col < 19; col++) {
+                while (wsData[totalRow].length <= col) {
+                    wsData[totalRow].push("");
+                }
+
+                wsData[totalRow][col] = totalValues[col] ?? "";
+
+                setStyle(
+                    totalRow,
+                    col,
+                    makeStyle(COLORS.yellow, COLORS.red, true)
+                );
+            }
+
+            addRow([], 12);
+            addRow([], 12);
         });
 
-        // Create sheet for details
-        const ws = XLSX.utils.aoa_to_sheet(wsData);
-        XLSX.utils.book_append_sheet(wb, ws, "Movement Summary");
+        // ======================================================
+        // PARCEL SERVICE TOTAL - EXPANDED TABLE
+        // ======================================================
 
-        // === Summary Sheet (Parcel Services) ===
-        const wsSummaryData = [
-            ["Parcel Service", "Total Count"],
-            ...Object.entries(parcelCounts).map(([service, count]) => [service, count]),
-            ["", ""],
-            ["TOTAL PARCEL COUNT", Object.values(parcelCounts).reduce((a, b) => a + b, 0)],
-            ["TOTAL COD ORDERS", codCount],
-            ["", ""],
-            ["Grouped Summary", ""],
-            ["BEPARCEL", aggregatedParcelCounts.BEPARCEL],
-            ["SPEED", aggregatedParcelCounts.SPEED],
-            ["TOTAL", aggregatedParcelCounts.BEPARCEL + aggregatedParcelCounts.SPEED]
+        addMergedTitle(
+            "PARCEL SERVICE TOTAL",
+            COLORS.yellow,
+            COLORS.black,
+            13
+        );
+
+        const addParcelSummaryRow = (
+            values,
+            bg = COLORS.white,
+            fontColor = COLORS.black,
+            height = 30
+        ) => {
+            const row = addRow([], height);
+
+            addMergedCell(
+                row, 0, 2, values[0], bg, fontColor
+            );
+
+            addMergedCell(
+                row, 3, 4, values[1], bg, fontColor
+            );
+
+            addMergedCell(
+                row, 5, 7, values[2], bg, fontColor
+            );
+
+            addMergedCell(
+                row, 8, 10, values[3], bg, fontColor
+            );
+
+            addMergedCell(
+                row, 11, 13, values[4], bg, fontColor
+            );
+
+            return row;
+        };
+
+        addParcelSummaryRow(
+            [
+                "Parcel Service",
+                "Total Box",
+                "Total Parcel Amount (₹)",
+                "Total Actual Weight (kg)",
+                "Average (₹/kg)",
+            ],
+            COLORS.turquoise,
+            COLORS.black,
+            38
+        );
+
+        Object.entries(parcelCounts).forEach(
+            ([serviceName, count]) => {
+                const amount = toNumber(
+                    parcelAmounts[serviceName]
+                );
+
+                const actualWeightKg =
+                    toNumber(parcelActualWeights[serviceName]) / 1000;
+
+                const average =
+                    actualWeightKg > 0
+                        ? amount / actualWeightKg
+                        : 0;
+
+                addParcelSummaryRow([
+                    serviceName,
+                    count,
+                    round2(amount),
+                    round2(actualWeightKg),
+                    round2(average),
+                ]);
+            }
+        );
+
+        const totalBoxes = Object.values(parcelCounts).reduce(
+            (sum, value) => sum + toNumber(value),
+            0
+        );
+
+        const overallAverage =
+            totalActualWeightAllServicesKg > 0
+                ? totalParcelAmountAllServices /
+                totalActualWeightAllServicesKg
+                : 0;
+
+        addParcelSummaryRow(
+            [
+                "TOTAL",
+                totalBoxes,
+                round2(totalParcelAmountAllServices),
+                round2(totalActualWeightAllServicesKg),
+                round2(overallAverage),
+            ],
+            COLORS.red,
+            COLORS.white
+        );
+
+        addParcelSummaryRow(
+            [
+                "TOTAL COD ORDERS",
+                codRollup.boxes,
+                roundRupee(codRollup.amount),
+                round2(codRollup.weightKg),
+                round2(codRollup.avg),
+            ],
+            COLORS.red,
+            COLORS.white
+        );
+
+        addRow([], 12);
+        addRow([], 12);
+
+        // ======================================================
+        // PARCEL COUNT SUMMARY - EXPANDED TABLE
+        // ======================================================
+
+        addMergedTitle(
+            "PARCEL COUNT SUMMARY",
+            COLORS.yellow,
+            COLORS.black,
+            6
+        );
+
+        const addTwoColumnSummary = (
+            label,
+            value,
+            bg,
+            height = 30
+        ) => {
+            const row = addRow([], height);
+
+            const fontColor =
+                bg === COLORS.red
+                    ? COLORS.white
+                    : COLORS.black;
+
+            addMergedCell(
+                row,
+                0,
+                3,
+                label,
+                bg,
+                fontColor
+            );
+
+            addMergedCell(
+                row,
+                4,
+                6,
+                value,
+                bg,
+                fontColor
+            );
+
+            return row;
+        };
+
+        addTwoColumnSummary(
+            "Parcel Service",
+            "Total Count",
+            COLORS.turquoise,
+            35
+        );
+
+        addTwoColumnSummary(
+            "BEPARCEL",
+            aggregatedParcelCounts.BEPARCEL,
+            COLORS.yellow
+        );
+
+        addTwoColumnSummary(
+            "SPEED",
+            aggregatedParcelCounts.SPEED,
+            COLORS.turquoise
+        );
+
+        addTwoColumnSummary(
+            "TOTAL",
+            aggregatedParcelCounts.BEPARCEL +
+            aggregatedParcelCounts.SPEED,
+            COLORS.red
+        );
+
+        addRow([], 12);
+        addRow([], 12);
+
+        // ======================================================
+        // PARCEL AMOUNT SUMMARY - EXPANDED TABLE
+        // ======================================================
+
+        addMergedTitle(
+            "PARCEL AMOUNT SUMMARY",
+            COLORS.yellow,
+            COLORS.black,
+            6
+        );
+
+        addTwoColumnSummary(
+            "Parcel Service",
+            "Total Parcel Amount (₹)",
+            COLORS.turquoise,
+            35
+        );
+
+        addTwoColumnSummary(
+            "BEPARCEL AMOUNT",
+            round2(aggregatedParcelAmounts.BEPARCEL),
+            COLORS.yellow
+        );
+
+        addTwoColumnSummary(
+            "SPEED AMOUNT",
+            round2(aggregatedParcelAmounts.SPEED),
+            COLORS.turquoise
+        );
+
+        addTwoColumnSummary(
+            "TOTAL",
+            round2(
+                aggregatedParcelAmounts.BEPARCEL +
+                aggregatedParcelAmounts.SPEED
+            ),
+            COLORS.red
+        );
+
+        addRow([], 12);
+        addRow([], 12);
+
+        // ======================================================
+        // FINAL CONFIRMATION
+        // ======================================================
+
+        addMergedTitle(
+            isVerified
+                ? `Final Confirmation by: ${checkedBy || "N/A"}`
+                : "Final Confirmation: Pending",
+            COLORS.turquoise
+        );
+
+        // ======================================================
+        // CREATE WORKSHEET
+        // ======================================================
+
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+        ws["!merges"] = merges;
+
+        ws["!cols"] = [
+            { wch: 12 },
+            { wch: 18 },
+            { wch: 28 },
+            { wch: 18 },
+            { wch: 20 },
+            { wch: 14 },
+            { wch: 12 },
+            { wch: 16 },
+            { wch: 18 },
+            { wch: 15 },
+            { wch: 15 },
+            { wch: 15 },
+            { wch: 18 },
+            { wch: 23 },
+            { wch: 22 },
+            { wch: 25 },
+            { wch: 28 },
+            { wch: 22 },
+            { wch: 22 },
         ];
 
-        const wsSummary = XLSX.utils.aoa_to_sheet(wsSummaryData);
-        XLSX.utils.book_append_sheet(wb, wsSummary, "Parcel Totals");
+        ws["!rows"] = wsData.map((_, row) => ({
+            hpt: rowHeights[row] || 25,
+        }));
 
-        // Write the file
-        XLSX.writeFile(wb, `DGM_Report_${id}.xlsx`);
+        // ======================================================
+        // APPLY ALL STYLES
+        // ======================================================
+
+        Object.entries(styles).forEach(([key, style]) => {
+            const [r, c] = key.split(":").map(Number);
+
+            const cellAddress = XLSX.utils.encode_cell({
+                r,
+                c,
+            });
+
+            if (!ws[cellAddress]) {
+                ws[cellAddress] = {
+                    t: "s",
+                    v: "",
+                };
+            }
+
+            ws[cellAddress].s = style;
+        });
+
+        // ======================================================
+        // NUMBER FORMATTING
+        // ======================================================
+
+        wsData.forEach((row, r) => {
+            row.forEach((value, c) => {
+                const cellAddress = XLSX.utils.encode_cell({
+                    r,
+                    c,
+                });
+
+                const cell = ws[cellAddress];
+
+                if (!cell) return;
+
+                if (typeof cell.v === "number") {
+                    if ([7, 14].includes(c)) {
+                        cell.z = '"₹"#,##0.00';
+                    } else if ([8, 12, 13].includes(c)) {
+                        cell.z = "#,##0.00";
+                    }
+                }
+            });
+        });
+
+        // ======================================================
+        // PRINT MARGINS
+        // ======================================================
+
+        ws["!margins"] = {
+            left: 0.25,
+            right: 0.25,
+            top: 0.5,
+            bottom: 0.5,
+            header: 0.2,
+            footer: 0.2,
+        };
+
+        // ======================================================
+        // EXPORT SINGLE EXCEL WORKSHEET
+        // ======================================================
+
+        XLSX.utils.book_append_sheet(
+            wb,
+            ws,
+            "DGM Report"
+        );
+
+        XLSX.writeFile(
+            wb,
+            `DGM_Report_${id}.xlsx`
+        );
     };
 
     return (

@@ -19,6 +19,7 @@ const EcommerenceAddProduct = () => {
     const [messageType, setMessageType] = useState(null);
     const [rackList, setRackList] = useState([]);
     const [rackDetails, setRackDetails] = useState([]);
+    const [existingRackIds, setExistingRackIds] = useState([]);
     const [categories, setCategories] = useState([]);
     const [mainCategories, setMainCategories] = useState([]);
     const [warehouseDetails, setWarehouseDetails] = useState([]);
@@ -357,9 +358,17 @@ const EcommerenceAddProduct = () => {
                         rack_details: productData.data.rack_details || [],
                         retail_price: productData.data.retail_price || ''
                     });
-                    setRackDetails(
-                        JSON.parse(JSON.stringify(productData.data.rack_details || []))
+
+                    const existingRacks = JSON.parse(
+                        JSON.stringify(productData.data.rack_details || [])
                     );
+
+                    setRackDetails(existingRacks);
+
+                    setExistingRackIds(
+                        existingRacks.map((_, index) => index)
+                    );
+
                     if (productData.data.image) {
                         setImagePreview(productData.data.image);
                     }
@@ -1343,6 +1352,7 @@ const EcommerenceAddProduct = () => {
                                             <Col md={12}>
                                                 <Label>Rack Details</Label>
                                                 {rackDetails.map((rack, idx) => {
+                                                    const isExistingRack = existingRackIds.includes(idx);
                                                     // const racks = selectedWarehouse !== null
                                                     //     ? rackList.filter(r => String(r.warehouse) === String(selectedWarehouse))
                                                     //     : rackList.filter(r => r.warehouse_name === selectedWarehouseName);
@@ -1443,7 +1453,8 @@ const EcommerenceAddProduct = () => {
                                                                     Remove
                                                                 </Button>
                                                             </Col> */}
-                                                            {canEditStockLocks && (
+                                                            {/* {canEditStockLocks && ( */}
+                                                            {canEditStockLocks && isExistingRack && (
                                                                 <Col md={2}>
                                                                     <div
                                                                         className="p-2"

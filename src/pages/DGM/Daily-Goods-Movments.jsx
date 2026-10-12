@@ -276,6 +276,7 @@ const BasicTable = () => {
                                                 <tr>
                                                     <th>#</th>
                                                     <th>Date</th>
+                                                    <th>No of Invoices</th>
                                                     <th>Total Boxes Delivered</th>
                                                     <th>Total Volume Wt. (In Kg.)</th>
                                                     <th>Total Actual Wt. (In Kg.)</th>
@@ -289,6 +290,7 @@ const BasicTable = () => {
                                                     <tr key={index}>
                                                         <th scope="row">{indexOfFirstItem + index + 1}</th>
                                                         <td>{item.shipped_date}</td>
+                                                        <td>{item?.total_invoice_count}</td>
                                                         <td>{item.total_boxes}</td>
                                                         <td>{item.total_volume_weight}</td>
                                                         <td>

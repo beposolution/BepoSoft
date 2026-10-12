@@ -8,6 +8,7 @@ import { init } from "echarts";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { createAuditLog } from "../../services/auditService";
+import Select from "react-select";
 
 const FormLayouts = () => {
     document.title = "Expenses | Beposoft";
@@ -274,7 +275,7 @@ const FormLayouts = () => {
                     delete formData.category;
                     formData.asset_types = "expenses";
 
-                    await axios.post(
+                    const response = await axios.post(
                         `${import.meta.env.VITE_APP_KEY}expense/add/`,
                         formData,
                         { headers: { Authorization: `Bearer ${token}` } }
@@ -291,7 +292,7 @@ const FormLayouts = () => {
                     delete formData.quantity;
                     delete formData.category;
 
-                    await axios.post(
+                    const response = await axios.post(
                         `${import.meta.env.VITE_APP_KEY}expense/addexpectemi/`,
                         formData,
                         { headers: { Authorization: `Bearer ${token}` } }
@@ -303,7 +304,7 @@ const FormLayouts = () => {
                         response.data
                     );
                 } else if (values.asset_types === "assets") {
-                    await axios.post(
+                    const response = await axios.post(
                         `${import.meta.env.VITE_APP_KEY}assest/`,
                         formData,
                         { headers: { Authorization: `Bearer ${token}` } }
@@ -379,25 +380,78 @@ const FormLayouts = () => {
 
                                             <Col md={4}>
                                                 <div className="mb-3">
-                                                    <Label htmlFor="formrow-payed_by-Input">Payed By</Label>
-                                                    <Input
-                                                        type="select"
+                                                    <Label htmlFor="formrow-payed_by-Input">
+                                                        Payed By
+                                                    </Label>
+
+                                                    <Select
+                                                        inputId="formrow-payed_by-Input"
                                                         name="payed_by"
-                                                        className="form-control"
-                                                        id="formrow-payed_by-Input"
-                                                        value={formik.values.payed_by}
-                                                        onChange={formik.handleChange}
-                                                        onBlur={formik.handleBlur}
-                                                        invalid={formik.touched.payed_by && formik.errors.payed_by ? true : false}
-                                                    >
-                                                        <option value="" label="Payed by " />
-                                                        {staffs.map((staff) => (
-                                                            <option key={staff.id} value={staff.id} label={staff.name} />
-                                                        ))}
-                                                    </Input>
-                                                    {formik.errors.payed_by && formik.touched.payed_by ? (
-                                                        <FormFeedback type="invalid">{formik.errors.payed_by}</FormFeedback>
-                                                    ) : null}
+                                                        options={staffs.map((staff) => ({
+                                                            value: String(staff.id),
+                                                            label: staff.name,
+                                                        }))}
+                                                        value={
+                                                            staffs
+                                                                .map((staff) => ({
+                                                                    value: String(staff.id),
+                                                                    label: staff.name,
+                                                                }))
+                                                                .find(
+                                                                    (option) =>
+                                                                        option.value ===
+                                                                        String(formik.values.payed_by)
+                                                                ) || null
+                                                        }
+                                                        onChange={(selectedOption) => {
+                                                            formik.setFieldValue(
+                                                                "payed_by",
+                                                                selectedOption
+                                                                    ? selectedOption.value
+                                                                    : ""
+                                                            );
+                                                        }}
+                                                        onBlur={() => {
+                                                            formik.setFieldTouched(
+                                                                "payed_by",
+                                                                true
+                                                            );
+                                                        }}
+                                                        placeholder="Search or select staff..."
+                                                        isSearchable={true}
+                                                        isClearable={true}
+                                                        isDisabled={false}
+                                                        noOptionsMessage={() => "No staff found"}
+                                                        classNamePrefix="react-select"
+                                                        styles={{
+                                                            control: (provided, state) => ({
+                                                                ...provided,
+                                                                minHeight: "38px",
+                                                                borderColor:
+                                                                    formik.touched.payed_by &&
+                                                                        formik.errors.payed_by
+                                                                        ? "#f46a6a"
+                                                                        : state.isFocused
+                                                                            ? "#556ee6"
+                                                                            : "#ced4da",
+                                                                boxShadow: "none",
+                                                                "&:hover": {
+                                                                    borderColor: "#556ee6",
+                                                                },
+                                                            }),
+                                                            menu: (provided) => ({
+                                                                ...provided,
+                                                                zIndex: 9999,
+                                                            }),
+                                                        }}
+                                                    />
+
+                                                    {formik.touched.payed_by &&
+                                                        formik.errors.payed_by && (
+                                                            <div className="text-danger mt-1">
+                                                                {formik.errors.payed_by}
+                                                            </div>
+                                                        )}
                                                 </div>
                                             </Col>
 

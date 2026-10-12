@@ -531,7 +531,7 @@ const DatatableTables = () => {
                                         <th>Start date</th>
                                         <th>Department</th>
                                         <th>Image</th>
-                                        {["ADMIN", "CEO", "COO", "HR"].includes(role) && (
+                                        {["ADMIN", "CEO", "COO", "HR", "IT"].includes(role) && (
                                             <th>Actions</th>
                                         )}
                                     </tr>
@@ -581,7 +581,7 @@ const DatatableTables = () => {
                                                         )}
                                                     </td>
 
-                                                    {["ADMIN", "CEO", "COO", "HR"].includes(role) && (
+                                                    {["ADMIN", "CEO", "COO", "HR", "IT"].includes(role) && (
                                                         <td style={rowStyle}>
                                                             <div className="d-flex gap-2">
                                                                 <button

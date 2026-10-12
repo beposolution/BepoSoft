@@ -10,6 +10,7 @@ const Movement = () => {
     const [data, setData] = useState([]);
     const [parcelServices, setParcelServices] = useState([]);
     const [parcelCounts, setParcelCounts] = useState({});
+    const [parcelInvoiceCounts, setParcelInvoiceCounts] = useState({});
     const token = localStorage.getItem("token");
     const [userData, setUserData] = useState();
     const [isVerified, setIsVerified] = useState(false);
@@ -142,6 +143,7 @@ const Movement = () => {
         const countParcels = {};
         const totalAmounts = {};
         const totalActualWeights = {};
+        const invoiceSets = {};
         let codOrderCount = 0;
 
         // NEW: COD totals
@@ -156,6 +158,16 @@ const Movement = () => {
                 order.warehouses.forEach((warehouse) => {
                     const serviceName = warehouse.parcel_service_name;
                     if (!serviceName) return;
+
+                    if (!invoiceSets[serviceName]) {
+                        invoiceSets[serviceName] = new Set();
+                    }
+
+                    const invoiceKey = order.invoice_id ?? order.invoice;
+
+                    if (invoiceKey != null && invoiceKey !== "") {
+                        invoiceSets[serviceName].add(String(invoiceKey));
+                    }
 
                     countParcels[serviceName] = (countParcels[serviceName] || 0) + 1;
                     totalAmounts[serviceName] =
@@ -175,12 +187,71 @@ const Movement = () => {
 
         setParcelCounts(countParcels);
         setParcelAmounts(totalAmounts);
+        setParcelInvoiceCounts(
+            Object.fromEntries(
+                Object.entries(invoiceSets).map(([service, invoices]) => [
+                    service,
+                    invoices.size,
+                ])
+            )
+        );
         setParcelActualWeights(totalActualWeights);
         setCodCount(codOrderCount);
 
         // NEW: persist COD totals
         setCodParcelAmount(codAmtSum);
         setCodActualWeightG(codActualWSumG);
+    }, [data]);
+
+    const totalUniqueInvoices = useMemo(() => {
+        const invoices = new Set();
+
+        data.forEach((category) => {
+            (category.orders || []).forEach((order) => {
+                const hasParcelService = (order.warehouses || []).some(
+                    (warehouse) => warehouse.parcel_service_name
+                );
+
+                const invoiceKey = order.invoice_id ?? order.invoice;
+
+                if (hasParcelService && invoiceKey != null && invoiceKey !== "") {
+                    invoices.add(String(invoiceKey));
+                }
+            });
+        });
+
+        return invoices.size;
+    }, [data]);
+
+    const totalCODInvoices = useMemo(() => {
+        const invoices = new Set();
+
+        data.forEach((category) => {
+            (category.orders || []).forEach((order) => {
+                const isCOD = Number(order.cod_amount || 0) > 0;
+
+                const hasCODService = (order.warehouses || []).some(
+                    (warehouse) =>
+                        (warehouse.parcel_service_name || "")
+                            .trim()
+                            .toUpperCase()
+                            .includes("COD")
+                );
+
+                const invoiceKey = order.invoice_id ?? order.invoice;
+
+                if (
+                    isCOD &&
+                    hasCODService &&
+                    invoiceKey != null &&
+                    invoiceKey !== ""
+                ) {
+                    invoices.add(String(invoiceKey));
+                }
+            });
+        });
+
+        return invoices.size;
     }, [data]);
 
     const codActualWeightKg = useMemo(
@@ -600,25 +671,12 @@ const Movement = () => {
         ) => {
             const row = addRow([], height);
 
-            addMergedCell(
-                row, 0, 2, values[0], bg, fontColor
-            );
-
-            addMergedCell(
-                row, 3, 4, values[1], bg, fontColor
-            );
-
-            addMergedCell(
-                row, 5, 7, values[2], bg, fontColor
-            );
-
-            addMergedCell(
-                row, 8, 10, values[3], bg, fontColor
-            );
-
-            addMergedCell(
-                row, 11, 13, values[4], bg, fontColor
-            );
+            addMergedCell(row, 0, 2, values[0], bg, fontColor);
+            addMergedCell(row, 3, 4, values[1], bg, fontColor);
+            addMergedCell(row, 5, 6, values[2], bg, fontColor);
+            addMergedCell(row, 7, 9, values[3], bg, fontColor);
+            addMergedCell(row, 10, 11, values[4], bg, fontColor);
+            addMergedCell(row, 12, 13, values[5], bg, fontColor);
 
             return row;
         };
@@ -626,6 +684,7 @@ const Movement = () => {
         addParcelSummaryRow(
             [
                 "Parcel Service",
+                "Total Invoices",
                 "Total Box",
                 "Total Parcel Amount (₹)",
                 "Total Actual Weight (kg)",
@@ -652,6 +711,7 @@ const Movement = () => {
 
                 addParcelSummaryRow([
                     serviceName,
+                    parcelInvoiceCounts[serviceName] || 0,
                     count,
                     round2(amount),
                     round2(actualWeightKg),
@@ -674,6 +734,7 @@ const Movement = () => {
         addParcelSummaryRow(
             [
                 "TOTAL",
+                totalUniqueInvoices,
                 totalBoxes,
                 round2(totalParcelAmountAllServices),
                 round2(totalActualWeightAllServicesKg),
@@ -686,6 +747,7 @@ const Movement = () => {
         addParcelSummaryRow(
             [
                 "TOTAL COD ORDERS",
+                totalCODInvoices,
                 codRollup.boxes,
                 roundRupee(codRollup.amount),
                 round2(codRollup.weightKg),
@@ -1265,6 +1327,7 @@ const Movement = () => {
                             <thead className="printdata-header">
                                 <tr>
                                     <th style={{ border: "1px solid black" }}>Parcel Service</th>
+                                    <th style={{ border: "1px solid black" }}>Total Invoices</th>
                                     <th style={{ border: "1px solid black" }}>Total Box</th>
                                     <th style={{ border: "1px solid black" }}>Total Parcel Amount</th>
                                     <th style={{ border: "1px solid black" }}>Total Actual Weight</th>
@@ -1279,6 +1342,9 @@ const Movement = () => {
                                     return (
                                         <tr key={serviceName}>
                                             <td style={{ border: "1px solid black" }}><strong>{serviceName}</strong></td>
+                                            <td style={{ border: "1px solid black" }}>
+                                                <strong>{parcelInvoiceCounts[serviceName] || 0}</strong>
+                                            </td>
                                             <td style={{ border: "1px solid black" }}><strong>{count}</strong></td>
                                             <td style={{ border: "1px solid black" }}><strong>₹{amount.toFixed(2)}</strong></td>
                                             <td style={{ border: "1px solid black" }}><strong>{actualWkg.toFixed(2)}</strong></td>
@@ -1288,6 +1354,9 @@ const Movement = () => {
                                 })}
                                 <tr className="total-row1" style={{ backgroundColor: '#e0e0e0' }}>
                                     <td style={{ border: "1px solid black" }}><strong>TOTAL</strong></td>
+                                    <td style={{ border: "1px solid black" }}>
+                                        <strong>{totalUniqueInvoices}</strong>
+                                    </td>
                                     <td style={{ border: "1px solid black" }}>
                                         <strong>
                                             {Object.values(parcelCounts).reduce((acc, curr) => acc + curr, 0)}
@@ -1299,6 +1368,9 @@ const Movement = () => {
                                 </tr>
                                 <tr className="total-row1" style={{ backgroundColor: '#f0f0f0' }}>
                                     <td style={{ border: "1px solid black" }}><strong>TOTAL COD ORDERS</strong></td>
+                                    <td style={{ border: "1px solid black" }}>
+                                        <strong>{totalCODInvoices}</strong>
+                                    </td>
                                     <td style={{ border: "1px solid black" }}><strong>{codRollup.boxes}</strong></td>
                                     <td style={{ border: "1px solid black" }}><strong>₹{roundRupee(codRollup.amount)}</strong></td>
                                     <td style={{ border: "1px solid black" }}><strong>{codRollup.weightKg.toFixed(2)}</strong></td>

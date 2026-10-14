@@ -1475,7 +1475,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'Warehouse Admin' || role === 'ADMIN' || role === 'HR' || role === 'CMO' || role === 'CEO' || role === "Accounts / Accounting" || role === 'COO' ? (
+            {role === 'Warehouse Admin' || role === 'ADMIN' || role === 'IT' || role === 'HR' || role === 'CMO' || role === 'CEO' || role === "Accounts / Accounting" || role === 'COO' ? (
               <li>
                 <Link to="/warehouse/waitingproducts/" >
                   <BsArrowRightSquareFill size={20} style={{ marginRight: '8px' }} />

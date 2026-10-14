@@ -18,6 +18,7 @@ import {
 } from 'reactstrap';
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import Paginations from '../../components/Common/Pagination';
+import { createAuditLog } from "../../services/auditService";
 
 const CountryCode = () => {
     const [countryCodes, setCountryCodes] = useState([]);
@@ -27,6 +28,8 @@ const CountryCode = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const perPageData = 10;
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [originalAuditData, setOriginalAuditData] = useState(null);
 
     const fetchCountryCodes = async () => {
         try {
@@ -59,16 +62,26 @@ const CountryCode = () => {
             country_code: Yup.string().required('Country code is required'),
         }),
         onSubmit: async (values, { resetForm }) => {
+            if (isSubmitting) return;
+
             try {
+                setIsSubmitting(true);
+
+                const payload = {
+                    country_code: values.country_code.trim(),
+                };
+
                 const url = isEditMode
                     ? `${import.meta.env.VITE_APP_KEY}country/codes/${editId}/`
                     : `${import.meta.env.VITE_APP_KEY}country/codes/`;
 
-                const method = isEditMode ? axios.put : axios.post;
+                const method = isEditMode
+                    ? axios.put
+                    : axios.post;
 
                 const response = await method(
                     url,
-                    values,
+                    payload,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -76,17 +89,87 @@ const CountryCode = () => {
                     }
                 );
 
-                if (response.data.status === 'success') {
-                    toast.success(`Country code ${isEditMode ? 'updated' : 'added'} successfully!`);
-                    resetForm();
-                    fetchCountryCodes();
+                if (response.data.status === "success") {
+
+                    // ==================================================
+                    // AUDIT LOG
+                    // ==================================================
+
+                    try {
+                        if (isEditMode) {
+                            await createAuditLog({
+                                action: "country_code_updated_website",
+
+                                beforeData: originalAuditData || {},
+
+                                afterData: {
+                                    country_code: payload.country_code,
+                                },
+                            });
+                        } else {
+                            const createdCountryCode =
+                                response?.data?.data ?? null;
+
+                            await createAuditLog({
+                                action: "country_code_created_website",
+
+                                beforeData: {},
+
+                                afterData: {
+                                    country_code:
+                                        createdCountryCode?.country_code ??
+                                        payload.country_code,
+                                },
+                            });
+                        }
+                    } catch (auditError) {
+                        console.error(
+                            "Country Code saved, but audit log failed:",
+                            auditError
+                        );
+                    }
+
+                    // ==================================================
+                    // SUCCESS
+                    // ==================================================
+
+                    toast.success(
+                        `Country code ${isEditMode ? "updated" : "added"
+                        } successfully!`
+                    );
+
+                    await fetchCountryCodes();
+
+                    // Clear field
+                    resetForm({
+                        values: {
+                            country_code: "",
+                        },
+                    });
+
+                    // Clear edit state
                     setIsEditMode(false);
                     setEditId(null);
+                    setOriginalAuditData(null);
                 } else {
-                    toast.error(`Failed to ${isEditMode ? 'update' : 'add'} country code.`);
+                    toast.error(
+                        `Failed to ${isEditMode ? "update" : "add"
+                        } country code.`
+                    );
                 }
             } catch (error) {
-                toast.error(`Error ${isEditMode ? 'updating' : 'adding'} country code.`);
+                console.error(
+                    "Country Code save error:",
+                    error
+                );
+
+                toast.error(
+                    error?.response?.data?.message ||
+                    `Error ${isEditMode ? "updating" : "adding"
+                    } country code.`
+                );
+            } finally {
+                setIsSubmitting(false);
             }
         },
     });
@@ -98,6 +181,8 @@ const CountryCode = () => {
     const indexOfLastItem = currentPage * perPageData;
     const indexOfFirstItem = indexOfLastItem - perPageData;
     const currentData = filteredCodes.slice(indexOfFirstItem, indexOfLastItem);
+
+    document.title = "Country Codes | Beposoft";
 
     return (
         <React.Fragment>
@@ -135,22 +220,52 @@ const CountryCode = () => {
                                                     onChange={formik.handleChange}
                                                     onBlur={formik.handleBlur}
                                                     invalid={formik.touched.country_code && !!formik.errors.country_code}
+                                                    disabled={isSubmitting}
                                                 />
                                                 <FormFeedback>{formik.errors.country_code}</FormFeedback>
                                             </Col>
 
                                             <Col md={4} className="d-flex align-items-end">
-                                                <button type="submit" className="btn btn-primary">
-                                                    {isEditMode ? 'Update Country Code' : 'Add Country Code'}
+                                                <button
+                                                    type="submit"
+                                                    className="btn btn-primary"
+                                                    disabled={isSubmitting}
+                                                >
+                                                    {isSubmitting ? (
+                                                        <>
+                                                            <span
+                                                                className="spinner-border spinner-border-sm me-2"
+                                                                role="status"
+                                                                aria-hidden="true"
+                                                            />
+
+                                                            {isEditMode
+                                                                ? "Updating..."
+                                                                : "Adding..."}
+                                                        </>
+                                                    ) : isEditMode ? (
+                                                        "Update Country Code"
+                                                    ) : (
+                                                        "Add Country Code"
+                                                    )}
                                                 </button>
                                                 {isEditMode && (
                                                     <button
                                                         type="button"
                                                         className="btn btn-secondary ms-2"
+                                                        disabled={isSubmitting}
                                                         onClick={() => {
-                                                            formik.resetForm();
+                                                            if (isSubmitting) return;
+
+                                                            formik.resetForm({
+                                                                values: {
+                                                                    country_code: "",
+                                                                },
+                                                            });
+
                                                             setIsEditMode(false);
                                                             setEditId(null);
+                                                            setOriginalAuditData(null);
                                                         }}
                                                     >
                                                         Cancel Edit
@@ -204,7 +319,15 @@ const CountryCode = () => {
                                                             <button
                                                                 className="btn btn-sm btn-primary"
                                                                 onClick={() => {
-                                                                    formik.setValues({ country_code: item.country_code });
+                                                                    // Save original value for audit log
+                                                                    setOriginalAuditData({
+                                                                        country_code: item.country_code || "",
+                                                                    });
+
+                                                                    formik.setValues({
+                                                                        country_code: item.country_code || "",
+                                                                    });
+
                                                                     setEditId(item.id);
                                                                     setIsEditMode(true);
                                                                 }}

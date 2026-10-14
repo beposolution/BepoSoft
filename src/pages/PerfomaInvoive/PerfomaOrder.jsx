@@ -37,13 +37,11 @@ const PerfomaOrder = () => {
         orderId = null
     ) => {
         try {
-            const linkedOrderId = orderId ?? null;
+            const linkedOrderId = orderId ? Number(orderId) : null;
 
             await createAuditLog({
                 action,
-                order: linkedOrderId
-                    ? Number(linkedOrderId)
-                    : undefined,
+                order: linkedOrderId,
                 beforeData: {
                     proforma_invoice: orders?.invoice ?? invoice,
                     ...beforeData,
@@ -203,17 +201,23 @@ const PerfomaOrder = () => {
 
                     const createdOrderData = response?.data?.data ?? {};
                     const createdOrderId = createdOrderData?.id ?? null;
+                    const createdInvoice = createdOrderData?.invoice ?? null;
 
                     await createDataLog(
                         "Proforma Converted to Invoice",
                         {
                             action: "Proforma converting to Invoice",
                             proforma_id: orders?.id ?? null,
+                            proforma_invoice: orders?.invoice ?? invoice,
                             proforma_order_data: { ...orders },
                             proforma_products: orders?.perfoma_items ?? [],
                         },
                         {
                             action: "Proforma added to Waiting For Approval",
+
+                            order_id: createdOrderId,
+                            invoice: createdInvoice,
+
                             created_order_id: createdOrderId,
                             created_order_data: createdOrderData,
                             submitted_order_payload: { ...payload },

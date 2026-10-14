@@ -3,12 +3,14 @@ import { Card, Col, Container, Row, CardBody, CardTitle, Label, Form, Input, Tab
 import * as Yup from "yup";
 import { useFormik } from "formik";
 import axios from "axios";
-import {toast, ToastContainer} from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
+import { createAuditLog } from "../../services/auditService";
 
 const Emi = () => {
     document.title = "EMI Calculator";
 
     const [emiSchedule, setEmiSchedule] = useState([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const token = localStorage.getItem("token");
 
     const formik = useFormik({
@@ -18,34 +20,118 @@ const Emi = () => {
             tenure_months: "",
             down_payment: "",
             principal: "",
-            startdate:"",
-            enddate:"",
+            startdate: "",
+            enddate: "",
         },
         validationSchema: Yup.object({
             annual_interest_rate: Yup.number().required("Required"),
             tenure_months: Yup.number().required("Required"),
             down_payment: Yup.number().required("Required"),
             principal: Yup.number().required("Required"),
-            startdate:Yup.string().required("start date is required"),
-            enddate:Yup.string().required("end date is required"),
+            startdate: Yup.string().required("start date is required"),
+            enddate: Yup.string().required("end date is required"),
         }),
         onSubmit: async (values, { resetForm }) => {
+
+            if (isSubmitting) {
+                return;
+            }
+
+            setIsSubmitting(true);
+
             try {
-                const response = await axios.post(`${import.meta.env.VITE_APP_IMAGE}/apis/emi/`, {
-                    ...values,
-                }, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
+
+                const response = await axios.post(
+                    `${import.meta.env.VITE_APP_IMAGE}/apis/emi/`,
+                    {
+                        ...values,
                     },
-                });
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+
+
+                // CREATE AUDIT LOG
+
+                try {
+
+                    const auditCreated = await createAuditLog({
+
+                        action: "emi_created_website",
+
+                        beforeData: {},
+
+                        afterData: {
+
+                            emi_name:
+                                values.emi_name ?? "",
+
+                            principal:
+                                values.principal ?? "",
+
+                            down_payment:
+                                values.down_payment ?? "",
+
+                            annual_interest_rate:
+                                values.annual_interest_rate ?? "",
+
+                            tenure_months:
+                                values.tenure_months ?? "",
+
+                            startdate:
+                                values.startdate ?? "",
+
+                            enddate:
+                                values.enddate ?? "",
+
+                            emi_id:
+                                response?.data?.id ??
+                                response?.data?.data?.id ??
+                                null,
+
+                        },
+
+                    });
+
+
+                    if (!auditCreated) {
+
+                        console.error(
+                            "EMI created successfully, but DataLog creation failed."
+                        );
+
+                    }
+
+                } catch (auditError) {
+
+                    console.error(
+                        "EMI created successfully, but DataLog creation failed:",
+                        auditError
+                    );
+
+                }
 
                 toast.success("EMI details submitted successfully");
 
                 resetForm();
-                setEmiSchedule([]); // Clear the EMI schedule after submission
+                setEmiSchedule([]);
+
+
             } catch (error) {
-                toast.error("Error submitting form:");
+
+                console.error(
+                    "Error submitting EMI:",
+                    error
+                );
+
+                toast.error("Error submitting form");
+
+            } finally {
+                setIsSubmitting(false);
             }
         },
     });
@@ -169,7 +255,7 @@ const Emi = () => {
                                 <Row>
                                     <Col md={4}>
 
-                                    <div className="mb-3">
+                                        <div className="mb-3">
                                             <Label>end Date</Label>
                                             <Input
                                                 type="Date"
@@ -177,7 +263,7 @@ const Emi = () => {
                                                 value={formik.values.enddate}
                                                 onChange={formik.handleChange}
                                             />
-                                            </div>
+                                        </div>
 
                                     </Col>
                                 </Row>
@@ -187,8 +273,9 @@ const Emi = () => {
                                             style={{ margin: "25px 0px", padding: "10px 20px" }}
                                             type="submit"
                                             className="btn btn-primary w-md"
+                                            disabled={isSubmitting}
                                         >
-                                            Submit
+                                            {isSubmitting ? "Submitting..." : "Submit"}
                                         </button>
                                     </Col>
                                 </Row>

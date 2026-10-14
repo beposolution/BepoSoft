@@ -2295,7 +2295,8 @@ const FormLayouts = () => {
                                                         </span>
 
                                                         {/* {!["BDM", "BDO"].includes(role) && ( */}
-                                                        {!isShipped && !["BDM", "BDO", "Accounts / Accounting"].includes(role) && (
+                                                        {/* {!isShipped && !["BDM", "BDO", "Accounts / Accounting"].includes(role) && ( */}
+                                                        {!["BDM", "BDO", "Accounts / Accounting"].includes(role) && (
                                                             <Button
                                                                 size="sm"
                                                                 color="light"

@@ -53,7 +53,7 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
                 [productId]: response?.data?.locked_invoices || [],
             }));
         } catch (error) {
-            console.error("Failed to fetch locked invoices:", error);
+            // console.error("Failed to fetch locked invoices:", error);
 
             setLockedInvoices((prev) => ({
                 ...prev,
@@ -104,10 +104,10 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
                 }
             );
 
-            console.log(
-                "Warehouse Products API Response:",
-                response.data
-            );
+            // console.log(
+            //     "Warehouse Products API Response:",
+            //     response.data
+            // );
 
             const data =
                 response?.data?.results?.data ||
@@ -117,7 +117,7 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
 
             if (!Array.isArray(data)) {
                 setProducts([]);
-                setError("No products found");
+                setError(null);
                 return;
             }
 
@@ -211,12 +211,13 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
                 ];
             });
 
-            console.log(
-                "Products prepared for table:",
-                displayProducts
-            );
+            // console.log(
+            //     "Products prepared for table:",
+            //     displayProducts
+            // );
 
             setProducts(displayProducts);
+            setError(null);
 
         } catch (error) {
             console.error(
@@ -226,12 +227,44 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
                 error
             );
 
+            const status = error?.response?.status;
+
+            const responseMessage =
+                error?.response?.data?.message || "";
+
+            // =========================================================
+            // IMPORTANT:
+            // 404 for search means there is simply no matching product.
+            // Do NOT put the modal into error state.
+            // Keep the search field visible so the user can search again.
+            // =========================================================
+            if (
+                status === 404 &&
+                responseMessage
+                    .toLowerCase()
+                    .includes("no products found")
+            ) {
+                setProducts([]);
+                setError(null);
+                return;
+            }
+
+            // Any other 404 from this product-search API can also be
+            // safely shown as an empty search result.
+            if (status === 404) {
+                setProducts([]);
+                setError(null);
+                return;
+            }
+
+            // Only actual API/server/network problems are errors.
             setProducts([]);
 
             setError(
-                error?.response?.data?.message ||
+                responseMessage ||
                 "An error occurred while fetching warehouse products."
             );
+
         } finally {
             setLoading(false);
         }
@@ -302,7 +335,7 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
                 toast.success("Product added to cart successfully!");
             }
         } catch (error) {
-            console.error("Add to cart error:", error);
+            // console.error("Add to cart error:", error);
 
             toast.error(
                 error?.response?.data?.message ||

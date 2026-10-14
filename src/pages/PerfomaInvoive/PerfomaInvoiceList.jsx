@@ -79,6 +79,7 @@ const BasicTable = () => {
         "COO",
         "CSO",
         "SD",
+        "IT",
         "Accounts / Accounting"
     ];
 

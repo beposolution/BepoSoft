@@ -4,11 +4,12 @@ import axios from 'axios';
 import {
     Modal, ModalHeader, ModalBody, ModalFooter, Button, Input, Label, Form
 } from "reactstrap";
-import { FaEdit, FaTrash } from 'react-icons/fa'; 
+import { FaEdit, FaTrash } from 'react-icons/fa';
 import Breadcrumbs from '../../components/Common/Breadcrumb';
 import TableContainer from '../../components/Common/TableContainer';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../services/auditService";
 
 const StateTable = () => {
     const [data, setData] = useState([]);
@@ -19,6 +20,8 @@ const StateTable = () => {
     const [isAddMode, setIsAddMode] = useState(false); // New state to differentiate between add and edit
     const [newState, setNewState] = useState({ name: "" }); // State for the new state form
     const token = localStorage.getItem('token');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [originalAuditData, setOriginalAuditData] = useState(null);
 
     const toggleModal = () => setModal(!modal);
 
@@ -85,7 +88,13 @@ const StateTable = () => {
     const handleEdit = (customer) => {
         setSelectedCustomer(customer);
         setIsAddMode(false);
-        toggleModal();
+
+        // Keep original value separately for audit log
+        setOriginalAuditData({
+            name: customer?.name || "",
+        });
+
+        setModal(true);
     };
 
     const handleDelete = async (id) => {
@@ -113,52 +122,244 @@ const StateTable = () => {
         }
     };
 
+    const clearForm = () => {
+        setNewState({
+            name: "",
+        });
+
+        setSelectedCustomer(null);
+        setOriginalAuditData(null);
+    };
+
+    const handleCloseModal = () => {
+        if (isSubmitting) return;
+
+        clearForm();
+        setIsAddMode(false);
+        setModal(false);
+    };
+
     const handleSubmit = async () => {
-        if (isAddMode) {
-            try {
-                const response = await axios.post(`${import.meta.env.VITE_APP_KEY}add/state/`, newState, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+        // Prevent multiple clicks
+        if (isSubmitting) return;
 
-                if (response.status === 201 || response.status === 200) {
-                    setData(prevData => [...prevData, response.data]); // Update state using functional approach
+        const stateName = isAddMode
+            ? newState.name?.trim()
+            : selectedCustomer?.name?.trim();
+
+        // Validation
+        if (!stateName) {
+            toast.error("State name is required");
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+
+            // ========================================================
+            // ADD STATE
+            // ========================================================
+
+            if (isAddMode) {
+                const payload = {
+                    name: newState.name.trim(),
+                };
+
+                const response = await axios.post(
+                    `${import.meta.env.VITE_APP_KEY}add/state/`,
+                    payload,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (
+                    response.status === 201 ||
+                    response.status === 200
+                ) {
+                    // ------------------------------------------------
+                    // AUDIT LOG
+                    // ------------------------------------------------
+
+                    try {
+                        const createdState =
+                            response?.data?.data ??
+                            response?.data ??
+                            null;
+
+                        const auditCreated =
+                            await createAuditLog({
+                                action: "state_created_website",
+
+                                beforeData: {},
+
+                                afterData: {
+                                    name:
+                                        createdState?.name ??
+                                        payload.name,
+                                },
+                            });
+
+                        if (!auditCreated) {
+                            console.error(
+                                "State created successfully, but DataLog creation failed."
+                            );
+                        }
+                    } catch (auditError) {
+                        console.error(
+                            "State created successfully, but audit log failed:",
+                            auditError
+                        );
+                    }
+
+                    toast.success(
+                        "State Added Successfully"
+                    );
+
+                    // Refresh table
                     await fetchData();
-                    toggleModal();
-                } else {
-                    throw new Error("Failed to add state");
-                }
-            } catch (error) {
-                toast.error("Add state failed");
-                setError(error.message || "Failed to add state");
-            }
-        } else {
-            // Handle Update State
-            try {
-                const response = await axios.put(`${import.meta.env.VITE_APP_KEY}state/update/${selectedCustomer.id}/`, selectedCustomer, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
 
-                setData(prevData => prevData.map(item => item.id === selectedCustomer.id ? response.data : item));
-                await fetchData();
-                toggleModal();
-            } catch (error) {
-                toast.error("Update failed");
-                setError(error.message || "Failed to update customer");
+                    // Clear old error if any
+                    setError(null);
+
+                    // Clear fields
+                    clearForm();
+
+                    setIsAddMode(false);
+
+                    // Close modal
+                    setModal(false);
+                } else {
+                    throw new Error(
+                        "Failed to add state"
+                    );
+                }
             }
+
+            // ========================================================
+            // UPDATE STATE
+            // ========================================================
+
+            else {
+                if (!selectedCustomer?.id) {
+                    toast.error(
+                        "Invalid state selected"
+                    );
+                    return;
+                }
+
+                const payload = {
+                    ...selectedCustomer,
+                    name: selectedCustomer.name.trim(),
+                };
+
+                const afterData = {
+                    name: payload.name,
+                };
+
+                const response = await axios.put(
+                    `${import.meta.env.VITE_APP_KEY}state/update/${selectedCustomer.id}/`,
+                    payload,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (
+                    response.status === 200 ||
+                    response.status === 201
+                ) {
+                    // ------------------------------------------------
+                    // AUDIT LOG
+                    // ------------------------------------------------
+
+                    try {
+                        const auditCreated =
+                            await createAuditLog({
+                                action: "state_updated_website",
+
+                                beforeData:
+                                    originalAuditData || {},
+
+                                afterData:
+                                    afterData,
+                            });
+
+                        if (!auditCreated) {
+                            console.error(
+                                "State updated successfully, but DataLog creation failed."
+                            );
+                        }
+                    } catch (auditError) {
+                        console.error(
+                            "State updated successfully, but audit log failed:",
+                            auditError
+                        );
+                    }
+
+                    toast.success(
+                        "State Updated Successfully"
+                    );
+
+                    // Refresh table
+                    await fetchData();
+
+                    setError(null);
+
+                    // Clear fields
+                    clearForm();
+
+                    setIsAddMode(false);
+
+                    // Close modal
+                    setModal(false);
+                }
+            }
+        } catch (error) {
+            console.error(
+                "State save error:",
+                error
+            );
+
+            toast.error(
+                error?.response?.data?.message ||
+                (isAddMode
+                    ? "Add state failed"
+                    : "Update failed")
+            );
+
+            setError(
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to save state"
+            );
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     const handleAddState = () => {
         setIsAddMode(true);
-        setNewState({ name: "" }); // Clear the new state form
-        toggleModal();
+        setSelectedCustomer(null);
+        setOriginalAuditData(null);
+
+        setNewState({
+            name: "",
+        });
+
+        setModal(true);
     };
 
     const fetchData = async () => {
         try {
             const response = await axios.get(`${import.meta.env.VITE_APP_KEY}states/`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (response.status === 200) {
-                setData(response.data.data);
+                setData(response.data.data || []);
+                setError(null);
             } else {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
@@ -203,8 +404,19 @@ const StateTable = () => {
                 )}
 
                 {/* Modal for adding/editing state */}
-                <Modal isOpen={modal} toggle={toggleModal}>
-                    <ModalHeader toggle={toggleModal}>
+                <Modal
+                    isOpen={modal}
+                    toggle={handleCloseModal}
+                    backdrop={isSubmitting ? "static" : true}
+                    keyboard={!isSubmitting}
+                >
+                    <ModalHeader
+                        toggle={
+                            isSubmitting
+                                ? undefined
+                                : handleCloseModal
+                        }
+                    >
                         {isAddMode ? "Add New State" : "Edit State"}
                     </ModalHeader>
                     <ModalBody>
@@ -215,13 +427,40 @@ const StateTable = () => {
                                 name="name"
                                 value={isAddMode ? newState.name : selectedCustomer?.name || ''}
                                 onChange={handleInputChange}
+                                disabled={isSubmitting}
                             />
                         </Form>
                     </ModalBody>
                     <ModalFooter>
-                        <Button color="secondary" onClick={toggleModal}>Cancel</Button>
-                        <Button color="primary" onClick={handleSubmit}>
-                            {isAddMode ? "Add" : "Save"}
+                        <Button
+                            color="secondary"
+                            onClick={handleCloseModal}
+                            disabled={isSubmitting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            color="primary"
+                            onClick={handleSubmit}
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <span
+                                        className="spinner-border spinner-border-sm me-2"
+                                        role="status"
+                                        aria-hidden="true"
+                                    ></span>
+
+                                    {isAddMode
+                                        ? "Adding..."
+                                        : "Saving..."}
+                                </>
+                            ) : isAddMode ? (
+                                "Add"
+                            ) : (
+                                "Save"
+                            )}
                         </Button>
                     </ModalFooter>
                 </Modal>

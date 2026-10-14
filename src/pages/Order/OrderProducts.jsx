@@ -1785,6 +1785,9 @@ const FormLayouts = () => {
         !isAccounts ||
         isEmptyOrZeroValue(originalAccountFields.shipping_charge);
 
+    const canEditShippingCharge =
+        canEditOrder && accountsCanEditShippingCharge;
+
     const showMainSubmitButton =
         !isAccounts ||
         accountsCanEditShippingCharge;
@@ -2978,7 +2981,8 @@ const FormLayouts = () => {
                                                                             <input
                                                                                 type="number"
                                                                                 value={shippingCharge}
-                                                                                disabled={!canModifyOrder || !accountsCanEditShippingCharge}
+                                                                                disabled={!canEditShippingCharge}
+                                                                                // disabled={!canModifyOrder || !accountsCanEditShippingCharge}
                                                                                 onChange={(e) => setShippingCharge(Number(e.target.value))}
                                                                                 style={{ width: '80px', fontWeight: "500", border: "1px solid #ccc", borderRadius: "4px", padding: "3px" }}
                                                                             />
@@ -3063,21 +3067,22 @@ const FormLayouts = () => {
                                             `}</style>
                                             {/* {canEditOrder && ( */}
                                             {/* {canModifyOrder && ( */}
-                                            {canModifyOrder &&
-                                                (!isAccounts || accountsCanEditShippingCharge) && (
-                                                    <div
-                                                        className="mb-3 mt-3"
-                                                        style={{ textAlign: "right" }}
+                                            {/* {canModifyOrder &&
+                                                (!isAccounts || accountsCanEditShippingCharge) && ( */}
+                                            {(canModifyOrder || canEditShippingCharge) && (
+                                                <div
+                                                    className="mb-3 mt-3"
+                                                    style={{ textAlign: "right" }}
+                                                >
+                                                    <Button
+                                                        color="primary"
+                                                        type="button"
+                                                        onClick={handleSubmit}
                                                     >
-                                                        <Button
-                                                            color="primary"
-                                                            type="button"
-                                                            onClick={handleSubmit}
-                                                        >
-                                                            Submit
-                                                        </Button>
-                                                    </div>
-                                                )}
+                                                        Submit
+                                                    </Button>
+                                                </div>
+                                            )}
                                         </CardBody>
                                     </Card>
                                     <style jsx>{`

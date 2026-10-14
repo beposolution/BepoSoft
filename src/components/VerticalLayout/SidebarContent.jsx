@@ -691,7 +691,7 @@ const SidebarContent = (props) => {
               </>
             )}
 
-            {role === 'ADMIN' || role === 'HR' || role === 'CMO' || role === "Accounts / Accounting" || role === 'CEO' || role === 'COO' ? (
+            {role === 'ADMIN' || role === 'HR' || role === 'IT' || role === 'CMO' || role === "Accounts / Accounting" || role === 'CEO' || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaBlogger size={20} style={{ marginRight: '8px' }} />

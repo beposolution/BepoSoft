@@ -398,7 +398,7 @@ const DataLog = () => {
         allLogs = [...allLogs, ...normalizedPageLogs];
 
         // DRF pagination
-        if (data.next) {
+        if (!Array.isArray(data) && data.next) {
           page += 1;
         } else {
           hasNextPage = false;
@@ -423,6 +423,10 @@ const DataLog = () => {
       // ============================================================
 
       const wb = XLSX.utils.book_new();
+
+      // ============================================================
+      // BORDER
+      // ============================================================
 
       const borderThin = {
         top: {
@@ -511,6 +515,27 @@ const DataLog = () => {
         fill: {
           fgColor: {
             rgb: "EAF0FB",
+          },
+        },
+        border: borderThin,
+      };
+
+      const fieldHeaderStyle = {
+        font: {
+          bold: true,
+          sz: 11,
+          color: {
+            rgb: "1D4ED8",
+          },
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+          wrapText: true,
+        },
+        fill: {
+          fgColor: {
+            rgb: "DBEAFE",
           },
         },
         border: borderThin,
@@ -630,6 +655,26 @@ const DataLog = () => {
         border: borderThin,
       };
 
+      const fieldCellStyle = {
+        font: {
+          bold: true,
+          sz: 10,
+          color: {
+            rgb: "1D4ED8",
+          },
+        },
+        alignment: {
+          vertical: "top",
+          wrapText: true,
+        },
+        fill: {
+          fgColor: {
+            rgb: "EFF6FF",
+          },
+        },
+        border: borderThin,
+      };
+
       const oldDataStyle = {
         font: {
           bold: true,
@@ -720,14 +765,58 @@ const DataLog = () => {
           return "-";
         }
 
+        // Try to parse JSON stored as string.
+        if (typeof value === "string") {
+          const trimmed = value.trim();
+
+          if (
+            (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+            (trimmed.startsWith("[") && trimmed.endsWith("]"))
+          ) {
+            const parsed = parseLooseJSON(trimmed);
+
+            if (parsed !== null) {
+              return formatExcelValue(parsed);
+            }
+          }
+
+          return value;
+        }
+
         if (Array.isArray(value)) {
+          if (value.length === 0) {
+            return "-";
+          }
+
           return value
-            .map((item) => formatExcelValue(item))
-            .join(", ");
+            .map((item, index) => {
+              if (
+                item !== null &&
+                typeof item === "object"
+              ) {
+                const formattedItem = Object.entries(item)
+                  .map(
+                    ([key, val]) =>
+                      `${key}: ${formatExcelValue(val)}`
+                  )
+                  .join("\n");
+
+                return `Item ${index + 1}\n${formattedItem}`;
+              }
+
+              return formatExcelValue(item);
+            })
+            .join("\n\n");
         }
 
         if (typeof value === "object") {
-          return Object.entries(value)
+          const entries = Object.entries(value);
+
+          if (entries.length === 0) {
+            return "-";
+          }
+
+          return entries
             .map(
               ([key, val]) =>
                 `${key}: ${formatExcelValue(val)}`
@@ -738,30 +827,102 @@ const DataLog = () => {
         return String(value);
       };
 
-      const formatDataBlock = (data) => {
-        const safeData = safeObj(data);
+      // ============================================================
+      // NORMALIZE DATA INTO EXCEL FIELD ROWS
+      // ============================================================
 
-        if (
-          !safeData ||
-          typeof safeData !== "object" ||
-          Array.isArray(safeData)
-        ) {
-          return formatExcelValue(safeData);
+      const excelDetailRows = [];
+
+      rows.forEach((log, logIndex) => {
+        const before = safeObj(log.before_data);
+        const after = safeObj(log.after_data);
+
+        const beforeObj =
+          before &&
+            typeof before === "object" &&
+            !Array.isArray(before)
+            ? before
+            : {};
+
+        const afterObj =
+          after &&
+            typeof after === "object" &&
+            !Array.isArray(after)
+            ? after
+            : {};
+
+        const allKeys = Array.from(
+          new Set([
+            ...Object.keys(beforeObj),
+            ...Object.keys(afterObj),
+          ])
+        );
+
+        // ----------------------------------------------------------
+        // NON-OBJECT DATA
+        // ----------------------------------------------------------
+
+        if (allKeys.length === 0) {
+          excelDetailRows.push({
+            number: logIndex + 1,
+            staff: log.user_name || "-",
+            invoice: log.order_name || "-",
+            field: "Value",
+            before: formatExcelValue(before),
+            after: formatExcelValue(after),
+            dateTime: formatDateTime(log.created_at),
+            isFirstRow: true,
+            logIndex,
+          });
+
+          return;
         }
 
-        const entries = Object.entries(safeData);
+        // ----------------------------------------------------------
+        // OBJECT DATA - EVERY FIELD ON ITS OWN ROW
+        // ----------------------------------------------------------
 
-        if (entries.length === 0) {
-          return "-";
-        }
+        allKeys.forEach((key, keyIndex) => {
+          const hasBefore = Object.prototype.hasOwnProperty.call(
+            beforeObj,
+            key
+          );
 
-        return entries
-          .map(
-            ([key, value]) =>
-              `${key}: ${formatExcelValue(value)}`
-          )
-          .join("\n");
-      };
+          const hasAfter = Object.prototype.hasOwnProperty.call(
+            afterObj,
+            key
+          );
+
+          const beforeValue = hasBefore
+            ? beforeObj[key]
+            : "-";
+
+          const afterValue = hasAfter
+            ? afterObj[key]
+            : "-";
+
+          excelDetailRows.push({
+            number: keyIndex === 0 ? logIndex + 1 : "",
+            staff:
+              keyIndex === 0
+                ? log.user_name || "-"
+                : "",
+            invoice:
+              keyIndex === 0
+                ? log.order_name || "-"
+                : "",
+            field: key,
+            before: formatExcelValue(beforeValue),
+            after: formatExcelValue(afterValue),
+            dateTime:
+              keyIndex === 0
+                ? formatDateTime(log.created_at)
+                : "",
+            isFirstRow: keyIndex === 0,
+            logIndex,
+          });
+        });
+      });
 
       // ============================================================
       // MAIN DATA SHEET
@@ -776,10 +937,12 @@ const DataLog = () => {
         "",
         "",
         "",
+        "",
       ]);
 
       excelData.push([
-        "Complete audit table with before and after values",
+        "Complete audit table with all before and after fields",
+        "",
         "",
         "",
         "",
@@ -790,11 +953,12 @@ const DataLog = () => {
       excelData.push([
         `Total Logs: ${rows.length}`,
         "",
-        `Filtered Total: ${totalCount}`,
+        `Total Detail Rows: ${excelDetailRows.length}`,
         "",
         `Exported: ${formatDateTime(
           new Date().toISOString()
         )}`,
+        "",
         "",
       ]);
 
@@ -804,19 +968,21 @@ const DataLog = () => {
         "#",
         "Staff",
         "Invoice",
+        "Field",
         "Old Data",
         "Changed To",
         "Date & Time",
       ]);
 
-      rows.forEach((log, index) => {
+      excelDetailRows.forEach((row) => {
         excelData.push([
-          index + 1,
-          log.user_name || "-",
-          log.order_name || "-",
-          formatDataBlock(log.before_data),
-          formatDataBlock(log.after_data),
-          formatDateTime(log.created_at),
+          row.number,
+          row.staff,
+          row.invoice,
+          row.field,
+          row.before,
+          row.after,
+          row.dateTime,
         ]);
       });
 
@@ -834,7 +1000,7 @@ const DataLog = () => {
           },
           e: {
             r: 0,
-            c: 5,
+            c: 6,
           },
         },
         {
@@ -844,7 +1010,7 @@ const DataLog = () => {
           },
           e: {
             r: 1,
-            c: 5,
+            c: 6,
           },
         },
         {
@@ -874,7 +1040,7 @@ const DataLog = () => {
           },
           e: {
             r: 2,
-            c: 5,
+            c: 6,
           },
         },
       ];
@@ -888,21 +1054,67 @@ const DataLog = () => {
           wch: 8,
         },
         {
-          wch: 26,
+          wch: 24,
         },
         {
           wch: 18,
         },
         {
-          wch: 55,
+          wch: 28,
         },
         {
-          wch: 55,
+          wch: 65,
+        },
+        {
+          wch: 65,
         },
         {
           wch: 24,
         },
       ];
+
+      // ============================================================
+      // ROW HEIGHT CALCULATION
+      // ============================================================
+
+      const calculateExcelRowHeight = (
+        text,
+        approximateWidth = 65
+      ) => {
+        if (
+          text == null ||
+          String(text).trim() === ""
+        ) {
+          return 28;
+        }
+
+        const value = String(text);
+
+        const physicalLines = value.split("\n");
+
+        let estimatedLines = 0;
+
+        physicalLines.forEach((line) => {
+          const length = Math.max(
+            String(line).length,
+            1
+          );
+
+          estimatedLines += Math.max(
+            1,
+            Math.ceil(length / approximateWidth)
+          );
+        });
+
+        // Excel maximum row height is approximately 409 points.
+        return Math.min(
+          Math.max(
+            estimatedLines * 15,
+            30
+          ),
+          409
+        );
+      };
 
       // ============================================================
       // ROW HEIGHTS
@@ -925,31 +1137,31 @@ const DataLog = () => {
           hpt: 30,
         },
 
-        ...rows.map((log) => {
-          const beforeText = formatDataBlock(
-            log.before_data
-          );
+        ...excelDetailRows.map((row) => {
+          const fieldHeight =
+            calculateExcelRowHeight(
+              row.field,
+              28
+            );
 
-          const afterText = formatDataBlock(
-            log.after_data
-          );
+          const beforeHeight =
+            calculateExcelRowHeight(
+              row.before,
+              65
+            );
 
-          const beforeLines =
-            beforeText.split("\n").length;
-
-          const afterLines =
-            afterText.split("\n").length;
-
-          const maxLines = Math.max(
-            beforeLines,
-            afterLines,
-            2
-          );
+          const afterHeight =
+            calculateExcelRowHeight(
+              row.after,
+              65
+            );
 
           return {
-            hpt: Math.min(
-              Math.max(maxLines * 18, 48),
-              220
+            hpt: Math.max(
+              fieldHeight,
+              beforeHeight,
+              afterHeight,
+              30
             ),
           };
         }),
@@ -986,24 +1198,58 @@ const DataLog = () => {
             };
           }
 
+          // --------------------------------------------------------
+          // TITLE
+          // --------------------------------------------------------
+
           if (row === 0) {
-            ws[cellAddress].s = mainTitleStyle;
-          } else if (row === 1) {
-            ws[cellAddress].s = subTitleStyle;
-          } else if (row === 2) {
-            ws[cellAddress].s = sectionStyle;
-          } else if (row === 4) {
+            ws[cellAddress].s =
+              mainTitleStyle;
+          }
+
+          // --------------------------------------------------------
+          // SUBTITLE
+          // --------------------------------------------------------
+
+          else if (row === 1) {
+            ws[cellAddress].s =
+              subTitleStyle;
+          }
+
+          // --------------------------------------------------------
+          // SUMMARY
+          // --------------------------------------------------------
+
+          else if (row === 2) {
+            ws[cellAddress].s =
+              sectionStyle;
+          }
+
+          // --------------------------------------------------------
+          // HEADER
+          // --------------------------------------------------------
+
+          else if (row === 4) {
             if (col === 3) {
               ws[cellAddress].s =
-                oldHeaderStyle;
+                fieldHeaderStyle;
             } else if (col === 4) {
+              ws[cellAddress].s =
+                oldHeaderStyle;
+            } else if (col === 5) {
               ws[cellAddress].s =
                 newHeaderStyle;
             } else {
               ws[cellAddress].s =
                 headerStyle;
             }
-          } else if (row >= 5) {
+          }
+
+          // --------------------------------------------------------
+          // DATA ROWS
+          // --------------------------------------------------------
+
+          else if (row >= 5) {
             if (col === 0) {
               ws[cellAddress].s =
                 numberCellStyle;
@@ -1015,11 +1261,14 @@ const DataLog = () => {
                 invoiceCellStyle;
             } else if (col === 3) {
               ws[cellAddress].s =
-                oldDataStyle;
+                fieldCellStyle;
             } else if (col === 4) {
               ws[cellAddress].s =
-                newDataStyle;
+                oldDataStyle;
             } else if (col === 5) {
+              ws[cellAddress].s =
+                newDataStyle;
+            } else if (col === 6) {
               ws[cellAddress].s =
                 dateCellStyle;
             } else {
@@ -1031,6 +1280,14 @@ const DataLog = () => {
       }
 
       // ============================================================
+      // AUTO FILTER
+      // ============================================================
+
+      ws["!autofilter"] = {
+        ref: `A5:G${excelData.length}`,
+      };
+
+      // ============================================================
       // FREEZE HEADER
       // ============================================================
 
@@ -1038,6 +1295,10 @@ const DataLog = () => {
         xSplit: 0,
         ySplit: 5,
       };
+
+      // ============================================================
+      // APPEND MAIN SHEET
+      // ============================================================
 
       XLSX.utils.book_append_sheet(
         wb,
@@ -1120,49 +1381,82 @@ const DataLog = () => {
             wch: 28,
           }));
 
-        const summaryRange =
-          XLSX.utils.decode_range(
-            sheet["!ref"]
-          );
+        sheet["!rows"] = [
+          {
+            hpt: 30,
+          },
+          {
+            hpt: 24,
+          },
+          {
+            hpt: 8,
+          },
+          {
+            hpt: 30,
+          },
+          ...data.map(() => ({
+            hpt: 24,
+          })),
+        ];
 
-        for (
-          let row = summaryRange.s.r;
-          row <= summaryRange.e.r;
-          row++
-        ) {
+        if (sheet["!ref"]) {
+          const summaryRange =
+            XLSX.utils.decode_range(
+              sheet["!ref"]
+            );
+
           for (
-            let col = summaryRange.s.c;
-            col <= summaryRange.e.c;
-            col++
+            let row = summaryRange.s.r;
+            row <= summaryRange.e.r;
+            row++
           ) {
-            const cellAddress =
-              XLSX.utils.encode_cell({
-                r: row,
-                c: col,
-              });
+            for (
+              let col = summaryRange.s.c;
+              col <= summaryRange.e.c;
+              col++
+            ) {
+              const cellAddress =
+                XLSX.utils.encode_cell({
+                  r: row,
+                  c: col,
+                });
 
-            if (!sheet[cellAddress]) {
-              sheet[cellAddress] = {
-                t: "s",
-                v: "",
-              };
-            }
+              if (!sheet[cellAddress]) {
+                sheet[cellAddress] = {
+                  t: "s",
+                  v: "",
+                };
+              }
 
-            if (row === 0) {
-              sheet[cellAddress].s =
-                mainTitleStyle;
-            } else if (row === 1) {
-              sheet[cellAddress].s =
-                subTitleStyle;
-            } else if (row === 3) {
-              sheet[cellAddress].s =
-                headerStyle;
-            } else if (row >= 4) {
-              sheet[cellAddress].s =
-                normalCellStyle;
+              if (row === 0) {
+                sheet[cellAddress].s =
+                  mainTitleStyle;
+              } else if (row === 1) {
+                sheet[cellAddress].s =
+                  subTitleStyle;
+              } else if (row === 3) {
+                sheet[cellAddress].s =
+                  headerStyle;
+              } else if (row >= 4) {
+                sheet[cellAddress].s =
+                  normalCellStyle;
+              }
             }
           }
         }
+
+        if (data.length > 0) {
+          sheet["!autofilter"] = {
+            ref: `A4:${XLSX.utils.encode_col(
+              headers.length - 1
+            )}${sheetData.length}`,
+          };
+        }
+
+        sheet["!freeze"] = {
+          xSplit: 0,
+          ySplit: 4,
+        };
 
         return sheet;
       };
@@ -1197,6 +1491,10 @@ const DataLog = () => {
           ]
         );
 
+      // ============================================================
+      // APPEND SUMMARY SHEETS
+      // ============================================================
+
       XLSX.utils.book_append_sheet(
         wb,
         staffSheet,
@@ -1219,9 +1517,14 @@ const DataLog = () => {
           }`
           : "All";
 
-      const staffPart = selectedStaff
-        ? `_Staff_${selectedStaff}`
-        : "";
+      const staffPart =
+        selectedStaff
+          ? `_Staff_${selectedStaff}`
+          : "";
+
+      // ============================================================
+      // WRITE EXCEL FILE
+      // ============================================================
 
       XLSX.writeFile(
         wb,
@@ -1229,7 +1532,7 @@ const DataLog = () => {
       );
 
       toast.success(
-        `${rows.length} records exported successfully`
+        `${rows.length} logs with ${excelDetailRows.length} detail rows exported successfully`
       );
     } catch (error) {
       console.error(

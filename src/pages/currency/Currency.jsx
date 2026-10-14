@@ -15,6 +15,7 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import TableContainer from "../../components/Common/TableContainer";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../services/auditService";
 
 const Currency = () => {
     const [data, setData] = useState([]);
@@ -25,6 +26,7 @@ const Currency = () => {
     const [modal, setModal] = useState(false);
     const [isAddMode, setIsAddMode] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [originalAuditData, setOriginalAuditData] = useState(null);
 
     const [formData, setFormData] = useState({
         currency: "",
@@ -32,18 +34,6 @@ const Currency = () => {
     });
 
     const token = localStorage.getItem("token");
-    const toggleModal = () => {
-        setModal(!modal);
-
-        if (modal) {
-            // Reset when closing
-            setFormData({
-                currency: "",
-                country: "",
-            });
-            setSelectedCurrency(null);
-        }
-    };
 
     const fetchData = async () => {
         try {
@@ -53,7 +43,8 @@ const Currency = () => {
             );
 
             if (response.status === 200) {
-                setData(response.data.data);
+                setData(response.data.data || []);
+                setError(null);
             } else {
                 throw new Error("Failed to fetch currencies");
             }
@@ -140,29 +131,78 @@ const Currency = () => {
         [data]
     );
 
+    const getCountryNameById = (countryId) => {
+        if (!countryId) return "";
+
+        const selectedCountry = country.find(
+            (item) => String(item.id) === String(countryId)
+        );
+
+        if (!selectedCountry) return "";
+
+        return selectedCountry.country_code
+            ? `${selectedCountry.country_name} (${selectedCountry.country_code})`
+            : selectedCountry.country_name || "";
+    };
+
     const handleEdit = (item) => {
         setSelectedCurrency(item);
         setIsAddMode(false);
 
-        setFormData({
+        const countryId =
+            item.country?.id ??
+            item.country ??
+            "";
+
+        const countryName =
+            item.country_name ||
+            getCountryNameById(countryId);
+
+        // Save original values for audit log
+        setOriginalAuditData({
             currency: item.currency || "",
-            country: item.country || "",
+            country: countryName || "",
         });
 
-        toggleModal();
+        setFormData({
+            currency: item.currency || "",
+            country: countryId,
+        });
+
+        setModal(true);
+    };
+
+
+    const clearForm = () => {
+        setFormData({
+            currency: "",
+            country: "",
+        });
+
+        setSelectedCurrency(null);
+        setOriginalAuditData(null);
     };
 
 
     const handleAddCurrency = () => {
         setIsAddMode(true);
         setSelectedCurrency(null);
+        setOriginalAuditData(null);
 
         setFormData({
             currency: "",
             country: "",
         });
 
-        toggleModal();
+        setModal(true);
+    };
+
+    const handleCloseModal = () => {
+        if (isSubmitting) return;
+
+        clearForm();
+        setIsAddMode(false);
+        setModal(false);
     };
 
 
@@ -193,50 +233,179 @@ const Currency = () => {
         try {
             setIsSubmitting(true);
 
+            const countryName =
+                getCountryNameById(formData.country);
+
+            // =====================================================
+            // ADD CURRENCY
+            // =====================================================
+
             if (isAddMode) {
-                // ADD CURRENCY
                 const response = await axios.post(
                     `${import.meta.env.VITE_APP_KEY}currency/add/`,
                     formData,
-                    { headers: { Authorization: `Bearer ${token}` } }
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
                 );
 
-                if (response.status === 201 || response.status === 200) {
-                    toast.success("Currency Added Successfully");
+                if (
+                    response.status === 201 ||
+                    response.status === 200
+                ) {
+                    // ---------------------------------------------
+                    // AUDIT LOG
+                    // ---------------------------------------------
+
+                    try {
+                        const createdCurrency =
+                            response?.data?.data ??
+                            response?.data ??
+                            null;
+
+                        const auditCreated =
+                            await createAuditLog({
+                                action:
+                                    "currency_created_website",
+
+                                beforeData: {},
+
+                                afterData: {
+                                    currency:
+                                        createdCurrency?.currency ??
+                                        formData.currency,
+
+                                    country:
+                                        createdCurrency?.country_name ??
+                                        countryName,
+                                },
+                            });
+
+                        if (!auditCreated) {
+                            console.error(
+                                "Currency created successfully, but DataLog creation failed."
+                            );
+                        }
+                    } catch (auditError) {
+                        console.error(
+                            "Currency created successfully, but audit log failed:",
+                            auditError
+                        );
+                    }
+
+                    toast.success(
+                        "Currency Added Successfully"
+                    );
 
                     await fetchData();
 
-                    setFormData({
-                        currency: "",
-                        country: "",
-                    });
+                    setError(null);
 
-                    toggleModal();
+                    clearForm();
+
+                    setIsAddMode(false);
+
+                    setModal(false);
                 }
-            } else {
-                // UPDATE CURRENCY
+            }
+
+            // =====================================================
+            // UPDATE CURRENCY
+            // =====================================================
+
+            else {
+                if (!selectedCurrency?.id) {
+                    toast.error(
+                        "Invalid currency selected"
+                    );
+                    return;
+                }
+
+                const afterData = {
+                    currency:
+                        formData.currency,
+
+                    country:
+                        countryName,
+                };
+
                 const response = await axios.put(
                     `${import.meta.env.VITE_APP_KEY}currency/edit/${selectedCurrency.id}/`,
                     formData,
-                    { headers: { Authorization: `Bearer ${token}` } }
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
                 );
 
-                if (response.status === 200) {
-                    toast.success("Currency Updated Successfully");
+                if (
+                    response.status === 200 ||
+                    response.status === 201
+                ) {
+                    // ---------------------------------------------
+                    // AUDIT LOG
+                    // ---------------------------------------------
+
+                    try {
+                        const auditCreated =
+                            await createAuditLog({
+                                action:
+                                    "currency_updated_website",
+
+                                beforeData:
+                                    originalAuditData || {},
+
+                                afterData:
+                                    afterData,
+                            });
+
+                        if (!auditCreated) {
+                            console.error(
+                                "Currency updated successfully, but DataLog creation failed."
+                            );
+                        }
+                    } catch (auditError) {
+                        console.error(
+                            "Currency updated successfully, but audit log failed:",
+                            auditError
+                        );
+                    }
+
+                    toast.success(
+                        "Currency Updated Successfully"
+                    );
 
                     await fetchData();
-                    toggleModal();
+
+                    setError(null);
+
+                    clearForm();
+
+                    setIsAddMode(false);
+
+                    setModal(false);
                 }
             }
         } catch (error) {
             const msg =
-                error.response?.data?.message ||
-                JSON.stringify(error.response?.data?.errors) ||
-                error.message;
+                error?.response?.data?.message ||
+                JSON.stringify(
+                    error?.response?.data?.errors
+                ) ||
+                error?.message ||
+                "Failed to save currency";
+
+            console.error(
+                "Currency save error:",
+                error
+            );
 
             toast.error(msg);
+
             setError(msg);
-            setError(error.message || "Failed to save currency");
         } finally {
             setIsSubmitting(false);
         }
@@ -270,8 +439,19 @@ const Currency = () => {
                     />
                 )}
 
-                <Modal isOpen={modal} toggle={toggleModal}>
-                    <ModalHeader toggle={toggleModal}>
+                <Modal
+                    isOpen={modal}
+                    toggle={handleCloseModal}
+                    backdrop={isSubmitting ? "static" : true}
+                    keyboard={!isSubmitting}
+                >
+                    <ModalHeader
+                        toggle={
+                            isSubmitting
+                                ? undefined
+                                : handleCloseModal
+                        }
+                    >
                         {isAddMode ? "Add Currency" : "Edit Currency"}
                     </ModalHeader>
 
@@ -282,6 +462,7 @@ const Currency = () => {
                                 name="currency"
                                 value={formData.currency}
                                 onChange={handleInputChange}
+                                disabled={isSubmitting}
                             />
 
                             <Label className="mt-3">Select Country</Label>
@@ -290,10 +471,17 @@ const Currency = () => {
                                 name="country"
                                 value={formData.country}
                                 onChange={handleInputChange}
+                                disabled={isSubmitting}
                             >
-                                <option value="">Select Country</option>
+                                <option value="">
+                                    Select Country
+                                </option>
+
                                 {country.map((item) => (
-                                    <option key={item.id} value={item.id}>
+                                    <option
+                                        key={item.id}
+                                        value={item.id}
+                                    >
                                         {item.country_name} ({item.country_code})
                                     </option>
                                 ))}
@@ -302,7 +490,11 @@ const Currency = () => {
                     </ModalBody>
 
                     <ModalFooter>
-                        <Button color="secondary" onClick={toggleModal}>
+                        <Button
+                            color="secondary"
+                            onClick={handleCloseModal}
+                            disabled={isSubmitting}
+                        >
                             Cancel
                         </Button>
                         <Button
@@ -312,10 +504,21 @@ const Currency = () => {
                         >
                             {isSubmitting ? (
                                 <>
-                                    <span className="spinner-border spinner-border-sm me-2" />
-                                    Saving...
+                                    <span
+                                        className="spinner-border spinner-border-sm me-2"
+                                        role="status"
+                                        aria-hidden="true"
+                                    />
+
+                                    {isAddMode
+                                        ? "Adding..."
+                                        : "Saving..."}
                                 </>
-                            ) : isAddMode ? "Add" : "Save"}
+                            ) : isAddMode ? (
+                                "Add"
+                            ) : (
+                                "Save"
+                            )}
                         </Button>
 
                     </ModalFooter>

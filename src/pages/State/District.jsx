@@ -15,6 +15,7 @@ import Breadcrumbs from "../../components/Common/Breadcrumb";
 import TableContainer from "../../components/Common/TableContainer";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../services/auditService";
 
 const District = () => {
   const [data, setData] = useState([]);
@@ -25,6 +26,7 @@ const District = () => {
   const [modal, setModal] = useState(false);
   const [isAddMode, setIsAddMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [originalAuditData, setOriginalAuditData] = useState(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -43,6 +45,7 @@ const District = () => {
 
       if (response.status === 200) {
         setData(response.data.data);
+        setError(null);
       } else {
         throw new Error("Failed to fetch districts");
       }
@@ -74,7 +77,7 @@ const District = () => {
     getStates();
   }, [token]);
 
-  
+
   const columns = useMemo(
     () => [
       {
@@ -137,30 +140,74 @@ const District = () => {
     [data]
   );
 
+  const getStateNameById = (stateId) => {
+    if (!stateId) return "";
+
+    const selectedState = stat.find(
+      (item) => String(item.id) === String(stateId)
+    );
+
+    return selectedState?.name || "";
+  };
+
 
   const handleEdit = (district) => {
     setSelectedDistrict(district);
     setIsAddMode(false);
 
-    setFormData({
+    const stateId =
+      district.state?.id ??
+      district.state ??
+      "";
+
+    const stateName =
+      district.state_name ||
+      getStateNameById(stateId);
+
+    // Save ORIGINAL values for audit log
+    setOriginalAuditData({
       name: district.name || "",
-      state: district.state || "",
+      state: stateName || "",
     });
 
-    toggleModal();
+    setFormData({
+      name: district.name || "",
+      state: stateId,
+    });
+
+    setModal(true);
   };
 
 
   const handleAddDistrict = () => {
     setIsAddMode(true);
     setSelectedDistrict(null);
+    setOriginalAuditData(null);
 
     setFormData({
       name: "",
       state: "",
     });
 
-    toggleModal();
+    setModal(true);
+  };
+
+  const clearForm = () => {
+    setFormData({
+      name: "",
+      state: "",
+    });
+
+    setSelectedDistrict(null);
+    setOriginalAuditData(null);
+  };
+
+  const handleCloseModal = () => {
+    if (isSubmitting) return;
+
+    clearForm();
+    setIsAddMode(false);
+    setModal(false);
   };
 
 
@@ -192,10 +239,13 @@ const District = () => {
   };
 
   const handleSubmit = async () => {
-    // Prevent double click
+    // Prevent duplicate submission
     if (isSubmitting) return;
 
-    // Validation
+    // -----------------------------
+    // VALIDATION
+    // -----------------------------
+
     if (!formData.name.trim()) {
       toast.error("District name required");
       return;
@@ -207,48 +257,168 @@ const District = () => {
     }
 
     try {
+      // -----------------------------
+      // START LOADING
+      // -----------------------------
+
       setIsSubmitting(true);
 
+      const stateName = getStateNameById(formData.state);
+
+      // ==========================================================
+      // ADD DISTRICT
+      // ==========================================================
+
       if (isAddMode) {
-        // ADD DISTRICT
         const response = await axios.post(
           `${import.meta.env.VITE_APP_KEY}districts/add/`,
           formData,
-          { headers: { Authorization: `Bearer ${token}` } }
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
 
-        if (response.status === 201 || response.status === 200) {
-          toast.success("District Added Successfully");
+        if (
+          response.status === 201 ||
+          response.status === 200
+        ) {
+          // -----------------------------
+          // CREATE AUDIT LOG
+          // -----------------------------
 
+          try {
+            const createdDistrict =
+              response?.data?.data || null;
+
+            await createAuditLog({
+              action: "district_created_website",
+
+              beforeData: {},
+
+              afterData: {
+                name:
+                  createdDistrict?.name ||
+                  formData.name,
+
+                state:
+                  createdDistrict?.state_name ||
+                  stateName,
+              },
+            });
+          } catch (auditError) {
+            console.error(
+              "District created but audit log failed:",
+              auditError
+            );
+          }
+
+          toast.success(
+            "District Added Successfully"
+          );
+
+          // Refresh table
           await fetchData();
 
-          // Clear form fields
-          setFormData({
-            name: "",
-            state: "",
-          });
+          // -----------------------------
+          // CLEAR ALL FIELDS
+          // -----------------------------
 
-          toggleModal();
+          clearForm();
+
+          setIsAddMode(false);
+
+          // Close modal
+          setModal(false);
         }
-      } else {
-        // UPDATE DISTRICT
+      }
+
+      // ==========================================================
+      // UPDATE DISTRICT
+      // ==========================================================
+
+      else {
+        if (!selectedDistrict?.id) {
+          toast.error(
+            "Invalid district selected"
+          );
+          return;
+        }
+
+        const afterData = {
+          name: formData.name,
+          state: stateName,
+        };
+
         const response = await axios.put(
           `${import.meta.env.VITE_APP_KEY}districts/update/${selectedDistrict.id}/`,
           formData,
-          { headers: { Authorization: `Bearer ${token}` } }
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
 
-        if (response.status === 200) {
-          toast.success("District Updated Successfully");
+        if (
+          response.status === 200 ||
+          response.status === 201
+        ) {
+          // -----------------------------
+          // CREATE AUDIT LOG
+          // -----------------------------
 
+          try {
+            await createAuditLog({
+              action: "district_updated_website",
+
+              beforeData:
+                originalAuditData || {},
+
+              afterData: afterData,
+            });
+          } catch (auditError) {
+            console.error(
+              "District updated but audit log failed:",
+              auditError
+            );
+          }
+
+          toast.success(
+            "District Updated Successfully"
+          );
+
+          // Refresh table
           await fetchData();
-          toggleModal();
+
+          // -----------------------------
+          // CLEAR ALL FIELDS
+          // -----------------------------
+
+          clearForm();
+
+          setIsAddMode(false);
+
+          // Close modal
+          setModal(false);
         }
       }
     } catch (error) {
-      toast.error("Save failed");
-      setError(error.message || "Failed to save district");
+      console.error(
+        "District save error:",
+        error
+      );
+
+      toast.error(
+        error?.response?.data?.message ||
+        "Save failed"
+      );
     } finally {
+      // -----------------------------
+      // STOP LOADING
+      // -----------------------------
+
       setIsSubmitting(false);
     }
   };
@@ -281,8 +451,19 @@ const District = () => {
           />
         )}
 
-        <Modal isOpen={modal} toggle={toggleModal}>
-          <ModalHeader toggle={toggleModal}>
+        <Modal
+          isOpen={modal}
+          toggle={handleCloseModal}
+          backdrop={isSubmitting ? "static" : true}
+          keyboard={!isSubmitting}
+        >
+          <ModalHeader
+            toggle={
+              isSubmitting
+                ? undefined
+                : handleCloseModal
+            }
+          >
             {isAddMode ? "Add New District" : "Edit District"}
           </ModalHeader>
 
@@ -294,6 +475,7 @@ const District = () => {
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
+                disabled={isSubmitting}
               />
 
               <Label for="state" className="mt-3">
@@ -305,8 +487,10 @@ const District = () => {
                 name="state"
                 value={formData.state}
                 onChange={handleInputChange}
+                disabled={isSubmitting}
               >
                 <option value="">Select State</option>
+
                 {stat.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
@@ -317,7 +501,11 @@ const District = () => {
           </ModalBody>
 
           <ModalFooter>
-            <Button color="secondary" onClick={toggleModal}>
+            <Button
+              color="secondary"
+              onClick={handleCloseModal}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
             <Button
@@ -325,7 +513,23 @@ const District = () => {
               onClick={handleSubmit}
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Please wait..." : isAddMode ? "Add" : "Save"}
+              {isSubmitting ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+
+                  {isAddMode
+                    ? "Adding..."
+                    : "Saving..."}
+                </>
+              ) : isAddMode ? (
+                "Add"
+              ) : (
+                "Save"
+              )}
             </Button>
 
           </ModalFooter>

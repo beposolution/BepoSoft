@@ -31,6 +31,17 @@ const FormLayouts = () => {
     const [TaxAmount, setTaxAmount] = useState(0);
     const [shippingCharge, setShippingCharge] = useState(0);
     const [paymentReceipts, setpaymentReceipts] = useState("");
+    const [proformaId, setProformaId] = useState(null);
+    const [paymentSlips, setPaymentSlips] = useState([]);
+    const [selectedPaymentSlips, setSelectedPaymentSlips] = useState([]);
+    const [paymentSlipUploading, setPaymentSlipUploading] = useState(false);
+    const [paymentSlipModalOpen, setPaymentSlipModalOpen] = useState(false);
+    const [selectedPaymentSlipUrl, setSelectedPaymentSlipUrl] = useState("");
+    const [selectedPaymentSlipName, setSelectedPaymentSlipName] = useState("");
+
+    const [accountsNote, setAccountsNote] = useState("");
+    const [parcelNote, setParcelNote] = useState("");
+    const [noteUpdating, setNoteUpdating] = useState(false);
 
     const [modal, setModal] = useState(false);
     const toggleReciptModal = () => setIsOpen(!isOpen);
@@ -218,6 +229,17 @@ const FormLayouts = () => {
             const data = await response.json();
 
             if (data) {
+
+                setProformaId(data.id || null);
+
+                setAccountsNote(data.note || "");
+
+                setParcelNote(data.parcel_note || "");
+
+                if (data.id) {
+                    await fetchPaymentSlips(data.id);
+                }
+
                 formik.setValues({
                     invoice: data.invoice || "",
                     status: data.status || "",
@@ -273,6 +295,108 @@ const FormLayouts = () => {
             }
         } catch (error) {
             toast.error("Error fetching order data:");
+        }
+    };
+
+    const payload = {
+        note: accountsNote,
+        parcel_note: parcelNote,
+    };
+
+    const handleNotesUpdate = async () => {
+
+        if (!proformaId) {
+            toast.error(
+                "Proforma ID not found"
+            );
+            return;
+        }
+
+        const payload = {
+            note: accountsNote,
+            parcel_note: parcelNote,
+        };
+
+        try {
+
+            setNoteUpdating(true);
+
+            const response = await axios.put(
+                `${import.meta.env.VITE_APP_KEY}perfoma/order/${proformaId}/update/`,
+                payload,
+                {
+                    headers: {
+                        Authorization:
+                            `Bearer ${localStorage.getItem("token")}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            toast.success(
+                response?.data?.message ||
+                "Notes updated successfully"
+            );
+
+            await createDataLog(
+                "Proforma Notes Updated",
+                {},
+                {
+                    note: accountsNote,
+                    parcel_note: parcelNote,
+                }
+            );
+
+            await fetchOrderData();
+
+        } catch (error) {
+
+            console.error(
+                "Proforma note update error:",
+                error?.response?.data || error
+            );
+
+            toast.error(
+                error?.response?.data?.message ||
+                "Failed to update notes"
+            );
+
+        } finally {
+
+            setNoteUpdating(false);
+        }
+    };
+
+
+    const fetchPaymentSlips = async (proformaId) => {
+
+        if (!proformaId) {
+            return;
+        }
+
+        try {
+
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}perfoma/payment/slips/${proformaId}/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                }
+            );
+
+            setPaymentSlips(
+                response?.data?.data || []
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Failed to fetch payment slips:",
+                error?.response?.data || error
+            );
+
+            setPaymentSlips([]);
         }
     };
 
@@ -892,6 +1016,127 @@ const FormLayouts = () => {
         }
     };
 
+    const handlePaymentSlipUpload = async () => {
+
+        if (!proformaId) {
+            toast.error("Proforma ID not found");
+            return;
+        }
+
+        if (selectedPaymentSlips.length === 0) {
+            toast.error("Please select payment slip");
+            return;
+        }
+
+        const formData = new FormData();
+
+        formData.append(
+            "proforma",
+            proformaId
+        );
+
+        selectedPaymentSlips.forEach((file) => {
+            formData.append(
+                "files",
+                file
+            );
+        });
+
+        try {
+
+            setPaymentSlipUploading(true);
+
+            const response = await axios.post(
+                `${import.meta.env.VITE_APP_KEY}perfoma/payment/slips/upload/`,
+                formData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                }
+            );
+
+            toast.success(
+                response?.data?.message ||
+                "Payment slip uploaded successfully"
+            );
+
+            setSelectedPaymentSlips([]);
+
+            const fileInput = document.getElementById(
+                "proforma-payment-slip"
+            );
+
+            if (fileInput) {
+                fileInput.value = "";
+            }
+
+            await fetchPaymentSlips(proformaId);
+
+            await createDataLog(
+                "Proforma Payment Slip Uploaded",
+                {},
+                {
+                    proforma_id: proformaId,
+                    invoice: invoice,
+                    files: response?.data?.data?.map(
+                        (item) => item.file
+                    ) || []
+                }
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Payment slip upload error:",
+                error?.response?.data || error
+            );
+
+            toast.error(
+                error?.response?.data?.message ||
+                "Failed to upload payment slip"
+            );
+
+        } finally {
+
+            setPaymentSlipUploading(false);
+        }
+    };
+
+    const openPaymentSlipModal = (slip) => {
+
+        if (!slip?.file) {
+            toast.error("Payment slip file not found");
+            return;
+        }
+
+        const fileUrl = slip.file.startsWith("http")
+            ? slip.file
+            : `${import.meta.env.VITE_APP_IMAGE}${slip.file}`;
+
+        setSelectedPaymentSlipUrl(fileUrl);
+
+        const fileName =
+            slip.file.split("/").pop() ||
+            "Payment Slip";
+
+        setSelectedPaymentSlipName(fileName);
+        setPaymentSlipModalOpen(true);
+    };
+
+
+    const closePaymentSlipModal = () => {
+        setPaymentSlipModalOpen(false);
+        setSelectedPaymentSlipUrl("");
+        setSelectedPaymentSlipName("");
+    };
+
+    const isPaymentSlipPdf =
+        selectedPaymentSlipUrl
+            ?.split("?")[0]
+            ?.toLowerCase()
+            ?.endsWith(".pdf");
+
     const handleDownloadPerformaInvoice = () => {
         const addressurl = `${import.meta.env.VITE_APP_IMAGE}/performainvoice/${invoice}/`;
         window.open(addressurl, "_blank");
@@ -1447,6 +1692,315 @@ const FormLayouts = () => {
 
                             {/* <Information/> */}
                             <Row>
+
+                                <Col xl={12}>
+                                    <Card>
+                                        <CardBody>
+
+                                            <CardTitle className="mb-4">
+                                                PROFORMA NOTES
+                                            </CardTitle>
+
+                                            <Row>
+
+                                                <Col md={6}>
+
+                                                    <div className="mb-3">
+
+                                                        <Label>
+                                                            Accounts Note
+                                                        </Label>
+
+                                                        <Input
+                                                            type="textarea"
+                                                            rows="4"
+                                                            placeholder="Enter accounts note"
+                                                            value={accountsNote}
+                                                            onChange={(e) =>
+                                                                setAccountsNote(
+                                                                    e.target.value
+                                                                )
+                                                            }
+                                                        />
+
+                                                    </div>
+
+                                                </Col>
+
+
+                                                <Col md={6}>
+
+                                                    <div className="mb-3">
+
+                                                        <Label>
+                                                            Parcel Note
+                                                        </Label>
+
+                                                        <Input
+                                                            type="textarea"
+                                                            rows="4"
+                                                            placeholder="Enter parcel note"
+                                                            value={parcelNote}
+                                                            onChange={(e) =>
+                                                                setParcelNote(
+                                                                    e.target.value
+                                                                )
+                                                            }
+                                                        />
+
+                                                    </div>
+
+                                                </Col>
+
+                                            </Row>
+
+
+                                            <div className="text-end">
+
+                                                <Button
+                                                    color="primary"
+                                                    type="button"
+                                                    onClick={handleNotesUpdate}
+                                                    disabled={noteUpdating}
+                                                >
+
+                                                    {
+                                                        noteUpdating
+                                                            ? "Updating..."
+                                                            : "Update Notes"
+                                                    }
+
+                                                </Button>
+
+                                            </div>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+                                <Col xl={12}>
+                                    <Card>
+                                        <CardBody>
+
+                                            <div className="d-flex justify-content-between align-items-center mb-4">
+
+                                                <CardTitle className="mb-0">
+                                                    PROFORMA PAYMENT SLIP
+                                                </CardTitle>
+
+                                            </div>
+
+
+                                            <Row>
+
+                                                <Col md={8}>
+
+                                                    <div className="mb-3">
+
+                                                        <Label htmlFor="proforma-payment-slip">
+                                                            Select Payment Slip
+                                                        </Label>
+
+                                                        <Input
+                                                            id="proforma-payment-slip"
+                                                            type="file"
+                                                            multiple
+                                                            accept="image/*,.pdf"
+                                                            onChange={(e) => {
+
+                                                                const files = Array.from(
+                                                                    e.target.files || []
+                                                                );
+
+                                                                setSelectedPaymentSlips(files);
+                                                            }}
+                                                        />
+
+                                                        <small className="text-muted">
+                                                            You can upload image of payment slips.
+                                                        </small>
+
+                                                    </div>
+
+                                                </Col>
+
+
+                                                <Col md={4}>
+
+                                                    <div className="mb-3">
+
+                                                        <Label>&nbsp;</Label>
+
+                                                        <Button
+                                                            color="primary"
+                                                            type="button"
+                                                            className="w-100"
+                                                            onClick={handlePaymentSlipUpload}
+                                                            disabled={
+                                                                paymentSlipUploading ||
+                                                                selectedPaymentSlips.length === 0
+                                                            }
+                                                        >
+
+                                                            {
+                                                                paymentSlipUploading
+                                                                    ? "Uploading..."
+                                                                    : "Upload Payment Slip"
+                                                            }
+
+                                                        </Button>
+
+                                                    </div>
+
+                                                </Col>
+
+                                            </Row>
+
+
+                                            {selectedPaymentSlips.length > 0 && (
+
+                                                <div className="mb-4">
+
+                                                    <strong>
+                                                        Selected Files
+                                                    </strong>
+
+                                                    <div className="mt-2">
+
+                                                        {selectedPaymentSlips.map(
+                                                            (file, index) => (
+
+                                                                <div key={index}>
+                                                                    {index + 1}. {file.name}
+                                                                </div>
+
+                                                            )
+                                                        )}
+
+                                                    </div>
+
+                                                </div>
+
+                                            )}
+
+
+                                            <div className="table-responsive">
+
+                                                <Table
+                                                    className="table table-bordered table-striped mb-0"
+                                                >
+
+                                                    <thead className="table-light">
+
+                                                        <tr>
+                                                            <th style={{ width: "60px" }}>
+                                                                #
+                                                            </th>
+
+                                                            <th>
+                                                                Payment Slip
+                                                            </th>
+
+                                                            <th>
+                                                                Uploaded By
+                                                            </th>
+
+                                                            <th>
+                                                                Uploaded At
+                                                            </th>
+                                                        </tr>
+
+                                                    </thead>
+
+
+                                                    <tbody>
+
+                                                        {paymentSlips.length > 0 ? (
+
+                                                            paymentSlips.map(
+                                                                (slip, index) => (
+
+                                                                    <tr key={slip.id}>
+
+                                                                        <td>
+                                                                            {index + 1}
+                                                                        </td>
+
+                                                                        <td>
+
+                                                                            {slip.file ? (
+
+                                                                                <Button
+                                                                                    color="primary"
+                                                                                    outline
+                                                                                    size="sm"
+                                                                                    type="button"
+                                                                                    onClick={() => openPaymentSlipModal(slip)}
+                                                                                >
+                                                                                    View Payment Slip
+                                                                                </Button>
+
+                                                                            ) : (
+
+                                                                                <span className="text-muted">
+                                                                                    No File
+                                                                                </span>
+
+                                                                            )}
+
+                                                                        </td>
+
+                                                                        <td>
+
+                                                                            {
+                                                                                slip.uploaded_by_name ||
+                                                                                "-"
+                                                                            }
+
+                                                                        </td>
+
+                                                                        <td>
+
+                                                                            {
+                                                                                slip.uploaded_at
+                                                                                    ? new Date(
+                                                                                        slip.uploaded_at
+                                                                                    ).toLocaleString()
+                                                                                    : "-"
+                                                                            }
+
+                                                                        </td>
+
+                                                                    </tr>
+
+                                                                )
+                                                            )
+
+                                                        ) : (
+
+                                                            <tr>
+
+                                                                <td
+                                                                    colSpan="4"
+                                                                    className="text-center text-muted py-4"
+                                                                >
+                                                                    No payment slips uploaded
+                                                                </td>
+
+                                                            </tr>
+
+                                                        )}
+
+                                                    </tbody>
+
+                                                </Table>
+
+                                            </div>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
                                 <Col xl={12}>
                                     <Card>
                                         <CardBody>
@@ -1778,6 +2332,67 @@ const FormLayouts = () => {
                                     </Table>
 
                                 </div>
+
+                            )}
+
+                        </ModalBody>
+                    </Modal>
+
+                    <Modal
+                        isOpen={paymentSlipModalOpen}
+                        toggle={closePaymentSlipModal}
+                        size="xl"
+                        centered
+                    >
+                        <ModalHeader toggle={closePaymentSlipModal}>
+                            {selectedPaymentSlipName || "Payment Slip"}
+                        </ModalHeader>
+
+                        <ModalBody>
+
+                            {selectedPaymentSlipUrl && (
+
+                                <>
+                                    {isPaymentSlipPdf ? (
+
+                                        <iframe
+                                            src={selectedPaymentSlipUrl}
+                                            title="Payment Slip PDF"
+                                            style={{
+                                                width: "100%",
+                                                height: "75vh",
+                                                border: "none",
+                                            }}
+                                        />
+
+                                    ) : (
+
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                justifyContent: "center",
+                                                alignItems: "center",
+                                                minHeight: "500px",
+                                                backgroundColor: "#f8f9fa",
+                                                padding: "15px",
+                                            }}
+                                        >
+
+                                            <img
+                                                src={selectedPaymentSlipUrl}
+                                                alt="Payment Slip"
+                                                style={{
+                                                    maxWidth: "100%",
+                                                    maxHeight: "75vh",
+                                                    objectFit: "contain",
+                                                    borderRadius: "6px",
+                                                }}
+                                            />
+
+                                        </div>
+
+                                    )}
+                                </>
 
                             )}
 

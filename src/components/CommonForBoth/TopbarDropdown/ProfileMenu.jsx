@@ -8,18 +8,12 @@ import {
   DropdownMenu,
   DropdownItem,
 } from "reactstrap";
-
-//i18n
 import { withTranslation } from "react-i18next";
-
-// Redux
 import { connect } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import withRouter from "../../Common/withRouter";
-
-// users
 import user1 from "../../../assets/images/users/avatar-1.jpg";
-
+import { createAuditLog } from "../../../services/auditService";
 
 const ProfileMenu = (props) => {
   const [menu, setMenu] = useState(false);
@@ -63,8 +57,32 @@ const ProfileMenu = (props) => {
   }, [BASE_URL, token]);
 
 
-  const logout = (event) => {
+  const logout = async (event) => {
     event.preventDefault();
+
+    try {
+      const auditCreated = await createAuditLog({
+        action: "logout_website",
+        beforeData: {
+          message: "Logout Authentication website",
+        },
+        afterData: {
+          message: "Logout Successful",
+        },
+      });
+
+      if (!auditCreated) {
+        console.error(
+          "Logout successful, but DataLog creation failed."
+        );
+      }
+    } catch (auditError) {
+      console.error(
+        "Logout successful, but DataLog creation failed:",
+        auditError
+      );
+    }
+
     localStorage.removeItem('token')
     navigate('/login')
     window.location.reload();

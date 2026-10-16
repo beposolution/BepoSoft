@@ -24,6 +24,9 @@ const PerfomaOrder = () => {
     const [isAddingItemsToCart, setIsAddingItemsToCart] = useState(false);
     const [invoiceItemsAdded, setInvoiceItemsAdded] = useState(false);
 
+    const [proformaPaymentSlips, setProformaPaymentSlips] = useState([]);
+    const [proformaPaymentSlipsLoading, setProformaPaymentSlipsLoading] = useState(false);
+
     const [cartProducts, setCartProducts] = useState([]);
     const [cartTotalAmount, setCartTotalAmount] = useState(0);
     const [cartTotalDiscount, setCartTotalDiscount] = useState(0);
@@ -61,6 +64,40 @@ const PerfomaOrder = () => {
         }
     };
 
+    const fetchProformaPaymentSlips = async (proformaId) => {
+        if (!proformaId) {
+            return;
+        }
+
+        try {
+            setProformaPaymentSlipsLoading(true);
+
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}perfoma/payment/slips/${proformaId}/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            setProformaPaymentSlips(
+                response?.data?.data || []
+            );
+
+        } catch (error) {
+            console.error(
+                "Failed to fetch Proforma payment slips:",
+                error?.response?.data || error
+            );
+
+            setProformaPaymentSlips([]);
+
+        } finally {
+            setProformaPaymentSlipsLoading(false);
+        }
+    };
+
     const formik = useFormik({
         enableReinitialize: true,
         initialValues: {
@@ -82,8 +119,15 @@ const PerfomaOrder = () => {
             status: "Invoice Created",
             warehouses: orders?.warehouse_id || "",
             parcel_service: orders?.parcel_service?.id || orders?.parcel_service || "",
-            parcel_service_note: orders?.parcel_service_note || "",
-            accounts_note: orders?.accounts_note || "",
+            parcel_service_note:
+                orders?.parcel_note ??
+                orders?.parcel_service_note ??
+                "",
+
+            accounts_note:
+                orders?.note ??
+                orders?.accounts_note ??
+                "",
             performa_id: orders?.id || "",
         },
         validationSchema: Yup.object({
@@ -136,17 +180,27 @@ const PerfomaOrder = () => {
                 values.cod_status === "FULL_COD";
 
             // Payment slip is not required for Full COD
-            if (!isFullCOD && paymentImages.length === 0) {
-                setPaymentImagesError("At least one payment slip is required");
-                toast.error("Please select at least one payment slip");
+            const hasPaymentSlip =
+                paymentImages.length > 0 ||
+                proformaPaymentSlips.length > 0;
+
+            if (!isFullCOD && !hasPaymentSlip) {
+                setPaymentImagesError(
+                    "At least one payment slip is required"
+                );
+
+                toast.error(
+                    "Please upload at least one payment slip"
+                );
+
                 return;
             }
 
             setPaymentImagesError("");
-
             setIsSubmitting(true);
 
             try {
+
                 const payload = {
                     ...values,
                     state: orders.state,
@@ -182,12 +236,24 @@ const PerfomaOrder = () => {
                     }
                 });
 
+                proformaPaymentSlips.forEach((slip) => {
+                    if (slip?.id) {
+                        formData.append(
+                            "proforma_payment_slip_ids",
+                            slip.id
+                        );
+                    }
+                });
+
                 paymentImages.forEach((imageItem) => {
-                    formData.append("images", imageItem.file);
+                    formData.append(
+                        "images",
+                        imageItem.file
+                    );
                 });
 
                 const response = await axios.post(
-                    `${import.meta.env.VITE_APP_KEY}order/create/new/`,
+                    `${import.meta.env.VITE_APP_KEY}order/create/performa/`,
                     formData,
                     {
                         headers: {
@@ -308,18 +374,30 @@ const PerfomaOrder = () => {
 
     const removePaymentImage = (indexToRemove) => {
         setPaymentImages((previousImages) => {
-            const imageToRemove = previousImages[indexToRemove];
+            const imageToRemove =
+                previousImages[indexToRemove];
 
             if (imageToRemove?.preview) {
-                URL.revokeObjectURL(imageToRemove.preview);
+                URL.revokeObjectURL(
+                    imageToRemove.preview
+                );
             }
 
-            const updatedImages = previousImages.filter(
-                (_, index) => index !== indexToRemove
-            );
+            const updatedImages =
+                previousImages.filter(
+                    (_, index) =>
+                        index !== indexToRemove
+                );
 
-            if (updatedImages.length === 0) {
-                setPaymentImagesError("At least one payment slip is required");
+            if (
+                updatedImages.length === 0 &&
+                proformaPaymentSlips.length === 0
+            ) {
+                setPaymentImagesError(
+                    "At least one payment slip is required"
+                );
+            } else {
+                setPaymentImagesError("");
             }
 
             return updatedImages;
@@ -723,10 +801,16 @@ const PerfomaOrder = () => {
             const data = await response.json();
             setOrders(data);
 
+            if (data?.id) {
+                await fetchProformaPaymentSlips(data.id);
+            }
+
         } catch (error) {
             toast.error("Error fetching order data:");
         }
     };
+
+
 
 
     const fetchParcelServices = async () => {
@@ -1255,6 +1339,54 @@ const PerfomaOrder = () => {
                                                 {formik.errors.payment_method && formik.touched.payment_method ? (
                                                     <FormFeedback>{formik.errors.payment_method}</FormFeedback>
                                                 ) : null}
+
+                                                {proformaPaymentSlips.length > 0 && (
+                                                    <div className="mt-3">
+                                                        <Label>
+                                                            Existing Proforma Payment Slips
+                                                        </Label>
+
+                                                        <Row>
+                                                            {proformaPaymentSlips.map(
+                                                                (slip, index) => {
+
+                                                                    const imageUrl =
+                                                                        slip.file?.startsWith("http")
+                                                                            ? slip.file
+                                                                            : `${import.meta.env.VITE_APP_IMAGE}${slip.file}`;
+
+                                                                    return (
+                                                                        <Col
+                                                                            key={slip.id || index}
+                                                                            xs={6}
+                                                                            md={4}
+                                                                            className="mb-3"
+                                                                        >
+                                                                            <div className="border rounded p-2">
+
+                                                                                <img
+                                                                                    src={imageUrl}
+                                                                                    alt={`Proforma Payment Slip ${index + 1}`}
+                                                                                    style={{
+                                                                                        width: "100%",
+                                                                                        height: "110px",
+                                                                                        objectFit: "cover",
+                                                                                        borderRadius: "4px",
+                                                                                    }}
+                                                                                />
+
+                                                                                <small className="d-block mt-2 text-success">
+                                                                                    From Proforma
+                                                                                </small>
+
+                                                                            </div>
+                                                                        </Col>
+                                                                    );
+                                                                }
+                                                            )}
+                                                        </Row>
+                                                    </div>
+                                                )}
 
                                                 <div className="mt-4">
                                                     <Label for="payment_images">

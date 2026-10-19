@@ -59,9 +59,9 @@ const FormLayouts = () => {
 
     const role = localStorage.getItem("active");
 
-    // Toggle modal visibility
-
-
+    const canViewOrderButton = ["HR", "IT", "CEO", "COO", "ADMIN", "Accounts / Accounting"].includes(
+        (role || "").trim().toUpperCase()
+    );
 
     const [bankDetails, setBankDetails] = useState({
         name: "",
@@ -2007,23 +2007,27 @@ const FormLayouts = () => {
                                             <CardTitle className="mb-4">ORDER and DOWNLOAD BILLS AND INVOICE</CardTitle>
 
                                             <Row>
-                                                <Col md={4}>
-                                                    <div className="d-flex align-items-center mb-3">
-                                                        <Link
-                                                            to={`/perfoma/order/${invoice}/`}
-                                                            className="btn btn-primary px-4 py-2 w-100" // Bootstrap button styles
-                                                            style={{
-                                                                fontWeight: 'bold',
-                                                                textDecoration: 'none',
-                                                                borderRadius: '5px',
-                                                                backgroundColor: '#007bff',
-                                                                color: '#ffffff'
-                                                            }}
-                                                        >
-                                                            Order
-                                                        </Link>
-                                                    </div>
-                                                </Col>
+
+                                                {canViewOrderButton && (
+                                                    <Col md={4}>
+                                                        <div className="d-flex align-items-center mb-3">
+                                                            <Link
+                                                                to={`/perfoma/order/${invoice}/`}
+                                                                className="btn btn-primary px-4 py-2 w-100"
+                                                                style={{
+                                                                    fontWeight: "bold",
+                                                                    textDecoration: "none",
+                                                                    borderRadius: "5px",
+                                                                    backgroundColor: "#007bff",
+                                                                    color: "#ffffff",
+                                                                }}
+                                                            >
+                                                                Order
+                                                            </Link>
+                                                        </div>
+                                                    </Col>
+                                                )}
+
 
                                                 <Col md={4}>
                                                     <div className="d-flex align-items-center mb-3">

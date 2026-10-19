@@ -16,6 +16,10 @@ import {
     Label,
     Button,
     Spinner,
+    Modal,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
 } from "reactstrap";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Link } from "react-router-dom";
@@ -27,13 +31,7 @@ import "react-toastify/dist/ReactToastify.css";
 const BasicTable = () => {
     const apiBase = import.meta.env.VITE_APP_KEY;
     const token = localStorage.getItem("token");
-
-    /*
-     * This must match the page size configured in StandardPagination.
-     * Change it only if your Django pagination page_size is different.
-     */
     const PAGE_SIZE = 50;
-
     const [role, setRole] = useState("");
 
     const [invoices, setInvoices] = useState([]);
@@ -58,6 +56,10 @@ const BasicTable = () => {
     const [selectedStaff, setSelectedStaff] = useState(null);
     const [staffSearch, setStaffSearch] = useState("");
     const [staffLoading, setStaffLoading] = useState(false);
+
+    const [paymentSlipModal, setPaymentSlipModal] = useState(false);
+    const [selectedPaymentSlips, setSelectedPaymentSlips] = useState([]);
+    const [selectedInvoiceNumber, setSelectedInvoiceNumber] = useState("");
 
     /*
      * Abort controllers prevent older dropdown API calls from replacing
@@ -728,6 +730,20 @@ const BasicTable = () => {
         totalCount
     );
 
+    const openPaymentSlipModal = (item) => {
+        const slips = Array.isArray(item?.payment_slips)
+            ? item.payment_slips
+            : [];
+
+        setSelectedPaymentSlips(slips);
+        setSelectedInvoiceNumber(item?.invoice || "");
+        setPaymentSlipModal(true);
+    };
+
+    const closePaymentSlipModal = () => {
+        setPaymentSlipModal(false);
+    };
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -1040,30 +1056,14 @@ const BasicTable = () => {
                                             >
                                                 <thead className="table-light">
                                                     <tr>
-                                                        <th>
-                                                            #
-                                                        </th>
-                                                        <th>
-                                                            Invoice
-                                                            No.
-                                                        </th>
-                                                        <th>
-                                                            Staff
-                                                        </th>
-                                                        <th>
-                                                            Customer
-                                                        </th>
-                                                        <th>
-                                                            Status
-                                                        </th>
-                                                        <th className="text-end">
-                                                            Bill
-                                                            Amount
-                                                        </th>
-                                                        <th>
-                                                            Created
-                                                            At
-                                                        </th>
+                                                        <th>#</th>
+                                                        <th>Invoice No.</th>
+                                                        <th>Staff</th>
+                                                        <th>Customer</th>
+                                                        <th>Status</th>
+                                                        <th>Payment Slip</th>
+                                                        <th className="text-end">Bill Amount</th>
+                                                        <th>Created At</th>
                                                     </tr>
                                                 </thead>
 
@@ -1096,6 +1096,12 @@ const BasicTable = () => {
                                                                     item?.total_amount
                                                                 );
 
+                                                            const paymentSlips = Array.isArray(item?.payment_slips)
+                                                                ? item.payment_slips
+                                                                : [];
+
+                                                            const hasPaymentSlip = paymentSlips.length > 0;
+
                                                             const serialNumber =
                                                                 (currentPage -
                                                                     1) *
@@ -1110,11 +1116,7 @@ const BasicTable = () => {
                                                                         `${item.invoice}-${index}`
                                                                     }
                                                                 >
-                                                                    <th scope="row">
-                                                                        {
-                                                                            serialNumber
-                                                                        }
-                                                                    </th>
+                                                                    <th scope="row">{serialNumber}</th>
 
                                                                     <td>
                                                                         <Link
@@ -1127,34 +1129,40 @@ const BasicTable = () => {
                                                                     </td>
 
                                                                     <td>
-                                                                        {
-                                                                            staffName
-                                                                        }
+                                                                        {staffName}
 
                                                                         {familyName && (
                                                                             <div className="small text-muted">
-                                                                                {
-                                                                                    familyName
-                                                                                }
+                                                                                {familyName}
                                                                             </div>
                                                                         )}
                                                                     </td>
 
-                                                                    <td>
-                                                                        {
-                                                                            customerName
-                                                                        }
-                                                                    </td>
+                                                                    <td>{customerName}</td>
 
                                                                     <td
                                                                         style={getStatusStyle(
                                                                             item.status
                                                                         )}
                                                                     >
-                                                                        {item.status ||
-                                                                            "N/A"}
+                                                                        {item.status || "N/A"}
                                                                     </td>
 
+                                                                    <td>
+                                                                        {hasPaymentSlip ? (
+                                                                            <Button
+                                                                                color="success"
+                                                                                size="sm"
+                                                                                onClick={() => openPaymentSlipModal(item)}
+                                                                            >
+                                                                                View Slip ({paymentSlips.length})
+                                                                            </Button>
+                                                                        ) : (
+                                                                            <span className="badge bg-danger">
+                                                                                No Payment Slip
+                                                                            </span>
+                                                                        )}
+                                                                    </td>
                                                                     <td className="text-end fw-semibold">
                                                                         ₹{" "}
                                                                         {billAmount.toLocaleString(
@@ -1252,6 +1260,107 @@ const BasicTable = () => {
                     </Row>
                 </div>
             </div>
+
+            {/* Payment Slip Preview Modal */}
+            <Modal
+                isOpen={paymentSlipModal}
+                toggle={closePaymentSlipModal}
+                size="lg"
+                centered
+                scrollable
+            >
+                <ModalHeader toggle={closePaymentSlipModal}>
+                    Payment Slips - {selectedInvoiceNumber}
+                </ModalHeader>
+
+                <ModalBody>
+                    {selectedPaymentSlips.length > 0 ? (
+                        selectedPaymentSlips.map((slip, index) => {
+                            const fileUrl = slip?.file || "";
+
+                            const isPdf = fileUrl
+                                .split("?")[0]
+                                .toLowerCase()
+                                .endsWith(".pdf");
+
+                            return (
+                                <div
+                                    key={slip.id || index}
+                                    className="mb-4 border rounded p-3"
+                                >
+                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                        <strong>
+                                            Payment Slip {index + 1}
+                                        </strong>
+
+                                        <span className="badge bg-success">
+                                            Uploaded
+                                        </span>
+                                    </div>
+
+                                    {fileUrl ? (
+                                        isPdf ? (
+                                            <iframe
+                                                src={fileUrl}
+                                                title={`Payment Slip ${index + 1}`}
+                                                style={{
+                                                    width: "100%",
+                                                    height: "500px",
+                                                    border: "none",
+                                                }}
+                                            />
+                                        ) : (
+                                            <img
+                                                src={fileUrl}
+                                                alt={`Payment Slip ${index + 1}`}
+                                                className="img-fluid rounded"
+                                                style={{
+                                                    width: "100%",
+                                                    maxHeight: "500px",
+                                                    objectFit: "contain",
+                                                }}
+                                            />
+                                        )
+                                    ) : (
+                                        <div className="text-muted text-center">
+                                            Payment slip file unavailable
+                                        </div>
+                                    )}
+
+                                    <div className="mt-3 small text-muted">
+                                        <div>
+                                            <strong>Uploaded By:</strong>{" "}
+                                            {slip.uploaded_by_name || "N/A"}
+                                        </div>
+
+                                        <div>
+                                            <strong>Uploaded At:</strong>{" "}
+                                            {slip.uploaded_at
+                                                ? new Date(
+                                                    slip.uploaded_at
+                                                ).toLocaleString("en-IN")
+                                                : "N/A"}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    ) : (
+                        <div className="text-center text-muted py-4">
+                            No payment slips available.
+                        </div>
+                    )}
+                </ModalBody>
+
+                <ModalFooter>
+                    <Button
+                        color="secondary"
+                        onClick={closePaymentSlipModal}
+                    >
+                        Close
+                    </Button>
+                </ModalFooter>
+            </Modal>
 
             <ToastContainer />
         </React.Fragment>

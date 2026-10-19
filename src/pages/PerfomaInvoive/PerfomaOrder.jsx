@@ -16,18 +16,12 @@ const PerfomaOrder = () => {
     const token = localStorage.getItem('token');
     const [banks, setBanks] = useState([]);
     const [parcelServices, setParcelServices] = useState([]);
-    const [selectedProductId, setSelectedProductId] = useState("");
-    const [addQuantity, setAddQuantity] = useState(1);
     const [paymentImages, setPaymentImages] = useState([]);
     const [paymentImagesError, setPaymentImagesError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isAddingItemsToCart, setIsAddingItemsToCart] = useState(false);
-    const [invoiceItemsAdded, setInvoiceItemsAdded] = useState(false);
 
-    const [cartProducts, setCartProducts] = useState([]);
-    const [cartTotalAmount, setCartTotalAmount] = useState(0);
-    const [cartTotalDiscount, setCartTotalDiscount] = useState(0);
-    const [finalAmount, setFinalAmount] = useState(0);
+    const [proformaPaymentSlips, setProformaPaymentSlips] = useState([]);
+    const [proformaPaymentSlipsLoading, setProformaPaymentSlipsLoading] = useState(false);
 
 
     const createDataLog = async (
@@ -61,6 +55,40 @@ const PerfomaOrder = () => {
         }
     };
 
+    const fetchProformaPaymentSlips = async (proformaId) => {
+        if (!proformaId) {
+            return;
+        }
+
+        try {
+            setProformaPaymentSlipsLoading(true);
+
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}perfoma/payment/slips/${proformaId}/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            setProformaPaymentSlips(
+                response?.data?.data || []
+            );
+
+        } catch (error) {
+            console.error(
+                "Failed to fetch Proforma payment slips:",
+                error?.response?.data || error
+            );
+
+            setProformaPaymentSlips([]);
+
+        } finally {
+            setProformaPaymentSlipsLoading(false);
+        }
+    };
+
     const formik = useFormik({
         enableReinitialize: true,
         initialValues: {
@@ -82,8 +110,15 @@ const PerfomaOrder = () => {
             status: "Invoice Created",
             warehouses: orders?.warehouse_id || "",
             parcel_service: orders?.parcel_service?.id || orders?.parcel_service || "",
-            parcel_service_note: orders?.parcel_service_note || "",
-            accounts_note: orders?.accounts_note || "",
+            parcel_service_note:
+                orders?.parcel_note ??
+                orders?.parcel_service_note ??
+                "",
+
+            accounts_note:
+                orders?.note ??
+                orders?.accounts_note ??
+                "",
             performa_id: orders?.id || "",
         },
         validationSchema: Yup.object({
@@ -131,22 +166,31 @@ const PerfomaOrder = () => {
                 return;
             }
 
-            const isFullCOD =
-                values.payment_status === "COD" &&
-                values.cod_status === "FULL_COD";
 
-            // Payment slip is not required for Full COD
-            if (!isFullCOD && paymentImages.length === 0) {
-                setPaymentImagesError("At least one payment slip is required");
-                toast.error("Please select at least one payment slip");
+            const hasPaymentSlip =
+                paymentImages.length > 0 ||
+                proformaPaymentSlips.some(
+                    (slip) => Boolean(slip.id && slip.file)
+                );
+
+            if (!hasPaymentSlip) {
+                setPaymentImagesError(
+                    "At least one payment slip is required"
+                );
+
+                toast.error(
+                    "Please upload at least one payment slip"
+                );
+
                 return;
             }
 
-            setPaymentImagesError("");
 
+            setPaymentImagesError("");
             setIsSubmitting(true);
 
             try {
+
                 const payload = {
                     ...values,
                     state: orders.state,
@@ -156,7 +200,9 @@ const PerfomaOrder = () => {
                     manage_staff: orders.manage_staff,
                     billing_address: orders.billing_address?.id,
                     warehouses: orders.warehouse_id,
-                    total_amount: finalAmount.toFixed(2),
+                    total_amount: Number(
+                        orders.total_amount || 0
+                    ).toFixed(2),
                 };
 
                 // SAME PAYMENT LOGIC AS THE EXISTING ORDER CREATION PAGE
@@ -182,12 +228,24 @@ const PerfomaOrder = () => {
                     }
                 });
 
+                proformaPaymentSlips.forEach((slip) => {
+                    if (slip?.id) {
+                        formData.append(
+                            "proforma_payment_slip_ids",
+                            slip.id
+                        );
+                    }
+                });
+
                 paymentImages.forEach((imageItem) => {
-                    formData.append("images", imageItem.file);
+                    formData.append(
+                        "images",
+                        imageItem.file
+                    );
                 });
 
                 const response = await axios.post(
-                    `${import.meta.env.VITE_APP_KEY}order/create/new/`,
+                    `${import.meta.env.VITE_APP_KEY}order/create/performa/`,
                     formData,
                     {
                         headers: {
@@ -221,9 +279,17 @@ const PerfomaOrder = () => {
                             created_order_id: createdOrderId,
                             created_order_data: createdOrderData,
                             submitted_order_payload: { ...payload },
-                            submitted_products: cartProducts.map(
-                                (product) => ({ ...product })
-                            ),
+
+                            submitted_products: (
+                                orders?.perfoma_items || []
+                            ).map((product) => ({ ...product })),
+
+                            products_expected:
+                                orders?.perfoma_items?.length || 0,
+
+                            products_created:
+                                createdOrderData?.products_created ?? null,
+
                             payment_slips: paymentImages.map(({ file }) => ({
                                 file_name: file.name,
                                 file_size: file.size,
@@ -308,18 +374,32 @@ const PerfomaOrder = () => {
 
     const removePaymentImage = (indexToRemove) => {
         setPaymentImages((previousImages) => {
-            const imageToRemove = previousImages[indexToRemove];
+            const imageToRemove =
+                previousImages[indexToRemove];
 
             if (imageToRemove?.preview) {
-                URL.revokeObjectURL(imageToRemove.preview);
+                URL.revokeObjectURL(
+                    imageToRemove.preview
+                );
             }
 
-            const updatedImages = previousImages.filter(
-                (_, index) => index !== indexToRemove
-            );
+            const updatedImages =
+                previousImages.filter(
+                    (_, index) =>
+                        index !== indexToRemove
+                );
 
-            if (updatedImages.length === 0) {
-                setPaymentImagesError("At least one payment slip is required");
+            if (
+                updatedImages.length === 0 &&
+                !proformaPaymentSlips.some(
+                    (slip) => Boolean(slip.id && slip.file)
+                )
+            ) {
+                setPaymentImagesError(
+                    "At least one payment slip is required"
+                );
+            } else {
+                setPaymentImagesError("");
             }
 
             return updatedImages;
@@ -327,381 +407,6 @@ const PerfomaOrder = () => {
     };
 
 
-    const handleAddToCart = async () => {
-        if (!selectedProductId || addQuantity <= 0) {
-            alert("Select a valid product and quantity.");
-            return;
-        }
-
-        const payload = {
-            product: selectedProductId,
-            quantity: addQuantity
-        };
-
-        try {
-            const response = await fetch(`${import.meta.env.VITE_APP_KEY}cart/product/`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-                throw new Error("Failed to add product to cart.");
-            }
-
-            const data = await response.json();
-
-            await createDataLog(
-                "Product Added to Cart from Proforma",
-                {},
-                {
-                    submitted_payload: { ...payload },
-                    api_response: data,
-                }
-            );
-
-            alert("Product added to cart successfully!");
-
-            fetchOrderData();
-        } catch (error) {
-            toast.error("Error adding to cart:");
-            alert("Error adding product to cart.");
-        }
-    };
-
-    const handleAddInvoiceItemsToCart = async () => {
-        if (invoiceItemsAdded || isAddingItemsToCart) {
-            return;
-        }
-
-        if (
-            !orders ||
-            !orders.perfoma_items ||
-            orders.perfoma_items.length === 0
-        ) {
-            toast.error("No items available to add to cart");
-            return;
-        }
-
-        setIsAddingItemsToCart(true);
-
-        try {
-            for (const item of orders.perfoma_items) {
-
-                const payload = {
-                    product: item.product,
-                    quantity: item.quantity,
-                    price: item.rate
-                };
-
-                const response = await fetch(
-                    `${import.meta.env.VITE_APP_KEY}cart/product/excel/`,
-                    {
-                        method: "POST",
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify(payload),
-                    }
-                );
-
-                if (!response.ok) {
-                    const errorData = await response
-                        .json()
-                        .catch(() => null);
-
-                    throw new Error(
-                        errorData?.message ||
-                        `Failed to add ${item.name ||
-                        `product ID ${item.product}`
-                        } to cart`
-                    );
-                }
-
-
-                await createDataLog(
-                    "Proforma Product Added to Cart",
-                    {},
-                    {
-                        product_id: item.product,
-                        product_name: item.name,
-                        proforma_item: { ...item },
-                        submitted_payload: { ...payload },
-                    }
-                );
-
-            }
-
-            setInvoiceItemsAdded(true);
-
-            await fetchCartProducts();
-
-            toast.success(
-                "All Proforma items added to cart successfully!"
-            );
-
-        } catch (error) {
-            console.error(
-                "Error adding Proforma items to cart:",
-                error
-            );
-
-            toast.error(
-                error?.message ||
-                "Some items could not be added to cart"
-            );
-
-        } finally {
-            setIsAddingItemsToCart(false);
-        }
-    };
-
-    const fetchCartProducts = async () => {
-        try {
-            const response = await fetch(
-                `${import.meta.env.VITE_APP_KEY}cart/products/`,
-                {
-                    method: "GET",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            const products = data?.data || [];
-
-            setCartProducts(products);
-
-            const totalAmount = products.reduce((acc, product) => {
-                return acc + ((Number(product.price) || 0) * (Number(product.quantity) || 0));
-            }, 0);
-
-            const totalDiscount = products.reduce((acc, product) => {
-                return acc + (
-                    (Number(product.discount) || 0) *
-                    (Number(product.quantity) || 0)
-                );
-            }, 0);
-
-            setCartTotalAmount(totalAmount);
-            setCartTotalDiscount(totalDiscount);
-            setFinalAmount(totalAmount - totalDiscount);
-
-        } catch (error) {
-            console.error("Failed to fetch cart products:", error);
-            toast.error("Failed to fetch cart products");
-        }
-    };
-
-
-    const updateCartProduct = async (productId, updatedFields) => {
-        try {
-            const response = await fetch(
-                `${import.meta.env.VITE_APP_KEY}cart/update/${productId}/`,
-                {
-                    method: "PUT",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(updatedFields),
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error(
-                    `Failed to update product. Status: ${response.status}`
-                );
-            }
-
-            return await response.json();
-
-        } catch (error) {
-            console.error("Cart update failed:", error);
-            throw error;
-        }
-    };
-
-
-    const handlePriceChange = (index, newPrice) => {
-        const updatedProducts = [...cartProducts];
-
-        updatedProducts[index].price = parseFloat(newPrice) || 0;
-
-        setCartProducts(updatedProducts);
-    };
-
-
-    const handleDescriptionChange = (index, newDescription) => {
-        const updatedProducts = [...cartProducts];
-
-        updatedProducts[index].note = newDescription;
-
-        setCartProducts(updatedProducts);
-    };
-
-
-    const handleDiscountChange = (index, newDiscount) => {
-        const updatedProducts = [...cartProducts];
-
-        updatedProducts[index].discount = parseFloat(newDiscount) || 0;
-
-        setCartProducts(updatedProducts);
-    };
-
-
-    const handleQuantityChange = (index, newQuantity) => {
-        const updatedProducts = [...cartProducts];
-        const product = updatedProducts[index];
-
-        const availableStock =
-            (Number(product.stock) || 0) -
-            (Number(product.locked_stock) || 0);
-
-        const quantity = parseInt(newQuantity, 10) || 1;
-
-        if (quantity <= availableStock) {
-            product.quantity = quantity;
-        } else {
-            toast.error(
-                `Only ${availableStock} quantity available for ${product.name}`
-            );
-
-            product.quantity = availableStock;
-        }
-
-        setCartProducts(updatedProducts);
-    };
-
-
-    const handleUpdateEntireCart = async () => {
-        try {
-            for (const product of cartProducts) {
-                const updatePayload = {
-                    quantity: product.quantity,
-                    price: product.price,
-                    discount: product.discount,
-                    note: product.note,
-                };
-
-                await updateCartProduct(
-                    product.id,
-                    updatePayload
-                );
-
-                await createDataLog(
-                    "Proforma Cart Product Updated",
-                    {
-                        product_id: product.id,
-                        product_name: product.name,
-                    },
-                    {
-                        product_id: product.id,
-                        product_name: product.name,
-                        submitted_payload: updatePayload,
-                    }
-                );
-            }
-
-            toast.success("Cart updated successfully!");
-
-            await fetchCartProducts();
-
-        } catch (error) {
-            toast.error("Failed to update the cart");
-        }
-    };
-
-
-    const handleRemoveProduct = async (productId) => {
-
-        // Capture product details before deleting
-        const removedProduct = cartProducts.find(
-            (product) =>
-                String(product.id) === String(productId)
-        );
-
-        try {
-            const response = await axios.delete(
-                `${import.meta.env.VITE_APP_KEY}cart/update/${productId}/`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-
-            if (response.status === 204 || response.status === 200) {
-                toast.success("Product removed from cart");
-
-
-                await createDataLog(
-                    "Product Removed from Proforma Cart",
-                    {
-                        product_id: productId,
-                        product_details: removedProduct
-                            ? { ...removedProduct }
-                            : null,
-                    },
-                    {
-                        action: "Product Removed from Proforma Cart",
-                        product_id: productId,
-                    }
-                );
-
-                await fetchCartProducts();
-            }
-
-        } catch (error) {
-            console.error("Cart delete failed:", error);
-            toast.error("Failed to remove product");
-        }
-    };
-
-    useEffect(() => {
-        if (token) {
-            fetchCartProducts();
-        }
-    }, [token]);
-
-    useEffect(() => {
-        if (cartProducts.length > 0) {
-            const totalAmount = cartProducts.reduce((acc, product) => {
-                return (
-                    acc +
-                    ((Number(product.price) || 0) *
-                        (Number(product.quantity) || 0))
-                );
-            }, 0);
-
-            const totalDiscount = cartProducts.reduce((acc, product) => {
-                return (
-                    acc +
-                    ((Number(product.discount) || 0) *
-                        (Number(product.quantity) || 0))
-                );
-            }, 0);
-
-            setCartTotalAmount(totalAmount);
-            setCartTotalDiscount(totalDiscount);
-            setFinalAmount(totalAmount - totalDiscount);
-
-        } else {
-            setCartTotalAmount(0);
-            setCartTotalDiscount(0);
-            setFinalAmount(0);
-        }
-    }, [cartProducts]);
 
     const fetchOrderData = async () => {
         try {
@@ -723,10 +428,16 @@ const PerfomaOrder = () => {
             const data = await response.json();
             setOrders(data);
 
+            if (data?.id) {
+                await fetchProformaPaymentSlips(data.id);
+            }
+
         } catch (error) {
             toast.error("Error fetching order data:");
         }
     };
+
+
 
 
     const fetchParcelServices = async () => {
@@ -837,217 +548,7 @@ const PerfomaOrder = () => {
                                         )}
                                     </Col>
                                 </Row>
-                                <Row>
-                                    <Button
-                                        color={invoiceItemsAdded ? "secondary" : "success"}
-                                        className="mt-3"
-                                        onClick={handleAddInvoiceItemsToCart}
-                                        disabled={
-                                            isAddingItemsToCart ||
-                                            invoiceItemsAdded ||
-                                            !orders?.perfoma_items?.length
-                                        }
-                                    >
-                                        {isAddingItemsToCart
-                                            ? "Adding Items..."
-                                            : invoiceItemsAdded
-                                                ? "Items Added to Cart"
-                                                : "Add All Items to Cart"}
-                                    </Button>
-                                </Row>
-                                {cartProducts.length > 0 && (
-                                    <Row className="mt-4">
-                                        <Col md={12}>
-                                            <Card>
-                                                <CardBody>
 
-                                                    <h5 className="mb-3">CART PRODUCTS</h5>
-
-                                                    <div className="table-responsive">
-                                                        <table className="table table-bordered table-hover">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th>#</th>
-                                                                    <th>Image</th>
-                                                                    <th>Product Name</th>
-                                                                    <th>Rate</th>
-                                                                    <th>Tax</th>
-                                                                    <th>Description</th>
-                                                                    <th>Size</th>
-                                                                    <th>Discount</th>
-                                                                    <th>Price</th>
-                                                                    <th>Quantity</th>
-                                                                    <th>Total</th>
-                                                                    <th>Action</th>
-                                                                </tr>
-                                                            </thead>
-
-                                                            <tbody>
-                                                                {cartProducts.map((product, index) => {
-
-                                                                    const availableStock =
-                                                                        (Number(product.stock) || 0) -
-                                                                        (Number(product.locked_stock) || 0);
-
-                                                                    const lineTotal =
-                                                                        ((Number(product.price) || 0) *
-                                                                            (Number(product.quantity) || 0)) -
-                                                                        ((Number(product.discount) || 0) *
-                                                                            (Number(product.quantity) || 0));
-
-                                                                    return (
-                                                                        <tr key={product.id || index}>
-
-                                                                            <td>{index + 1}</td>
-
-                                                                            <td>
-                                                                                <img
-                                                                                    src={`${import.meta.env.VITE_APP_IMAGE}${product.image}`}
-                                                                                    alt={product.name}
-                                                                                    style={{
-                                                                                        width: "50px",
-                                                                                        height: "50px",
-                                                                                        objectFit: "cover",
-                                                                                    }}
-                                                                                />
-                                                                            </td>
-
-                                                                            <td>
-                                                                                {product.name || "Unknown Product"}
-                                                                            </td>
-
-                                                                            <td>
-                                                                                ₹{product.exclude_price || 0}
-                                                                            </td>
-
-                                                                            <td>
-                                                                                {product.tax || 0}%
-                                                                            </td>
-
-                                                                            <td style={{ minWidth: "180px" }}>
-                                                                                <Input
-                                                                                    type="text"
-                                                                                    value={product.note || ""}
-                                                                                    onChange={(e) =>
-                                                                                        handleDescriptionChange(
-                                                                                            index,
-                                                                                            e.target.value
-                                                                                        )
-                                                                                    }
-                                                                                />
-                                                                            </td>
-
-                                                                            <td>
-                                                                                {product.size || "N/A"}
-                                                                            </td>
-
-                                                                            <td style={{ minWidth: "110px" }}>
-                                                                                <Input
-                                                                                    type="number"
-                                                                                    min="0"
-                                                                                    value={product.discount || 0}
-                                                                                    onChange={(e) =>
-                                                                                        handleDiscountChange(
-                                                                                            index,
-                                                                                            e.target.value
-                                                                                        )
-                                                                                    }
-                                                                                />
-                                                                            </td>
-
-                                                                            <td style={{ minWidth: "120px" }}>
-                                                                                <Input
-                                                                                    type="number"
-                                                                                    value={product.price || 0}
-                                                                                    onChange={(e) =>
-                                                                                        handlePriceChange(
-                                                                                            index,
-                                                                                            e.target.value
-                                                                                        )
-                                                                                    }
-                                                                                />
-                                                                            </td>
-
-                                                                            <td style={{ minWidth: "110px" }}>
-                                                                                <Input
-                                                                                    type="number"
-                                                                                    min="1"
-                                                                                    max={availableStock}
-                                                                                    value={product.quantity || 1}
-                                                                                    onChange={(e) =>
-                                                                                        handleQuantityChange(
-                                                                                            index,
-                                                                                            e.target.value
-                                                                                        )
-                                                                                    }
-                                                                                />
-
-                                                                                <small className="text-muted">
-                                                                                    Available: {availableStock}
-                                                                                </small>
-                                                                            </td>
-
-                                                                            <td>
-                                                                                ₹{lineTotal.toFixed(2)}
-                                                                            </td>
-
-                                                                            <td>
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    color="danger"
-                                                                                    size="sm"
-                                                                                    onClick={() =>
-                                                                                        handleRemoveProduct(
-                                                                                            product.id
-                                                                                        )
-                                                                                    }
-                                                                                >
-                                                                                    Remove
-                                                                                </Button>
-                                                                            </td>
-
-                                                                        </tr>
-                                                                    );
-                                                                })}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-
-                                                    <div className="d-flex justify-content-between align-items-center mt-3">
-
-                                                        <div>
-                                                            <strong>
-                                                                Cart Total: ₹{cartTotalAmount.toFixed(2)}
-                                                            </strong>
-
-                                                            <br />
-
-                                                            <strong>
-                                                                Discount: ₹{cartTotalDiscount.toFixed(2)}
-                                                            </strong>
-
-                                                            <br />
-
-                                                            <strong>
-                                                                Net Amount: ₹{finalAmount.toFixed(2)}
-                                                            </strong>
-                                                        </div>
-
-                                                        <Button
-                                                            type="button"
-                                                            color="primary"
-                                                            onClick={handleUpdateEntireCart}
-                                                        >
-                                                            Update Cart
-                                                        </Button>
-
-                                                    </div>
-
-                                                </CardBody>
-                                            </Card>
-                                        </Col>
-                                    </Row>
-                                )}
                                 <Row className="mt-4">
                                     <Col md={4}>
                                         <div className="mb-3">
@@ -1256,6 +757,54 @@ const PerfomaOrder = () => {
                                                     <FormFeedback>{formik.errors.payment_method}</FormFeedback>
                                                 ) : null}
 
+                                                {proformaPaymentSlips.length > 0 && (
+                                                    <div className="mt-3">
+                                                        <Label>
+                                                            Existing Proforma Payment Slips
+                                                        </Label>
+
+                                                        <Row>
+                                                            {proformaPaymentSlips.map(
+                                                                (slip, index) => {
+
+                                                                    const imageUrl =
+                                                                        slip.file?.startsWith("http")
+                                                                            ? slip.file
+                                                                            : `${import.meta.env.VITE_APP_IMAGE}${slip.file}`;
+
+                                                                    return (
+                                                                        <Col
+                                                                            key={slip.id || index}
+                                                                            xs={6}
+                                                                            md={4}
+                                                                            className="mb-3"
+                                                                        >
+                                                                            <div className="border rounded p-2">
+
+                                                                                <img
+                                                                                    src={imageUrl}
+                                                                                    alt={`Proforma Payment Slip ${index + 1}`}
+                                                                                    style={{
+                                                                                        width: "100%",
+                                                                                        height: "110px",
+                                                                                        objectFit: "cover",
+                                                                                        borderRadius: "4px",
+                                                                                    }}
+                                                                                />
+
+                                                                                <small className="d-block mt-2 text-success">
+                                                                                    From Proforma
+                                                                                </small>
+
+                                                                            </div>
+                                                                        </Col>
+                                                                    );
+                                                                }
+                                                            )}
+                                                        </Row>
+                                                    </div>
+                                                )}
+
                                                 <div className="mt-4">
                                                     <Label for="payment_images">
                                                         Payment Slips *
@@ -1328,12 +877,22 @@ const PerfomaOrder = () => {
                                     <Col md={6}>
                                         <Card>
                                             <CardBody>
-                                                <h6 className="border-bottom pb-2">Total: <span className="float-end">₹&nbsp;</span></h6>
-                                                <h6 className="border-bottom pb-2">Advance Paid: <span className="float-end">₹0.00</span></h6>
-                                                <h6 className="border-bottom pb-2">Total Discount: <span className="float-end">₹&nbsp;</span></h6>
-                                                <h6 className="border-bottom pb-2">Shipping Charge: <span className="float-end">₹0.00</span></h6>
-                                                <h6 className="border-bottom pb-2">Total Cart Discount: <span className="float-end">₹0.00</span></h6>
-                                                <h6 className="font-weight-bold">Net Amount: <span className="float-end">₹&nbsp;    </span></h6>
+                                                <h6 className="border-bottom pb-2">
+                                                    Proforma Total:
+                                                    <span className="float-end">
+                                                        ₹{Number(orders?.total_amount || 0).toFixed(2)}
+                                                    </span>
+                                                </h6>
+                                                <h6 className="border-bottom pb-2">
+                                                    Product Discount:
+                                                    <span className="float-end">
+                                                        ₹{(orders?.perfoma_items || []).reduce(
+                                                            (sum, item) => sum +
+                                                                Number(item.discount || 0) * Number(item.quantity || 0),
+                                                            0
+                                                        ).toFixed(2)}
+                                                    </span>
+                                                </h6>
 
                                             </CardBody>
                                         </Card>
@@ -1341,14 +900,30 @@ const PerfomaOrder = () => {
                                 </Row>
                                 <Row>
                                     <Col>
+
                                         <Button
+                                            type="button"
                                             color="primary"
                                             className="mt-3"
                                             onClick={formik.handleSubmit}
-                                            disabled={isSubmitting}
+                                            disabled={
+                                                isSubmitting ||
+                                                proformaPaymentSlipsLoading ||
+                                                !orders?.id ||
+                                                !orders?.perfoma_items?.length ||
+                                                (
+                                                    paymentImages.length === 0 &&
+                                                    !proformaPaymentSlips.some(
+                                                        (slip) => Boolean(slip.id && slip.file)
+                                                    )
+                                                )
+                                            }
                                         >
-                                            {isSubmitting ? "Creating Order..." : "Create Order"}
+                                            {isSubmitting
+                                                ? "Creating Order..."
+                                                : "Generate Invoice"}
                                         </Button>
+
                                     </Col>
                                 </Row>
                             </CardBody>

@@ -486,6 +486,7 @@ import StaffMonthlySalaryReport from "../pages/Staff/StaffMonthlySalaryReport";
 import HourlyFamilyOrderDetails from "../pages/DashboardJob/HourlyFamilyOrderDetails";
 import CompanyFinanceReport from "../pages/DashboardJob/CompanyFinanceReport";
 import PendingForPacking from "../pages/Order/PendingForPacking";
+import ProformaWithPaymentSlips from "../pages/PerfomaInvoive/ProformaWithPaymentSlips";
 
 
 
@@ -676,6 +677,7 @@ const authProtectedRoutes = [
   { path: "/perfoma/invoice/:invoice/view/", component: <Invoice /> },
   { path: "/generate/perfoma/invoice/:invoice/", component: <GenerateInvoice /> },
   { path: "/perfoma/order/:invoice/", component: <PerfomaOrder /> },
+  { path: '/performa/list/paymentslip/', component: <ProformaWithPaymentSlips /> },
 
 
 

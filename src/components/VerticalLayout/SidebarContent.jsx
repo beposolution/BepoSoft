@@ -401,15 +401,22 @@ const SidebarContent = (props) => {
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUsers size={20} style={{ marginRight: '8px' }} />
-                  <span>{props.t("Perfoma Invoice")}</span>
+                  <span>{props.t("Proforma Invoice")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
                   <li>
-                    <Link to="/create/perfoma/invoice/">{props.t("Create Perfoma invoice")}</Link>
+                    <Link to="/create/perfoma/invoice/">{props.t("Create Proforma invoice")}</Link>
                   </li>
                   <li>
-                    <Link to="/perfoma/invoices/">{props.t("View Perfoma invoices")}</Link>
+                    <Link to="/perfoma/invoices/">{props.t("View Proforma invoices")}</Link>
                   </li>
+
+                  {role === 'ADMIN' || role === 'HR' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'CSO' || role === 'COO' ? (
+                    <li>
+                      <Link to="/performa/list/paymentslip/">{props.t("Proforma With Payment Slip")}</Link>
+                    </li>
+                  ) : null}
+
                 </ul>
               </li>
             ) : null}

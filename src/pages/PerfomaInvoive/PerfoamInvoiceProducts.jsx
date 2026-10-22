@@ -59,7 +59,7 @@ const FormLayouts = () => {
 
     const role = localStorage.getItem("active");
 
-    const canViewOrderButton = ["HR", "IT", "CEO", "COO", "ADMIN", "Accounts / Accounting"].includes(
+    const canViewOrderButton = ["HR", "IT", "CEO", "COO", "ADMIN", "ACCOUNTS / ACCOUNTING"].includes(
         (role || "").trim().toUpperCase()
     );
 
@@ -1294,7 +1294,7 @@ const FormLayouts = () => {
 
 
 
-                                            <Col lg={3}>
+                                            {/* <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-InputZip">SHIPING MODE</Label>
                                                     <Input
@@ -1316,7 +1316,7 @@ const FormLayouts = () => {
                                                         ) : null
                                                     }
                                                 </div>
-                                            </Col>
+                                            </Col> */}
 
                                             <Col lg={3}>
                                                 <div className="mb-3">
@@ -1342,7 +1342,7 @@ const FormLayouts = () => {
                                                 </div>
                                             </Col>
 
-                                            <Col lg={3}>
+                                            {/* <Col lg={3}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="formrow-InputZip">COD CHARGE</Label>
                                                     <Input
@@ -1364,10 +1364,10 @@ const FormLayouts = () => {
                                                         ) : null
                                                     }
                                                 </div>
-                                            </Col>
+                                            </Col> */}
                                         </Row>
 
-                                        <div className="mb-3">
+                                        {/* <div className="mb-3">
                                             <div className="form-check">
                                                 <Input
                                                     type="checkbox"
@@ -1393,12 +1393,12 @@ const FormLayouts = () => {
                                                     <FormFeedback type="invalid">{formik.errors.check}</FormFeedback>
                                                 ) : null
                                             }
-                                        </div>
-                                        <div>
+                                        </div> */}
+                                        {/* <div>
                                             <button type="submit" className="btn btn-primary w-md">
                                                 save changes
                                             </button>
-                                        </div>
+                                        </div> */}
                                     </Form>
                                 </CardBody>
 

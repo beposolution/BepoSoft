@@ -22,6 +22,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../../services/auditService";
 
 const StaffAddAttendance = () => {
     document.title = "Attendance | Beposoft";
@@ -57,6 +58,9 @@ const StaffAddAttendance = () => {
 
     const [editModal, setEditModal] = useState(false);
     const [selectedAttendanceId, setSelectedAttendanceId] = useState(null);
+
+    const [originalAuditData, setOriginalAuditData] = useState(null);
+    const [editSubmitLoading, setEditSubmitLoading] = useState(false);
 
     const [editInitialValues, setEditInitialValues] = useState({
         staff: "",
@@ -106,7 +110,7 @@ const StaffAddAttendance = () => {
         }
     };
 
-    const fetchStaffs = async () => {
+    const fetchStaffs = async (updateAddForm = false) => {
         try {
             const res = await axios.get(`${baseUrl}profile/`, {
                 headers: {
@@ -128,8 +132,11 @@ const StaffAddAttendance = () => {
                 },
             ]);
 
-            formik.setFieldValue("staff", String(user.id));
-        } catch {
+            if (updateAddForm) {
+                formik.setFieldValue("staff", String(user.id));
+            }
+
+        } catch (error) {
             toast.error("Failed to load staff profile");
         }
     };
@@ -216,6 +223,30 @@ const StaffAddAttendance = () => {
         item => item.status === "absent"
     ).length;
 
+
+    const getStaffNameById = (staffId, fallbackName = "") => {
+        const matchedStaff = staffs.find(
+            staff => String(staff.id) === String(staffId)
+        );
+
+        return matchedStaff?.name || fallbackName || "";
+    };
+
+    const createAttendanceSnapshot = ({
+        staff,
+        staff_name,
+        attendance_date,
+        attendance_time,
+        status,
+    }) => {
+        return {
+            staff: getStaffNameById(staff, staff_name),
+            attendance_date: attendance_date || "",
+            attendance_time: attendance_time || "",
+            status: status || "",
+        };
+    };
+
     const formik = useFormik({
         initialValues: {
             staff: "",
@@ -255,6 +286,33 @@ const StaffAddAttendance = () => {
                     },
                 });
 
+                // log
+                try {
+                    const afterSnapshot = createAttendanceSnapshot({
+                        ...payload,
+                        staff_name: getStaffNameById(payload.staff),
+                    });
+
+                    const auditCreated = await createAuditLog({
+                        action: "staff_attendance_created_website",
+
+                        beforeData: {},
+
+                        afterData: afterSnapshot,
+                    });
+
+                    if (!auditCreated) {
+                        console.error(
+                            "Attendance created, but DataLog creation failed."
+                        );
+                    }
+                } catch (auditError) {
+                    console.error(
+                        "Attendance created, but audit logging failed:",
+                        auditError
+                    );
+                }
+
                 toast.success("Attendance added successfully");
                 resetForm();
                 setAddModal(false);
@@ -282,7 +340,17 @@ const StaffAddAttendance = () => {
             const teamId = item.team_id;
             setSelectedTeam(teamId);
 
-            await fetchStaffs(teamId);
+            const beforeSnapshot = createAttendanceSnapshot({
+                staff: item.staff,
+                staff_name: item.staff_name,
+                attendance_date: item.attendance_date,
+                attendance_time: item.attendance_time,
+                status: item.status,
+            });
+
+            setOriginalAuditData(beforeSnapshot);
+
+            await fetchStaffs();
 
             setEditInitialValues({
                 staff: String(item.staff),
@@ -306,7 +374,7 @@ const StaffAddAttendance = () => {
             setSelectedTeam(firstTeam.id ?? firstTeam.team_id);
         }
 
-        await fetchStaffs();
+        await fetchStaffs(true);
 
         setAddModal(true);
     };
@@ -327,20 +395,39 @@ const StaffAddAttendance = () => {
             status: Yup.string().required("Select Status"),
         }),
 
+
         onSubmit: async values => {
+            if (editSubmitLoading) return;
+
+            setEditSubmitLoading(true);
+
             try {
+                const payload = {
+                    staff: Number(values.staff),
+                    attendance_date: values.attendance_date,
+                    attendance_time:
+                        values.status === "absent"
+                            ? null
+                            : values.attendance_time,
+                    status: values.status,
+                };
+
+                const afterSnapshot = createAttendanceSnapshot({
+                    ...payload,
+                    staff_name:
+                        getStaffNameById(payload.staff) ||
+                        (
+                            String(payload.staff) ===
+                                String(editInitialValues.staff)
+                                ? originalAuditData?.staff
+                                : ""
+                        ),
+                });
+
+                // Update attendance first
                 await axios.put(
                     `${baseUrl}staff/attendance/edit/${selectedAttendanceId}/`,
-                    {
-                        staff: Number(values.staff),
-                        attendance_date: values.attendance_date,
-                        // attendance_time: values.attendance_time,
-                        attendance_time:
-                            values.status === "absent"
-                                ? null
-                                : values.attendance_time,
-                        status: values.status,
-                    },
+                    payload,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -348,11 +435,38 @@ const StaffAddAttendance = () => {
                     }
                 );
 
+                // Create audit log after successful update
+                try {
+                    const auditCreated = await createAuditLog({
+                        action: "staff_attendance_updated_website",
+                        beforeData: originalAuditData ?? {},
+                        afterData: afterSnapshot,
+                    });
+
+                    if (!auditCreated) {
+                        console.error(
+                            "Attendance updated, but DataLog creation failed."
+                        );
+                    }
+                } catch (auditError) {
+                    console.error(
+                        "Attendance updated, but audit logging failed:",
+                        auditError
+                    );
+                }
+
                 toast.success("Attendance updated");
                 setEditModal(false);
+                setOriginalAuditData(null);
                 fetchAttendance();
+
             } catch (error) {
-                toast.error(error?.response?.data?.message || "Update failed");
+                toast.error(
+                    error?.response?.data?.message ||
+                    "Update failed"
+                );
+            } finally {
+                setEditSubmitLoading(false);
             }
         },
     });
@@ -974,7 +1088,7 @@ const StaffAddAttendance = () => {
                                         setSelectedTeam(teamId);
                                         editFormik.setFieldValue("staff", "");
 
-                                        await fetchStaffs(teamId);
+                                        await fetchStaffs();
                                     }}
                                     placeholder="Select team"
                                 />
@@ -1086,8 +1200,12 @@ const StaffAddAttendance = () => {
                                 <Button color="secondary" onClick={() => setEditModal(false)}>
                                     Cancel
                                 </Button>
-                                <Button color="primary" type="submit">
-                                    Update
+                                <Button
+                                    color="primary"
+                                    type="submit"
+                                    disabled={editSubmitLoading}
+                                >
+                                    {editSubmitLoading ? "Updating..." : "Update"}
                                 </Button>
                             </ModalFooter>
                         </Form>

@@ -9,6 +9,375 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 
+
+const AttendanceCalendar = ({ token }) => {
+    const [month, setMonth] = useState(
+        () => new Date(
+            new Date().getFullYear(),
+            new Date().getMonth(),
+            1
+        )
+    );
+
+    const [records, setRecords] = useState([]);
+    const [loadingCalendar, setLoadingCalendar] = useState(false);
+    const [calendarError, setCalendarError] = useState("");
+
+    const dateKey = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+
+        return `${year}-${month}-${day}`;
+    };
+
+    const year = month.getFullYear();
+    const monthIndex = month.getMonth();
+
+    const monthStart = new Date(year, monthIndex, 1);
+    const monthEnd = new Date(year, monthIndex + 1, 0);
+
+    const todayKey = dateKey(new Date());
+
+    // Fetch attendance records for the selected month
+    useEffect(() => {
+        if (!token) return;
+
+        const controller = new AbortController();
+
+        const fetchMonthlyAttendance = async () => {
+            setLoadingCalendar(true);
+            setCalendarError("");
+
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}staff/attendance/my/details/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        params: {
+                            start_date: dateKey(
+                                new Date(year, monthIndex, 1)
+                            ),
+                            end_date: dateKey(
+                                new Date(year, monthIndex + 1, 0)
+                            ),
+                        },
+                        signal: controller.signal,
+                    }
+                );
+
+                const payload = response.data?.data;
+
+                const attendanceRecords = Array.isArray(payload)
+                    ? payload
+                    : payload?.results || [];
+
+                setRecords(attendanceRecords);
+
+            } catch (error) {
+                if (error.code !== "ERR_CANCELED") {
+                    setRecords([]);
+                    setCalendarError("Unable to load attendance");
+                }
+            } finally {
+                if (!controller.signal.aborted) {
+                    setLoadingCalendar(false);
+                }
+            }
+        };
+
+        fetchMonthlyAttendance();
+
+        return () => controller.abort();
+
+    }, [token, year, monthIndex]);
+
+    // Convert attendance API records into date-wise data
+    const attendanceByDate = new Map();
+
+    records.forEach((item) => {
+        const date = String(
+            item.attendance_date || item.date || ""
+        ).slice(0, 10);
+
+        if (date) {
+            attendanceByDate.set(
+                date,
+                String(item.status || "").toLowerCase()
+            );
+        }
+    });
+
+    // Create Monday-first calendar
+    const leadingEmptyDays = (monthStart.getDay() + 6) % 7;
+
+    const calendarDays = [
+        ...Array.from(
+            { length: leadingEmptyDays },
+            () => null
+        ),
+        ...Array.from(
+            { length: monthEnd.getDate() },
+            (_, index) => index + 1
+        ),
+    ];
+
+    // Calendar navigation
+    const previousMonth = () => {
+        setMonth(new Date(year, monthIndex - 1, 1));
+    };
+
+    const nextMonth = () => {
+        setMonth(new Date(year, monthIndex + 1, 1));
+    };
+
+    return (
+        <Card
+            className="border-0 shadow-sm h-100"
+            style={{
+                borderRadius: "18px",
+                background:
+                    "linear-gradient(135deg, #56b0ff, #2873f7)",
+                color: "#ffffff",
+            }}
+        >
+            <CardBody style={{ padding: "14px" }}>
+
+                {/* Calendar Header */}
+                <div
+                    className="d-flex justify-content-between align-items-center mb-2"
+                    style={{ gap: "8px" }}
+                >
+                    <h5
+                        className="fw-bold mb-0"
+                        style={{
+                            color: "#ffffff",
+                            fontSize: "18px",
+                        }}
+                    >
+                        Attendance
+                    </h5>
+
+                    <div
+                        className="d-flex align-items-center"
+                        style={{ gap: "4px" }}
+                    >
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-light"
+                            onClick={previousMonth}
+                            aria-label="Previous month"
+                        >
+                            ‹
+                        </button>
+
+                        <span
+                            className="fw-semibold text-center"
+                            style={{
+                                minWidth: "74px",
+                                fontSize: "12px",
+                            }}
+                        >
+                            {month.toLocaleDateString("en-US", {
+                                month: "short",
+                                year: "numeric",
+                            })}
+                        </span>
+
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-light"
+                            onClick={nextMonth}
+                            aria-label="Next month"
+                        >
+                            ›
+                        </button>
+                    </div>
+                </div>
+
+                <p
+                    className="mb-2"
+                    style={{
+                        fontSize: "11px",
+                        color: "#ffffff",
+                    }}
+                >
+                    Monthly Attendance Tracking
+                </p>
+
+                {/* Calendar White Container */}
+                <div
+                    style={{
+                        background: "#ffffff",
+                        color: "#111827",
+                        borderRadius: "14px",
+                        padding: "11px 8px",
+                    }}
+                >
+                    <div
+                        style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                                "repeat(7, minmax(0, 1fr))",
+                            gap: "3px",
+                        }}
+                    >
+                        {/* Weekday headings */}
+                        {[
+                            "Mon",
+                            "Tue",
+                            "Wed",
+                            "Thu",
+                            "Fri",
+                            "Sat",
+                            "Sun",
+                        ].map((day) => (
+                            <div
+                                key={day}
+                                className="text-center fw-semibold"
+                                style={{
+                                    fontSize: "10px",
+                                    color: "#526780",
+                                    paddingBottom: "7px",
+                                }}
+                            >
+                                {day}
+                            </div>
+                        ))}
+
+                        {/* Calendar Dates */}
+                        {calendarDays.map((day, index) => {
+                            if (day === null) {
+                                return (
+                                    <div
+                                        key={`empty-${index}`}
+                                    />
+                                );
+                            }
+
+                            const date = new Date(
+                                year,
+                                monthIndex,
+                                day
+                            );
+
+                            const key = dateKey(date);
+
+                            const isToday = key === todayKey;
+                            const isSunday = date.getDay() === 0;
+
+                            const isAbsent =
+                                attendanceByDate.get(key) === "absent";
+
+                            // Colour priority:
+                            // Today > Sunday > Absent > Regular
+                            let background = "#ffffff";
+                            let color = "#111827";
+
+                            if (isAbsent) {
+                                background = "#111827";
+                                color = "#ffffff";
+                            }
+
+                            if (isSunday) {
+                                background = "#1762ad";
+                                color = "#ffffff";
+                            }
+
+                            if (isToday) {
+                                background = "#ef4a9c";
+                                color = "#ffffff";
+                            }
+
+                            return (
+                                <div
+                                    key={key}
+                                    title={`${key}: ${attendanceByDate.get(key) ||
+                                        "No attendance record"
+                                        }`}
+                                    className="d-flex align-items-center justify-content-center fw-bold"
+                                    style={{
+                                        width: "100%",
+                                        maxWidth: "37px",
+                                        aspectRatio: "1 / 1",
+                                        margin: "auto",
+                                        borderRadius: "50%",
+                                        background,
+                                        color,
+                                        boxShadow:
+                                            background === "#ffffff"
+                                                ? "0 1px 5px #00000012"
+                                                : "none",
+                                        fontSize: "12px",
+                                    }}
+                                >
+                                    {day}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Loading */}
+                    {loadingCalendar && (
+                        <small className="d-block text-center mt-2 text-muted">
+                            Loading attendance...
+                        </small>
+                    )}
+
+                    {/* Error */}
+                    {calendarError && (
+                        <small className="d-block text-center mt-2 text-danger">
+                            {calendarError}
+                        </small>
+                    )}
+
+                    {/* Colour Legend */}
+                    <div
+                        className="d-flex flex-wrap justify-content-center mt-2"
+                        style={{
+                            gap: "5px 11px",
+                            fontSize: "10px",
+                            color: "#475569",
+                        }}
+                    >
+                        {[
+                            ["#111827", "Absent"],
+                            ["#ef4a9c", "Today"],
+                            ["#1762ad", "Sunday"],
+                            ["#ffffff", "Regular"],
+                        ].map(([legendColor, name]) => (
+                            <span
+                                key={name}
+                                className="d-inline-flex align-items-center"
+                                style={{ gap: "4px" }}
+                            >
+                                <i
+                                    style={{
+                                        width: "9px",
+                                        height: "9px",
+                                        borderRadius: "50%",
+                                        display: "inline-block",
+                                        background: legendColor,
+                                        border:
+                                            legendColor === "#ffffff"
+                                                ? "1px solid #cbd5e1"
+                                                : "none",
+                                    }}
+                                />
+
+                                {name}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            </CardBody>
+        </Card>
+    );
+};
+
+
 const ChartSection = () => {
     const [chartsData, setChartsData] = useState();
     const [loading, setLoading] = useState(true);
@@ -695,6 +1064,19 @@ const ChartSection = () => {
 
             <Row>
 
+
+                {/* Other roles retain their attendance calendar. For ADMIN,
+                    Accounts and COO it is placed in the same grid as the
+                    Company Reports and Finance cards below. */}
+                {!(role === "ADMIN" || role === "Accounts / Accounting" || role === "COO") && (
+                    <Row className="g-3 mb-3">
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3}>
+                            <AttendanceCalendar token={token} />
+                        </Col>
+                    </Row>
+                )}
+
+
                 {/* warehouse & Warehouse Admin dashboard */}
 
                 {(role === "warehouse" || role === "Warehouse Admin") && (
@@ -1271,85 +1653,86 @@ const ChartSection = () => {
                 {(role === "ADMIN" || role === "Accounts / Accounting" || role === "COO") && (
                     <Row className="g-3 mb-3">
 
-                        {companies.map((company) => (
+                        {/* Calendar shares the same responsive row and gutters
+                            as the other dashboard cards. */}
+                        <Col xs={12} sm={6} md={6} lg={3} xl={3}>
+                            <AttendanceCalendar token={token} />
+                        </Col>
 
-                            <Col
-                                key={company.id}
-                                xs={12}
-                                sm={6}
-                                md={6}
-                                lg={4}
-                                xl={3}
-                            >
+                        {/* One column containing two vertically stacked company cards */}
+                        <Col xs={12} sm={6} md={6} lg={3} xl={3}>
+                            <div className="d-flex flex-column gap-3 h-100">
+                                {companies.map((company) => (
 
-                                <Card
-                                    onClick={() =>
-                                        navigate(
-                                            `/finance/company-report/${company.id}`,
-                                            {
-                                                state: {
-                                                    companyName: company.name
+                                    <Card
+                                        key={company.id}
+                                        onClick={() =>
+                                            navigate(
+                                                `/finance/company-report/${company.id}`,
+                                                {
+                                                    state: {
+                                                        companyName: company.name
+                                                    }
                                                 }
-                                            }
-                                        )
-                                    }
+                                            )
+                                        }
 
-                                    className="h-100 border-0 shadow-sm"
+                                        className="flex-fill border-0 shadow-sm"
 
-                                    style={{
-                                        cursor: "pointer",
-                                        borderRadius: "16px",
-                                        minHeight: "155px",
-                                        background: "#f8fbff",
-                                        borderLeft: "5px solid #3b82f6"
-                                    }}
-                                >
+                                        style={{
+                                            cursor: "pointer",
+                                            borderRadius: "16px",
+                                            minHeight: "155px",
+                                            background: "#f8fbff",
+                                            borderLeft: "5px solid #3b82f6"
+                                        }}
+                                    >
 
-                                    <CardBody className="p-3 p-md-4">
+                                        <CardBody className="p-3 p-md-4">
 
-                                        <p
-                                            className="fw-semibold mb-2"
-                                            style={{
-                                                color: "#475569",
-                                                fontSize: "14px"
-                                            }}
-                                        >
-                                            Company Reports
-                                        </p>
+                                            <p
+                                                className="fw-semibold mb-2"
+                                                style={{
+                                                    color: "#475569",
+                                                    fontSize: "14px"
+                                                }}
+                                            >
+                                                Company Reports
+                                            </p>
 
-                                        <h5
-                                            className="fw-bold mb-3"
-                                            style={{
-                                                color: "#1e3a8a",
-                                                fontSize: "17px",
-                                                lineHeight: "1.5"
-                                            }}
-                                        >
-                                            {company.name}
-                                        </h5>
+                                            <h5
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#1e3a8a",
+                                                    fontSize: "17px",
+                                                    lineHeight: "1.5"
+                                                }}
+                                            >
+                                                {company.name}
+                                            </h5>
 
-                                        <span
-                                            style={{
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                backgroundColor: "#dbeafe",
-                                                color: "#1d4ed8",
-                                                padding: "7px 12px",
-                                                borderRadius: "8px",
-                                                fontSize: "13px",
-                                                fontWeight: "500"
-                                            }}
-                                        >
-                                            View Finance Report →
-                                        </span>
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#dbeafe",
+                                                    color: "#1d4ed8",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                View Finance Report →
+                                            </span>
 
-                                    </CardBody>
+                                        </CardBody>
 
-                                </Card>
+                                    </Card>
 
-                            </Col>
-
-                        ))}
+                                ))}
+                            </div>
+                        </Col>
 
                         {/* ================= FINANCE CARD ================= */}
 
@@ -1367,7 +1750,7 @@ const ChartSection = () => {
                                 }}
                             >
 
-                                <CardBody className="p-3">
+                                <CardBody className="p-3 d-flex flex-column">
 
                                     {/* HEADER */}
 
@@ -1427,125 +1810,76 @@ const ChartSection = () => {
 
                                         <>
 
-                                            {/* TODAY CLOSING BALANCE */}
-
-                                            <div
-                                                style={{
-                                                    background: "rgba(255,255,255,0.15)",
-                                                    borderRadius: "10px",
-                                                    padding: "10px 14px",
-                                                    marginBottom: "12px",
-                                                }}
-                                            >
-
-                                                <div
-                                                    style={{
-                                                        fontSize: "11px",
-                                                        fontWeight: "700",
-                                                        opacity: 0.85,
-                                                    }}
-                                                >
-                                                    TCB
+                                            {/* Closing balance hero */}
+                                            <div style={{
+                                                background: "rgba(255,255,255,0.18)",
+                                                border: "1px solid rgba(255,255,255,0.22)",
+                                                borderRadius: 14,
+                                                padding: "15px 18px",
+                                                marginBottom: 14,
+                                            }}>
+                                                <div className="d-flex justify-content-between align-items-center flex-wrap" style={{ gap: 8 }}>
+                                                    <div>
+                                                        <div style={{ fontSize: 12, fontWeight: 600, opacity: 0.92 }}>Today's Closing Balance (TCB)</div>
+                                                        <div style={{ fontSize: "clamp(22px, 2.2vw, 30px)", fontWeight: 800, lineHeight: 1.3, color: "#fff" }}>
+                                                            {formatFinanceAmount(todayClosingBalance)}
+                                                        </div>
+                                                    </div>
+                                                    <span style={{ fontSize: 11, background: "rgba(255,255,255,0.2)", padding: "6px 10px", borderRadius: 999 }}>Current balance</span>
                                                 </div>
-
-                                                <div
-                                                    style={{
-                                                        fontSize: "21px",
-                                                        fontWeight: "800",
-                                                        color: "#ffffff",
-                                                    }}
-                                                >
-                                                    {formatFinanceAmount(todayClosingBalance)}
-                                                </div>
-
                                             </div>
 
-                                            {/* FINANCE VALUES - TWO COLUMNS */}
-
-                                            <Row className="g-3">
-
-                                                {/* LEFT COLUMN - TODAY */}
-
-                                                <Col xs={6}>
-
-                                                    {[
-                                                        ["TCT", todayCredit],
-                                                        ["TDT", todayDebit],
-                                                        ["DAC", todayAmountChange],
-
-                                                    ].map(([label, value]) => (
-
-                                                        <div
-                                                            key={label}
-                                                            className="d-flex justify-content-between align-items-center"
-                                                            style={{
-                                                                marginBottom: "10px",
-                                                                fontSize: "13px",
-                                                                fontWeight: "600",
-                                                                color: "#ffffff",
-                                                            }}
-                                                        >
-
-                                                            <span style={{ opacity: 0.85 }}>
-                                                                {label}
-                                                            </span>
-
-                                                            <span
-                                                                style={{
-                                                                    fontWeight: "700",
-                                                                    textAlign: "right",
-                                                                }}
-                                                            >
-                                                                {formatFinanceAmount(value)}
-                                                            </span>
-
+                                            {/* Separate today and monthly numbers for easier scanning */}
+                                            <Row className="g-3 flex-grow-1">
+                                                {[
+                                                    {
+                                                        title: "Today",
+                                                        items: [
+                                                            ["TCT", "Total Credit", todayCredit],
+                                                            ["TDT", "Total Debit", todayDebit],
+                                                            ["DAC", "Amount Change", todayAmountChange],
+                                                        ],
+                                                    },
+                                                    {
+                                                        title: "This Month",
+                                                        items: [
+                                                            ["MCT", "Monthly Credit", monthCredit],
+                                                            ["MDT", "Monthly Debit", monthDebit],
+                                                            ["MAC", "Amount Change", monthAmountChange],
+                                                        ],
+                                                    },
+                                                ].map(group => (
+                                                    <Col xs={12} sm={6} key={group.title}>
+                                                        <div className="h-100" style={{
+                                                            background: "rgba(14,55,139,0.13)",
+                                                            border: "1px solid rgba(255,255,255,0.2)",
+                                                            borderRadius: 14,
+                                                            padding: "12px",
+                                                        }}>
+                                                            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10, opacity: 0.98 }}>
+                                                                {group.title}
+                                                            </div>
+                                                            <div className="d-flex flex-column" style={{ gap: 8 }}>
+                                                                {group.items.map(([code, label, value]) => (
+                                                                    <div key={code} className="d-flex align-items-center justify-content-between" style={{
+                                                                        gap: 10,
+                                                                        padding: "8px 10px",
+                                                                        background: "rgba(255,255,255,0.11)",
+                                                                        borderRadius: 10,
+                                                                    }}>
+                                                                        <div style={{ minWidth: 0 }}>
+                                                                            <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.75 }}>{code}</div>
+                                                                            <div style={{ fontSize: 11, opacity: 0.95 }}>{label}</div>
+                                                                        </div>
+                                                                        <span style={{ fontSize: 13, fontWeight: 800, textAlign: "right", whiteSpace: "nowrap" }}>
+                                                                            {formatFinanceAmount(value)}
+                                                                        </span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
                                                         </div>
-
-                                                    ))}
-
-                                                </Col>
-
-                                                {/* RIGHT COLUMN - CURRENT MONTH */}
-
-                                                <Col xs={6}>
-
-                                                    {[
-                                                        ["MCT", monthCredit],
-                                                        ["MDT", monthDebit],
-                                                        ["MAC", monthAmountChange],
-
-                                                    ].map(([label, value]) => (
-
-                                                        <div
-                                                            key={label}
-                                                            className="d-flex justify-content-between align-items-center"
-                                                            style={{
-                                                                marginBottom: "10px",
-                                                                fontSize: "13px",
-                                                                fontWeight: "600",
-                                                                color: "#ffffff",
-                                                            }}
-                                                        >
-
-                                                            <span style={{ opacity: 0.85 }}>
-                                                                {label}
-                                                            </span>
-
-                                                            <span
-                                                                style={{
-                                                                    fontWeight: "700",
-                                                                    textAlign: "right",
-                                                                }}
-                                                            >
-                                                                {formatFinanceAmount(value)}
-                                                            </span>
-
-                                                        </div>
-
-                                                    ))}
-
-                                                </Col>
-
+                                                    </Col>
+                                                ))}
                                             </Row>
 
                                         </>

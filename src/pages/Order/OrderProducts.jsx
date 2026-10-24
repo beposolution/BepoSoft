@@ -1720,6 +1720,11 @@ const FormLayouts = () => {
 
     const isShipped = formik.values.status === "Shipped";
 
+    const isOrderFieldsDisabled = [
+        "Invoice Rejected",
+        "Shipped"
+    ].includes(formik.values.status);
+
     const canEditOrder = [
         "Accounts / Accounting",
         "CEO",
@@ -2391,7 +2396,8 @@ const FormLayouts = () => {
                                     <Card className="bordered-card">
                                         <CardBody>
                                             {/* {canEditOrder && ( */}
-                                            {canModifyOrderTable && (
+                                            {/* {canModifyOrderTable && ( */}
+                                            {canModifyOrderTable && !isOrderFieldsDisabled && (
                                                 <div className="text-end mb-3">
                                                     <Button
                                                         color="primary"
@@ -2537,7 +2543,8 @@ const FormLayouts = () => {
                                                             {showRackDetails && <th>Rack</th>}
                                                             {/* {canEditOrder && <th>Remove</th>} */}
                                                             {/* {canModifyOrder && <th>Remove</th>} */}
-                                                            {canModifyOrderTable && <th>Remove</th>}
+                                                            {/* {canModifyOrderTable && <th>Remove</th>} */}
+                                                            {canModifyOrderTable && !isOrderFieldsDisabled && <th>Remove</th>}
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -2567,7 +2574,8 @@ const FormLayouts = () => {
                                                                     <Input
                                                                         type="number"
                                                                         value={item.quantity}
-                                                                        disabled={!canEditOrder}
+                                                                        // disabled={!canEditOrder}
+                                                                        disabled={isOrderFieldsDisabled || !canEditOrder}
                                                                         onChange={(e) => handleItemChange(index, 'quantity', Number(e.target.value))}
                                                                         style={{ width: '80px' }}
                                                                     />
@@ -2577,7 +2585,8 @@ const FormLayouts = () => {
                                                                         type="number"
                                                                         step="0.01"
                                                                         value={item.rate}
-                                                                        disabled={!canEditOrder}
+                                                                        // disabled={!canEditOrder}
+                                                                        disabled={isOrderFieldsDisabled || !canEditOrder}
                                                                         onChange={(e) => handleItemChange(index, 'rate', e.target.value)}
                                                                         style={{ width: '80px' }}
                                                                     />
@@ -2587,7 +2596,8 @@ const FormLayouts = () => {
                                                                         type="number"
                                                                         step="0.01"
                                                                         value={item.discount}
-                                                                        disabled={!canEditOrder}
+                                                                        // disabled={!canEditOrder}
+                                                                        disabled={isOrderFieldsDisabled || !canEditOrder}
                                                                         onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
                                                                         style={{ width: '80px' }}
                                                                     />
@@ -2617,7 +2627,8 @@ const FormLayouts = () => {
                                                                 <td>
                                                                     {/* {canEditOrder && ( */}
                                                                     {/* {canModifyOrder && ( */}
-                                                                    {canModifyOrderTable && (
+                                                                    {/* {canModifyOrderTable && ( */}
+                                                                    {canModifyOrderTable && !isOrderFieldsDisabled && (
                                                                         <Button
                                                                             color="danger"
                                                                             onClick={() => handleRemoveItem(item.id)}

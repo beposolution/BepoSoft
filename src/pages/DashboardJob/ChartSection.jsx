@@ -378,6 +378,596 @@ const AttendanceCalendar = ({ token }) => {
 };
 
 
+
+const MyGRVCard = ({ token }) => {
+    const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+
+        return `${year}-${month}-${day}`;
+    };
+
+    const getCurrentMonthRange = () => {
+        const today = new Date();
+
+        return {
+            start: formatDate(
+                new Date(today.getFullYear(), today.getMonth(), 1)
+            ),
+            end: formatDate(
+                new Date(today.getFullYear(), today.getMonth() + 1, 0)
+            ),
+        };
+    };
+
+    const [dateRange, setDateRange] = useState(getCurrentMonthRange);
+    const [draftRange, setDraftRange] = useState(getCurrentMonthRange);
+    const [showCalendar, setShowCalendar] = useState(false);
+
+    const [grvData, setGrvData] = useState({
+        bill: 0,
+        value: 0,
+        actualSales: 0,
+    });
+
+    const [loadingGRV, setLoadingGRV] = useState(false);
+    const [grvError, setGrvError] = useState("");
+
+    useEffect(() => {
+        if (!token) return;
+
+        const controller = new AbortController();
+
+        const fetchMyGRV = async () => {
+            setLoadingGRV(true);
+            setGrvError("");
+
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}my/grv/data/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        params: {
+                            start_date: dateRange.start,
+                            end_date: dateRange.end,
+                        },
+                        signal: controller.signal,
+                    }
+                );
+
+                const results = response.data?.results || {};
+
+                const orderSummary = results.order_summary || {};
+                const grvSummary = results.summary || {};
+
+
+                const bill = Number(
+                    grvSummary.total_grv_count || 0
+                );
+
+                const grvAmount = Number(
+                    grvSummary.total_grv_amount || 0
+                );
+
+                const invoiceAmount = Number(
+                    orderSummary.total_order_amount || 0
+                );
+
+                setGrvData({
+                    bill: bill,
+                    value: grvAmount,
+                    actualSales: invoiceAmount - grvAmount,
+                });
+
+            } catch (error) {
+                if (
+                    error.code !== "ERR_CANCELED" &&
+                    !controller.signal.aborted
+                ) {
+                    setGrvError("Unable to load GRV data");
+                    setGrvData({
+                        bill: 0,
+                        value: 0,
+                        actualSales: 0,
+                    });
+                }
+            } finally {
+                if (!controller.signal.aborted) {
+                    setLoadingGRV(false);
+                }
+            }
+        };
+
+        fetchMyGRV();
+
+        return () => controller.abort();
+    }, [token, dateRange.start, dateRange.end]);
+
+    const formatAmount = (value) => {
+        const amount = Number(value) || 0;
+        const absolute = Math.abs(amount);
+        const sign = amount < 0 ? "-" : "";
+
+        if (absolute >= 10000000) {
+            return `${sign}${(absolute / 10000000).toFixed(2)} Cr`;
+        }
+
+        if (absolute >= 100000) {
+            return `${sign}${(absolute / 100000).toFixed(2)} L`;
+        }
+
+        if (absolute >= 1000) {
+            return `${sign}${(absolute / 1000).toFixed(2)} K`;
+        }
+
+        return `${sign}${absolute.toFixed(2)}`;
+    };
+
+    const applyDateFilter = () => {
+        if (
+            !draftRange.start ||
+            !draftRange.end ||
+            draftRange.start > draftRange.end
+        ) {
+            setGrvError("Please select a valid date range");
+            return;
+        }
+
+        setDateRange({ ...draftRange });
+        setShowCalendar(false);
+    };
+
+    const resetToCurrentMonth = () => {
+        const range = getCurrentMonthRange();
+        setDraftRange(range);
+        setDateRange(range);
+        setShowCalendar(false);
+    };
+
+    const dataRow = (label, value) => (
+        <div
+            style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "rgba(255,255,255,0.13)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                borderRadius: "8px",
+                padding: "5px 9px",
+                minHeight: "25px",
+                gap: "5px",
+            }}
+        >
+            <span
+                style={{
+                    fontSize: "10px",
+                    color: "#ffffff",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                }}
+            >
+                {label}
+            </span>
+
+            <strong
+                style={{
+                    fontSize: "12px",
+                    color: "#ffffff",
+                    whiteSpace: "nowrap",
+                }}
+            >
+                {loadingGRV ? "..." : value}
+            </strong>
+        </div>
+    );
+
+
+
+    return (
+        <Card
+            className="border-0 shadow-sm h-100"
+            style={{
+                borderRadius: "16px",
+                background: "linear-gradient(135deg, #55adff 0%, #2878f7 100%)",
+                overflow: "visible",
+                color: "#ffffff",
+            }}
+        >
+            <CardBody
+                style={{
+                    padding: "18px",
+                    display: "flex",
+                    flexDirection: "column",
+                    height: "100%",
+                    gap: "14px",
+                }}
+            >
+                {/* HEADER */}
+                <div className="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5
+                            className="mb-1"
+                            style={{
+                                fontSize: "18px",
+                                fontWeight: "800",
+                                color: "#ffffff",
+                            }}
+                        >
+                            My GRV
+                        </h5>
+
+                        <div
+                            style={{
+                                fontSize: "12px",
+                                color: "#ffffff",
+                                opacity: 0.9,
+                            }}
+                        >
+                            GRV & Sales Summary
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setDraftRange({ ...dateRange });
+                            setShowCalendar(!showCalendar);
+                        }}
+                        title="Select date range"
+                        aria-label="Select date range"
+                        style={{
+                            width: "38px",
+                            height: "38px",
+                            borderRadius: "10px",
+                            border: "1px solid rgba(255,255,255,0.5)",
+                            background: "rgba(255,255,255,0.2)",
+                            color: "#ffffff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                        }}
+                    >
+                        <svg
+                            width="21"
+                            height="21"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <rect x="3" y="5" width="18" height="16" rx="2" />
+                            <path d="M16 3v4M8 3v4M3 10h18" />
+                            <path d="m9 16 2 2 4-4" />
+                        </svg>
+                    </button>
+                </div>
+
+                {/* SELECTED PERIOD */}
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "7px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        color: "#ffffff",
+                        background: "rgba(255,255,255,0.15)",
+                        borderRadius: "8px",
+                        padding: "8px 10px",
+                    }}
+                >
+                    <span>Period:</span>
+                    <span>
+                        {new Date(dateRange.start + "T00:00:00")
+                            .toLocaleDateString("en-IN", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                            })}
+                        {" - "}
+                        {new Date(dateRange.end + "T00:00:00")
+                            .toLocaleDateString("en-IN", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                            })}
+                    </span>
+                </div>
+
+                {/* DATE FILTER */}
+                {showCalendar && (
+                    <div
+                        style={{
+                            background: "#ffffff",
+                            color: "#334155",
+                            borderRadius: "12px",
+                            padding: "14px",
+                            boxShadow: "0 4px 14px rgba(0,0,0,0.12)",
+                        }}
+                    >
+                        <div className="row g-2">
+                            <div className="col-6">
+                                <label
+                                    style={{
+                                        fontSize: "12px",
+                                        fontWeight: "600",
+                                        marginBottom: "5px",
+                                    }}
+                                >
+                                    From Date
+                                </label>
+
+                                <input
+                                    type="date"
+                                    className="form-control form-control-sm"
+                                    style={{ minWidth: 0 }}
+                                    value={draftRange.start}
+                                    onChange={(e) =>
+                                        setDraftRange({
+                                            ...draftRange,
+                                            start: e.target.value,
+                                        })
+                                    }
+                                />
+                            </div>
+
+                            <div className="col-6">
+                                <label
+                                    style={{
+                                        fontSize: "12px",
+                                        fontWeight: "600",
+                                        marginBottom: "5px",
+                                    }}
+                                >
+                                    To Date
+                                </label>
+
+                                <input
+                                    type="date"
+                                    className="form-control form-control-sm"
+                                    style={{ minWidth: 0 }}
+                                    value={draftRange.end}
+                                    onChange={(e) =>
+                                        setDraftRange({
+                                            ...draftRange,
+                                            end: e.target.value,
+                                        })
+                                    }
+                                />
+                            </div>
+                        </div>
+
+                        <div className="d-flex gap-2 mt-3">
+                            <button
+                                type="button"
+                                className="btn btn-primary btn-sm"
+                                onClick={applyDateFilter}
+                            >
+                                Apply Filter
+                            </button>
+
+                            <button
+                                type="button"
+                                className="btn btn-outline-primary btn-sm"
+                                onClick={resetToCurrentMonth}
+                            >
+                                This Month
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* GRV COUNT & VALUE */}
+                <div
+                    style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                        gap: "12px",
+                    }}
+                >
+                    {/* GRV COUNT */}
+                    <div
+                        style={{
+                            background: "#ffffff",
+                            borderRadius: "12px",
+                            padding: "15px",
+                            boxShadow: "0 3px 8px rgba(0,0,0,0.08)",
+                        }}
+                    >
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "7px",
+                                marginBottom: "10px",
+                                color: "#64748b",
+                                fontSize: "13px",
+                                fontWeight: "600",
+                            }}
+                        >
+                            <i
+                                className="ri-file-list-3-line"
+                                style={{
+                                    color: "#2563eb",
+                                    fontSize: "17px",
+                                }}
+                            />
+                            Bill
+                        </div>
+
+                        <div
+                            style={{
+                                color: "#1e40af",
+                                fontSize: "30px",
+                                fontWeight: "800",
+                                lineHeight: "1.2",
+                            }}
+                        >
+                            {loadingGRV ? "..." : grvData.bill}
+                        </div>
+
+                        <div
+                            style={{
+                                fontSize: "11px",
+                                color: "#64748b",
+                                marginTop: "7px",
+                            }}
+                        >
+                            Total GRV Count
+                        </div>
+                    </div>
+
+                    {/* GRV AMOUNT */}
+                    <div
+                        style={{
+                            background: "#ffffff",
+                            borderRadius: "12px",
+                            padding: "15px",
+                            boxShadow: "0 3px 8px rgba(0,0,0,0.08)",
+                        }}
+                    >
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "7px",
+                                marginBottom: "10px",
+                                color: "#64748b",
+                                fontSize: "13px",
+                                fontWeight: "600",
+                            }}
+                        >
+                            <i
+                                className="ri-money-rupee-circle-line"
+                                style={{
+                                    color: "#2563eb",
+                                    fontSize: "17px",
+                                }}
+                            />
+                            Value
+                        </div>
+
+                        <div
+                            style={{
+                                color: "#1e40af",
+                                fontSize: "27px",
+                                fontWeight: "800",
+                                lineHeight: "1.2",
+                                overflowWrap: "anywhere",
+                            }}
+                        >
+                            {loadingGRV
+                                ? "..."
+                                : formatAmount(grvData.value)}
+                        </div>
+
+                        <div
+                            style={{
+                                fontSize: "11px",
+                                color: "#64748b",
+                                marginTop: "7px",
+                            }}
+                        >
+                            Total GRV Amount
+                        </div>
+                    </div>
+                </div>
+
+                {/* ACTUAL SALES - HIGHLIGHT */}
+                <div
+                    style={{
+                        background: "#ffffff",
+                        borderRadius: "12px",
+                        padding: "18px",
+                        boxShadow: "0 3px 8px rgba(0,0,0,0.08)",
+                        borderLeft: "5px solid #16a34a",
+                    }}
+                >
+                    <div
+                        style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: "10px",
+                            flexWrap: "wrap",
+                        }}
+                    >
+                        <div>
+                            <div
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "7px",
+                                    color: "#334155",
+                                    fontSize: "14px",
+                                    fontWeight: "700",
+                                }}
+                            >
+                                <i
+                                    className="ri-line-chart-line"
+                                    style={{
+                                        color: "#16a34a",
+                                        fontSize: "19px",
+                                    }}
+                                />
+                                Actual Sales
+                            </div>
+
+                            <div
+                                style={{
+                                    color: "#64748b",
+                                    fontSize: "11px",
+                                    marginTop: "5px",
+                                }}
+                            >
+                                Invoice Amount - GRV Amount
+                            </div>
+                        </div>
+
+                        <div
+                            style={{
+                                fontSize: "clamp(22px, 2vw, 30px)",
+                                fontWeight: "800",
+                                color: "#15803d",
+                                lineHeight: "1.2",
+                                overflowWrap: "anywhere",
+                            }}
+                        >
+                            {loadingGRV
+                                ? "..."
+                                : formatAmount(grvData.actualSales)}
+                        </div>
+                    </div>
+                </div>
+
+                {/* ERROR */}
+                {grvError && (
+                    <div
+                        style={{
+                            background: "#fee2e2",
+                            color: "#b91c1c",
+                            borderRadius: "8px",
+                            padding: "8px 10px",
+                            fontSize: "12px",
+                        }}
+                    >
+                        {grvError}
+                    </div>
+                )}
+            </CardBody>
+        </Card>
+    );
+};
+
+
+
 const ChartSection = () => {
     const [chartsData, setChartsData] = useState();
     const [loading, setLoading] = useState(true);
@@ -1068,13 +1658,21 @@ const ChartSection = () => {
                 {/* Other roles retain their attendance calendar. For ADMIN,
                     Accounts and COO it is placed in the same grid as the
                     Company Reports and Finance cards below. */}
-                {!(role === "ADMIN" || role === "Accounts / Accounting" || role === "COO") && (
-                    <Row className="g-3 mb-3">
+                <Row className="g-3 mb-3">
+                    {!(role === "ADMIN" || role === "Accounts / Accounting" || role === "COO") && (
                         <Col xs={12} sm={6} md={6} lg={4} xl={3}>
                             <AttendanceCalendar token={token} />
                         </Col>
-                    </Row>
-                )}
+                    )}
+
+
+                    {(role === "BDM" || role === "BDO") && (
+                        <Col xs={12} sm={6} md={6} lg={3} xl={3}>
+                            <MyGRVCard token={token} />
+                        </Col>
+                    )}
+
+                </Row>
 
 
                 {/* warehouse & Warehouse Admin dashboard */}

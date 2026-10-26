@@ -319,9 +319,8 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === 'HR' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'Marketing' || role === 'CEO' || role === 'CSO' || role === 'SD' || role === 'COO' ? (
 
-
+            {role === 'ADMIN' || role === 'HR' || role === 'OPERATIONS' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'Marketing' || role === 'CEO' || role === 'CSO' || role === 'SD' || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <RiOrderPlayLine size={20} style={{ marginRight: '8px' }} />
@@ -336,7 +335,7 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/Orders/">{props.t("View Order List")}</Link>
                   </li>
-                  {role !== 'CSO' && role !== 'Marketing' && (
+                  {role !== 'CSO' && role !== 'Marketing' && role !== 'OPERATIONS' && (
                     <>
                       <li>
                         <Link to="/orders/invoicecreated">{props.t("Waiting for Approval")}</Link>
@@ -397,16 +396,18 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === 'HR' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'BDO' || role === "BDM" || role === 'CEO' || role === 'CSO' || role === 'SD' || role === 'COO' ? (
+            {role === 'ADMIN' || role === 'HR' || role === 'OPERATIONS' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'BDO' || role === "BDM" || role === 'CEO' || role === 'CSO' || role === 'SD' || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUsers size={20} style={{ marginRight: '8px' }} />
                   <span>{props.t("Proforma Invoice")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/create/perfoma/invoice/">{props.t("Create Proforma invoice")}</Link>
-                  </li>
+                  {role !== 'OPERATIONS' && (
+                    <li>
+                      <Link to="/create/perfoma/invoice/">{props.t("Create Proforma invoice")}</Link>
+                    </li>
+                  )}
                   <li>
                     <Link to="/perfoma/invoices/">{props.t("View Proforma invoices")}</Link>
                   </li>
@@ -421,34 +422,46 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === 'HR' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
+
+            {role === 'ADMIN' || role === 'HR' || role === 'OPERATIONS' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <AiFillProduct size={17} style={{ marginRight: '6px' }} />
                   <span>{props.t("Purchase")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/add/products/">{props.t("Purchase")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/add/products/bulk/">{props.t("Bulk Order Creation")}</Link>
-                  </li>
+                  {role !== 'OPERATIONS' && (
+                    <>
+                      <li>
+                        <Link to="/add/products/">{props.t("Purchase")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/add/products/bulk/">{props.t("Bulk Order Creation")}</Link>
+                      </li>
+                    </>
+                  )}
+
                   <li>
                     <Link to="/product/list/">{props.t("Purchase List")}</Link>
                   </li>
-                  <li>
-                    <Link to="/product/add-excel/">{props.t("Excel upload products")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/main/category/">{props.t("Main Category")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/product/category/">{props.t("Product Category Details")}</Link>
-                  </li>
+
+                  {role !== 'OPERATIONS' && (
+                    <>
+                      <li>
+                        <Link to="/product/add-excel/">{props.t("Excel upload products")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/main/category/">{props.t("Main Category")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/product/category/">{props.t("Product Category Details")}</Link>
+                      </li>
+                    </>
+                  )}
                 </ul>
               </li>
             ) : null}
+
 
             {role === 'Warehouse Admin' || role === 'warehouse' ? (
               <li>
@@ -470,25 +483,27 @@ const SidebarContent = (props) => {
             ) : null}
 
 
-            <li>
-              <Link to="/#" className="has-arrow">
-                <AiFillProduct size={17} style={{ marginRight: '6px' }} />
-                <span>{props.t("Local Purchase")}</span>
-              </Link>
-              <ul className="sub-menu" aria-expanded="false">
-                <li>
-                  <Link to="/lpo/create">{props.t("Create Purchase")}</Link>
-                </li>
-                <li>
-                  <Link to="/lpo">{props.t("My Purchase List")}</Link>
-                </li>
-                {role === 'ADMIN' || role === 'CMO' || role === 'HR' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
+            {role !== 'OPERATIONS' ? (
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <AiFillProduct size={17} style={{ marginRight: '6px' }} />
+                  <span>{props.t("Local Purchase")}</span>
+                </Link>
+                <ul className="sub-menu" aria-expanded="false">
                   <li>
-                    <Link to="/lpo/all">{props.t("All Purchase List")}</Link>
+                    <Link to="/lpo/create">{props.t("Create Purchase")}</Link>
                   </li>
-                ) : null}
-              </ul>
-            </li>
+                  <li>
+                    <Link to="/lpo">{props.t("My Purchase List")}</Link>
+                  </li>
+                  {role === 'ADMIN' || role === 'CMO' || role === 'HR' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
+                    <li>
+                      <Link to="/lpo/all">{props.t("All Purchase List")}</Link>
+                    </li>
+                  ) : null}
+                </ul>
+              </li>
+            ) : null}
 
             {role === 'Marketing' ? (
               <li>
@@ -506,7 +521,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === 'HR' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'Warehouse Admin' || role === 'warehouse' || role === 'CEO' || role === 'COO' ? (
+            {role === 'ADMIN' || role === 'HR' || role === 'OPERATIONS' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'Warehouse Admin' || role === 'warehouse' || role === 'CEO' || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <MdDetails size={20} style={{ marginRight: '8px' }} />
@@ -612,7 +627,7 @@ const SidebarContent = (props) => {
               </>
             )}
 
-            {role === 'ADMIN' || role === 'HR' || role === 'BDO' || role === 'BDM' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'Warehouse Admin' || role === 'warehouse' || role === 'CEO' || role === 'CSO' || role === 'COO' ? (
+            {role === 'ADMIN' || role === 'HR' || role === 'OPERATIONS' || role === 'BDO' || role === 'BDM' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'Warehouse Admin' || role === 'warehouse' || role === 'CEO' || role === 'CSO' || role === 'COO' ? (
 
               <li>
                 <Link to="/#" className="has-arrow">
@@ -620,7 +635,7 @@ const SidebarContent = (props) => {
                   <span>{props.t("GRV")}</span>
                 </Link>
                 <ul className="sub-menu" aria-expanded="false">
-                  {role !== 'BDO' && role !== 'BDM' ? (
+                  {role !== 'BDO' && role !== 'BDM' && role !== 'OPERATIONS' ? (
                     <li>
                       <Link to="/beposoft/new/grv/">
                         {props.t("New GRV")}
@@ -811,7 +826,7 @@ const SidebarContent = (props) => {
 ) : null} */}
 
 
-            {['ADMIN', 'Accounts / Accounting', 'IT', 'CEO', 'CSO', 'COO', 'CMO', 'HR'].includes(role) && (
+            {['ADMIN', 'Accounts / Accounting', 'IT', 'CEO', 'CSO', 'COO', 'CMO', 'HR', 'OPERATIONS'].includes(role) && (
               <li>
                 <Link to="/#" className="has-arrow">
                   <TbReportSearch size={20} style={{ marginRight: '8px' }} />
@@ -1321,47 +1336,50 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            <li>
-              <Link to="/#" className="has-arrow">
-                <FaUserTie size={17} style={{ marginRight: "6px" }} />
-                <span>{props.t("Leave")}</span>
-              </Link>
+            {role !== 'OPERATIONS' ? (
 
-              <ul className="sub-menu" aria-expanded="false">
-                {role !== 'COO' && role !== 'CEO' && role !== 'CMO' && (
-                  <>
+              <li>
+                <Link to="/#" className="has-arrow">
+                  <FaUserTie size={17} style={{ marginRight: "6px" }} />
+                  <span>{props.t("Leave")}</span>
+                </Link>
+
+                <ul className="sub-menu" aria-expanded="false">
+                  {role !== 'COO' && role !== 'CEO' && role !== 'CMO' && (
+                    <>
+                      <li>
+                        <Link to="/staff/leave/form/">
+                          {props.t("Apply Leave")}
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/staff/leave/list/">
+                          {props.t("My Leave Applications")}
+                        </Link>
+                      </li>
+                    </>
+                  )}
+
+                  {isManager && role !== 'HR' && role !== 'CSO' && (
                     <li>
-                      <Link to="/staff/leave/form/">
-                        {props.t("Apply Leave")}
+                      <Link to="/manager/leave/applications/">
+                        {props.t("Leave Applications For Approval")}
                       </Link>
                     </li>
+                  )}
+
+                  {role === 'CEO' || role === 'HR' || role === 'COO' || role === 'CMO' ? (
                     <li>
-                      <Link to="/staff/leave/list/">
-                        {props.t("My Leave Applications")}
+                      <Link to="/hr/leave/applications/">
+                        {props.t("Staffs Leave Applications")}
                       </Link>
                     </li>
-                  </>
-                )}
-
-                {isManager && role !== 'HR' && role !== 'CSO' && (
-                  <li>
-                    <Link to="/manager/leave/applications/">
-                      {props.t("Leave Applications For Approval")}
-                    </Link>
-                  </li>
-                )}
-
-                {role === 'CEO' || role === 'HR' || role === 'COO' || role === 'CMO' ? (
-                  <li>
-                    <Link to="/hr/leave/applications/">
-                      {props.t("Staffs Leave Applications")}
-                    </Link>
-                  </li>
-                ) : null}
+                  ) : null}
 
 
-              </ul>
-            </li>
+                </ul>
+              </li>
+            ) : null}
 
             {role === 'ADMIN' || role === 'HR' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'COO' ? (
               <li>

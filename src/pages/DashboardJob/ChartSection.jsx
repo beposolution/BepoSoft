@@ -2246,6 +2246,203 @@ const ChartSection = () => {
                     </>
                 )}
 
+                {(role === "OPERATIONS") && (
+                    <Row>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/dashboard/todaysbill-details")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#f8fbff",
+                                    borderLeft: "5px solid #3b82f6"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Today's Bill
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#1e3a8a",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {allTodayOrdersCount}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#dbeafe",
+                                            color: "#1d4ed8",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today's Orders
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/orders/invoicecreated")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#f8fbff",
+                                    borderLeft: "5px solid #3b82f6"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Waiting For Approval
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#1e3a8a",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {waitingForApprovalAll}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#dbeafe",
+                                            color: "#1d4ed8",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        Today:&nbsp;
+                                        <strong style={{ fontWeight: "700" }}>
+                                            {waitingForApprovalToday}
+                                        </strong>
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/daily/good/movment/")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#fff7f7",
+                                    borderLeft: "5px solid #ef4444"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        Daily Goods Movement
+                                    </p>
+
+                                    <h2>DGM</h2>
+                                    <span>Check daily goods movement</span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+
+                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                            <Card
+                                onClick={() => navigate("/beposoft/grv/view/")}
+                                className="h-100 border-0 shadow-sm"
+                                style={{
+                                    cursor: "pointer",
+                                    borderRadius: "16px",
+                                    minHeight: "155px",
+                                    background: "#fffaf3",
+                                    borderLeft: "5px solid #f59e0b"
+                                }}
+                            >
+                                <CardBody className="p-3 p-md-4">
+
+                                    <p
+                                        className="fw-semibold mb-2"
+                                        style={{
+                                            color: "#475569",
+                                            fontSize: "14px"
+                                        }}
+                                    >
+                                        GRV Waiting for Confirmation
+                                    </p>
+
+                                    <h2
+                                        className="fw-bold mb-3"
+                                        style={{
+                                            color: "#92400e",
+                                            fontSize: "30px"
+                                        }}
+                                    >
+                                        {(grvWaitingForConfirmation?.order || 0)}
+                                    </h2>
+
+                                    <span
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            backgroundColor: "#fef3c7",
+                                            color: "#b45309",
+                                            padding: "7px 12px",
+                                            borderRadius: "8px",
+                                            fontSize: "13px",
+                                            fontWeight: "500"
+                                        }}
+                                    >
+                                        View Pending GRV
+                                    </span>
+
+                                </CardBody>
+                            </Card>
+                        </Col>
+                    </Row>
+                )}
+
                 {/* ADMIN & Accounts / Accounting dashboard */}
 
                 {(role === "ADMIN" || role === "Accounts / Accounting" || role === "COO") && (
@@ -3260,7 +3457,7 @@ const ChartSection = () => {
 
                         <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
                             <Card
-                                onClick={() => navigate("/dashboard/grvwaitingforconfirmation-details")}
+                                onClick={() => navigate("/beposoft/grv/view/")}
                                 className="h-100 border-0 shadow-sm"
                                 style={{
                                     cursor: "pointer",

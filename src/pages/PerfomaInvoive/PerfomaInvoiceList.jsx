@@ -82,7 +82,8 @@ const BasicTable = () => {
         "CSO",
         "SD",
         "IT",
-        "Accounts / Accounting"
+        "Accounts / Accounting",
+        "OPERATIONS"
     ];
 
     const getInvoiceBaseUrl = useCallback(() => {

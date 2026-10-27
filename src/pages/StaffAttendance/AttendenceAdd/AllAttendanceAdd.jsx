@@ -22,6 +22,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../../services/auditService";
 
 const AllAttendanceAdd = () => {
     document.title = "Attendance | Beposoft";
@@ -62,6 +63,7 @@ const AllAttendanceAdd = () => {
 
     const [editModal, setEditModal] = useState(false);
     const [selectedAttendanceId, setSelectedAttendanceId] = useState(null);
+    const [originalAuditData, setOriginalAuditData] = useState(null);
 
     const [editInitialValues, setEditInitialValues] = useState({
         staff: "",
@@ -279,6 +281,35 @@ const AllAttendanceAdd = () => {
         }));
     }, [staffs]);
 
+
+    const getStaffNameById = (staffId) => {
+        const staff = staffs.find(
+            item => String(item.id) === String(staffId)
+        );
+
+        return staff?.name || "";
+    };
+
+    const getTeamNameById = (teamId) => {
+        const team = teams.find(
+            item => String(item.id ?? item.team_id) === String(teamId)
+        );
+
+        return team?.team_name ?? team?.name ?? "";
+    };
+
+    const getAttendanceAuditData = (data, staffName = "", teamName = "") => {
+        return {
+            staff: staffName || getStaffNameById(data.staff),
+            team: teamName || getTeamNameById(selectedTeam),
+            attendance_date: data.attendance_date || "",
+            attendance_time: data.attendance_time || null,
+            status: data.status || "",
+            approval_status: data.approval_status || "pending",
+        };
+    };
+
+
     const presentCount = attendanceData.filter(
         item => item.status === "present"
     ).length;
@@ -307,7 +338,6 @@ const AllAttendanceAdd = () => {
                 then: schema => schema.required("Select Time"),
                 otherwise: schema => schema.notRequired(),
             }),
-            approval_status: Yup.string().required("Select Approval Status"),
         }),
 
         onSubmit: async (values, { resetForm }) => {
@@ -325,16 +355,49 @@ const AllAttendanceAdd = () => {
                     status: values.status,
                 };
 
-                await axios.post(`${baseUrl}staff/attendance/`, payload, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
+                const response = await axios.post(
+                    `${baseUrl}staff/attendance/`,
+                    payload,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
 
-                toast.success("Attendance added successfully");
-                resetForm();
-                setAddModal(false);
-                fetchAttendance();
+                // Audit log after successful attendance creation
+                if (response.status === 200 || response.status === 201) {
+
+                    const afterSnapshot = getAttendanceAuditData(
+                        {
+                            ...payload,
+                            approval_status:
+                                response?.data?.data?.approval_status ??
+                                response?.data?.approval_status ??
+                                "pending",
+                        },
+                        getStaffNameById(payload.staff),
+                        getTeamNameById(selectedTeam)
+                    );
+
+                    try {
+                        await createAuditLog({
+                            action: "attendance_created_website",
+                            beforeData: {},
+                            afterData: afterSnapshot,
+                        });
+                    } catch (auditError) {
+                        console.error(
+                            "Attendance created, but audit logging failed:",
+                            auditError
+                        );
+                    }
+
+                    toast.success("Attendance added successfully");
+                    resetForm();
+                    setAddModal(false);
+                    await fetchAttendance();
+                }
             } catch (error) {
                 const message =
                     error?.response?.data?.message ||
@@ -358,7 +421,21 @@ const AllAttendanceAdd = () => {
             const teamId = item.team_id;
             setSelectedTeam(teamId);
 
+
             await fetchStaffs(teamId);
+
+            // Capture original attendance values before editing
+
+            const beforeSnapshot = {
+                staff: item.staff_name || "",
+                team: item.team_name || getTeamNameById(teamId),
+                attendance_date: item.attendance_date || "",
+                attendance_time: item.attendance_time || null,
+                status: item.status || "",
+                approval_status: item.approval_status || "pending",
+            };
+
+            setOriginalAuditData(beforeSnapshot);
 
             setEditInitialValues({
                 staff: String(item.staff),
@@ -369,6 +446,7 @@ const AllAttendanceAdd = () => {
             });
 
             setEditModal(true);
+
         } catch {
             toast.error("Failed to load attendance");
         }
@@ -390,21 +468,23 @@ const AllAttendanceAdd = () => {
             status: Yup.string().required("Select Status"),
         }),
 
+
         onSubmit: async values => {
             try {
-                await axios.put(
+                const payload = {
+                    staff: Number(values.staff),
+                    attendance_date: values.attendance_date,
+                    attendance_time:
+                        values.status === "absent"
+                            ? null
+                            : values.attendance_time,
+                    status: values.status,
+                    approval_status: values.approval_status,
+                };
+
+                const response = await axios.put(
                     `${baseUrl}staff/attendance/edit/${selectedAttendanceId}/`,
-                    {
-                        staff: Number(values.staff),
-                        attendance_date: values.attendance_date,
-                        // attendance_time: values.attendance_time,
-                        attendance_time:
-                            values.status === "absent"
-                                ? null
-                                : values.attendance_time,
-                        status: values.status,
-                        approval_status: values.approval_status,
-                    },
+                    payload,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -412,11 +492,39 @@ const AllAttendanceAdd = () => {
                     }
                 );
 
-                toast.success("Attendance updated");
-                setEditModal(false);
-                fetchAttendance();
+                if (response.status === 200 || response.status === 201) {
+
+                    const afterSnapshot = getAttendanceAuditData(
+                        payload,
+                        getStaffNameById(payload.staff),
+                        getTeamNameById(selectedTeam)
+                    );
+
+                    try {
+                        await createAuditLog({
+                            action: "attendance_updated_website",
+                            beforeData: originalAuditData ?? {},
+                            afterData: afterSnapshot,
+                        });
+                    } catch (auditError) {
+                        console.error(
+                            "Attendance updated, but audit logging failed:",
+                            auditError
+                        );
+                    }
+
+                    toast.success("Attendance updated");
+
+                    setEditModal(false);
+                    setOriginalAuditData(null);
+                    setSelectedAttendanceId(null);
+
+                    await fetchAttendance();
+                }
             } catch (error) {
-                toast.error(error?.response?.data?.message || "Update failed");
+                toast.error(
+                    error?.response?.data?.message || "Update failed"
+                );
             }
         },
     });
@@ -1328,11 +1436,21 @@ const AllAttendanceAdd = () => {
 
                     <Modal
                         isOpen={editModal}
-                        toggle={() => setEditModal(false)}
+                        toggle={() => {
+                            setEditModal(false);
+                            setOriginalAuditData(null);
+                            setSelectedAttendanceId(null);
+                        }}
                         centered
                         style={{ zIndex: 1055 }}
                     >
-                        <ModalHeader toggle={() => setEditModal(false)}>
+                        <ModalHeader
+                            toggle={() => {
+                                setEditModal(false);
+                                setOriginalAuditData(null);
+                                setSelectedAttendanceId(null);
+                            }}
+                        >
                             Edit Attendance
                         </ModalHeader>
 
@@ -1400,7 +1518,7 @@ const AllAttendanceAdd = () => {
 
                                 <Label className="mt-3">
                                     Reporting Time
-                                    {formik.values.status !== "absent" && (
+                                    {editFormik.values.status !== "absent" && (
                                         <span className="text-danger"> *</span>
                                     )}
                                 </Label>
@@ -1495,7 +1613,15 @@ const AllAttendanceAdd = () => {
                             </ModalBody>
 
                             <ModalFooter>
-                                <Button color="secondary" onClick={() => setEditModal(false)}>
+                                <Button
+                                    color="secondary"
+                                    type="button"
+                                    onClick={() => {
+                                        setEditModal(false);
+                                        setOriginalAuditData(null);
+                                        setSelectedAttendanceId(null);
+                                    }}
+                                >
                                     Cancel
                                 </Button>
                                 <Button color="primary" type="submit">

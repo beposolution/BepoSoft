@@ -23,6 +23,7 @@ import * as Yup from "yup";
 import Breadcrumbs from "../../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../../services/auditService";
 
 const AttendanceTeamMembers = () => {
   document.title = "Attendance Team Members | Beposoft";
@@ -40,6 +41,7 @@ const AttendanceTeamMembers = () => {
   const [addModal, setAddModal] = useState(false);
   const [editModal, setEditModal] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState(null);
+  const [originalAuditData, setOriginalAuditData] = useState(null);
 
   const [editInitialValues, setEditInitialValues] = useState({
     team: "",
@@ -218,6 +220,45 @@ const AttendanceTeamMembers = () => {
     }));
   }, [staffs]);
 
+  const getTeamNameById = teamId => {
+    const team = teams.find(
+      item => String(item.id) === String(teamId)
+    );
+
+    if (team?.team_name) return team.team_name;
+
+    const existingTeam = membersData.find(
+      item => String(item.team_id) === String(teamId)
+    );
+
+    return existingTeam?.team_name || "";
+  };
+
+  const getMemberNameById = memberId => {
+    const staff = staffs.find(
+      item => String(item.id) === String(memberId)
+    );
+
+    if (staff?.name) return staff.name;
+
+    for (const team of membersData) {
+      const member = team.members?.find(
+        item => String(item.member) === String(memberId)
+      );
+
+      if (member?.member_name) {
+        return member.member_name;
+      }
+    }
+
+    return "";
+  };
+
+  const getMemberAuditData = (data, memberName = "") => ({
+    team: getTeamNameById(data.team),
+    member: memberName || getMemberNameById(data.member),
+  });
+
   const totalTeams = membersData.length;
   const totalMembers = membersData.reduce(
     (sum, team) => sum + Number(team.members_count || team.members?.length || 0),
@@ -249,6 +290,22 @@ const AttendanceTeamMembers = () => {
         );
 
         if (res.status === 200 || res.status === 201) {
+
+          const afterSnapshot = getMemberAuditData(payload);
+
+          try {
+            await createAuditLog({
+              action: "attendance_team_member_created_website",
+              beforeData: {},
+              afterData: afterSnapshot,
+            });
+          } catch (auditError) {
+            console.error(
+              "Team member created, but audit logging failed:",
+              auditError
+            );
+          }
+
           toast.success("Team member added successfully");
           resetForm();
           setAddModal(false);
@@ -263,17 +320,32 @@ const AttendanceTeamMembers = () => {
   });
 
   const openEditModal = memberRow => {
+
+    const teamId = memberRow.team ?? memberRow.team_id ?? "";
+    const memberId = memberRow.member ?? memberRow.member_id ?? "";
+
+    const beforeSnapshot = {
+      team: memberRow.team_name || getTeamNameById(teamId),
+      member: memberRow.member_name || getMemberNameById(memberId),
+    };
+
+    setOriginalAuditData(beforeSnapshot);
+
     setSelectedMemberId(memberRow.id);
+
     setEditInitialValues({
-      team: String(memberRow.team ?? memberRow.team_id ?? ""),
-      member: String(memberRow.member ?? memberRow.member_id ?? ""),
+      team: String(teamId),
+      member: String(memberId),
     });
+
     setEditModal(true);
   };
 
   const closeEditModal = () => {
     setEditModal(false);
     setSelectedMemberId(null);
+    setOriginalAuditData(null);
+
     setEditInitialValues({
       team: "",
       member: "",
@@ -306,6 +378,22 @@ const AttendanceTeamMembers = () => {
         );
 
         if (res.status === 200 || res.status === 201) {
+
+          const afterSnapshot = getMemberAuditData(payload);
+
+          try {
+            await createAuditLog({
+              action: "attendance_team_member_updated_website",
+              beforeData: originalAuditData ?? {},
+              afterData: afterSnapshot,
+            });
+          } catch (auditError) {
+            console.error(
+              "Team member updated, but audit logging failed:",
+              auditError
+            );
+          }
+
           toast.success("Updated successfully");
           closeEditModal();
           await fetchMembers();

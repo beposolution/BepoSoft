@@ -22,6 +22,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../../services/auditService";
 
 
 const AttendanceAdd = () => {
@@ -57,6 +58,7 @@ const AttendanceAdd = () => {
 
     const [editModal, setEditModal] = useState(false);
     const [selectedAttendanceId, setSelectedAttendanceId] = useState(null);
+    const [originalAuditData, setOriginalAuditData] = useState(null);
 
     const [editInitialValues, setEditInitialValues] = useState({
         staff: "",
@@ -217,6 +219,44 @@ const AttendanceAdd = () => {
         }));
     }, [staffs]);
 
+    const getStaffNameById = staffId => {
+        const staff = staffs.find(
+            item => String(item.id) === String(staffId)
+        );
+
+        if (staff?.name) return staff.name;
+
+        const attendance = attendanceData.find(
+            item => String(item.staff) === String(staffId)
+        );
+
+        return attendance?.staff_name || "";
+    };
+
+    const getStatusName = status => {
+        const option = statusOptions.find(
+            item => item.value === status
+        );
+
+        return option?.label || status || "";
+    };
+
+    const getApprovalStatusName = status => {
+        const option = approvalStatusOptions.find(
+            item => item.value === status
+        );
+
+        return option?.label || status || "";
+    };
+
+    const getAttendanceAuditData = data => ({
+        staff: getStaffNameById(data.staff),
+        attendance_date: data.attendance_date || "",
+        attendance_time: data.attendance_time || "",
+        status: getStatusName(data.status),
+        approval_status: getApprovalStatusName(data.approval_status),
+    });
+
     const presentCount = attendanceData.filter(
         item => item.status === "present"
     ).length;
@@ -261,6 +301,21 @@ const AttendanceAdd = () => {
                     },
                 });
 
+                const afterSnapshot = getAttendanceAuditData(payload);
+
+                try {
+                    await createAuditLog({
+                        action: "attendance_created_website",
+                        beforeData: {},
+                        afterData: afterSnapshot,
+                    });
+                } catch (auditError) {
+                    console.error(
+                        "Attendance created, but audit logging failed:",
+                        auditError
+                    );
+                }
+
                 toast.success("Attendance added successfully");
                 resetForm();
                 setAddModal(false);
@@ -289,7 +344,20 @@ const AttendanceAdd = () => {
 
             const data = res?.data?.data;
 
+            if (!data) {
+                toast.error("Attendance details not found");
+                return;
+            }
+
+            const beforeSnapshot = {
+                ...getAttendanceAuditData(data),
+                staff: data.staff_name || getStaffNameById(data.staff),
+            };
+
+            setOriginalAuditData(beforeSnapshot);
+
             setSelectedAttendanceId(id);
+
             setEditInitialValues({
                 staff: String(data.staff),
                 attendance_date: data.attendance_date,
@@ -297,10 +365,17 @@ const AttendanceAdd = () => {
                 status: data.status,
                 approval_status: data.approval_status,
             });
+
             setEditModal(true);
         } catch {
             toast.error("Failed to load attendance");
         }
+    };
+
+    const closeEditModal = () => {
+        setEditModal(false);
+        setSelectedAttendanceId(null);
+        setOriginalAuditData(null);
     };
 
     const editFormik = useFormik({
@@ -317,15 +392,17 @@ const AttendanceAdd = () => {
 
         onSubmit: async values => {
             try {
+                const payload = {
+                    staff: Number(values.staff),
+                    attendance_date: values.attendance_date,
+                    attendance_time: values.attendance_time,
+                    status: values.status,
+                    approval_status: values.approval_status,
+                };
+
                 await axios.put(
                     `${baseUrl}staff/attendance/edit/${selectedAttendanceId}/`,
-                    {
-                        staff: Number(values.staff),
-                        attendance_date: values.attendance_date,
-                        attendance_time: values.attendance_time,
-                        status: values.status,
-                        approval_status: values.approval_status,
-                    },
+                    payload,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -333,11 +410,29 @@ const AttendanceAdd = () => {
                     }
                 );
 
+                const afterSnapshot = getAttendanceAuditData(payload);
+
+                try {
+                    await createAuditLog({
+                        action: "attendance_updated_website",
+                        beforeData: originalAuditData ?? {},
+                        afterData: afterSnapshot,
+                    });
+                } catch (auditError) {
+                    console.error(
+                        "Attendance updated, but audit logging failed:",
+                        auditError
+                    );
+                }
+
                 toast.success("Attendance updated");
-                setEditModal(false);
+                closeEditModal();
                 fetchAttendance();
+
             } catch (error) {
-                toast.error(error?.response?.data?.message || "Update failed");
+                toast.error(
+                    error?.response?.data?.message || "Update failed"
+                );
             }
         },
     });
@@ -1004,11 +1099,11 @@ const AttendanceAdd = () => {
 
                     <Modal
                         isOpen={editModal}
-                        toggle={() => setEditModal(false)}
+                        toggle={closeEditModal}
                         centered
                         style={{ zIndex: 1055 }}
                     >
-                        <ModalHeader toggle={() => setEditModal(false)}>
+                        <ModalHeader toggle={closeEditModal}>
                             Edit Attendance
                         </ModalHeader>
 
@@ -1118,7 +1213,7 @@ const AttendanceAdd = () => {
                             </ModalBody>
 
                             <ModalFooter>
-                                <Button color="secondary" onClick={() => setEditModal(false)}>
+                                <Button color="secondary" type="button" onClick={closeEditModal}>
                                     Cancel
                                 </Button>
                                 <Button color="primary" type="submit">

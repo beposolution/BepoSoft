@@ -16,6 +16,7 @@ import Select from "react-select";
 import Breadcrumbs from "../../../components/Common/Breadcrumb";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../../services/auditService";
 
 const StaffAttendance = () => {
     document.title = "Staff Attendance | Beposoft";
@@ -44,6 +45,33 @@ const StaffAttendance = () => {
 
     const [teams, setTeams] = useState([]);
     const [members, setMembers] = useState([]);
+
+    const createAttendanceViewLog = async (action, filterData, page) => {
+        try {
+            await createAuditLog({
+                action,
+                beforeData: {},
+                afterData: {
+                    start_date: filterData.start_date || "",
+                    end_date: filterData.end_date || "",
+                    team:
+                        teams.find(
+                            item => String(item.value) === String(filterData.team)
+                        )?.label || "All Teams",
+                    member:
+                        members.find(
+                            item => String(item.value) === String(filterData.member)
+                        )?.label || "All Members",
+                    page,
+                },
+            });
+        } catch (auditError) {
+            console.error(
+                "Staff attendance view audit logging failed:",
+                auditError
+            );
+        }
+    };
 
     const fetchAttendance = async (page = 1, customFilters = filters) => {
         try {
@@ -112,11 +140,17 @@ const StaffAttendance = () => {
         fetchAttendance(1);
     }, []);
 
-    const handleSearch = () => {
-        fetchAttendance(1);
+    const handleSearch = async () => {
+        await fetchAttendance(1);
+
+        await createAttendanceViewLog(
+            "staff_attendance_searched_website",
+            filters,
+            1
+        );
     };
 
-    const resetFilters = () => {
+    const resetFilters = async () => {
         const resetData = {
             start_date: today,
             end_date: today,
@@ -125,7 +159,14 @@ const StaffAttendance = () => {
         };
 
         setFilters(resetData);
-        fetchAttendance(1, resetData);
+
+        await fetchAttendance(1, resetData);
+
+        await createAttendanceViewLog(
+            "staff_attendance_filters_reset_website",
+            resetData,
+            1
+        );
     };
 
     // =========================
@@ -492,7 +533,7 @@ const StaffAttendance = () => {
                                                                             {dateItem
                                                                                 ?.attendance
                                                                                 ?.length >
-                                                                            0 ? (
+                                                                                0 ? (
                                                                                 dateItem.attendance.map(
                                                                                     (
                                                                                         staff,
@@ -521,15 +562,14 @@ const StaffAttendance = () => {
 
                                                                                             <td>
                                                                                                 <span
-                                                                                                    className={`badge ${
-                                                                                                        staff.status ===
+                                                                                                    className={`badge ${staff.status ===
                                                                                                         "present"
-                                                                                                            ? "bg-success"
-                                                                                                            : staff.status ===
-                                                                                                              "absent"
+                                                                                                        ? "bg-success"
+                                                                                                        : staff.status ===
+                                                                                                            "absent"
                                                                                                             ? "bg-danger"
                                                                                                             : "bg-warning"
-                                                                                                    }`}
+                                                                                                        }`}
                                                                                                 >
                                                                                                     {
                                                                                                         staff.status
@@ -539,15 +579,14 @@ const StaffAttendance = () => {
 
                                                                                             <td>
                                                                                                 <span
-                                                                                                    className={`badge ${
-                                                                                                        staff.approval_status ===
+                                                                                                    className={`badge ${staff.approval_status ===
                                                                                                         "approved"
-                                                                                                            ? "bg-success"
-                                                                                                            : staff.approval_status ===
-                                                                                                              "rejected"
+                                                                                                        ? "bg-success"
+                                                                                                        : staff.approval_status ===
+                                                                                                            "rejected"
                                                                                                             ? "bg-danger"
                                                                                                             : "bg-warning"
-                                                                                                    }`}
+                                                                                                        }`}
                                                                                                 >
                                                                                                     {staff.approval_status ||
                                                                                                         "pending"}
@@ -598,11 +637,17 @@ const StaffAttendance = () => {
                                         <Button
                                             color="secondary"
                                             disabled={!pagination.previous}
-                                            onClick={() =>
-                                                fetchAttendance(
-                                                    pagination.page - 1
-                                                )
-                                            }
+                                            onClick={async () => {
+                                                const newPage = pagination.page - 1;
+
+                                                await fetchAttendance(newPage);
+
+                                                await createAttendanceViewLog(
+                                                    "staff_attendance_page_changed_website",
+                                                    filters,
+                                                    newPage
+                                                );
+                                            }}
                                         >
                                             Previous
                                         </Button>
@@ -612,11 +657,17 @@ const StaffAttendance = () => {
                                         <Button
                                             color="secondary"
                                             disabled={!pagination.next}
-                                            onClick={() =>
-                                                fetchAttendance(
-                                                    pagination.page + 1
-                                                )
-                                            }
+                                            onClick={async () => {
+                                                const newPage = pagination.page + 1;
+
+                                                await fetchAttendance(newPage);
+
+                                                await createAttendanceViewLog(
+                                                    "staff_attendance_page_changed_website",
+                                                    filters,
+                                                    newPage
+                                                );
+                                            }}
                                         >
                                             Next
                                         </Button>

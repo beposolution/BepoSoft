@@ -27,6 +27,8 @@ import Select from "react-select";
 import Breadcrumbs from "../../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../../services/auditService";
+
 
 const AttendanceDepartment = () => {
     document.title = "Attendance Department Management | Beposoft";
@@ -54,6 +56,9 @@ const AttendanceDepartment = () => {
         team_name: "",
         team_leader: "",
     });
+
+
+    const [originalAuditData, setOriginalAuditData] = useState(null);
 
     const fetchDepartments = async () => {
         try {
@@ -135,6 +140,19 @@ const AttendanceDepartment = () => {
         init();
     }, []);
 
+
+    const getTeamLeaderNameById = (value) => {
+        if (value === null || value === undefined || value === "") {
+            return "";
+        }
+
+        const matchedStaff = staffList.find(
+            (staff) => String(staff.id) === String(value)
+        );
+
+        return matchedStaff?.name ?? "";
+    };
+
     const staffOptions = useMemo(() => {
         return staffList.map((staff) => ({
             value: staff.id,
@@ -214,9 +232,43 @@ const AttendanceDepartment = () => {
                     }
                 );
 
+
                 if (response.status === 200 || response.status === 201) {
+
+                    // Prepare readable audit values
+                    const afterSnapshot = {
+                        team_name: payload.team_name,
+                        team_leader: getTeamLeaderNameById(
+                            payload.team_leader
+                        ),
+                    };
+
+                    // Create audit log after successful API response
+                    try {
+                        const auditCreated = await createAuditLog({
+                            action: "attendance_department_created_website",
+
+                            beforeData: {},
+
+                            afterData: afterSnapshot,
+                        });
+
+                        if (!auditCreated) {
+                            console.error(
+                                "Department created, but DataLog creation failed."
+                            );
+                        }
+                    } catch (auditError) {
+                        console.error(
+                            "Department created, but DataLog creation failed:",
+                            auditError
+                        );
+                    }
+
                     toast.success("Department created successfully");
+
                     resetForm();
+
                     await fetchDepartments();
                 } else {
                     toast.error("Failed to create department");
@@ -270,14 +322,48 @@ const AttendanceDepartment = () => {
                     }
                 );
 
+
                 if (response.status === 200 || response.status === 201) {
+
+                    const afterSnapshot = {
+                        team_name: payload.team_name,
+                        team_leader: getTeamLeaderNameById(
+                            payload.team_leader
+                        ),
+                    };
+
+                    try {
+                        const auditCreated = await createAuditLog({
+                            action: "attendance_department_updated_website",
+
+                            beforeData: originalAuditData ?? {},
+
+                            afterData: afterSnapshot,
+                        });
+
+                        if (!auditCreated) {
+                            console.error(
+                                "Department updated, but DataLog creation failed."
+                            );
+                        }
+                    } catch (auditError) {
+                        console.error(
+                            "Department updated, but DataLog creation failed:",
+                            auditError
+                        );
+                    }
+
                     toast.success("Department updated successfully");
+
                     setEditModal(false);
                     setSelectedDepartmentId(null);
+                    setOriginalAuditData(null);
+
                     setEditInitialValues({
                         team_name: "",
                         team_leader: "",
                     });
+
                     await fetchDepartments();
                 } else {
                     toast.error("Failed to update department");
@@ -318,12 +404,33 @@ const AttendanceDepartment = () => {
                 const departmentData = response?.data?.data || response?.data || {};
 
                 setSelectedDepartmentId(departmentId);
+
+
+                const originalLeaderId =
+                    departmentData?.team_leader?.id ??
+                    departmentData?.team_leader ??
+                    "";
+
+                const beforeSnapshot = {
+                    team_name: departmentData?.team_name ?? "",
+
+                    team_leader:
+                        departmentData?.team_leader_name ??
+                        getTeamLeaderNameById(originalLeaderId),
+                };
+
+                setOriginalAuditData(beforeSnapshot);
+
+
                 setEditInitialValues({
                     team_name: departmentData?.team_name || "",
-                    team_leader: departmentData?.team_leader
-                        ? String(departmentData.team_leader)
-                        : "",
+
+                    team_leader:
+                        originalLeaderId !== ""
+                            ? String(originalLeaderId)
+                            : "",
                 });
+
                 setEditModal(true);
             } else {
                 throw new Error("Failed to fetch department details");
@@ -659,19 +766,23 @@ const AttendanceDepartment = () => {
                         </>
                     )}
 
+
                     <Modal
                         isOpen={editModal}
                         toggle={() => {
                             setEditModal(false);
                             setSelectedDepartmentId(null);
+                            setOriginalAuditData(null);
                         }}
                         centered
                         size="md"
                     >
+
                         <ModalHeader
                             toggle={() => {
                                 setEditModal(false);
                                 setSelectedDepartmentId(null);
+                                setOriginalAuditData(null);
                             }}
                             style={{ borderBottom: "1px solid #eef2f7" }}
                         >
@@ -752,6 +863,7 @@ const AttendanceDepartment = () => {
                                     onClick={() => {
                                         setEditModal(false);
                                         setSelectedDepartmentId(null);
+                                        setOriginalAuditData(null);
                                     }}
                                     style={{
                                         borderRadius: "10px",

@@ -267,6 +267,17 @@ const ProductPointSystemForm = () => {
     }
   };
 
+  const filteredProducts = products.filter((product) => {
+    const query = productSearch.trim().toLowerCase();
+
+    if (!query) return true;
+
+    return (
+      (product.name || "").toLowerCase().includes(query) ||
+      String(product.hsn_code || "").toLowerCase().includes(query)
+    );
+  });
+
   return (
     <React.Fragment>
       <style>{`
@@ -611,7 +622,7 @@ const ProductPointSystemForm = () => {
                           </Input>
 
                           {formik.errors.point_type &&
-                          formik.touched.point_type ? (
+                            formik.touched.point_type ? (
                             <FormFeedback>
                               {formik.errors.point_type}
                             </FormFeedback>
@@ -730,7 +741,7 @@ const ProductPointSystemForm = () => {
                                           </div>
                                         </div>
                                       ) : (
-                                        products.map((product) => {
+                                        filteredProducts.map((product) => {
                                           const productName =
                                             product.name || `Product #${product.id}`;
                                           const isSelected =
@@ -740,9 +751,8 @@ const ProductPointSystemForm = () => {
                                             <button
                                               type="button"
                                               key={product.id}
-                                              className={`product-option ${
-                                                isSelected ? "product-option-selected" : ""
-                                              }`}
+                                              className={`product-option ${isSelected ? "product-option-selected" : ""
+                                                }`}
                                               onMouseDown={(e) => e.preventDefault()}
                                               onClick={() => {
                                                 formik.setFieldValue(
@@ -793,7 +803,7 @@ const ProductPointSystemForm = () => {
                               </div>
 
                               {formik.errors.product &&
-                              formik.touched.product ? (
+                                formik.touched.product ? (
                                 <FormFeedback>
                                   {formik.errors.product}
                                 </FormFeedback>
@@ -824,7 +834,7 @@ const ProductPointSystemForm = () => {
                               />
 
                               {formik.errors.quantity &&
-                              formik.touched.quantity ? (
+                                formik.touched.quantity ? (
                                 <FormFeedback>
                                   {formik.errors.quantity}
                                 </FormFeedback>
@@ -859,7 +869,7 @@ const ProductPointSystemForm = () => {
                           />
 
                           {formik.errors.point &&
-                          formik.touched.point ? (
+                            formik.touched.point ? (
                             <FormFeedback>
                               {formik.errors.point}
                             </FormFeedback>

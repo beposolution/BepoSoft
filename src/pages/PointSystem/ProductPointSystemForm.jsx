@@ -60,6 +60,10 @@ const ProductPointSystemForm = () => {
       value: "new_lead",
       label: "New Lead",
     },
+    {
+      value: "invoice",
+      label: "Invoice",
+    },
   ];
 
   const formik = useFormik({

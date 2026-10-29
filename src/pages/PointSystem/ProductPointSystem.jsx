@@ -22,6 +22,7 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Paginations from "../../components/Common/Pagination";
+import { createAuditLog } from "../../services/auditService";
 
 const ProductPointSystem = () => {
     const navigate = useNavigate();
@@ -34,6 +35,7 @@ const ProductPointSystem = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [editLoading, setEditLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [originalAuditData, setOriginalAuditData] = useState(null);
 
     const [editData, setEditData] = useState({
         id: null,
@@ -49,7 +51,7 @@ const ProductPointSystem = () => {
     const [pointTypeFilter, setPointTypeFilter] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
-    const [perPageData] = useState(10);
+    const [perPageData] = useState(25);
 
     const pointTypeOptions = [
         { value: "product", label: "Product" },
@@ -60,6 +62,37 @@ const ProductPointSystem = () => {
         { value: "new_lead", label: "New Lead" },
         { value: "invoice", label: "Invoice" },
     ];
+
+
+    const getPointTypeName = (value) => {
+        const selectedType = pointTypeOptions.find(
+            (type) => type.value === value
+        );
+
+        return selectedType?.label || value || "";
+    };
+
+    const createPointSystemSnapshot = (data) => {
+        const isProduct = data.point_type === "product";
+
+        return {
+            point_type:
+                getPointTypeName(data.point_type),
+
+            product:
+                isProduct
+                    ? data.product_name || ""
+                    : "",
+
+            quantity:
+                isProduct
+                    ? data.quantity ?? ""
+                    : "",
+
+            point:
+                data.point ?? ""
+        };
+    };
 
     document.title = "beposoft | product point system";
 
@@ -156,6 +189,7 @@ const ProductPointSystem = () => {
     const handleEdit = async (pointSystem) => {
         try {
             setEditLoading(true);
+            setOriginalAuditData(null);
             setModalOpen(true);
 
             const token = localStorage.getItem("token");
@@ -170,6 +204,12 @@ const ProductPointSystem = () => {
             );
 
             const data = response?.data?.data || {};
+
+            // CAPTURE ORIGINAL DATA FOR AUDIT LOG
+
+            const beforeSnapshot = createPointSystemSnapshot(data);
+
+            setOriginalAuditData(beforeSnapshot);
 
             setEditData({
                 id: data.id ?? pointSystem.id,
@@ -281,6 +321,50 @@ const ProductPointSystem = () => {
 
             const updatedData = response?.data?.data;
 
+            // CREATE AFTER SNAPSHOT
+
+            const afterSnapshot = createPointSystemSnapshot({
+                ...editData,
+                ...updatedData,
+
+                // Do not reuse the old product name if
+                // the product ID has changed and the API
+                // has not supplied the new product name.
+                product_name:
+                    updatedData?.product_name ??
+                    (
+                        String(updatedData?.product ?? editData.product) ===
+                            String(editData.product)
+                            ? editData.product_name
+                            : ""
+                    )
+            });
+
+            // CREATE AUDIT LOG
+
+            try {
+                const auditCreated = await createAuditLog({
+                    action: "product_point_system_updated_website",
+
+                    beforeData: originalAuditData ?? {},
+
+                    afterData: afterSnapshot
+                });
+
+                if (!auditCreated) {
+                    console.error(
+                        "Point System updated successfully, but DataLog creation failed."
+                    );
+                }
+            } catch (auditError) {
+                console.error(
+                    "Point System updated successfully, but DataLog creation failed:",
+                    auditError
+                );
+            }
+
+            // SUCCESS MESSAGE
+
             toast.success(
                 response?.data?.message ||
                 "Point system updated successfully!"
@@ -297,6 +381,7 @@ const ProductPointSystem = () => {
             }
 
             setModalOpen(false);
+            setOriginalAuditData(null);
         } catch (err) {
             if (handleUnauthorized(err)) {
                 return;

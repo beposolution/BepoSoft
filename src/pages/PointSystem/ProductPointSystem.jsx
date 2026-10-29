@@ -57,7 +57,8 @@ const ProductPointSystem = () => {
         { value: "sd", label: "SD" },
         { value: "new_conversions", label: "New Conversions" },
         { value: "new_customers", label: "New Customers" },
-        { value: "new_lead", label: "New Lead" }
+        { value: "new_lead", label: "New Lead" },
+        { value: "invoice", label: "Invoice" },
     ];
 
     document.title = "beposoft | product point system";

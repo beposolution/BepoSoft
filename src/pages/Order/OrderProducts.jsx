@@ -2535,7 +2535,7 @@ const FormLayouts = () => {
                                                             <th>Actual Price</th>
                                                             <th>Rate</th>
                                                             <th>Tax %</th>
-                                                            <th>Tax Amount</th>
+                                                            {/* <th>Tax Amount</th> */}
                                                             <th>Quantity</th>
                                                             <th>Price</th>
                                                             <th>Discount</th>
@@ -2569,7 +2569,7 @@ const FormLayouts = () => {
                                                                 <td>{item.rate}</td>
                                                                 <td>{item.exclude_price}</td>
                                                                 <td>{item.tax} %</td>
-                                                                <td>{TaxAmount.toFixed(2)}</td>
+                                                                {/* <td>{TaxAmount.toFixed(2)}</td> */}
                                                                 <td>
                                                                     <Input
                                                                         type="number"
@@ -2641,7 +2641,7 @@ const FormLayouts = () => {
                                                         ))}
                                                         {/* Total Row */}
                                                         <tr className="total-row">
-                                                            <td colSpan="7" className="text-end font-weight-bold">Totals:</td>
+                                                            <td colSpan="8" className="text-end font-weight-bold">Totals:</td>
 
                                                             {/* <td></td>
                                                             <td></td>

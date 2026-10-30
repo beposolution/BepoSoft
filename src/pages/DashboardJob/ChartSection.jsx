@@ -9,6 +9,42 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 
+const dashboardResponsiveCSS = `
+.dashboard-status-col {
+  min-width: 0;
+}
+
+.dashboard-status-col .card {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.dashboard-status-col .card p,
+.dashboard-status-col .card h2,
+.dashboard-status-col .card span {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+@media (min-width: 1200px) {
+  .dashboard-status-col {
+    flex: 0 0 20%;
+    max-width: 20%;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .dashboard-status-col .card {
+    min-height: 145px !important;
+  }
+
+  .dashboard-status-col .card-body {
+    padding: 16px !important;
+  }
+}
+`;
+
 
 const AttendanceCalendar = ({ token }) => {
     const [month, setMonth] = useState(
@@ -1652,6 +1688,8 @@ const ChartSection = () => {
     return (
         <React.Fragment>
 
+            <style>{dashboardResponsiveCSS}</style>
+
             <Row>
 
 
@@ -2446,7 +2484,7 @@ const ChartSection = () => {
                 {/* ADMIN & Accounts / Accounting dashboard */}
 
                 {(role === "ADMIN" || role === "Accounts / Accounting" || role === "COO") && (
-                    <Row className="g-3 mb-3">
+                    <Row className="g-3 mb-2">
 
                         {/* Calendar shares the same responsive row and gutters
                             as the other dashboard cards. */}
@@ -2689,7 +2727,7 @@ const ChartSection = () => {
 
                         {/* ================= END FINANCE CARD ================= */}
 
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
                             <Card
                                 onClick={() => navigate("/dashboard/todaysbill-details")}
                                 className="h-100 border-0 shadow-sm"
@@ -2743,7 +2781,7 @@ const ChartSection = () => {
                         </Col>
 
                         {/* WAITING FOR APPROVAL */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
                             <Card
                                 onClick={() => navigate("/orders/invoicecreated")}
                                 className="h-100 border-0 shadow-sm"
@@ -2801,7 +2839,7 @@ const ChartSection = () => {
 
 
                         {/* INVOICE APPROVED */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
                             <Card
                                 onClick={() => navigate("/orders/invoiceapproved")}
                                 className="h-100 border-0 shadow-sm"
@@ -2858,7 +2896,7 @@ const ChartSection = () => {
                         </Col>
 
                         {/* Waiting For Confirmation */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
                             <Card
                                 onClick={() => navigate("/orders/waitingforconfirmation")}
                                 className="h-100 border-0 shadow-sm"
@@ -2916,7 +2954,7 @@ const ChartSection = () => {
 
 
                         {/* Delivery Order */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
                             <Card
                                 onClick={() => navigate("/orders/toprint")}
                                 className="h-100 border-0 shadow-sm"
@@ -2973,7 +3011,7 @@ const ChartSection = () => {
                         </Col>
 
                         {/* Packing Under Progress */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
                             <Card
                                 onClick={() => navigate("/orders/packingunderprogress")}
                                 className="h-100 border-0 shadow-sm"
@@ -3031,7 +3069,7 @@ const ChartSection = () => {
 
 
                         {/* PACKED FOR DELIVERY */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
                             <Card
                                 onClick={() => navigate("/orders/packed")}
                                 className="h-100 border-0 shadow-sm"
@@ -3088,7 +3126,7 @@ const ChartSection = () => {
                         </Col>
 
                         {/* DGM */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
                             <Card
                                 onClick={() => navigate("/daily/good/movment/")}
                                 className="h-100 border-0 shadow-sm"
@@ -3121,7 +3159,7 @@ const ChartSection = () => {
 
 
                         {/* OUT FOR DELIVERY */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
                             <Card
                                 onClick={() => navigate("/orders/readytoship")}
                                 className="h-100 border-0 shadow-sm"
@@ -3179,7 +3217,7 @@ const ChartSection = () => {
 
 
                         {/* RETURN FROM DELIVERY */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
                             <Card
                                 onClick={() => navigate("/orders/returnfromdelivery")}
                                 className="h-100 border-0 shadow-sm"
@@ -3237,7 +3275,7 @@ const ChartSection = () => {
 
 
                         {/* SHIPPED */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
                             <Card
                                 onClick={() => navigate("/orders/shipped")}
                                 className="h-100 border-0 shadow-sm"
@@ -3293,7 +3331,7 @@ const ChartSection = () => {
                             </Card>
                         </Col>
 
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
                             <Card
                                 onClick={() => navigate("/orders/returnfromdelivery")}
                                 className="h-100 border-0 shadow-sm"
@@ -3349,7 +3387,7 @@ const ChartSection = () => {
                             </Card>
                         </Col>
 
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
                             <Card
                                 onClick={() => navigate("/perfoma/invoices/")}
                                 className="h-100 border-0 shadow-sm"
@@ -3402,7 +3440,7 @@ const ChartSection = () => {
                             </Card>
                         </Col>
 
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
                             <Card
                                 onClick={() => navigate("/beposoft/grv/view/")}
                                 className="h-100 border-0 shadow-sm"
@@ -3455,7 +3493,7 @@ const ChartSection = () => {
                             </Card>
                         </Col>
 
-                        <Col xs={12} sm={6} md={6} lg={4} xl={3} xxl={2}>
+                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
                             <Card
                                 onClick={() => navigate("/beposoft/grv/view/")}
                                 className="h-100 border-0 shadow-sm"

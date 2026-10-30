@@ -13,6 +13,8 @@ import StatisticsApplications from "./StatisticsApplications";
 
 const DashboardJob = () => {
 
+  document.title = "Dashboard | Beposoft";
+
   return (
     <React.Fragment>
 

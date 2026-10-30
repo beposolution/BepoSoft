@@ -487,6 +487,7 @@ import HourlyFamilyOrderDetails from "../pages/DashboardJob/HourlyFamilyOrderDet
 import CompanyFinanceReport from "../pages/DashboardJob/CompanyFinanceReport";
 import PendingForPacking from "../pages/Order/PendingForPacking";
 import ProformaWithPaymentSlips from "../pages/PerfomaInvoive/ProformaWithPaymentSlips";
+import SalesPointRankingAllPage from "../pages/DashboardJob/SalesPointRankingAllPage";
 
 
 
@@ -501,6 +502,7 @@ const authProtectedRoutes = [
   { path: "/dashboard/family/details", component: <FamilyDetails /> },
   { path: "/hourly-order-family/:familyId", component: <HourlyFamilyOrderDetails /> },
   { path: "/finance/company-report/:companyId", component: <CompanyFinanceReport /> },
+  { path: "/staff/point/ranking/", component: <SalesPointRankingAllPage /> },
 
   { path: "/orders/family/date/summary", component: <FamilyDateSummary /> },
   { path: "/orders/family/:family_id/staff/summary/:start_date/:end_date", component: <FamilyStaffSummary /> },

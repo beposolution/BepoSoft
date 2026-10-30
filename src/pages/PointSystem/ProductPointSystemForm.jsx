@@ -18,6 +18,7 @@ import { useFormik } from "formik";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { createAuditLog } from "../../services/auditService";
 
 const ProductPointSystemForm = () => {
   document.title = "Product Point System | Beposoft";
@@ -65,6 +66,76 @@ const ProductPointSystemForm = () => {
       label: "Invoice",
     },
   ];
+
+
+
+  const createPointSystemDataLog = async (values, responseData = null) => {
+    try {
+      // Resolve point type to readable name
+      const selectedPointType = pointTypeOptions.find(
+        (type) => type.value === values.point_type
+      );
+
+      // Resolve selected product ID to product name
+      const selectedProduct = products.find(
+        (product) =>
+          String(product.id) === String(values.product)
+      );
+
+      const productName =
+        values.point_type === "product"
+          ? selectedProduct?.name ||
+          responseData?.product_name ||
+          productSearch ||
+          ""
+          : "";
+
+      // Store readable values in DataLog
+      const afterData = {
+        point_type:
+          selectedPointType?.label ||
+          values.point_type ||
+          "",
+
+        product:
+          productName,
+
+        quantity:
+          values.point_type === "product"
+            ? values.quantity ?? ""
+            : "",
+
+        point:
+          values.point ?? "",
+
+        created_by:
+          localStorage.getItem("name") || "",
+      };
+
+      const auditCreated = await createAuditLog({
+        action: "product_point_system_created_website",
+        beforeData: {},
+        afterData: afterData,
+      });
+
+      if (!auditCreated) {
+        console.error(
+          "Point System created successfully, but DataLog creation failed."
+        );
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Point System DataLog creation error:",
+        error
+      );
+
+      return false;
+    }
+  };
+
 
   const formik = useFormik({
     initialValues: {
@@ -133,9 +204,39 @@ const ProductPointSystemForm = () => {
           }
         );
 
+
         if (response.status === 201 || response.status === 200) {
+
+          // POINT SYSTEM CREATED SUCCESSFULLY
+          // CREATE DATALOG
+
+          try {
+            const createdPointSystem =
+              response?.data?.data ?? null;
+
+            const auditCreated =
+              await createPointSystemDataLog(
+                values,
+                createdPointSystem
+              );
+
+            if (!auditCreated) {
+              console.error(
+                "Point System created, but DataLog failed."
+              );
+            }
+          } catch (auditError) {
+            console.error(
+              "Point System created, but DataLog failed:",
+              auditError
+            );
+          }
+
+          // SUCCESS MESSAGE
+
           toast.success(
-            response?.data?.message || "Point system created successfully!",
+            response?.data?.message ||
+            "Point system created successfully!",
             {
               position: "top-right",
               autoClose: 4000,
@@ -143,8 +244,15 @@ const ProductPointSystemForm = () => {
             }
           );
 
+          // RESET FORM
+
           resetForm();
+
+          setProductSearch("");
+          setProducts([]);
+          setProductDropdownOpen(false);
         }
+
       } catch (error) {
         const responseData = error?.response?.data;
 

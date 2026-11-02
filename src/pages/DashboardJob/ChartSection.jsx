@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardBody, Col, Row } from 'reactstrap';
+import { Card, CardBody, Col, Row, Button } from 'reactstrap';
 import ReactApexChart from "react-apexcharts"
 import axios from 'axios';
 import { JobWidgetCharts } from './JobCharts';
@@ -7,6 +7,15 @@ import { JobWidgetCharts } from './JobCharts';
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import {
+    FaTrophy,
+    FaCrown,
+    FaMedal,
+    FaAward,
+    FaArrowRight,
+    FaChartLine,
+    FaUsers,
+} from "react-icons/fa";
 
 
 const dashboardResponsiveCSS = `
@@ -1009,6 +1018,7 @@ const ChartSection = () => {
     const [loading, setLoading] = useState(true);
     const token = localStorage.getItem("token")
     const [role, setRole] = useState(null)
+    const [id, setId] = useState(localStorage.getItem("id"));
     const [orders, setOrders] = useState([]);
     const [userData, setUserData] = useState();
     const [orderCount, setOrderCount] = useState();
@@ -1028,10 +1038,232 @@ const ChartSection = () => {
     const [isFinanceLoading, setIsFinanceLoading] = useState(false);
     const [financeError, setFinanceError] = useState(null);
 
+    // Sales Point Ranking
+    const [salesRankingData, setSalesRankingData] = useState([]);
+    const [salesRankingLoading, setSalesRankingLoading] = useState(false);
+    const [salesRankingError, setSalesRankingError] = useState(false);
+
+    // MY SALES RANK AND POINTS
+    const [mySalesRankData, setMySalesRankData] = useState(null);
+    const [mySalesRankLoading, setMySalesRankLoading] = useState(false);
+    const [mySalesRankError, setMySalesRankError] = useState("");
+
     useEffect(() => {
         const role = localStorage.getItem("active");
         setRole(role);
     }, []);
+
+    // SALES POINT RANKING - TOP 3 STAFF
+
+    useEffect(() => {
+        const fetchSalesPointRanking = async () => {
+            if (!token) return;
+
+            try {
+                setSalesRankingLoading(true);
+                setSalesRankingError(false);
+
+                const now = new Date();
+
+                const year = now.getFullYear();
+
+                const month = String(
+                    now.getMonth() + 1
+                ).padStart(2, "0");
+
+                const firstDay = `${year}-${month}-01`;
+
+                const day = String(now.getDate()).padStart(2, "0");
+
+                const currentDate = `${year}-${month}-${day}`;
+
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}sales/point/ranking/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        params: {
+                            start_date: firstDay,
+                            end_date: currentDate,
+                        },
+                    }
+                );
+
+                const rankingData = Array.isArray(
+                    response?.data?.data
+                )
+                    ? response.data.data
+                    : [];
+
+                // Sort by API rank, then total points
+                const sortedRanking = [...rankingData].sort(
+                    (a, b) => {
+                        const rankA = Number(a.rank ?? Infinity);
+                        const rankB = Number(b.rank ?? Infinity);
+
+                        if (rankA !== rankB) {
+                            return rankA - rankB;
+                        }
+
+                        return (
+                            Number(b.total_points || 0) -
+                            Number(a.total_points || 0)
+                        );
+                    }
+                );
+
+                // Only first three staff
+                const topThreeRanking = sortedRanking.slice(0, 3).map(
+                    (staff, index) => ({
+                        ...staff,
+                        displayRank: index + 1,
+                    })
+                );
+
+                setSalesRankingData(topThreeRanking);
+
+            } catch (error) {
+                console.error(
+                    "Error fetching sales point ranking:",
+                    error
+                );
+
+                setSalesRankingData([]);
+                setSalesRankingError(true);
+
+                toast.error("Failed to fetch sales point ranking");
+
+            } finally {
+                setSalesRankingLoading(false);
+            }
+        };
+
+        fetchSalesPointRanking();
+
+    }, [token]);
+
+
+    useEffect(() => {
+        if (!["BDM", "BDO", "SD"].includes(role)) {
+            setMySalesRankData(null);
+            return;
+        }
+
+        const controller = new AbortController();
+
+        const fetchMySalesRanking = async () => {
+            setMySalesRankLoading(true);
+            setMySalesRankError("");
+            setMySalesRankData(null);
+
+            try {
+                const storedId =
+                    localStorage.getItem("id") ||
+                    localStorage.getItem("staff_id") ||
+                    localStorage.getItem("user_id");
+
+                let staffId = storedId;
+
+                // Fall back to authenticated profile if ID is not stored.
+                if (!staffId) {
+                    const profileResponse = await axios.get(
+                        `${import.meta.env.VITE_APP_KEY}profile/`,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                            },
+                            signal: controller.signal,
+                        }
+                    );
+
+                    const profile = profileResponse.data?.data;
+
+                    staffId =
+                        profile?.id ??
+                        profile?.user_id ??
+                        profile?.staff_id ??
+                        profile?.user?.id;
+                }
+
+                if (!staffId) {
+                    throw new Error(
+                        "Unable to identify the logged-in staff member"
+                    );
+                }
+
+                const now = new Date();
+
+                const formatDate = (date) => {
+                    const year = date.getFullYear();
+                    const month = String(
+                        date.getMonth() + 1
+                    ).padStart(2, "0");
+                    const day = String(
+                        date.getDate()
+                    ).padStart(2, "0");
+
+                    return `${year}-${month}-${day}`;
+                };
+
+                const firstDay = formatDate(
+                    new Date(now.getFullYear(), now.getMonth(), 1)
+                );
+
+                const currentDate = formatDate(now);
+
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}sales/point/ranking/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        params: {
+                            start_date: firstDay,
+                            end_date: currentDate,
+                            staff_id: staffId,
+                        },
+                        signal: controller.signal,
+                    }
+                );
+
+                const rankingData = response.data?.data || [];
+
+                const myRanking = rankingData.find(
+                    (staff) =>
+                        String(staff.staff_id) === String(staffId)
+                );
+
+                if (!controller.signal.aborted) {
+                    setMySalesRankData(myRanking || null);
+                }
+
+            } catch (error) {
+                if (!controller.signal.aborted) {
+                    console.error("My ranking error:", error);
+
+                    setMySalesRankError(
+                        error.response?.data?.message ||
+                        error.message ||
+                        "Unable to load rank and points"
+                    );
+                }
+            } finally {
+                if (!controller.signal.aborted) {
+                    setMySalesRankLoading(false);
+                }
+            }
+        };
+
+        if (token) {
+            fetchMySalesRanking();
+        } else {
+            setMySalesRankError("Login token not found");
+        }
+
+        return () => controller.abort();
+
+    }, [token, role]);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -1684,6 +1916,11 @@ const ChartSection = () => {
         })
         .toUpperCase();
 
+    // Navigate to complete Sales Point Ranking page
+    const goToAllSalesPointRanking = () => {
+        navigate("/staff/point/ranking/");
+    };
+
 
     return (
         <React.Fragment>
@@ -1707,6 +1944,198 @@ const ChartSection = () => {
                     {(role === "BDM" || role === "BDO") && (
                         <Col xs={12} sm={6} md={6} lg={3} xl={3}>
                             <MyGRVCard token={token} />
+                        </Col>
+                    )}
+
+                    {/* MY RANK & POINTS - BDM, BDO AND SD */}
+                    {["BDM", "BDO", "SD"].includes(role) && (
+                        <Col xs={12} sm={6} md={6} lg={3} xl={3}>
+                            <Card
+                                className="border-0 shadow-sm h-100"
+                                style={{
+                                    borderRadius: "16px",
+                                    background:
+                                        "linear-gradient(135deg, #55adff 0%, #2878f7 100%)",
+                                    color: "#ffffff",
+                                    overflow: "hidden",
+                                }}
+                            >
+                                <CardBody
+                                    style={{
+                                        padding: "18px",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: "14px",
+                                    }}
+                                >
+                                    {/* HEADER */}
+                                    <div className="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <h5
+                                                className="mb-1"
+                                                style={{
+                                                    color: "#ffffff",
+                                                    fontSize: "18px",
+                                                    fontWeight: "800",
+                                                }}
+                                            >
+                                                My Rank & Points
+                                            </h5>
+
+                                            <span
+                                                style={{
+                                                    fontSize: "12px",
+                                                    color: "#ffffff",
+                                                    opacity: 0.9,
+                                                }}
+                                            >
+                                                Current Month Performance
+                                            </span>
+                                        </div>
+
+                                        <FaTrophy
+                                            size={26}
+                                            color="#ffffff"
+                                        />
+                                    </div>
+
+                                    {/* LOADING */}
+                                    {mySalesRankLoading ? (
+                                        <div className="text-center py-4">
+                                            Loading your ranking...
+                                        </div>
+                                    ) : mySalesRankError ? (
+                                        <div
+                                            style={{
+                                                background: "rgba(255,255,255,0.15)",
+                                                borderRadius: "10px",
+                                                padding: "12px",
+                                                fontSize: "12px",
+                                            }}
+                                        >
+                                            {mySalesRankError}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {/* RANK AND POINTS */}
+                                            <div
+                                                style={{
+                                                    display: "grid",
+                                                    gridTemplateColumns:
+                                                        "repeat(2, minmax(0, 1fr))",
+                                                    gap: "12px",
+                                                }}
+                                            >
+                                                {/* RANK */}
+                                                <div
+                                                    style={{
+                                                        background: "#ffffff",
+                                                        borderRadius: "12px",
+                                                        padding: "15px",
+                                                        textAlign: "center",
+                                                    }}
+                                                >
+                                                    <FaMedal
+                                                        size={22}
+                                                        color="#2563eb"
+                                                    />
+
+                                                    <div
+                                                        style={{
+                                                            color: "#64748b",
+                                                            fontSize: "12px",
+                                                            fontWeight: "600",
+                                                            marginTop: "8px",
+                                                        }}
+                                                    >
+                                                        My Rank
+                                                    </div>
+
+                                                    <div
+                                                        style={{
+                                                            color: "#1e40af",
+                                                            fontSize: "30px",
+                                                            fontWeight: "800",
+                                                            marginTop: "5px",
+                                                        }}
+                                                    >
+                                                        {mySalesRankData?.rank ?? "--"}
+                                                    </div>
+                                                </div>
+
+                                                {/* POINTS */}
+                                                <div
+                                                    style={{
+                                                        background: "#ffffff",
+                                                        borderRadius: "12px",
+                                                        padding: "15px",
+                                                        textAlign: "center",
+                                                    }}
+                                                >
+                                                    <FaAward
+                                                        size={22}
+                                                        color="#2563eb"
+                                                    />
+
+                                                    <div
+                                                        style={{
+                                                            color: "#64748b",
+                                                            fontSize: "12px",
+                                                            fontWeight: "600",
+                                                            marginTop: "8px",
+                                                        }}
+                                                    >
+                                                        Total Points
+                                                    </div>
+
+                                                    <div
+                                                        style={{
+                                                            color: "#1e40af",
+                                                            fontSize: "30px",
+                                                            fontWeight: "800",
+                                                            marginTop: "5px",
+                                                        }}
+                                                    >
+                                                        {mySalesRankData?.total_points ?? "--"}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* NO DATA */}
+                                            {!mySalesRankData && (
+                                                <div
+                                                    className="text-center"
+                                                    style={{
+                                                        fontSize: "12px",
+                                                        color: "#ffffff",
+                                                    }}
+                                                >
+                                                    No ranking data available for this month
+                                                </div>
+                                            )}
+
+                                            {/* VIEW DETAILS */}
+                                            {/* <Button
+                                                color="light"
+                                                className="w-100 fw-semibold"
+                                                style={{
+                                                    borderRadius: "10px",
+                                                    fontSize: "13px",
+                                                }}
+                                                onClick={() =>
+                                                    navigate("/staff/point/ranking/")
+                                                }
+                                            >
+                                                View Ranking
+                                                <FaArrowRight
+                                                    className="ms-2"
+                                                    size={12}
+                                                />
+                                            </Button> */}
+                                        </>
+                                    )}
+                                </CardBody>
+                            </Card>
                         </Col>
                     )}
 
@@ -3546,6 +3975,281 @@ const ChartSection = () => {
                             </Card>
                         </Col>
 
+                    </Row>
+                )}
+
+                {(role === "Accounts / Accounting") && (
+                    <Row className="mb-4">
+                        <Col xs={12}>
+                            <Card
+                                className="border-0"
+                                style={{
+                                    borderRadius: 18,
+                                    background:
+                                        "linear-gradient(115deg,#4BA3FA,#2878F4)",
+                                    boxShadow: "0 6px 20px rgba(40,120,244,0.12)",
+                                    overflow: "hidden",
+                                }}
+                            >
+                                <CardBody style={{ padding: "20px 22px" }}>
+
+                                    {/* HEADER */}
+                                    <div
+                                        className="d-flex justify-content-between align-items-center flex-wrap"
+                                        style={{
+                                            gap: 12,
+                                            marginBottom: 20,
+                                        }}
+                                    >
+                                        <div
+                                            className="d-flex align-items-center"
+                                            style={{ gap: 12 }}
+                                        >
+                                            <div
+                                                style={{
+                                                    width: 44,
+                                                    height: 44,
+                                                    borderRadius: 12,
+                                                    background: "rgba(255,255,255,0.18)",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    color: "#FFFFFF",
+                                                    fontSize: 19,
+                                                }}
+                                            >
+                                                <FaTrophy />
+                                            </div>
+
+                                            <div>
+                                                <h5
+                                                    style={{
+                                                        color: "#FFFFFF",
+                                                        fontSize: 17,
+                                                        fontWeight: 800,
+                                                        marginBottom: 4,
+                                                    }}
+                                                >
+                                                    Sales Point Ranking
+                                                </h5>
+
+                                                <div
+                                                    style={{
+                                                        color: "#E5F1FF",
+                                                        fontSize: 11,
+                                                    }}
+                                                >
+                                                    Top 3 monthly performers
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <Button
+                                            onClick={goToAllSalesPointRanking}
+                                            style={{
+                                                background: "rgba(255,255,255,0.18)",
+                                                border:
+                                                    "1px solid rgba(255,255,255,0.30)",
+                                                borderRadius: 10,
+                                                color: "#FFFFFF",
+                                                padding: "10px 16px",
+                                                fontSize: 12,
+                                                fontWeight: 700,
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 9,
+                                            }}
+                                        >
+                                            See More
+                                            <FaArrowRight size={11} />
+                                        </Button>
+                                    </div>
+
+                                    {/* CONTENT */}
+                                    {salesRankingLoading ? (
+                                        <div
+                                            className="d-flex justify-content-center align-items-center"
+                                            style={{ minHeight: 170 }}
+                                        >
+                                            <div className="spinner-border text-light" />
+                                        </div>
+                                    ) : salesRankingError ? (
+                                        <div
+                                            className="text-center py-4"
+                                            style={{ color: "#FFFFFF" }}
+                                        >
+                                            Unable to load sales ranking
+                                        </div>
+                                    ) : salesRankingData.length === 0 ? (
+                                        <div
+                                            className="text-center py-4"
+                                            style={{ color: "#FFFFFF" }}
+                                        >
+                                            <FaUsers size={25} className="mb-2" />
+                                            <div>No ranking data available</div>
+                                        </div>
+                                    ) : (
+                                        <Row className="g-3 align-items-stretch">
+                                            {[...salesRankingData]
+                                                .sort((a, b) => a.displayRank - b.displayRank)
+                                                .map((staff) => {
+                                                    const rank = staff.displayRank;
+
+                                                    const themeMap = {
+                                                        1: {
+                                                            icon: <FaCrown />,
+                                                            accent: "#C28B19",
+                                                            bg: "#FFF3D4",
+                                                            border: "#FDE68A",
+                                                        },
+                                                        2: {
+                                                            icon: <FaMedal />,
+                                                            accent: "#64748B",
+                                                            bg: "#F1F5F9",
+                                                            border: "#CBD5E1",
+                                                        },
+                                                        3: {
+                                                            icon: <FaAward />,
+                                                            accent: "#B76A40",
+                                                            bg: "#FFF0E5",
+                                                            border: "#FED7AA",
+                                                        },
+                                                    };
+
+                                                    const theme =
+                                                        themeMap[rank] || themeMap[3];
+
+                                                    const points = Number(
+                                                        staff.total_points || 0
+                                                    ).toLocaleString("en-IN", {
+                                                        minimumFractionDigits: 2,
+                                                        maximumFractionDigits: 2,
+                                                    });
+
+                                                    return (
+                                                        <Col
+                                                            lg={4}
+                                                            md={6}
+                                                            xs={12}
+                                                            key={staff.staff_id}
+                                                        >
+                                                            <div
+                                                                style={{
+                                                                    height: "100%",
+                                                                    minHeight: 220,
+                                                                    borderRadius: 15,
+                                                                    background: "#FFFFFF",
+                                                                    padding: "20px 16px",
+                                                                    border:
+                                                                        `2px solid ${rank === 1
+                                                                            ? theme.border
+                                                                            : "transparent"}`,
+                                                                    boxShadow:
+                                                                        rank === 1
+                                                                            ? "0 6px 18px rgba(15,23,42,0.12)"
+                                                                            : "0 3px 10px rgba(15,23,42,0.06)",
+                                                                    display: "flex",
+                                                                    flexDirection: "column",
+                                                                    alignItems: "center",
+                                                                    justifyContent: "center",
+                                                                    textAlign: "center",
+                                                                    gap: 9,
+                                                                }}
+                                                            >
+                                                                {/* MEDAL */}
+                                                                <div
+                                                                    style={{
+                                                                        width: 52,
+                                                                        height: 52,
+                                                                        borderRadius: "50%",
+                                                                        background: theme.bg,
+                                                                        display: "flex",
+                                                                        alignItems: "center",
+                                                                        justifyContent: "center",
+                                                                        color: theme.accent,
+                                                                        fontSize: 22,
+                                                                    }}
+                                                                >
+                                                                    {theme.icon}
+                                                                </div>
+
+                                                                {/* RANK */}
+                                                                <div
+                                                                    style={{
+                                                                        color: theme.accent,
+                                                                        fontSize: 12,
+                                                                        fontWeight: 800,
+                                                                        letterSpacing: 0.7,
+                                                                    }}
+                                                                >
+                                                                    RANK {rank}
+                                                                </div>
+
+                                                                {/* POINTS */}
+                                                                <div
+                                                                    style={{
+                                                                        color: "#153A73",
+                                                                        fontSize: 30,
+                                                                        fontWeight: 900,
+                                                                        lineHeight: 1.1,
+                                                                    }}
+                                                                >
+                                                                    {points}
+                                                                </div>
+
+                                                                <div
+                                                                    style={{
+                                                                        color: "#94A3B8",
+                                                                        fontSize: 10,
+                                                                        fontWeight: 700,
+                                                                        letterSpacing: 0.5,
+                                                                    }}
+                                                                >
+                                                                    TOTAL POINTS
+                                                                </div>
+
+                                                                {/* DIVIDER */}
+                                                                <div
+                                                                    style={{
+                                                                        width: "100%",
+                                                                        height: 1,
+                                                                        background: "#E8EDF5",
+                                                                        margin: "5px 0",
+                                                                    }}
+                                                                />
+
+                                                                {/* STAFF */}
+                                                                <div
+                                                                    style={{
+                                                                        color: "#152C4C",
+                                                                        fontSize: 13,
+                                                                        fontWeight: 800,
+                                                                        overflowWrap: "anywhere",
+                                                                    }}
+                                                                >
+                                                                    {staff.staff_name}
+                                                                </div>
+
+                                                                <div
+                                                                    style={{
+                                                                        color: "#64748B",
+                                                                        fontSize: 11,
+                                                                        textTransform: "capitalize",
+                                                                    }}
+                                                                >
+                                                                    {staff.department}
+                                                                    {" · "}
+                                                                    {staff.family}
+                                                                </div>
+                                                            </div>
+                                                        </Col>
+                                                    );
+                                                })}
+                                        </Row>
+                                    )}
+                                </CardBody>
+                            </Card>
+                        </Col>
                     </Row>
                 )}
 

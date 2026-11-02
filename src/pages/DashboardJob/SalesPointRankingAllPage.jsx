@@ -12,6 +12,7 @@ import {
     Input,
     Spinner,
 } from "reactstrap";
+import * as XLSX from "xlsx-js-style";
 import {
     FaArrowLeft,
     FaTrophy,
@@ -28,6 +29,7 @@ import {
     FaChevronUp,
     FaChartLine,
     FaExclamationTriangle,
+    FaFileExcel,
 } from "react-icons/fa";
 
 // =====================================================
@@ -144,7 +146,7 @@ const SalesPointRankingAllPage = () => {
 
     const [search, setSearch] = useState("");
     const [expandedStaff, setExpandedStaff] = useState(null);
-
+    const [exporting, setExporting] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
 
     const pageSize = 25;
@@ -390,6 +392,655 @@ const SalesPointRankingAllPage = () => {
         fontSize: 13,
         color: "#1E293B",
     };
+
+
+    const exportTeamPointsExcel = async () => {
+        if (exporting || loading) return;
+
+        setExporting(true);
+
+        try {
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                throw new Error("Authentication token not found.");
+            }
+
+            const baseUrl = String(
+                import.meta.env.VITE_APP_KEY || ""
+            ).replace(/\/+$/, "");
+
+            if (!baseUrl) {
+                throw new Error("VITE_APP_KEY is not configured.");
+            }
+
+            const apiRoot = baseUrl.endsWith("/api")
+                ? baseUrl
+                : `${baseUrl}/api`;
+
+            const response = await axios.get(
+                `${apiRoot}/sales/point/team/ranking/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        Accept: "application/json",
+                    },
+                    params: {
+                        start_date: appliedDates.start_date,
+                        end_date: appliedDates.end_date,
+                    },
+                    timeout: 45000,
+                }
+            );
+
+            const payload =
+                response.data?.results &&
+                    !Array.isArray(response.data.results)
+                    ? response.data.results
+                    : response.data;
+
+            if (
+                payload?.status !== "success" ||
+                !Array.isArray(payload?.data)
+            ) {
+                throw new Error(
+                    payload?.message || "Invalid team ranking response."
+                );
+            }
+
+            const teams = payload.data;
+
+            if (teams.length === 0) {
+                alert("No team points found for selected dates.");
+                return;
+            }
+
+            const num = (value) => {
+                const n = Number(value);
+                return Number.isFinite(n) ? n : 0;
+            };
+
+            const objects = (value) =>
+                Array.isArray(value) ? value : [];
+
+            const members = teams.flatMap(
+                (team) => objects(team.members)
+            );
+
+            // Product categories matching Flutter report.
+            const categories = [
+                { label: "HELMETS", boxes: true, products: [] },
+                { label: "CH", boxes: true, products: [] },
+                { label: "BAG", boxes: false, products: [] },
+                { label: "NEBULA CL", boxes: false, products: [] },
+                { label: "NEBULA PRO", boxes: false, products: [] },
+            ];
+
+            const catalogue = new Map();
+
+            [...teams, ...members].forEach((source) => {
+                objects(source.products).forEach((product) => {
+                    catalogue.set(
+                        String(product.product_id),
+                        product
+                    );
+                });
+            });
+
+            catalogue.forEach((product) => {
+                const name = String(
+                    product.product_name || ""
+                ).toUpperCase();
+
+                const id = String(product.product_id);
+
+                let index = -1;
+
+                if (name.includes("HELMET")) {
+                    index = 0;
+                } else if (
+                    id === "667" ||
+                    /\bCH\s*1\b/.test(name)
+                ) {
+                    index = 1;
+                } else if (name.includes("BAG")) {
+                    index = 2;
+                } else if (
+                    id === "902" ||
+                    name.includes("NEBULA CL")
+                ) {
+                    index = 3;
+                } else if (
+                    id === "940" ||
+                    name.includes("NEBULA PRO")
+                ) {
+                    index = 4;
+                }
+
+                if (index >= 0) {
+                    categories[index].products.push(product);
+                } else {
+                    categories.push({
+                        label: String(
+                            product.product_name || "PRODUCT"
+                        ),
+                        boxes: false,
+                        products: [product],
+                    });
+                }
+            });
+
+            const headers = [
+                "TEAM",
+                "TEAM POINTS",
+                "BDO NAME",
+                "BDO POINTS",
+                "BILL",
+                "1 BILL 1 POINT",
+            ];
+
+            const widths = [25, 18, 28, 18, 14, 21];
+
+            const pointColumns = new Set([3, 5]);
+            const quantityColumns = new Set([4]);
+
+            categories.forEach((category) => {
+                headers.push(
+                    category.label === "CH"
+                        ? "CH PAIRS"
+                        : `${category.label} PCS`
+                );
+
+                quantityColumns.add(headers.length - 1);
+                widths.push(19);
+
+                if (category.boxes) {
+                    headers.push(
+                        category.label === "CH"
+                            ? "CH1 BOX"
+                            : "BOX"
+                    );
+                    widths.push(15);
+                }
+
+                const rules = [
+                    ...new Set(
+                        category.products.map((product) =>
+                            `${num(product.required_quantity).toFixed(0)} PC ` +
+                            `(${num(product.point_per_block).toFixed(2)} POINTS)`
+                        )
+                    ),
+                ];
+
+                headers.push(
+                    rules.length === 1
+                        ? rules[0]
+                        : `${category.label} POINTS`
+                );
+
+                pointColumns.add(headers.length - 1);
+                widths.push(23);
+            });
+
+            const extraFields = [
+                ["M DEALER", "md_count"],
+                ["MD POINTS", "md_points"],
+                ["S DEALER", "sd_count"],
+                ["SD POINTS", "sd_points"],
+                ["NEW LEADS", "new_leads"],
+                ["LEAD POINTS", "new_lead_points"],
+                ["NEW CUSTOMERS", "new_customers"],
+                ["CUSTOMER POINTS", "new_customer_points"],
+                ["CONVERSIONS", "new_conversions"],
+                ["CONVERSION POINTS", "new_conversion_points"],
+            ];
+
+            extraFields.forEach(([label]) => {
+                headers.push(label);
+                widths.push(19);
+
+                if (label.endsWith("POINTS")) {
+                    pointColumns.add(headers.length - 1);
+                }
+            });
+
+            const columnCount = headers.length;
+
+            const rows = [];
+            const merges = [];
+
+            const backgrounds = [];
+            const foregrounds = [];
+
+            const RED = "FF0000";
+            const WHITE = "FFFFFF";
+            const BLACK = "000000";
+            const PEACH = "FCE4D6";
+            const YELLOW = "FFFF00";
+            const GREEN = "C6E0B4";
+            const LIGHT_GREEN = "E2EFDA";
+
+            const addRow = (values, type = "data") => {
+                const rowIndex = rows.length;
+
+                const row = Array.from(
+                    { length: columnCount },
+                    (_, i) => values[i] ?? ""
+                );
+
+                rows.push(row);
+
+                const bg = [];
+                const fg = [];
+
+                for (let c = 0; c < columnCount; c++) {
+                    if (type === "header") {
+                        bg.push(RED);
+                        fg.push(WHITE);
+                    } else if (type === "total") {
+                        bg.push(c < 3 ? LIGHT_GREEN : RED);
+                        fg.push(c < 3 ? BLACK : WHITE);
+                    } else if (type === "blank") {
+                        bg.push(WHITE);
+                        fg.push(BLACK);
+                    } else {
+                        let color = WHITE;
+
+                        if (c === 1 || c === 3) {
+                            color = YELLOW;
+                        } else if (
+                            c === 0 ||
+                            c === 2 ||
+                            pointColumns.has(c)
+                        ) {
+                            color = PEACH;
+                        } else if (
+                            quantityColumns.has(c) ||
+                            (
+                                c >= columnCount - 10 &&
+                                !pointColumns.has(c)
+                            )
+                        ) {
+                            color = GREEN;
+                        }
+
+                        bg.push(color);
+                        fg.push(
+                            pointColumns.has(c) && c !== 5
+                                ? RED
+                                : BLACK
+                        );
+                    }
+                }
+
+                backgrounds.push(bg);
+                foregrounds.push(fg);
+
+                return rowIndex;
+            };
+
+            addRow(headers, "header");
+
+            const totals = Array(columnCount).fill(0);
+
+            const getMemberValues = (member) => {
+                const values = [
+                    "",
+                    "",
+                    member.staff_name || "Unnamed staff",
+                    num(member.total_points),
+                    num(member.invoice_count),
+                    num(member.invoice_points),
+                ];
+
+                const products = objects(member.products);
+
+                categories.forEach((category) => {
+                    const ids = new Set(
+                        category.products.map((product) =>
+                            String(product.product_id)
+                        )
+                    );
+
+                    const matches = products.filter((product) =>
+                        ids.has(String(product.product_id))
+                    );
+
+                    let quantity = 0;
+                    let boxes = 0;
+                    let points = 0;
+
+                    matches.forEach((product) => {
+                        const sold = num(product.sold_quantity);
+                        const required = num(product.required_quantity);
+
+                        quantity += sold;
+
+                        if (required > 0) {
+                            boxes += sold / required;
+                        }
+
+                        points += num(product.earned_points);
+                    });
+
+                    values.push(quantity);
+
+                    if (category.boxes) {
+                        values.push(boxes);
+                    }
+
+                    values.push(points);
+                });
+
+                extraFields.forEach(([, key]) => {
+                    values.push(num(member[key]));
+                });
+
+                return values;
+            };
+
+            // Team-wise data.
+            teams.forEach((team) => {
+                const teamMembers = objects(team.members);
+                const firstRow = rows.length;
+
+                if (teamMembers.length === 0) {
+                    const values = Array(columnCount).fill("");
+
+                    values[0] = team.team_name || "Team";
+                    values[1] = num(team.total_points);
+                    values[2] = "No eligible members";
+
+                    addRow(values);
+                }
+
+                teamMembers.forEach((member, index) => {
+                    const values = getMemberValues(member);
+
+                    if (index === 0) {
+                        values[0] = team.team_name || "Team";
+                        values[1] = num(team.total_points);
+                    }
+
+                    for (let c = 3; c < columnCount; c++) {
+                        totals[c] += num(values[c]);
+                    }
+
+                    addRow(values);
+                });
+
+                const lastRow = rows.length - 1;
+
+                if (teamMembers.length > 1) {
+                    merges.push({
+                        s: { r: firstRow, c: 0 },
+                        e: { r: lastRow, c: 0 },
+                    });
+
+                    merges.push({
+                        s: { r: firstRow, c: 1 },
+                        e: { r: lastRow, c: 1 },
+                    });
+                }
+            });
+
+            const teamPoints = teams.reduce(
+                (sum, team) => sum + num(team.total_points),
+                0
+            );
+
+            // Grand total.
+            const grandTotal = Array(columnCount).fill("");
+
+            grandTotal[0] = "TOTAL";
+            grandTotal[1] = teamPoints;
+
+            for (let c = 3; c < columnCount; c++) {
+                grandTotal[c] = totals[c];
+            }
+
+            addRow(grandTotal, "total");
+
+            // Spacer.
+            addRow([], "blank");
+
+            // Quantity and points summary.
+            const summaryHeader = Array(columnCount).fill("");
+
+            summaryHeader[2] = "TOTAL";
+            summaryHeader[3] = "POINTS";
+
+            quantityColumns.forEach((column) => {
+                summaryHeader[column] = headers[column];
+            });
+
+            addRow(summaryHeader, "header");
+
+            const summaryValues = Array(columnCount).fill("");
+
+            summaryValues[3] = teamPoints;
+
+            quantityColumns.forEach((column) => {
+                summaryValues[column] = totals[column];
+            });
+
+            const summaryIndex = addRow(summaryValues, "blank");
+
+            for (let c = 0; c < columnCount; c++) {
+                if (c === 3 || quantityColumns.has(c)) {
+                    backgrounds[summaryIndex][c] = YELLOW;
+                }
+            }
+
+            // Spacer.
+            addRow([], "blank");
+
+            // Staff ranking section.
+            const rankingHeader = Array(columnCount).fill("");
+
+            rankingHeader[2] = "BDO NAME";
+            rankingHeader[3] = "BDO POINTS";
+
+            addRow(rankingHeader, "header");
+
+            const rankedMembers = [...members].sort((a, b) => {
+                const difference =
+                    num(b.total_points) - num(a.total_points);
+
+                if (difference !== 0) {
+                    return difference;
+                }
+
+                return String(a.staff_name || "").localeCompare(
+                    String(b.staff_name || "")
+                );
+            });
+
+            rankedMembers.forEach((member) => {
+                const values = Array(columnCount).fill("");
+
+                values[2] = member.staff_name || "Unnamed staff";
+                values[3] = num(member.total_points);
+
+                const index = addRow(values, "blank");
+
+                backgrounds[index][2] = PEACH;
+                backgrounds[index][3] = YELLOW;
+                foregrounds[index][3] = RED;
+            });
+
+            const rankingTotal = Array(columnCount).fill("");
+
+            rankingTotal[2] = "TOTAL";
+            rankingTotal[3] = totals[3];
+
+            const rankingTotalIndex = addRow(
+                rankingTotal,
+                "blank"
+            );
+
+            backgrounds[rankingTotalIndex][2] = LIGHT_GREEN;
+            backgrounds[rankingTotalIndex][3] = RED;
+            foregrounds[rankingTotalIndex][3] = WHITE;
+
+            // Create worksheet.
+            const worksheet = XLSX.utils.aoa_to_sheet(rows);
+
+            worksheet["!cols"] = widths.map((width) => ({
+                wch: width,
+            }));
+
+            worksheet["!merges"] = merges;
+
+            worksheet["!rows"] = rows.map((_, index) => ({
+                hpt:
+                    index === 0 ||
+                        (
+                            rows[index][2] === "TOTAL" &&
+                            rows[index][3] === "POINTS"
+                        ) ||
+                        (
+                            rows[index][2] === "BDO NAME" &&
+                            rows[index][3] === "BDO POINTS"
+                        )
+                        ? 48
+                        : 26,
+            }));
+
+            // Apply Excel styles.
+            rows.forEach((row, r) => {
+                row.forEach((value, c) => {
+                    const address = XLSX.utils.encode_cell({
+                        r,
+                        c,
+                    });
+
+                    const cell = worksheet[address];
+
+                    if (!cell) return;
+
+                    cell.s = {
+                        font: {
+                            name: "Arial",
+                            sz: 10,
+                            bold: true,
+                            color: {
+                                rgb: foregrounds[r][c],
+                            },
+                        },
+
+                        fill: {
+                            patternType: "solid",
+                            fgColor: {
+                                rgb: backgrounds[r][c],
+                            },
+                        },
+
+                        alignment: {
+                            horizontal:
+                                c === 0 || c === 2
+                                    ? "left"
+                                    : "center",
+                            vertical: "center",
+                            wrapText: true,
+                        },
+
+                        border: {
+                            top: {
+                                style: "thin",
+                                color: { rgb: "333333" },
+                            },
+                            bottom: {
+                                style: "thin",
+                                color: { rgb: "333333" },
+                            },
+                            left: {
+                                style: "thin",
+                                color: { rgb: "333333" },
+                            },
+                            right: {
+                                style: "thin",
+                                color: { rgb: "333333" },
+                            },
+                        },
+                    };
+
+                    if (typeof value === "number") {
+                        cell.z = "#,##0.00";
+                    }
+                });
+            });
+
+            // Style empty cells too, preserving column positions.
+            rows.forEach((row, r) => {
+                for (let c = 0; c < columnCount; c++) {
+                    const address = XLSX.utils.encode_cell({
+                        r,
+                        c,
+                    });
+
+                    if (!worksheet[address]) {
+                        worksheet[address] = {
+                            t: "s",
+                            v: "",
+                            s: {
+                                fill: {
+                                    patternType: "solid",
+                                    fgColor: {
+                                        rgb: backgrounds[r][c],
+                                    },
+                                },
+                                border: {
+                                    top: { style: "thin" },
+                                    bottom: { style: "thin" },
+                                    left: { style: "thin" },
+                                    right: { style: "thin" },
+                                },
+                            },
+                        };
+                    }
+                }
+            });
+
+            // Ensure worksheet range includes every column.
+            worksheet["!ref"] = XLSX.utils.encode_range({
+                s: { r: 0, c: 0 },
+                e: {
+                    r: rows.length - 1,
+                    c: columnCount - 1,
+                },
+            });
+
+            const workbook = XLSX.utils.book_new();
+
+            XLSX.utils.book_append_sheet(
+                workbook,
+                worksheet,
+                "POINTS"
+            );
+
+            const filename =
+                `Team_Points_${appliedDates.start_date}_` +
+                `${appliedDates.end_date}.xlsx`;
+
+            XLSX.writeFile(workbook, filename, {
+                bookType: "xlsx",
+                cellStyles: true,
+            });
+
+        } catch (error) {
+            console.error("Excel export failed:", error);
+
+            alert(
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to export team points."
+            );
+        } finally {
+            setExporting(false);
+        }
+    };
+
 
     return (
         <Container
@@ -722,6 +1373,7 @@ const SalesPointRankingAllPage = () => {
 
                     {/* LIST HEADER */}
 
+
                     <div
                         className="d-flex justify-content-between align-items-center flex-wrap"
                         style={{
@@ -729,6 +1381,7 @@ const SalesPointRankingAllPage = () => {
                             marginBottom: 20,
                         }}
                     >
+                        {/* LEFT SIDE - TITLE */}
                         <div>
                             <h5
                                 style={{
@@ -751,38 +1404,83 @@ const SalesPointRankingAllPage = () => {
                             </div>
                         </div>
 
+                        {/* RIGHT SIDE - SEARCH AND EXCEL EXPORT */}
                         <div
+                            className="d-flex align-items-center flex-wrap"
                             style={{
-                                position: "relative",
-                                width: "100%",
-                                maxWidth: 300,
+                                gap: 10,
                             }}
                         >
-                            <FaSearch
+                            {/* SEARCH FIELD */}
+                            <div
                                 style={{
-                                    position: "absolute",
-                                    top: 13,
-                                    left: 13,
-                                    color: "#94A3B8",
-                                    fontSize: 13,
+                                    position: "relative",
+                                    width: "100%",
+                                    maxWidth: 300,
+                                    minWidth: 220,
+                                    flex: "1 1 220px",
                                 }}
-                            />
+                            >
+                                <FaSearch
+                                    style={{
+                                        position: "absolute",
+                                        top: 13,
+                                        left: 13,
+                                        color: "#94A3B8",
+                                        fontSize: 13,
+                                    }}
+                                />
 
-                            <Input
-                                type="text"
-                                placeholder="Search staff, department..."
-                                value={search}
-                                onChange={(e) => {
-                                    setSearch(e.target.value);
-                                    setCurrentPage(1);
-                                }}
+                                <Input
+                                    type="text"
+                                    placeholder="Search staff, department..."
+                                    value={search}
+                                    onChange={(e) => {
+                                        setSearch(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                    style={{
+                                        ...inputStyle,
+                                        paddingLeft: 36,
+                                    }}
+                                />
+                            </div>
+
+                            {/* EXPORT EXCEL BUTTON */}
+                            <Button
+                                onClick={exportTeamPointsExcel}
+                                disabled={loading || exporting}
                                 style={{
-                                    ...inputStyle,
-                                    paddingLeft: 36,
+                                    background: "#16834A",
+                                    color: "#FFFFFF",
+                                    border: "none",
+                                    borderRadius: 10,
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    minHeight: 40,
+                                    padding: "0 16px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: 8,
+                                    whiteSpace: "nowrap",
                                 }}
-                            />
+                            >
+                                {exporting ? (
+                                    <>
+                                        <Spinner size="sm" />
+                                        Exporting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaFileExcel size={16} />
+                                        Export Excel
+                                    </>
+                                )}
+                            </Button>
                         </div>
                     </div>
+
 
                     {/* ERROR */}
 
@@ -1166,7 +1864,7 @@ const SalesPointRankingAllPage = () => {
                                                                 <thead>
                                                                     <tr style={{ background: "#EAF2FF", color: "#153A73" }}>
                                                                         {[
-                                                                            "Product Name", "Quantity", 
+                                                                            "Product Name", "Quantity",
                                                                             // "Required Qty",
                                                                             // "Completed Blocks", "Remaining Qty", "Points / Block",
                                                                             // "Remaining Points", 

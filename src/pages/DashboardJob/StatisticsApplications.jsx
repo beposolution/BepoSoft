@@ -287,7 +287,14 @@ const StatisticsApplications = () => {
                 );
 
                 // Only first three staff
-                setSalesRankingData(sortedRanking.slice(0, 3));
+                const topThreeRanking = sortedRanking.slice(0, 3).map(
+                    (staff, index) => ({
+                        ...staff,
+                        displayRank: index + 1,
+                    })
+                );
+
+                setSalesRankingData(topThreeRanking);
 
             } catch (error) {
                 console.error(
@@ -1830,16 +1837,9 @@ const StatisticsApplications = () => {
                                                 ) : (
                                                     <Row className="g-3 align-items-stretch">
                                                         {[...salesRankingData]
-                                                            .sort((a, b) => {
-                                                                const order = [2, 1, 3];
-                                                                return (
-                                                                    order.indexOf(Number(a.rank)) -
-                                                                    order.indexOf(Number(b.rank))
-                                                                );
-                                                            })
+                                                            .sort((a, b) => a.displayRank - b.displayRank)
                                                             .map((staff) => {
-
-                                                                const rank = Number(staff.rank);
+                                                                const rank = staff.displayRank;
 
                                                                 const themeMap = {
                                                                     1: {

@@ -53,12 +53,13 @@ const Login = (props) => {
           },
         });
 
-        const data = response.data;
+        const data = response.data; 
 
         if (data.status === 'success') {
           localStorage.setItem('token', data.token);
           localStorage.setItem('active', data.active);
           localStorage.setItem('name', data.name);
+          localStorage.setItem('id', data.id);
           localStorage.setItem('warehouseId', data.warehouse_id || '');
           localStorage.setItem('is_manager', data.manager || false);
 

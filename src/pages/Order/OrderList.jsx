@@ -374,6 +374,18 @@ const BasicTable = () => {
                 0
             );
 
+            const totalTaxableValue = allOrders.reduce(
+                (sum, order) =>
+                    sum + (Number(order.total_taxable_value) || 0),
+                0
+            );
+
+            const totalTaxAmount = allOrders.reduce(
+                (sum, order) =>
+                    sum + (Number(order.total_tax_amount) || 0),
+                0
+            );
+
             const statusColors = {
                 "Invoice Created": "DCEBFF",
                 "Invoice Approved": "D9EAD3",
@@ -460,6 +472,8 @@ const BasicTable = () => {
                 [],
                 ["TOTAL ORDERS", allOrders.length],
                 ["TOTAL ORDER AMOUNT", totalAmount],
+                ["TOTAL TAXABLE VALUE", totalTaxableValue],
+                ["TOTAL TAX AMOUNT", totalTaxAmount],
                 [],
                 ["ORDER STATUS", "COUNT"]
             ];
@@ -489,19 +503,26 @@ const BasicTable = () => {
                 {},
                 { hpt: 28 },
                 { hpt: 26 },
+                { hpt: 26 },
+                { hpt: 26 },
                 {},
                 { hpt: 28 }
             ];
 
             styleRow(summarySheet, 0, 2, headerStyle);
             styleRow(summarySheet, 3, 2, totalStyle);
-            styleRow(summarySheet, 6, 2, headerStyle);
+            styleRow(summarySheet, 4, 2, totalStyle);
+            styleRow(summarySheet, 5, 2, totalStyle);
+            styleRow(summarySheet, 6, 2, totalStyle);
+            styleRow(summarySheet, 8, 2, headerStyle);
 
             summarySheet["B5"].z = "#,##0.00";
+            summarySheet["B6"].z = "#,##0.00";
+            summarySheet["B7"].z = "#,##0.00";
 
             Object.entries(statusCounts).forEach(
                 ([status], index) => {
-                    const row = index + 7;
+                    const row = index + 9;
                     const color = statusColors[status] || "E7E6E6";
 
                     const statusCell = `A${row + 1}`;
@@ -549,6 +570,8 @@ const BasicTable = () => {
                 "Staff",
                 "Family",
                 "Total Amount",
+                "Total Taxable Value",
+                "Total Tax Amount",
                 "Payment Method"
             ];
 
@@ -564,6 +587,8 @@ const BasicTable = () => {
                     order.manage_staff || "-",
                     order.family || "-",
                     Number(order.total_amount) || 0,
+                    Number(order.total_taxable_value) || 0,
+                    Number(order.total_tax_amount) || 0,
                     order.payment_method || "-"
                 ]),
                 [
@@ -576,6 +601,8 @@ const BasicTable = () => {
                     "",
                     "",
                     totalAmount,
+                    totalTaxableValue,
+                    totalTaxAmount,
                     ""
                 ]
             ];
@@ -592,11 +619,13 @@ const BasicTable = () => {
                 { wch: 26 },
                 { wch: 20 },
                 { wch: 20 },
+                { wch: 22 },
+                { wch: 20 },
                 { wch: 22 }
             ];
 
             ordersSheet["!autofilter"] = {
-                ref: `A1:J${orderData.length}`
+                ref: `A1:L${orderData.length}`
             };
 
             styleRow(ordersSheet, 0, headers.length, headerStyle);
@@ -644,20 +673,23 @@ const BasicTable = () => {
                     }
                 };
 
-                const amountAddress = `I${rowIndex + 1}`;
+                ["I", "J", "K"].forEach((col) => {
+                    const amountAddress = `${col}${rowIndex + 1}`;
 
-                ordersSheet[amountAddress].z = "#,##0.00";
-                ordersSheet[amountAddress].s = {
-                    fill: {
-                        patternType: "solid",
-                        fgColor: { rgb: background }
-                    },
-                    font: {
-                        bold: true,
-                        color: { rgb: "198754" }
-                    },
-                    numFmt: "#,##0.00"
-                };
+                    ordersSheet[amountAddress].z = "#,##0.00";
+
+                    ordersSheet[amountAddress].s = {
+                        fill: {
+                            patternType: "solid",
+                            fgColor: { rgb: background }
+                        },
+                        font: {
+                            bold: true,
+                            color: { rgb: "198754" }
+                        },
+                        numFmt: "#,##0.00"
+                    };
+                });
             });
 
             const totalRowIndex = orderData.length - 1;
@@ -669,7 +701,9 @@ const BasicTable = () => {
                 headerStyle
             );
 
-            ordersSheet[`I${totalRowIndex + 1}`].z = "#,##0.00";
+            ["I", "J", "K"].forEach((col) => {
+                ordersSheet[`${col}${totalRowIndex + 1}`].z = "#,##0.00";
+            });
 
             // =================================
             // CREATE AND DOWNLOAD WORKBOOK
@@ -860,6 +894,8 @@ const BasicTable = () => {
                                                             )}
                                                             <th>STATUS</th>
                                                             <th>BILL AMOUNT</th>
+                                                            <th>TAXABLE AMOUNT</th>
+                                                            <th>TAX AMOUNT</th>
                                                             <th>CREATED AT</th>
                                                         </tr>
                                                     </thead>
@@ -967,6 +1003,14 @@ const BasicTable = () => {
 
                                                                     <td style={rowStyle}>
                                                                         {order?.total_amount?.toFixed(2)}
+                                                                    </td>
+
+                                                                    <td style={rowStyle}>
+                                                                        {order?.total_taxable_value?.toFixed(2)}
+                                                                    </td>
+
+                                                                    <td style={rowStyle}>
+                                                                        {order?.total_tax_amount?.toFixed(2)}
                                                                     </td>
 
                                                                     <td style={rowStyle}>

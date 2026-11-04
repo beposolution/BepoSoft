@@ -231,7 +231,7 @@ const BasicTable = () => {
                         >
                           <option value="">All Families</option>
                           {familyData.map((fam) => (
-                            <option key={fam.id} value={fam.name}>
+                            <option key={fam.id} value={fam.id}>
                               {fam.name}
                             </option>
                           ))}
@@ -250,7 +250,7 @@ const BasicTable = () => {
                         >
                           <option value="">All States</option>
                           {states.map((state) => (
-                            <option key={state.id} value={state.name}>
+                            <option key={state.id} value={state.id}>
                               {state.name}
                             </option>
                           ))}

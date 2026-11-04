@@ -488,6 +488,7 @@ import CompanyFinanceReport from "../pages/DashboardJob/CompanyFinanceReport";
 import PendingForPacking from "../pages/Order/PendingForPacking";
 import ProformaWithPaymentSlips from "../pages/PerfomaInvoive/ProformaWithPaymentSlips";
 import SalesPointRankingAllPage from "../pages/DashboardJob/SalesPointRankingAllPage";
+import StatewiseSalesReportExcelPage from "../pages/Resports/StatewiseSalesReportExcelPage";
 
 
 
@@ -783,6 +784,8 @@ const authProtectedRoutes = [
   { path: "/product/rack/usability/report/", component: <ProductRackUsabilityReport /> },
   { path: "/grv/family/payment/summary/report/", component: <GrvFamilyPaymentSummaryReport /> },
   { path: "/dispatched/pending/products/", component: <ShippingProductCountReport /> },
+
+  { path: "/statewise/sales/report/excel/", component: <StatewiseSalesReportExcelPage /> },
 
 
   { path: "/sales/reports/", component: <Salesreport /> },

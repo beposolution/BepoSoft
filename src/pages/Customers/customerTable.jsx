@@ -1,4 +1,9 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+} from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import { Dropdown } from "react-bootstrap";
@@ -16,7 +21,6 @@ import {
   Label,
 } from "reactstrap";
 import { useNavigate } from "react-router-dom";
-import Paginations from "../../components/Common/Pagination";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -31,9 +35,15 @@ const BasicTable = () => {
   const [selectedState, setSelectedState] = useState("");
   const [selectedFamily, setSelectedFamily] = useState("");
   const [selectedManager, setSelectedManager] = useState("");
+
   const [currentPage, setCurrentPage] = useState(1);
-  const [perPageData] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const loadMoreRef = useRef(null);
+  const requestIdRef = useRef(0);
+  const fetchingRef = useRef(false);
 
   const [familyData, setFamilyData] = useState([]);
 
@@ -55,56 +65,169 @@ const BasicTable = () => {
     if (token) fetchFamilyData();
   }, [token]);
 
+  // Fetch states and managers once
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
+    if (!token) return;
 
-        const customerResponse = await axios.get(
+    const fetchFilters = async () => {
+      try {
+        const [responseState, responseManager] =
+          await Promise.all([
+            axios.get(
+              `${import.meta.env.VITE_APP_KEY}states/`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            ),
+
+            axios.get(
+              `${import.meta.env.VITE_APP_KEY}staffs/`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            ),
+          ]);
+
+        setStates(responseState.data.data || []);
+        setManager(responseManager.data.data || []);
+      } catch (error) {
+        toast.error("Failed to load filters");
+      }
+    };
+
+    fetchFilters();
+  }, [token]);
+
+
+  // Reset pagination whenever filters change
+  useEffect(() => {
+    requestIdRef.current += 1;
+    fetchingRef.current = false;
+
+    setData([]);
+    setCurrentPage(1);
+    setTotalCount(0);
+    setHasMore(true);
+    setError(null);
+  }, [
+    searchTerm,
+    selectedState,
+    selectedFamily,
+    selectedManager,
+    token,
+  ]);
+
+
+  // Fetch customers page by page
+  useEffect(() => {
+    if (!token) return;
+
+    const requestId = ++requestIdRef.current;
+    let cancelled = false;
+
+    const fetchCustomers = async () => {
+      fetchingRef.current = true;
+
+      if (currentPage === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      try {
+        const response = await axios.get(
           `${import.meta.env.VITE_APP_KEY}customers/`,
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
             params: {
               page: currentPage,
               search: searchTerm,
               state: selectedState,
               family: selectedFamily,
-              manager: selectedManager
-            }
+              manager: selectedManager,
+            },
           }
         );
 
-        if (customerResponse.status === 200) {
-          setData(customerResponse.data.results || []);
-          setTotalCount(customerResponse.data.count);
-
-          const [responseState, responseManager] = await Promise.all([
-            axios.get(`${import.meta.env.VITE_APP_KEY}states/`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            axios.get(`${import.meta.env.VITE_APP_KEY}staffs/`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-          ]);
-
-          if (responseState.status === 200)
-            setStates(responseState.data.data || []);
-          if (responseManager.status === 200)
-            setManager(responseManager.data.data || []);
+        if (
+          cancelled ||
+          requestId !== requestIdRef.current
+        ) {
+          return;
         }
+
+        const newCustomers = response.data.results || [];
+        const count = response.data.count || 0;
+
+        setTotalCount(count);
+
+        setData((previous) => {
+          const combined =
+            currentPage === 1
+              ? newCustomers
+              : [...previous, ...newCustomers];
+
+          // Avoid duplicate customer records
+          const uniqueCustomers = Array.from(
+            new Map(
+              combined.map((customer) => [
+                customer.id,
+                customer,
+              ])
+            ).values()
+          );
+
+          setHasMore(
+            Boolean(response.data.next) &&
+            uniqueCustomers.length < count
+          );
+
+          return uniqueCustomers;
+        });
+
+        setError(null);
       } catch (error) {
-        setError(error.message || "Failed to fetch data");
+        if (
+          !cancelled &&
+          requestId === requestIdRef.current
+        ) {
+          setError(
+            error.message || "Failed to fetch customers"
+          );
+          setHasMore(false);
+        }
       } finally {
-        setLoading(false);
+        if (
+          !cancelled &&
+          requestId === requestIdRef.current
+        ) {
+          fetchingRef.current = false;
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     };
 
-    if (token) fetchData();
-  }, [token, currentPage, searchTerm, selectedState, selectedFamily, selectedManager]);
+    fetchCustomers();
 
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    token,
+    currentPage,
+    searchTerm,
+    selectedState,
+    selectedFamily,
+    selectedManager,
+  ]);
+
 
   const handleSearch = (e) => setSearchTerm(e.target.value);
   const handleStateFilter = (e) => setSelectedState(e.target.value);
@@ -169,10 +292,18 @@ const BasicTable = () => {
     navigate(`/customer/${customerId}/ledger/`);
 
   const exportToExcel = () => {
-    const formattedData = filteredData.map((customer, index) => ({
+    if (!data || data.length === 0) {
+      toast.warning("No customer data available to export.");
+      return;
+    }
+
+    const formattedData = data.map((customer, index) => ({
       "#": index + 1,
-      Name: customer.name,
-      Manager: managerMap[customer.manager] || customer.manager || "N/A",
+      Name: customer.name || "N/A",
+      Manager:
+        managerMap[customer.manager] ||
+        customer.manager ||
+        "N/A",
       GST: customer.gst || "N/A",
       Email: customer.email || "N/A",
       Phone: customer.phone || "N/A",
@@ -185,13 +316,77 @@ const BasicTable = () => {
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
+
+    worksheet["!cols"] = [
+      { wch: 8 },
+      { wch: 25 },
+      { wch: 25 },
+      { wch: 20 },
+      { wch: 30 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 12 },
+      { wch: 40 },
+      { wch: 20 },
+    ];
+
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Customers");
-    XLSX.writeFile(workbook, "Customer_List.xlsx");
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      "Customers"
+    );
+
+    XLSX.writeFile(
+      workbook,
+      "Customer_List.xlsx"
+    );
+
+    toast.success(
+      `${formattedData.length} customers exported successfully.`
+    );
   };
 
 
   document.title = "Customer List | BEPOSOFT";
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+
+    if (!target || loading || loadingMore || !hasMore) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          !fetchingRef.current &&
+          hasMore
+        ) {
+          fetchingRef.current = true;
+
+          setCurrentPage((previousPage) => {
+            return previousPage + 1;
+          });
+        }
+      },
+      {
+        root: null,
+        rootMargin: "200px",
+        threshold: 0,
+      }
+    );
+
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [loading, loadingMore, hasMore, data.length]);
 
   return (
     <React.Fragment>
@@ -278,21 +473,13 @@ const BasicTable = () => {
                       </FormGroup>
                     </Col>
 
-                    <Col md={2} className="d-flex">
-                      <Button
-                        color="success"
-                        onClick={exportToExcel}
-                        className="ms-auto w-100"
-                        style={{ marginTop: "24px" }}
-                      >
-                        Export to Excel
-                      </Button>
-                    </Col>
                   </Row>
 
-                  {loading ? (
-                    <p>Loading...</p>
-                  ) : error ? (
+                  {loading && data.length === 0 ? (
+                    <p className="text-center py-4">
+                      Loading customers...
+                    </p>
+                  ) : error && data.length === 0 ? (
                     <p className="text-danger">{error}</p>
                   ) : (
                     <>
@@ -313,7 +500,7 @@ const BasicTable = () => {
                           <tbody>
                             {data.map((customer, index) => (
                               <tr key={customer.id}>
-                                <th scope="row">{(currentPage - 1) * 50 + index + 1}</th>
+                                <th scope="row">{index + 1}</th>
                                 <td>{customer.name}</td>
                                 <td>{customer.gst || "N/A"}</td>
                                 <td>{customer.email || "N/A"}</td>
@@ -354,15 +541,41 @@ const BasicTable = () => {
                         </Table>
                       </div>
 
-                      <Paginations
-                        perPageData={50}
-                        data={Array(totalCount)}
-                        currentPage={currentPage}
-                        setCurrentPage={setCurrentPage}
-                        isShowingPageLength={true}
-                        paginationDiv="mt-3 d-flex justify-content-center"
-                        paginationClass="pagination pagination-rounded"
-                      />
+                      <div
+                        ref={loadMoreRef}
+                        className="text-center py-4"
+                        style={{ minHeight: "70px" }}
+                      >
+                        {loadingMore && (
+                          <div>
+                            <div
+                              className="spinner-border text-primary"
+                              role="status"
+                            >
+                              <span className="visually-hidden">
+                                Loading...
+                              </span>
+                            </div>
+
+                            <p className="mt-2 text-muted">
+                              Loading more customers...
+                            </p>
+                          </div>
+                        )}
+
+                        {!hasMore && data.length > 0 && (
+                          <p className="text-muted mb-0">
+                            All customers loaded
+                          </p>
+                        )}
+
+                        {!loading && data.length === 0 && (
+                          <p className="text-muted mb-0">
+                            No customers found
+                          </p>
+                        )}
+                      </div>
+
                     </>
                   )}
                 </CardBody>
@@ -370,6 +583,31 @@ const BasicTable = () => {
             </Col>
           </Row>
         </div>
+
+        {/* Floating Excel Export Button */}
+        <Button
+          color="success"
+          onClick={exportToExcel}
+          disabled={data.length === 0 || loadingMore || loading}
+          title={`Export ${data.length} loaded customers`}
+          style={{
+            position: "fixed",
+            bottom: "65px",
+            right: "35px",
+            zIndex: 1050,
+            borderRadius: "30px",
+            padding: "12px 22px",
+            backgroundColor: "#2ec997",
+            border: "none",
+            color: "#ffffff",
+            fontSize: "13px",
+            fontWeight: "600",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          }}
+        >
+          Excel
+        </Button>
+
       </div>
     </React.Fragment>
   );

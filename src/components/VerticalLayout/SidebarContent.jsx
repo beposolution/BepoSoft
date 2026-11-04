@@ -863,6 +863,9 @@ const SidebarContent = (props) => {
                   )}
 
                   <li>
+                    <Link to="/statewise/sales/report/excel/">{props.t("Statewise Sales Report Excel")}</Link>
+                  </li>
+                  <li>
                     <Link to="/product/sold/report/">{props.t("Product Sold Report")}</Link>
                   </li>
                   <li>
@@ -941,92 +944,6 @@ const SidebarContent = (props) => {
               </li>
             )}
 
-            {/* {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'COO' || role === 'CEO' || role === 'SD' || role === 'BDM' || role === 'BDO' ? (
-
-              <li>
-                <Link to="/#" className="has-arrow">
-                  <FaUserTie size={17} style={{ marginRight: '6px' }} />
-                  <span>{props.t("Daily Sales Report")}</span>
-                </Link>
-                <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/add/daily/sales/report/">{props.t("Daily Sales")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/view/add/daily/sales/report/">{props.t("View Sales Data")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/monthly/daily/report/">{props.t("Report")}</Link>
-                  </li>
-                  <li>
-                    <Link to="/category/report/">{props.t("Category Report")}</Link>
-                  </li>
-
-                  {role !== "BDO" && role !== "BDM" && (
-                    <>
-                      <li>
-                        <Link to="/all/monthly/daily/report/">{props.t("All Staff Report")}</Link>
-                      </li>
-                      <li>
-                        <Link to="/all/category/report/">{props.t("All Category Report")}</Link>
-                      </li>
-                    </>
-                  )}
-                </ul>
-              </li>
-
-            ) : null} */}
-
-            {/* {[
-              'ADMIN',
-              'COO',
-              'CEO',
-              'BDM',
-              'BDO',
-              'ASD',
-              'SD',
-            ].includes(role) ? (
-              <li>
-                <Link to="/#" className="has-arrow">
-                  <FaUserTie size={17} style={{ marginRight: '6px' }} />
-                  <span>{props.t("Daily DSR")}</span>
-                </Link>
-
-                <ul className="sub-menu" aria-expanded="false">
-                  {role === 'BDO' && (
-                    <>
-                      <li>
-                        <Link to="/daily/dsr/">{props.t("Daily DSR")}</Link>
-                      </li>
-                      <li>
-                        <Link to="/daily/dsr/report/view/">
-                          {props.t("Daily DSR Report View")}
-                        </Link>
-                      </li>
-                    </>
-                  )}
-
-                  {['BDM', 'ASD', 'SD'].includes(role) && (
-                    <li>
-                      <Link to="/daily/dsr/family/based/">
-                        {props.t("Family Wise DSR Report")}
-                      </Link>
-                    </li>
-                  )}
-
-                  {['ADMIN', 'CEO', 'COO'].includes(role) && (
-                    <li>
-                      <Link to="/daily/dsr/all/report/view/">
-                        {props.t("Daily DSR Report All View")}
-                      </Link>
-                    </li>
-                  )}
-
-
-                </ul>
-              </li>
-            ) : null} */}
-
 
             {/* {(role === 'BDM' || role === 'ADMIN' || role === 'COO' || role === 'CEO') && ( */}
             {(role === 'BDM') && (
@@ -1067,33 +984,6 @@ const SidebarContent = (props) => {
                 </ul>
               </li>
             )}
-
-
-            {/* {role === 'ADMIN' || role === "Accounts / Accounting" || role === 'COO' || role === 'CEO' || role === 'SD' || role === 'BDM' ? (
-
-              <li>
-                <Link to="/#" className="has-arrow">
-                  <FaUserTie size={17} style={{ marginRight: '6px' }} />
-                  <span>{props.t("BDO's BDM Sales Report")}</span>
-                </Link>
-                <ul className="sub-menu" aria-expanded="false">
-                  {role === "BDM" && (
-                    <>
-                      <li>
-                        <Link to="/bdm/sales/report/">{props.t("BDO's Sales Report")}</Link>
-                      </li>
-                      <li>
-                        <Link to="/bdm/sales/report/view/">{props.t("BDO's Sales Report View")}</Link>
-                      </li>
-                    </>
-                  )}
-                  <li>
-                    <Link to="/bdm/sales/report/admin/view/">{props.t("BDO's Sales Report Admin View")}</Link>
-                  </li>
-                </ul>
-              </li>
-
-            ) : null} */}
 
 
             {[

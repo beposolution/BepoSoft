@@ -116,11 +116,6 @@ const FormLayouts = () => {
                 },
             });
 
-            console.log(
-                "Audit log created:",
-                action,
-                proformaInvoice
-            );
         } catch (error) {
             console.error(
                 "Audit log creation failed:",
@@ -458,9 +453,16 @@ const FormLayouts = () => {
 
     const fetchProducts = async (search = "") => {
         const token = localStorage.getItem("token");
+        const warehouseId = localStorage.getItem("warehouseId");
 
         if (!token) {
             toast.error("Authorization token is missing");
+            return;
+        }
+
+        if (!warehouseId) {
+            setProducts([]);
+            setProductError("Warehouse ID not found");
             return;
         }
 
@@ -469,37 +471,104 @@ const FormLayouts = () => {
 
         try {
             const response = await axios.get(
-                `${import.meta.env.VITE_APP_KEY}all/products/get/`,
+                `${import.meta.env.VITE_APP_KEY}warehouse/products/${warehouseId}/get/`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
                         "Content-Type": "application/json",
                     },
                     params: {
-                        search: search,
+                        search: search.trim(),
                     },
                 }
             );
 
-            const results =
-                response?.data?.results ||
-                response?.data?.data ||
-                [];
+            const responseData = response.data;
 
-            setProducts(
-                Array.isArray(results)
-                    ? results
-                    : []
+            let mainProducts = [];
+
+            if (Array.isArray(responseData)) {
+                mainProducts = responseData;
+            } else if (Array.isArray(responseData?.results?.data)) {
+                mainProducts = responseData.results.data;
+            } else if (Array.isArray(responseData?.results)) {
+                mainProducts = responseData.results;
+            } else if (Array.isArray(responseData?.data)) {
+                mainProducts = responseData.data;
+            }
+
+            const expandedProducts = mainProducts.flatMap((product) => {
+                if (
+                    String(product.type || "").toLowerCase() === "variant" &&
+                    Array.isArray(product.variantIDs) &&
+                    product.variantIDs.length > 0
+                ) {
+                    return product.variantIDs.map((variant) => ({
+                        ...variant,
+                        image: variant.image || product.image,
+                        selling_price:
+                            variant.selling_price ??
+                            product.selling_price,
+                        tax: variant.tax ?? product.tax,
+                        available_stock:
+                            variant.available_stock ??
+                            Math.max(
+                                0,
+                                Number(variant.stock || 0) -
+                                Number(variant.locked_stock || 0) -
+                                Number(variant.damaged_stock || 0) -
+                                Number(variant.partially_damaged_stock || 0) -
+                                Number(variant.liquidation_stock || 0)
+                            ),
+                    }));
+                }
+
+                return [product];
+            });
+
+            const searchText = search.trim().toLowerCase();
+
+            const filteredProducts = expandedProducts.filter((product) => {
+                if (!searchText) return true;
+
+                return (
+                    String(product.name || "")
+                        .toLowerCase()
+                        .includes(searchText) ||
+                    String(product.hsn_code || "")
+                        .toLowerCase()
+                        .includes(searchText)
+                );
+            });
+
+            const uniqueProducts = Array.from(
+                new Map(
+                    filteredProducts.map((product) => [
+                        product.id,
+                        product,
+                    ])
+                ).values()
             );
+
+            setProducts(uniqueProducts);
 
         } catch (error) {
             console.error(
-                "Product fetch error:",
+                "Warehouse product fetch error:",
                 error?.response?.data || error
             );
 
             setProducts([]);
-            setProductError("Failed to load products");
+
+            if (error?.response?.status === 404) {
+                setProductError("No matching products found");
+            } else {
+                setProductError(
+                    error?.response?.data?.message ||
+                    "Failed to load warehouse products"
+                );
+            }
+
         } finally {
             setProductLoading(false);
         }
@@ -620,9 +689,6 @@ const FormLayouts = () => {
                 product.name ||
                 "Additional product",
         };
-
-        console.log("ORDER ID:", orderId);
-        console.log("ADD PRODUCT PAYLOAD:", payload);
 
         setAddingProductId(product.id);
 

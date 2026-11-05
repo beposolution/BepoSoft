@@ -489,6 +489,7 @@ import PendingForPacking from "../pages/Order/PendingForPacking";
 import ProformaWithPaymentSlips from "../pages/PerfomaInvoive/ProformaWithPaymentSlips";
 import SalesPointRankingAllPage from "../pages/DashboardJob/SalesPointRankingAllPage";
 import StatewiseSalesReportExcelPage from "../pages/Resports/StatewiseSalesReportExcelPage";
+import CustomerCompleteReport from "../pages/Customers/CustomerCompleteReport";
 
 
 
@@ -581,6 +582,7 @@ const authProtectedRoutes = [
   { path: "/customer/:id/edit/", component: <CustomerEdit /> },
   { path: "/customers/beposoft", component: <Bulkcustomers /> },
   { path: "/customer/type", component: <CustomerType /> },
+  { path: "/customer/:customerId/report/", component: <CustomerCompleteReport /> },
 
 
   // {path: "/all-customers/",component:<CustomerTable />},

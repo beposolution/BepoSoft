@@ -286,10 +286,16 @@ const BasicTable = () => {
   }, [data, searchTerm, selectedState, selectedFamily, selectedManager]);
 
   const handleUpdate = (customerId) => navigate(`/customer/${customerId}/edit/`);
+
   const handleAddress = (customerId) =>
     navigate(`/customer/address/${customerId}/add/`);
+
   const handleLedger = (customerId) =>
     navigate(`/customer/${customerId}/ledger/`);
+
+  const handleViewReport = (customerId) => {
+    navigate(`/customer/${customerId}/report/`);
+  };
 
   const exportToExcel = () => {
     if (!data || data.length === 0) {
@@ -501,7 +507,26 @@ const BasicTable = () => {
                             {data.map((customer, index) => (
                               <tr key={customer.id}>
                                 <th scope="row">{index + 1}</th>
-                                <td>{customer.name}</td>
+                                <td>
+                                  <span
+                                    onClick={() => handleViewReport(customer.id)}
+                                    style={{
+                                      cursor: "pointer",
+                                      color: "#212529",
+                                      fontWeight: 500,
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.color = "#007bff";
+                                      e.currentTarget.style.textDecoration = "underline";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.color = "#212529";
+                                      e.currentTarget.style.textDecoration = "none";
+                                    }}
+                                  >
+                                    {customer.name}
+                                  </span>
+                                </td>
                                 <td>{customer.gst || "N/A"}</td>
                                 <td>{customer.email || "N/A"}</td>
                                 <td>{customer.state_name || "N/A"}</td>

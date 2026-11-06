@@ -1142,11 +1142,11 @@ const BasicTable = () => {
                                                                     <td>{customerName}</td>
 
                                                                     <td
-                                                                        style={getStatusStyle(
-                                                                            item.status
-                                                                        )}
+                                                                        style={getStatusStyle(item.status)}
                                                                     >
-                                                                        {item.status || "N/A"}
+                                                                        {item.status?.trim().toLowerCase() === "invoice rejected"
+                                                                            ? "Proforma Rejected"
+                                                                            : item.status || "N/A"}
                                                                     </td>
 
                                                                     <td>

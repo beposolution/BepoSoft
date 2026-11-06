@@ -413,9 +413,14 @@ const SidebarContent = (props) => {
                   </li>
 
                   {role === 'ADMIN' || role === 'HR' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'CSO' || role === 'COO' ? (
-                    <li>
-                      <Link to="/performa/list/paymentslip/">{props.t("Proforma With Payment Slip")}</Link>
-                    </li>
+                    <>
+                      <li>
+                        <Link to="/performa/list/paymentslip/">{props.t("Proforma With Payment Slip")}</Link>
+                      </li>
+                      <li>
+                        <Link to="/proforma/rejected/">{props.t("Rejected Proforma Invoices")}</Link>
+                      </li>
+                    </>
                   ) : null}
 
                 </ul>

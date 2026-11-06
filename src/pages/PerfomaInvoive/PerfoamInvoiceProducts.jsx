@@ -57,6 +57,9 @@ const FormLayouts = () => {
     const [productQuantity, setProductQuantity] = useState({});
     const [addingProductId, setAddingProductId] = useState(null);
 
+    const [selectedStatus, setSelectedStatus] = useState("");
+    const [statusUpdating, setStatusUpdating] = useState(false);
+
     const role = localStorage.getItem("active");
 
     const canViewOrderButton = ["HR", "IT", "CEO", "COO", "ADMIN", "ACCOUNTS / ACCOUNTING"].includes(
@@ -230,6 +233,12 @@ const FormLayouts = () => {
                 setAccountsNote(data.note || "");
 
                 setParcelNote(data.parcel_note || "");
+
+                setSelectedStatus(
+                    ["Invoice Rejected", "Pending"].includes(data.status)
+                        ? data.status
+                        : ""
+                );
 
                 if (data.id) {
                     await fetchPaymentSlips(data.id);
@@ -1208,6 +1217,76 @@ const FormLayouts = () => {
         window.open(addressurl, "_blank");
     }
 
+    const handleStatusUpdate = async () => {
+        if (!proformaId) {
+            toast.error("Proforma ID not found");
+            return;
+        }
+
+        const allowedStatuses = ["Invoice Rejected", "Pending"];
+
+        if (!allowedStatuses.includes(selectedStatus)) {
+            toast.error("Please select a valid status");
+            return;
+        }
+
+        const previousStatus = formik.values.status;
+
+        if (selectedStatus === previousStatus) {
+            toast.info("Invoice already has this status");
+            return;
+        }
+
+        try {
+            setStatusUpdating(true);
+
+            const response = await axios.put(
+                `${import.meta.env.VITE_APP_KEY}perfoma/invoice/status/update/${proformaId}/`,
+                {
+                    status: selectedStatus,
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            toast.success(
+                response?.data?.message ||
+                "Invoice status updated successfully"
+            );
+
+            await createDataLog(
+                "Proforma Invoice Status Updated",
+                {
+                    status: previousStatus,
+                },
+                {
+                    status: selectedStatus,
+                }
+            );
+
+            await fetchOrderData();
+
+        } catch (error) {
+            console.error(
+                "Invoice status update error:",
+                error?.response?.data || error
+            );
+
+            toast.error(
+                error?.response?.data?.message ||
+                error?.response?.data?.detail ||
+                "Failed to update invoice status"
+            );
+
+        } finally {
+            setStatusUpdating(false);
+        }
+    };
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -2062,6 +2141,98 @@ const FormLayouts = () => {
                                                 </Table>
 
                                             </div>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+                                <Col xl={12}>
+                                    <Card>
+                                        <CardBody>
+
+                                            <CardTitle className="mb-4">
+                                                PROFORMA INVOICE STATUS UPDATE
+                                            </CardTitle>
+
+                                            <Row className="align-items-end">
+
+                                                <Col md={4}>
+                                                    <div className="mb-3">
+
+                                                        <Label>
+                                                            Current Status
+                                                        </Label>
+
+                                                        <Input
+                                                            type="text"
+                                                            value={
+                                                                formik.values.status === "Invoice Rejected"
+                                                                    ? "Proforma Rejected"
+                                                                    : formik.values.status || ""
+                                                            }
+                                                            disabled
+                                                        />
+
+                                                    </div>
+                                                </Col>
+
+                                                <Col md={4}>
+                                                    <div className="mb-3">
+
+                                                        <Label>
+                                                            Select Status
+                                                        </Label>
+
+                                                        <Input
+                                                            type="select"
+                                                            value={selectedStatus}
+                                                            onChange={(e) =>
+                                                                setSelectedStatus(e.target.value)
+                                                            }
+                                                            disabled={statusUpdating}
+                                                        >
+                                                            <option value="">
+                                                                Select Status
+                                                            </option>
+
+                                                            <option value="Invoice Rejected">
+                                                                Proforma Rejected
+                                                            </option>
+
+                                                            <option value="Pending">
+                                                                Pending
+                                                            </option>
+
+                                                        </Input>
+
+                                                    </div>
+                                                </Col>
+
+                                                <Col md={4}>
+                                                    <div className="mb-3">
+
+                                                        <Label>&nbsp;</Label>
+
+                                                        <Button
+                                                            color="primary"
+                                                            type="button"
+                                                            className="w-100"
+                                                            onClick={handleStatusUpdate}
+                                                            disabled={
+                                                                statusUpdating ||
+                                                                !selectedStatus ||
+                                                                selectedStatus === formik.values.status
+                                                            }
+                                                        >
+                                                            {statusUpdating
+                                                                ? "Updating..."
+                                                                : "Update Status"}
+                                                        </Button>
+
+                                                    </div>
+                                                </Col>
+
+                                            </Row>
 
                                         </CardBody>
                                     </Card>

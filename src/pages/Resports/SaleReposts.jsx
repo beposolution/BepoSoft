@@ -27,11 +27,16 @@ const BasicTable = () => {
     const [familys, setFamilies] = useState([]);
     const [staffs, setStaffs] = useState([]);
 
+    const [products, setProducts] = useState([]);
+    const [productFilter, setProductFilter] = useState("");
+    const [productsLoading, setProductsLoading] = useState(false);
+
     const [stateFilter, setStateFilter] = useState("");
     const [familyFilter, setFamilyFilter] = useState("");
     const [staffFilter, setStaffFilter] = useState("");
 
     const role = localStorage.getItem("active");
+    const warehouseId = localStorage.getItem("warehouseId");
 
     const [currentPage, setCurrentPage] = useState(1);
     const perPageData = 10;
@@ -61,6 +66,7 @@ const BasicTable = () => {
         fetchStates();
         fetchFamilies();
         fetchStaffs();
+        fetchProducts();
     }, []);
 
     const processSalesData = (rawData) => {
@@ -135,6 +141,109 @@ const BasicTable = () => {
         }
     };
 
+
+    const fetchProducts = async (search = "") => {
+        if (!warehouseId) {
+            setProducts([]);
+            return;
+        }
+
+        setProductsLoading(true);
+
+        try {
+            const token = localStorage.getItem("token");
+
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}warehouse/products/${warehouseId}/get/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    params: {
+                        search: search,
+                    },
+                }
+            );
+
+            const data =
+                response?.data?.results?.data ||
+                response?.data?.data ||
+                response?.data?.results ||
+                [];
+
+            if (!Array.isArray(data)) {
+                setProducts([]);
+                return;
+            }
+
+            const displayProducts = data.flatMap((product) => {
+                const variants = Array.isArray(product?.variantIDs)
+                    ? product.variantIDs
+                    : [];
+
+                if (variants.length > 0) {
+                    return variants.map((variant) => ({
+                        ...product,
+                        ...variant,
+
+                        parent_product_id: product.id,
+                        parent_product_name: product.name,
+
+                        is_variant: true,
+
+                        id: variant.id,
+                        name: variant.name || product.name,
+
+                        image: variant.image || product.image || null,
+
+                        selling_price:
+                            variant.selling_price ??
+                            product.selling_price ??
+                            0,
+
+                        stock: variant.stock ?? 0,
+                        available_stock: variant.available_stock ?? 0,
+                        locked_stock: variant.locked_stock ?? 0,
+                        damaged_stock: variant.damaged_stock ?? 0,
+                        partially_damaged_stock:
+                            variant.partially_damaged_stock ?? 0,
+                        liquidation_stock:
+                            variant.liquidation_stock ?? 0,
+
+                        size: variant.size || product.size || "",
+                        color: variant.color || product.color || "",
+                    }));
+                }
+
+                return [{
+                    ...product,
+                    parent_product_id: null,
+                    parent_product_name: null,
+                    is_variant: false,
+                }];
+            });
+
+            setProducts(displayProducts);
+
+        } catch (error) {
+            const status = error?.response?.status;
+
+            if (status === 404) {
+                setProducts([]);
+                return;
+            }
+
+            console.error("Warehouse product fetch error:", error);
+            setProducts([]);
+            toast.error("Error fetching products");
+
+        } finally {
+            setProductsLoading(false);
+        }
+    };
+
+
     const fetchFamilies = async () => {
         try {
             const token = localStorage.getItem("token");
@@ -183,6 +292,7 @@ const BasicTable = () => {
         }
     };
 
+
     const handleFilter = async () => {
         const params = {};
 
@@ -191,40 +301,35 @@ const BasicTable = () => {
         if (familyFilter) params.family = familyFilter;
         if (staffFilter) params.staff = staffFilter;
 
+        // New backend filters
+        if (stateFilter) params.state = stateFilter;
+        if (productFilter) params.product = productFilter;
+
         try {
             const token = localStorage.getItem("token");
 
             const response = await axios.get(
                 `${import.meta.env.VITE_APP_KEY}salesreport/`,
                 {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                     params,
                 }
             );
 
-            let processedData = processSalesData(response.data.sales_report);
-
-            if (stateFilter) {
-                processedData = processedData
-                    .map((sale) => {
-                        const filteredOrders = sale.order_details.filter(
-                            (order) => order.state__name === stateFilter
-                        );
-
-                        return {
-                            ...sale,
-                            order_details: filteredOrders,
-                        };
-                    })
-                    .filter((sale) => sale.order_details.length > 0);
-            }
+            const processedData = processSalesData(
+                response.data.sales_report
+            );
 
             setFilteredSalesData(processedData);
             setCurrentPage(1);
+
         } catch (error) {
             toast.error("Error filtering sales data");
         }
     };
+
 
     const clearFilter = () => {
         setStartDate("");
@@ -232,6 +337,7 @@ const BasicTable = () => {
         setStateFilter("");
         setFamilyFilter("");
         setStaffFilter("");
+        setProductFilter("");
         fetchSalesReport();
     };
 
@@ -349,17 +455,20 @@ const BasicTable = () => {
                                                     stateFilter
                                                         ? states
                                                             .map((state) => ({
-                                                                value: state.name,
+                                                                value: state.id,
                                                                 label: state.name,
                                                             }))
-                                                            .find((item) => item.value === stateFilter)
+                                                            .find(
+                                                                (item) =>
+                                                                    String(item.value) === String(stateFilter)
+                                                            ) || null
                                                         : null
                                                 }
                                                 onChange={(selected) => {
                                                     setStateFilter(selected ? selected.value : "");
                                                 }}
                                                 options={states.map((state) => ({
-                                                    value: state.name,
+                                                    value: state.id,
                                                     label: state.name,
                                                 }))}
                                                 isClearable
@@ -367,6 +476,7 @@ const BasicTable = () => {
                                                 placeholder="All States"
                                             />
                                         </Col>
+
 
                                         <Col md={2}>
                                             <Input
@@ -417,6 +527,42 @@ const BasicTable = () => {
                                                 isClearable
                                                 isSearchable
                                                 placeholder="All Staff"
+                                            />
+                                        </Col>
+
+
+                                        <Col md={2}>
+                                            <Select
+                                                value={
+                                                    productFilter
+                                                        ? products
+                                                            .map((product) => ({
+                                                                value: product.id,
+                                                                label: product.name,
+                                                            }))
+                                                            .find(
+                                                                (item) =>
+                                                                    String(item.value) === String(productFilter)
+                                                            ) || null
+                                                        : null
+                                                }
+                                                onChange={(selected) => {
+                                                    setProductFilter(selected ? selected.value : "");
+                                                }}
+                                                onInputChange={(inputValue, actionMeta) => {
+                                                    if (actionMeta.action === "input-change") {
+                                                        fetchProducts(inputValue);
+                                                    }
+                                                }}
+                                                options={products.map((product) => ({
+                                                    value: product.id,
+                                                    label: product.name,
+                                                }))}
+                                                isClearable
+                                                isSearchable
+                                                isLoading={productsLoading}
+                                                placeholder="All Products"
+                                                noOptionsMessage={() => "No products found"}
                                             />
                                         </Col>
 

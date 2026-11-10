@@ -491,6 +491,7 @@ import SalesPointRankingAllPage from "../pages/DashboardJob/SalesPointRankingAll
 import StatewiseSalesReportExcelPage from "../pages/Resports/StatewiseSalesReportExcelPage";
 import CustomerCompleteReport from "../pages/Customers/CustomerCompleteReport";
 import RejectedProformaInvoices from "../pages/PerfomaInvoive/RejectedProformaInvoices";
+import StaffCompleteReport from "../pages/Staff/StaffCompleteReport";
 
 
 
@@ -556,7 +557,7 @@ const authProtectedRoutes = [
   { path: "/staff/salary/:id/", component: <StaffSalaryDetails /> },
   { path: "/staff/salary/details/", component: <StaffMonthlySalaryCalculation /> },
   { path: "/staff/monthly/salary/report/", component: <StaffMonthlySalaryReport /> },
-
+  { path: "/staff/:staffId/report/", component: <StaffCompleteReport /> },
   // Team
   { path: "/sales/team/add/", component: <AddTeam /> },
   { path: "/sales/team/members/add/", component: <AddTeamMembers /> },

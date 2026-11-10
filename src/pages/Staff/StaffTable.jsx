@@ -72,6 +72,14 @@ const DatatableTables = () => {
         }
     };
 
+    const handleStaffReport = (staff) => {
+        if (staff?.id) {
+            navigate(`/staff/${staff.id}/report/`);
+        } else {
+            toast.error("Staff ID is undefined");
+        }
+    };
+
     const handleSalaryClick = (staff) => {
         if (staff && staff.id) {
             navigate(`/staff/salary/${staff.id}/`);
@@ -557,7 +565,24 @@ const DatatableTables = () => {
                                             return (
                                                 <tr key={staff.id}>
                                                     <td style={rowStyle}>{staff.staff_id || ""}</td>
-                                                    <td style={rowStyle}>{staff.name || ""}</td>
+                                                    <td style={rowStyle}>
+                                                        <span
+                                                            onClick={() => handleStaffReport(staff)}
+                                                            style={{
+                                                                cursor: "pointer",
+                                                                color: "#2563eb",
+                                                                fontWeight: "600",
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                e.currentTarget.style.textDecoration = "underline";
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                e.currentTarget.style.textDecoration = "none";
+                                                            }}
+                                                        >
+                                                            {staff.name || ""}
+                                                        </span>
+                                                    </td>
                                                     <td style={rowStyle}>{staff.designation || ""}</td>
                                                     <td style={rowStyle}>{staff.phone || ""}</td>
                                                     <td style={rowStyle}>{staff.email || ""}</td>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { Card, CardBody, Col, Row, Table, Button } from "reactstrap";
 import axios from "axios";
@@ -60,6 +60,14 @@ const GSTReport = () => {
   const [companyLoading, setCompanyLoading] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [invoiceSearch, setInvoiceSearch] = useState("");
+  const [invoiceOptions, setInvoiceOptions] = useState([]);
+  const [selectedOrderIds, setSelectedOrderIds] = useState([]);
+  const [invoiceDropdownOpen, setInvoiceDropdownOpen] = useState(false);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersNextPage, setOrdersNextPage] = useState(null);
+  const invoiceDropdownRef = useRef(null);
+  const orderRequestRef = useRef(0);
 
   document.title = "GST Report | Beposoft";
 
@@ -128,47 +136,90 @@ const GSTReport = () => {
     }
   };
 
-  const fetchGSTReport = async () => {
-    if (!startDate) {
-      toast.error("Please select start date");
-      return;
-    }
-
-    if (!endDate) {
-      toast.error("Please select end date");
-      return;
-    }
-
-    if (startDate > endDate) {
-      toast.error("Start date cannot be greater than end date");
-      return;
-    }
-
-    setLoading(true);
-
+  // Search the orders endpoint; the dropdown uses order.id as its value
+  // and invoice as its visible label.
+  const fetchInvoiceOptions = async (search = "", nextUrl = null) => {
+    const requestId = ++orderRequestRef.current;
+    setOrdersLoading(true);
     try {
-      const url = `${apiBase}gst/orders/report/${startDate}/${endDate}/`;
-
       const params = {};
+      if (search.trim()) params.search = search.trim();
+      if (startDate) params.start_date = startDate;
+      if (endDate) params.end_date = endDate;
 
-      if (selectedCompany) {
-        params.company = selectedCompany;
-      }
-
+      const url = nextUrl || `${apiBase}orders/`;
       const { data } = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        ...(nextUrl ? {} : { params }),
+      });
+
+      if (requestId !== orderRequestRef.current) return;
+
+      const list = data?.results?.results || [];
+
+      setInvoiceOptions((previous) => {
+        const merged = nextUrl ? [...previous, ...list] : list;
+        return [...new Map(merged.filter((o) => o?.id != null)
+          .map((o) => [String(o.id), o])).values()];
+      });
+      setOrdersNextPage(data?.next || data?.data?.next || null);
+    } catch (error) {
+      if (requestId === orderRequestRef.current) {
+        toast.error("Error fetching invoice list");
+        if (!nextUrl) setInvoiceOptions([]);
+      }
+    } finally {
+      if (requestId === orderRequestRef.current) setOrdersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!invoiceDropdownOpen) return;
+    const timer = setTimeout(() => fetchInvoiceOptions(invoiceSearch), 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoiceSearch, invoiceDropdownOpen, startDate, endDate, token]);
+
+  useEffect(() => {
+    const closeOnOutsideClick = (event) => {
+      if (invoiceDropdownRef.current && !invoiceDropdownRef.current.contains(event.target)) {
+        setInvoiceDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, []);
+
+  const toggleInvoice = (orderId) => {
+    const id = String(orderId);
+    setSelectedOrderIds((previous) =>
+      previous.includes(id)
+        ? previous.filter((value) => value !== id)
+        : [...previous, id]
+    );
+  };
+
+  const fetchGSTReport = async () => {
+    if (!selectedOrderIds.length) {
+      toast.error("Please select at least one invoice");
+      return;
+    }
+    setLoading(true);
+    try {
+      const params = { order_ids: selectedOrderIds.join(",") };
+      if (selectedCompany) params.company = selectedCompany;
+
+      const { data } = await axios.get(`${apiBase}gst/orders/report/`, {
         headers: { Authorization: `Bearer ${token}` },
         params,
       });
-
       const results = Array.isArray(data?.results) ? data.results : [];
-
       setAllGSTData(results);
       setFilteredGSTData(results);
       setTotalCount(results.length);
       setCurrentPage(1);
     } catch (err) {
-      // console.error(err);
-      toast.error("Error fetching GST report");
+      toast.error(err?.response?.data?.message || "Error fetching GST report");
       setAllGSTData([]);
       setFilteredGSTData([]);
       setTotalCount(0);
@@ -191,6 +242,12 @@ const GSTReport = () => {
     setStartDate("");
     setEndDate("");
     setSelectedCompany("");
+    setInvoiceSearch("");
+    setSelectedOrderIds([]);
+    setInvoiceOptions([]);
+    setOrdersNextPage(null);
+    setInvoiceDropdownOpen(false);
+    orderRequestRef.current += 1;
     setAllGSTData([]);
     setFilteredGSTData([]);
     setTotalCount(0);
@@ -218,55 +275,9 @@ const GSTReport = () => {
           return acc;
         }, {}) || {};
 
-      // return Object.entries(grouped).map(([taxRate, items], i) => {
-      //   const numericTaxRate = parseFloat(taxRate) || 0;
-
-      //   const taxableValue = items.reduce((sum, item) => {
-      //     const excludePrice = parseFloat(item.exclude_price) || 0;
-      //     const quantity = parseFloat(item.quantity) || 0;
-      //     return sum + excludePrice * quantity;
-      //   }, 0);
-
-      //   const invoiceValue =
-      //     numericTaxRate > 0
-      //       ? taxableValue + (taxableValue * numericTaxRate) / 100
-      //       : taxableValue;
-
-      //   return {
-      //     key: `${row.id}-${taxRate}-${i}`,
-      //     index: (currentPage - 1) * pageSize + idx + 1,
-      //     gst: row.gst || "",
-      //     receiver: row.customerName || "",
-      //     invoice: row.invoice || "",
-      //     date: formatDate(row.order_date),
-      //     total_amount: Number(invoiceValue.toFixed(2)),
-      //     taxable_value: Number(taxableValue.toFixed(2)),
-      //     placeOfSupply: stateCodes[row.address]
-      //       ? `${stateCodes[row.address]}-${row.address}`
-      //       : row.address || "",
-      //     taxRate: `${taxRate}%`,
-      //     invoiceType:
-      //       (row.gst_confirm || "").toString().trim().toUpperCase() === "YES"
-      //         ? "Regular B2B"
-      //         : "Regular B2C",
-      //   };
-      // });
-
 
       return Object.entries(grouped).map(([taxRate, items], i) => {
         const numericTaxRate = parseFloat(taxRate) || 0;
-
-        // const taxableValue = items.reduce((sum, item) => {
-        //   const excludePrice = parseFloat(item.exclude_price) || 0;
-        //   const quantity = parseFloat(item.quantity) || 0;
-
-        //   return sum + excludePrice * quantity;
-        // }, 0);
-
-        // const invoiceValue =
-        //   numericTaxRate > 0
-        //     ? taxableValue + (taxableValue * numericTaxRate) / 100
-        //     : taxableValue;
 
         const invoiceValue = items.reduce((sum, item) => {
           const rate = Number(item.rate || 0);
@@ -285,7 +296,6 @@ const GSTReport = () => {
           receiver: row.customerName || "",
           invoice: row.invoice || "",
           date: formatDate(row.order_date),
-          // total_amount: Number(invoiceValue.toFixed(2)),
           total_amount: Math.round(invoiceValue),
           placeOfSupply: stateCodes[row.address]
             ? `${stateCodes[row.address]}-${row.address}`
@@ -362,26 +372,9 @@ const GSTReport = () => {
       }, {});
 
       Object.entries(groupedByTax).forEach(([taxRate, items]) => {
-        // const invoiceValue = parseFloat(row.total_amount) || 0;
-        // const numericTaxRate = parseFloat(taxRate) || 0;
-
-        // const taxableValue =
-        //   numericTaxRate > 0
-        //     ? (invoiceValue * 100) / (100 + numericTaxRate)
-        //     : invoiceValue;
 
         const numericTaxRate = parseFloat(taxRate) || 0;
 
-        // const taxableValue = items.reduce((sum, item) => {
-        //   const excludePrice = parseFloat(item.exclude_price) || 0;
-        //   const quantity = parseFloat(item.quantity) || 0;
-        //   return sum + excludePrice * quantity;
-        // }, 0);
-
-        // const invoiceValue =
-        //   numericTaxRate > 0
-        //     ? taxableValue + (taxableValue * numericTaxRate) / 100
-        //     : taxableValue;
         const invoiceValue = items.reduce((sum, item) => {
           const rate = Number(item.rate || 0);
           const quantity = Number(item.quantity || 0);
@@ -397,8 +390,6 @@ const GSTReport = () => {
           "Receiver Name": row.customerName || "",
           "Invoice Number": row.invoice || "",
           "Invoice date": formatDate(row.order_date),
-          // "Invoice Value": row.total_amount || 0,
-          // "Invoice Value": Number(invoiceValue.toFixed(2)),
           "Invoice Value": Math.round(invoiceValue),
           "Place Of Supply": stateCodes[row.address]
             ? `${stateCodes[row.address]}-${row.address}`
@@ -712,7 +703,7 @@ const GSTReport = () => {
                 <h4 className="mb-3">GST Report: B2B, B2C</h4>
 
                 <Row className="mb-3">
-                  <Col md={3}>
+                  {/* <Col md={3}>
                     <label>Start Date</label>
                     <input
                       type="date"
@@ -720,9 +711,9 @@ const GSTReport = () => {
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
                     />
-                  </Col>
+                  </Col> */}
 
-                  <Col md={3}>
+                  {/* <Col md={3}>
                     <label>End Date</label>
                     <input
                       type="date"
@@ -730,6 +721,113 @@ const GSTReport = () => {
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
                     />
+                  </Col> */}
+
+                  <Col md={4}>
+                    <label className="fw-semibold">Select Invoices (Multiple)</label>
+                    <div ref={invoiceDropdownRef} className="position-relative">
+                      <div
+                        className="form-control d-flex align-items-center justify-content-between"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setInvoiceDropdownOpen((open) => !open)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setInvoiceDropdownOpen((open) => !open);
+                          }
+                        }}
+                      >
+                        <span>
+                          {selectedOrderIds.length
+                            ? `${selectedOrderIds.length} invoice(s) selected`
+                            : "Click to search and select invoices"}
+                        </span>
+                        <span aria-hidden="true">{invoiceDropdownOpen ? "▲" : "▼"}</span>
+                      </div>
+                      {invoiceDropdownOpen && (
+                        <div
+                          className="position-absolute bg-white border rounded shadow-sm w-100 p-2"
+                          style={{ zIndex: 1050, top: "100%" }}
+                        >
+                          <input
+                            type="text"
+                            className="form-control mb-2"
+                            placeholder="Search invoice number or order..."
+                            value={invoiceSearch}
+                            onChange={(e) => setInvoiceSearch(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <div className="d-flex justify-content-between mb-2">
+                            <Button
+                              size="sm"
+                              color="link"
+                              onClick={() => setSelectedOrderIds((prev) =>
+                                [...new Set([...prev, ...invoiceOptions.map((o) => String(o.id))])]
+                              )}
+                              disabled={!invoiceOptions.length}
+                            >
+                              Select loaded
+                            </Button>
+                            <Button
+                              size="sm"
+                              color="link"
+                              onClick={() => setSelectedOrderIds([])}
+                            >
+                              Clear selection
+                            </Button>
+                          </div>
+                          <div style={{ maxHeight: 280, overflowY: "auto" }}>
+                            {invoiceOptions.map((order) => (
+                              <label
+                                key={order.id}
+                                className="d-flex align-items-center gap-2 px-2 py-2 mb-0"
+                                style={{ cursor: "pointer", borderBottom: "1px solid #f1f3f5" }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selectedOrderIds.includes(String(order.id))}
+                                  onChange={() => toggleInvoice(order.id)}
+                                />
+                                <span>
+                                  {order.invoice || order.invoice_number || `Order #${order.id}`}
+                                </span>
+                              </label>
+                            ))}
+                            {!ordersLoading && !invoiceOptions.length && (
+                              <div className="text-muted text-center p-3">No invoices found</div>
+                            )}
+                            {ordersLoading && (
+                              <div className="text-muted text-center p-2">Loading orders...</div>
+                            )}
+                            {ordersNextPage && !ordersLoading && (
+                              <Button
+                                size="sm"
+                                color="light"
+                                className="w-100 mt-2"
+                                onClick={() => fetchInvoiceOptions(invoiceSearch, ordersNextPage)}
+                              >
+                                Load more invoices
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {selectedOrderIds.length > 0 && (
+                      <small className="text-muted d-block mt-1">
+                        <strong>Selected Invoice Numbers: </strong>
+                        {selectedOrderIds
+                          .map((id) => {
+                            const order = invoiceOptions.find(
+                              (item) => String(item.id) === String(id)
+                            );
+                            return order?.invoice || "";
+                          })
+                          .filter(Boolean)
+                          .join(", ")}
+                      </small>
+                    )}
                   </Col>
 
                   <Col md={3}>

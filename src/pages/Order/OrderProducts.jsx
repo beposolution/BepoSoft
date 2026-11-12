@@ -1735,6 +1735,14 @@ const FormLayouts = () => {
         "Marketing",
     ].includes(role);
 
+
+    const canEditCreditFields =
+        ["ADMIN", "CEO", "COO", "HR", "IT", "Accounts / Accounting"].includes(role) &&
+        String(originalAccountFields.payment_status || "")
+            .trim()
+            .toLowerCase() === "credit";
+
+
     const canModifyOrder = canEditOrder && !isShipped;
 
     const canModifyOrderTable =
@@ -2047,7 +2055,8 @@ const FormLayouts = () => {
                                                         value={formik.values.payment_status}
                                                         onChange={formik.handleChange}
                                                         onBlur={formik.handleBlur}
-                                                        disabled={!accountsCanEditPaymentMethod}
+                                                        // disabled={!accountsCanEditPaymentMethod}
+                                                        disabled={!accountsCanEditPaymentMethod && !canEditCreditFields}
                                                     >
                                                         <option>Select Payment Method</option>
                                                         <option value="paid">Paid</option>
@@ -2117,6 +2126,7 @@ const FormLayouts = () => {
                                                     id="formrow-Inputbilling_date"
                                                     placeholder="Enter Your Living billing_date"
                                                     disabled
+                                                    // disabled={!canEditCreditFields}
                                                     value={formik.values.billing_date}
                                                     onChange={formik.handleChange}
                                                     onBlur={formik.handleBlur}
@@ -2260,8 +2270,9 @@ const FormLayouts = () => {
                                         )}
                                         {/* {canEditOrder && ( */}
                                         {/* {canModifyOrder && ( */}
-                                        {canModifyOrder &&
-                                            (!isAccounts || accountsHasAnyEditableField) && (
+                                        {(canEditCreditFields ||
+                                            (canModifyOrder &&
+                                                (!isAccounts || accountsHasAnyEditableField))) && (
                                                 <Button
                                                     type="submit"
                                                     color="primary"
@@ -3089,19 +3100,19 @@ const FormLayouts = () => {
                                             {/* {canModifyOrder &&
                                                 (!isAccounts || accountsCanEditShippingCharge) && ( */}
                                             {(canModifyOrder || canEditShippingCharge) && (
-                                                <div
-                                                    className="mb-3 mt-3"
-                                                    style={{ textAlign: "right" }}
-                                                >
-                                                    <Button
-                                                        color="primary"
-                                                        type="button"
-                                                        onClick={handleSubmit}
+                                                    <div
+                                                        className="mb-3 mt-3"
+                                                        style={{ textAlign: "right" }}
                                                     >
-                                                        Submit
-                                                    </Button>
-                                                </div>
-                                            )}
+                                                        <Button
+                                                            color="primary"
+                                                            type="button"
+                                                            onClick={handleSubmit}
+                                                        >
+                                                            Submit
+                                                        </Button>
+                                                    </div>
+                                                )}
                                         </CardBody>
                                     </Card>
                                     <style jsx>{`

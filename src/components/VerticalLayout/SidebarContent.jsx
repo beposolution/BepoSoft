@@ -818,19 +818,6 @@ const SidebarContent = (props) => {
             ) : null}
 
 
-            {/* {role === 'ADMIN' || role === 'ACCOUNTS' || role === 'Warehouse Admin' ? (
-
-
-<li>
-<Link to="/order/warehousee/" className=" ">
-  <i className="bx bx-box"></i>
-  <span>{props.t("order request")}</span>
-</Link>
-</li>
-
-) : null} */}
-
-
             {['ADMIN', 'Accounts / Accounting', 'IT', 'CEO', 'CSO', 'COO', 'CMO', 'HR', 'OPERATIONS'].includes(role) && (
               <li>
                 <Link to="/#" className="has-arrow">
@@ -945,6 +932,14 @@ const SidebarContent = (props) => {
                     <Link to="/product/stock/report/">{props.t("Product Stock Report")}</Link>
                   </li>
 
+                  <li>
+                    <Link to="/product/stock/export/report/">{props.t("Product Stock Export Report")}</Link>
+                  </li>
+
+                  <li>
+                    <Link to="/product/rack/usability/report/">{props.t("Product Stock Rack Report")}</Link>
+                  </li>
+                  
                 </ul>
               </li>
             )}

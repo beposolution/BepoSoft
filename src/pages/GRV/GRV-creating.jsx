@@ -283,7 +283,7 @@ const FormLayouts = () => {
                         ? Number(product.cod_amount || 0)
                         : null,
 
-                status: "Waiting For Approval",
+                status: "pending",
                 note: product.note || "",
                 date: currentDate,
                 time: currentTime,

@@ -22,9 +22,12 @@ const BasicTable = () => {
 
     const [role, setRole] = useState(null);
 
-
     const [tableData, setTableData] = useState([]);
     const [loading, setLoading] = useState(false);
+
+    const [editingNoteId, setEditingNoteId] = useState(null);
+    const [editedNote, setEditedNote] = useState("");
+    const [noteUpdating, setNoteUpdating] = useState(false);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
@@ -59,6 +62,23 @@ const BasicTable = () => {
         const role = localStorage.getItem("active");
         setRole(role);
     }, []);
+
+    const canEditNote = role === "BDO" || role === "BDM";
+
+    const canUpdateStatus = (status) => {
+        if (role === "BDM" || role === "BDO") {
+            const currentStatus = String(status || "")
+                .trim()
+                .toLowerCase();
+
+            return (
+                currentStatus === "pending" ||
+                currentStatus === "waiting for approval"
+            );
+        }
+
+        return true;
+    };
 
     const fetchOrderData = useCallback(async (search = "") => {
         try {
@@ -286,20 +306,39 @@ const BasicTable = () => {
     };
 
     const handleChange = async (id, field, value) => {
+        if (field === "status") {
+            const currentItem = tableData.find(
+                (item) => item.id === id
+            );
+
+            if (!currentItem || !canUpdateStatus(currentItem.status)) {
+                toast.error(
+                    "Status update is not allowed for this GRV"
+                );
+                return;
+            }
+        }
+
         try {
             const data = {
                 [field]: value,
             };
 
-            const response = await axios.put(`${apiBase}grv/update/${id}/`, data, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+            const response = await axios.put(
+                `${apiBase}grv/update/${id}/`,
+                data,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
 
             if (response.data) {
                 const updatedData = tableData.map((item) =>
-                    item.id === id ? { ...item, [field]: value } : item
+                    item.id === id
+                        ? { ...item, [field]: value }
+                        : item
                 );
                 setTableData(updatedData);
             }
@@ -307,6 +346,88 @@ const BasicTable = () => {
             toast.error("Error updating data");
         }
     };
+
+
+    const handleEditNote = (item) => {
+        if (!canEditNote) return;
+
+        setEditingNoteId(item.id);
+        setEditedNote(item.note || "");
+
+        console.log("GRV note edit started", {
+            grvId: item.id,
+        });
+    };
+
+    const handleCancelNote = () => {
+        setEditingNoteId(null);
+        setEditedNote("");
+    };
+
+    const handleSaveNote = async (id) => {
+        if (!canEditNote || noteUpdating) return;
+
+        const updatedNote = editedNote;
+
+        try {
+            setNoteUpdating(true);
+
+            console.log("Updating GRV note", {
+                grvId: id,
+            });
+
+            await axios.put(
+                `${apiBase}grv/update/${id}/`,
+                {
+                    note: updatedNote,
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            setTableData((previousData) =>
+                previousData.map((item) =>
+                    item.id === id
+                        ? { ...item, note: updatedNote }
+                        : item
+                )
+            );
+
+            toast.success("GRV note updated successfully");
+
+            console.log("GRV note updated successfully", {
+                grvId: id,
+            });
+
+            setEditingNoteId(null);
+            setEditedNote("");
+
+        } catch (error) {
+            console.error("GRV note update failed", {
+                grvId: id,
+                error,
+            });
+
+            const message =
+                error?.response?.data?.message ||
+                error?.response?.data?.detail ||
+                "Failed to update GRV note";
+
+            toast.error(
+                typeof message === "string"
+                    ? message
+                    : "Failed to update GRV note"
+            );
+
+        } finally {
+            setNoteUpdating(false);
+        }
+    };
+
 
     const getStatusTextClass = (status) => {
         switch (status) {
@@ -747,7 +868,75 @@ const BasicTable = () => {
                                                             <td>{item.cod_amount || "--"}</td>
                                                             <td>{item.staff}</td>
                                                             <td>{item.customer}</td>
-                                                            <td>{item.note || "N/A"}</td>
+                                                            {/* <td>{item.note || "N/A"}</td> */}
+
+                                                            <td style={{ minWidth: "250px" }}>
+                                                                {editingNoteId === item.id && canEditNote ? (
+                                                                    <div>
+                                                                        <Input
+                                                                            type="textarea"
+                                                                            rows="3"
+                                                                            className="form-control mb-2"
+                                                                            placeholder="Enter GRV note"
+                                                                            value={editedNote}
+                                                                            disabled={noteUpdating}
+                                                                            onChange={(e) =>
+                                                                                setEditedNote(e.target.value)
+                                                                            }
+                                                                        />
+
+                                                                        <div className="d-flex gap-2">
+                                                                            <Button
+                                                                                color="success"
+                                                                                size="sm"
+                                                                                disabled={noteUpdating}
+                                                                                onClick={() =>
+                                                                                    handleSaveNote(item.id)
+                                                                                }
+                                                                            >
+                                                                                {noteUpdating
+                                                                                    ? "Saving..."
+                                                                                    : "Save"}
+                                                                            </Button>
+
+                                                                            <Button
+                                                                                color="secondary"
+                                                                                size="sm"
+                                                                                outline
+                                                                                disabled={noteUpdating}
+                                                                                onClick={handleCancelNote}
+                                                                            >
+                                                                                Cancel
+                                                                            </Button>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="d-flex align-items-start justify-content-between gap-2">
+                                                                        <span
+                                                                            style={{
+                                                                                whiteSpace: "pre-wrap",
+                                                                                overflowWrap: "anywhere",
+                                                                            }}
+                                                                        >
+                                                                            {item.note || "N/A"}
+                                                                        </span>
+
+                                                                        {canEditNote && (
+                                                                            <Button
+                                                                                color="primary"
+                                                                                size="sm"
+                                                                                outline
+                                                                                onClick={() =>
+                                                                                    handleEditNote(item)
+                                                                                }
+                                                                            >
+                                                                                Edit
+                                                                            </Button>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </td>
+
                                                             <td>{item.order_date}</td>
                                                             <td>
                                                                 <select
@@ -764,7 +953,7 @@ const BasicTable = () => {
                                                                 </select>
                                                             </td>
                                                             <td>
-                                                                <select
+                                                                {/* <select
                                                                     className={`grv-table-select ${getStatusTextClass(item.status)}`}
                                                                     value={item.status || ""}
                                                                     onChange={(e) =>
@@ -775,7 +964,24 @@ const BasicTable = () => {
                                                                     <option value="approved">Approved</option>
                                                                     <option value="rejected">Reject</option>
                                                                     <option value="Waiting For Approval">Waiting For Approval</option>
+                                                                </select> */}
+
+                                                                <select
+                                                                    className={`grv-table-select ${getStatusTextClass(item.status)}`}
+                                                                    value={item.status || ""}
+                                                                    disabled={!canUpdateStatus(item.status)}
+                                                                    onChange={(e) =>
+                                                                        handleChange(item.id, "status", e.target.value)
+                                                                    }
+                                                                >
+                                                                    <option value="pending">Pending</option>
+                                                                    <option value="approved">Approved</option>
+                                                                    <option value="rejected">Reject</option>
+                                                                    <option value="Waiting For Approval">
+                                                                        Waiting For Approval
+                                                                    </option>
                                                                 </select>
+
                                                             </td>
                                                         </tr>
                                                     ))

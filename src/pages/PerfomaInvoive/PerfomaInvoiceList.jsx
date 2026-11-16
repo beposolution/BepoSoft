@@ -28,6 +28,12 @@ import Select from "react-select";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+
+const statusOptions = [
+    { value: "Pending", label: "Pending" },
+    { value: "Invoice Rejected", label: "Proforma Rejected" },
+];
+
 const BasicTable = () => {
     const apiBase = import.meta.env.VITE_APP_KEY;
     const token = localStorage.getItem("token");
@@ -41,6 +47,7 @@ const BasicTable = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
+    const [selectedStatus, setSelectedStatus] = useState(null);
 
     const [totalCount, setTotalCount] = useState(0);
     const [nextPageUrl, setNextPageUrl] = useState(null);
@@ -353,6 +360,7 @@ const BasicTable = () => {
             toDate = "",
             customer = "",
             staff = "",
+            status = "",
         } = {}) => {
             const baseUrl = getInvoiceBaseUrl();
             const params = new URLSearchParams();
@@ -392,6 +400,10 @@ const BasicTable = () => {
                 );
             }
 
+            if (status) {
+                params.append("status", status);
+            }
+
             const queryString = params.toString();
 
             return queryString
@@ -409,6 +421,7 @@ const BasicTable = () => {
             toDate = "",
             customer = "",
             staff = "",
+            status = "",
         } = {}) => {
             if (!role || !token) {
                 return;
@@ -426,6 +439,7 @@ const BasicTable = () => {
                         toDate,
                         customer,
                         staff,
+                        status,
                     });
 
                 const response = await axios.get(url, {
@@ -537,6 +551,7 @@ const BasicTable = () => {
                 role === "ADMIN"
                     ? selectedStaff?.value || ""
                     : "",
+            status: selectedStatus?.value || "",
         });
     };
 
@@ -556,6 +571,8 @@ const BasicTable = () => {
 
         setSelectedStaff(null);
         setStaffSearch("");
+
+        setSelectedStatus(null);
 
         fetchInvoices({
             search: "",
@@ -920,6 +937,19 @@ const BasicTable = () => {
                                                     />
                                                 </Col>
                                             )}
+
+                                        <Col xl={3} lg={4} md={6} className="mb-3">
+                                            <Label>Status</Label>
+
+                                            <Select
+                                                value={selectedStatus}
+                                                onChange={setSelectedStatus}
+                                                options={statusOptions}
+                                                isClearable
+                                                isSearchable
+                                                placeholder="Select Status"
+                                            />
+                                        </Col>
 
                                         <Col
                                             xl={2}

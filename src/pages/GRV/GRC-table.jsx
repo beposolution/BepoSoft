@@ -13,6 +13,7 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
+import { createAuditLog } from "../../services/auditService";
 
 const BasicTable = () => {
     document.title = "GRV List | Beposoft";
@@ -306,17 +307,28 @@ const BasicTable = () => {
     };
 
     const handleChange = async (id, field, value) => {
-        if (field === "status") {
-            const currentItem = tableData.find(
-                (item) => item.id === id
-            );
+        const currentItem = tableData.find(
+            (item) => item.id === id
+        );
 
-            if (!currentItem || !canUpdateStatus(currentItem.status)) {
+        if (!currentItem) {
+            toast.error("GRV record not found");
+            return;
+        }
+
+        if (field === "status") {
+            if (!canUpdateStatus(currentItem.status)) {
                 toast.error(
                     "Status update is not allowed for this GRV"
                 );
                 return;
             }
+        }
+
+        const previousValue = currentItem[field] ?? "";
+
+        if (String(previousValue) === String(value)) {
+            return;
         }
 
         try {
@@ -334,15 +346,54 @@ const BasicTable = () => {
                 }
             );
 
-            if (response.data) {
-                const updatedData = tableData.map((item) =>
-                    item.id === id
-                        ? { ...item, [field]: value }
-                        : item
+            if (response.status >= 200 && response.status < 300) {
+                setTableData((previousData) =>
+                    previousData.map((item) =>
+                        item.id === id
+                            ? { ...item, [field]: value }
+                            : item
+                    )
                 );
-                setTableData(updatedData);
+
+                toast.success("GRV updated successfully");
+
+                // CREATE AUDIT LOG AFTER SUCCESSFUL UPDATE
+                try {
+                    const auditCreated = await createAuditLog({
+                        action:
+                            field === "status"
+                                ? "grv_status_updated_website"
+                                : "grv_remark_updated_website",
+
+                        beforeData: {
+                            grv_id: id,
+                            order: currentItem.order ?? null,
+                            product: currentItem.product ?? "",
+                            [field]: previousValue,
+                        },
+
+                        afterData: {
+                            grv_id: id,
+                            order: currentItem.order ?? null,
+                            product: currentItem.product ?? "",
+                            [field]: value,
+                        },
+                    });
+
+                    if (!auditCreated) {
+                        console.error(
+                            "GRV updated, but audit log creation failed"
+                        );
+                    }
+                } catch (auditError) {
+                    console.error(
+                        "GRV audit logging error:",
+                        auditError
+                    );
+                }
             }
         } catch (error) {
+            console.error("GRV update failed:", error);
             toast.error("Error updating data");
         }
     };
@@ -369,12 +420,25 @@ const BasicTable = () => {
 
         const updatedNote = editedNote;
 
+        const currentItem = tableData.find(
+            (item) => item.id === id
+        );
+
+        if (!currentItem) {
+            toast.error("GRV record not found");
+            return;
+        }
+
+        const previousNote = currentItem.note || "";
+
+        if (previousNote === updatedNote) {
+            setEditingNoteId(null);
+            setEditedNote("");
+            return;
+        }
+
         try {
             setNoteUpdating(true);
-
-            console.log("Updating GRV note", {
-                grvId: id,
-            });
 
             await axios.put(
                 `${apiBase}grv/update/${id}/`,
@@ -399,18 +463,42 @@ const BasicTable = () => {
 
             toast.success("GRV note updated successfully");
 
-            console.log("GRV note updated successfully", {
-                grvId: id,
-            });
-
             setEditingNoteId(null);
             setEditedNote("");
 
+            // CREATE AUDIT LOG AFTER NOTE UPDATE
+            try {
+                const auditCreated = await createAuditLog({
+                    action: "grv_note_updated_website",
+
+                    beforeData: {
+                        grv_id: id,
+                        order: currentItem.order ?? null,
+                        product: currentItem.product ?? "",
+                        note: previousNote,
+                    },
+
+                    afterData: {
+                        grv_id: id,
+                        order: currentItem.order ?? null,
+                        product: currentItem.product ?? "",
+                        note: updatedNote,
+                    },
+                });
+
+                if (!auditCreated) {
+                    console.error(
+                        "GRV note updated, but audit log failed"
+                    );
+                }
+            } catch (auditError) {
+                console.error(
+                    "GRV note audit logging failed:",
+                    auditError
+                );
+            }
         } catch (error) {
-            console.error("GRV note update failed", {
-                grvId: id,
-                error,
-            });
+            console.error("GRV note update failed:", error);
 
             const message =
                 error?.response?.data?.message ||
@@ -422,7 +510,6 @@ const BasicTable = () => {
                     ? message
                     : "Failed to update GRV note"
             );
-
         } finally {
             setNoteUpdating(false);
         }

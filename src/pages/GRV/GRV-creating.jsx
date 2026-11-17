@@ -22,6 +22,7 @@ import axios from "axios";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { createAuditLog } from "../../services/auditService";
 
 const token = localStorage.getItem("token");
 
@@ -291,19 +292,69 @@ const FormLayouts = () => {
             };
         });
 
+
         setLoading(true);
+
         try {
             const endpoint = `${import.meta.env.VITE_APP_KEY}grv/data/`;
-            await axios.post(endpoint, dataToSave, {
-                headers: { Authorization: `Bearer ${token}` },
+
+            // STEP 1: CREATE GRV
+            const response = await axios.post(endpoint, dataToSave, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
             });
-            alert("Invoice saved successfully!");
-            setSelectedProducts([]);
+
+            // STEP 2: CREATE AUDIT LOG ONLY AFTER GRV SUCCESS
+            if (response.status === 200 || response.status === 201) {
+                try {
+                    const auditCreated = await createAuditLog({
+                        action: "grv_created_website",
+
+                        beforeData: {},
+
+                        afterData: {
+                            order: selectedOrder.id,
+                            invoice: selectedOrder.invoice || "",
+                            products: dataToSave.map((item) => ({
+                                product: item.product,
+                                product_id: item.product_id,
+                                quantity: item.quantity,
+                                price: item.price,
+                                amount: item.amount,
+                                returnreason: item.returnreason,
+                                remark: item.remark,
+                                cod_amount: item.cod_amount,
+                                status: item.status,
+                                note: item.note,
+                                rack_details: item.rack_details,
+                            })),
+                        },
+                    });
+
+                    if (!auditCreated) {
+                        console.error(
+                            "GRV created successfully, but DataLog creation failed."
+                        );
+                    }
+                } catch (auditError) {
+                    console.error(
+                        "GRV created successfully, but DataLog creation failed:",
+                        auditError
+                    );
+                }
+
+                // STEP 3: SUCCESS
+                alert("GRV created successfully!");
+                setSelectedProducts([]);
+            }
         } catch (error) {
+            console.error("Error creating GRV:", error);
             alert("Error saving invoice. Please try again.");
         } finally {
             setLoading(false);
         }
+
     };
 
     const formik = useFormik({

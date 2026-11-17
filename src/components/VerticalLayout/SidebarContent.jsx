@@ -418,6 +418,9 @@ const SidebarContent = (props) => {
                         <Link to="/performa/list/paymentslip/">{props.t("Proforma With Payment Slip")}</Link>
                       </li>
                       <li>
+                        <Link to="/proforma/pending/">{props.t("Pending Proforma Invoices")}</Link>
+                      </li>
+                      <li>
                         <Link to="/proforma/rejected/">{props.t("Rejected Proforma Invoices")}</Link>
                       </li>
                     </>

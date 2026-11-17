@@ -492,6 +492,7 @@ import StatewiseSalesReportExcelPage from "../pages/Resports/StatewiseSalesRepor
 import CustomerCompleteReport from "../pages/Customers/CustomerCompleteReport";
 import RejectedProformaInvoices from "../pages/PerfomaInvoive/RejectedProformaInvoices";
 import StaffCompleteReport from "../pages/Staff/StaffCompleteReport";
+import PendingProformaInvoices from "../pages/PerfomaInvoive/PendingProformaInvoices";
 
 
 
@@ -686,6 +687,7 @@ const authProtectedRoutes = [
   { path: "/perfoma/order/:invoice/", component: <PerfomaOrder /> },
   { path: '/performa/list/paymentslip/', component: <ProformaWithPaymentSlips /> },
   { path: "/proforma/rejected/", component: <RejectedProformaInvoices /> },
+  { path: "/proforma/pending/", component: <PendingProformaInvoices /> },
 
 
 

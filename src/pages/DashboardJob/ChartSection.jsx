@@ -1048,6 +1048,17 @@ const ChartSection = () => {
     const [mySalesRankLoading, setMySalesRankLoading] = useState(false);
     const [mySalesRankError, setMySalesRankError] = useState("");
 
+    const [salesSummary, setSalesSummary] = useState({});
+    const [salesLoading, setSalesLoading] = useState(false);
+    const [salesError, setSalesError] = useState("");
+
+    const [dgmTodaySummary, setDgmTodaySummary] = useState({});
+    const [dgmMonthSummary, setDgmMonthSummary] = useState({});
+    const [dgmTodayRows, setDgmTodayRows] = useState([]);
+    const [dgmLoading, setDgmLoading] = useState(false);
+    const [dgmError, setDgmError] = useState("");
+
+
     useEffect(() => {
         const role = localStorage.getItem("active");
         setRole(role);
@@ -1742,6 +1753,151 @@ const ChartSection = () => {
         };
         fetchGRVCount();
     }, []);
+
+
+    const asNumber = (value) => {
+        const number = Number(value);
+        return Number.isFinite(number) ? number : 0;
+    };
+
+    const asMap = (value) =>
+        value && typeof value === "object" && !Array.isArray(value)
+            ? value
+            : {};
+
+    const formatSummaryAmount = (value) => {
+        const number = asNumber(value);
+        const absolute = Math.abs(number);
+        const sign = number < 0 ? "-" : "";
+
+        if (absolute >= 10000000)
+            return `${sign}₹${(absolute / 10000000).toFixed(2)} Cr`;
+
+        if (absolute >= 100000)
+            return `${sign}₹${(absolute / 100000).toFixed(2)} L`;
+
+        if (absolute >= 1000)
+            return `${sign}₹${(absolute / 1000).toFixed(2)} K`;
+
+        return `${sign}₹${absolute.toFixed(2)}`;
+    };
+
+    useEffect(() => {
+        const allowedRoles = [
+            "ADMIN", "COO", "CEO", "Accounts / Accounting"
+        ];
+
+        if (!token || !allowedRoles.includes(role)) return;
+
+        const controller = new AbortController();
+
+        const fetchSalesSummary = async () => {
+            setSalesLoading(true);
+            setSalesError("");
+
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}orders/summary/family/data/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        signal: controller.signal,
+                    }
+                );
+
+                if (!controller.signal.aborted) {
+                    setSalesSummary(asMap(response.data?.overall));
+                }
+            } catch (error) {
+                if (!controller.signal.aborted) {
+                    console.error("Sales summary error:", error);
+                    setSalesSummary({});
+                    setSalesError("Unable to load sales summary");
+                }
+            } finally {
+                if (!controller.signal.aborted) {
+                    setSalesLoading(false);
+                }
+            }
+        };
+
+        const fetchDgmSummary = async () => {
+            setDgmLoading(true);
+            setDgmError("");
+
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_APP_KEY}warehouse/get/summary/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        signal: controller.signal,
+                    }
+                );
+
+                if (controller.signal.aborted) return;
+
+                const data = asMap(response.data?.data);
+
+                const rows = Object.entries(data)
+                    .map(([serviceName, serviceValue]) => {
+                        const today = asMap(
+                            asMap(serviceValue).today
+                        );
+
+                        return {
+                            service: serviceName,
+                            boxes: asNumber(today.total_boxes),
+                            orders: asNumber(today.total_orders),
+                            actual_weight: asNumber(
+                                today.total_actual_weight_kg
+                            ),
+                            post_office_weight: asNumber(
+                                today.total_weight_field_kg ??
+                                today.total_weight_field
+                            ),
+                            volume: asNumber(today.total_volume),
+                            parcel_amount: asNumber(
+                                today.total_parcel_amount
+                            ),
+                            average: asNumber(today.average),
+                        };
+                    })
+                    .filter((row) => row.boxes > 0)
+                    .sort((a, b) =>
+                        a.service.localeCompare(b.service)
+                    );
+
+                setDgmTodaySummary(
+                    asMap(response.data?.today_summary)
+                );
+                setDgmMonthSummary(
+                    asMap(response.data?.current_month_summary)
+                );
+                setDgmTodayRows(rows);
+            } catch (error) {
+                if (!controller.signal.aborted) {
+                    console.error("DGM summary error:", error);
+                    setDgmTodaySummary({});
+                    setDgmMonthSummary({});
+                    setDgmTodayRows([]);
+                    setDgmError("Unable to load logistics summary");
+                }
+            } finally {
+                if (!controller.signal.aborted) {
+                    setDgmLoading(false);
+                }
+            }
+        };
+
+        fetchSalesSummary();
+        fetchDgmSummary();
+
+        return () => controller.abort();
+    }, [token, role]);
+
 
     if (loading) {
         return <p>Loading...</p>;
@@ -3155,6 +3311,371 @@ const ChartSection = () => {
                         </Col>
 
                         {/* ================= END FINANCE CARD ================= */}
+
+                        {["ADMIN", "COO", "CEO", "Accounts / Accounting"].includes(role) && (
+
+                            <Row className="g-3 mb-3">
+
+                                {/* ================= SALES CARD ================= */}
+
+                                <Col xs={12} sm={6} lg={4}>
+                                    <Card
+                                        className="border-0 shadow-sm h-100"
+                                        onClick={() => navigate("/dashboard/family-date-summary")}
+                                        style={{
+                                            borderRadius: "16px",
+                                            background:
+                                                "linear-gradient(135deg, #55adff 0%, #2878f7 100%)",
+                                            color: "#fff",
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        <CardBody style={{ padding: "14px" }}>
+
+                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                <div>
+                                                    <h5 className="fw-bold mb-0"
+                                                        style={{ color: "#fff", fontSize: "16px" }}>
+                                                        Sales
+                                                    </h5>
+                                                    <small style={{ fontSize: "10px", opacity: 0.9 }}>
+                                                        Monthly Sales Summary
+                                                    </small>
+                                                </div>
+                                                <FaChartLine size={21} color="#fff" />
+                                            </div>
+
+                                            <div style={{
+                                                background: "#fff",
+                                                borderRadius: "10px",
+                                                padding: "9px 12px",
+                                                marginBottom: "9px",
+                                            }}>
+                                                <div style={{
+                                                    fontSize: "10px",
+                                                    color: "#64748b",
+                                                    fontWeight: 600,
+                                                }}>
+                                                    Monthly Total Amount
+                                                </div>
+                                                <div style={{
+                                                    fontSize: "23px",
+                                                    fontWeight: 800,
+                                                    color: "#15803d",
+                                                }}>
+                                                    {salesLoading ? "..." : formatSummaryAmount(
+                                                        salesSummary.month_total_amount
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {salesError && (
+                                                <small className="d-block mb-2 text-white">
+                                                    {salesError}
+                                                </small>
+                                            )}
+
+                                            {(() => {
+                                                const payment = asMap(
+                                                    salesSummary.payment_status_summary
+                                                );
+                                                const today = asMap(payment.today);
+                                                const month = asMap(payment.month);
+
+                                                const todayPaid = asMap(today.paid);
+                                                const todayCod = asMap(today.COD);
+                                                const monthPaid = asMap(month.paid);
+                                                const monthCod = asMap(month.COD);
+
+                                                const rows = [
+                                                    ["Month Invoices", asNumber(salesSummary.month_count)],
+                                                    ["Today Paid", `${asNumber(todayPaid.count)} | ${formatSummaryAmount(todayPaid.total)}`],
+                                                    ["Today COD", `${asNumber(todayCod.count)} | ${formatSummaryAmount(todayCod.total)}`],
+                                                    ["Month Paid", `${asNumber(monthPaid.count)} | ${formatSummaryAmount(monthPaid.total)}`],
+                                                    ["Month COD", `${asNumber(monthCod.count)} | ${formatSummaryAmount(monthCod.total)}`],
+                                                ];
+
+                                                return (
+                                                    <div style={{
+                                                        display: "grid",
+                                                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                                                        gap: "6px",
+                                                    }}>
+                                                        {rows.map(([label, value]) => (
+                                                            <div key={label} style={{
+                                                                background: "rgba(255,255,255,0.15)",
+                                                                border: "1px solid rgba(255,255,255,0.2)",
+                                                                borderRadius: "8px",
+                                                                padding: "7px 9px",
+                                                                minWidth: 0,
+                                                            }}>
+                                                                <div style={{
+                                                                    fontSize: "10px",
+                                                                    opacity: 0.9,
+                                                                    marginBottom: "2px",
+                                                                }}>
+                                                                    {label}
+                                                                </div>
+                                                                <div style={{
+                                                                    fontSize: "12px",
+                                                                    fontWeight: 800,
+                                                                    overflowWrap: "anywhere",
+                                                                }}>
+                                                                    {salesLoading ? "..." : value}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            })()}
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+
+                                {/* ================= LOGISTICS CARD ================= */}
+
+                                <Col xs={12} sm={6} lg={4}>
+                                    <Card
+                                        className="border-0 shadow-sm h-100"
+                                        onClick={() => navigate("/dashboard/daily-goods-movement")}
+                                        style={{
+                                            borderRadius: "16px",
+                                            background:
+                                                "linear-gradient(135deg, #55adff 0%, #2878f7 100%)",
+                                            color: "#fff",
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        <CardBody style={{ padding: "14px" }}>
+
+                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                <div>
+                                                    <h5 className="fw-bold mb-0"
+                                                        style={{ color: "#fff", fontSize: "16px" }}>
+                                                        Logistics (DGM)
+                                                    </h5>
+                                                    <small style={{ fontSize: "10px", opacity: 0.9 }}>
+                                                        Daily Goods Movement
+                                                    </small>
+                                                </div>
+                                                <FaChartLine size={21} color="#fff" />
+                                            </div>
+
+                                            <div style={{
+                                                background: "#fff",
+                                                borderRadius: "10px",
+                                                padding: "9px 12px",
+                                                marginBottom: "9px",
+                                            }}>
+                                                <div style={{
+                                                    fontSize: "10px",
+                                                    color: "#64748b",
+                                                    fontWeight: 600,
+                                                }}>
+                                                    Monthly Total Order Amount
+                                                </div>
+                                                <div style={{
+                                                    fontSize: "23px",
+                                                    fontWeight: 800,
+                                                    color: "#15803d",
+                                                }}>
+                                                    {dgmLoading ? "..." : formatSummaryAmount(
+                                                        dgmMonthSummary.total_order_amount
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {dgmError && (
+                                                <small className="d-block mb-2 text-white">
+                                                    {dgmError}
+                                                </small>
+                                            )}
+
+                                            {(() => {
+                                                const rows = [
+                                                    ["Today Invoices", asNumber(dgmTodaySummary.total_orders)],
+                                                    ["Today Amount", formatSummaryAmount(dgmTodaySummary.total_order_amount)],
+                                                    ["Today Weight", `${asNumber(dgmTodaySummary.total_weight_field_kg ?? dgmTodaySummary.total_weight_field).toFixed(3)} kg`],
+                                                    ["Month Invoices", asNumber(dgmMonthSummary.total_orders)],
+                                                    ["Month Amount", formatSummaryAmount(dgmMonthSummary.total_order_amount)],
+                                                    ["Month Weight", `${asNumber(dgmMonthSummary.total_weight_field_kg ?? dgmMonthSummary.total_weight_field).toFixed(3)} kg`],
+                                                    ["PO Amount", formatSummaryAmount(dgmMonthSummary.total_parcel_amount)],
+                                                    ["Average", `₹${asNumber(dgmMonthSummary.average).toFixed(2)}/kg`],
+                                                ];
+
+                                                return (
+                                                    <div style={{
+                                                        display: "grid",
+                                                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                                                        gap: "6px",
+                                                    }}>
+                                                        {rows.map(([label, value]) => (
+                                                            <div key={label} style={{
+                                                                background: "rgba(255,255,255,0.15)",
+                                                                border: "1px solid rgba(255,255,255,0.2)",
+                                                                borderRadius: "8px",
+                                                                padding: "7px 9px",
+                                                                minWidth: 0,
+                                                            }}>
+                                                                <div style={{
+                                                                    fontSize: "10px",
+                                                                    opacity: 0.9,
+                                                                    marginBottom: "2px",
+                                                                }}>
+                                                                    {label}
+                                                                </div>
+                                                                <div style={{
+                                                                    fontSize: "12px",
+                                                                    fontWeight: 800,
+                                                                    overflowWrap: "anywhere",
+                                                                }}>
+                                                                    {dgmLoading ? "..." : value}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            })()}
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+
+                                {/* ================= PURCHASE CARD ================= */}
+
+                                <Col xs={12} sm={6} lg={4}>
+                                    <Card
+                                        className="border-0 shadow-sm h-100"
+                                        style={{
+                                            borderRadius: "16px",
+                                            background:
+                                                "linear-gradient(135deg, #55adff 0%, #2878f7 100%)",
+                                            color: "#fff",
+                                            overflow: "hidden",
+                                        }}
+                                    >
+                                        <CardBody style={{ padding: "18px" }}>
+
+                                            {/* HEADER */}
+
+                                            <div className="d-flex justify-content-between align-items-center mb-4">
+                                                <div>
+                                                    <h5
+                                                        className="fw-bold mb-1"
+                                                        style={{
+                                                            color: "#fff",
+                                                            fontSize: "20px",
+                                                        }}
+                                                    >
+                                                        Purchase
+                                                    </h5>
+                                                    <small style={{
+                                                        fontSize: "11px",
+                                                        opacity: 0.9,
+                                                    }}>
+                                                        Purchase Order Management
+                                                    </small>
+                                                </div>
+
+                                                <div style={{
+                                                    width: "48px",
+                                                    height: "48px",
+                                                    borderRadius: "14px",
+                                                    border: "1px solid rgba(255,255,255,0.4)",
+                                                    background: "rgba(255,255,255,0.12)",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                }}>
+                                                    <i
+                                                        className="ri-shopping-cart-2-line"
+                                                        style={{ fontSize: "27px", color: "#fff" }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* PO LOCAL */}
+
+                                            <div
+                                                role="button"
+                                                tabIndex={0}
+                                                onClick={() => navigate("/lpo/all")}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter" || e.key === " ") {
+                                                        e.preventDefault();
+                                                        navigate("/lpo/all");
+                                                    }
+                                                }}
+                                                className="d-flex justify-content-between align-items-center"
+                                                style={{
+                                                    background: "rgba(255,255,255,0.15)",
+                                                    border: "2px solid rgba(255,255,255,0.3)",
+                                                    borderRadius: "14px",
+                                                    padding: "17px 18px",
+                                                    marginBottom: "14px",
+                                                    cursor: "pointer",
+                                                }}
+                                            >
+                                                <span style={{
+                                                    fontSize: "17px",
+                                                    fontWeight: 700,
+                                                    color: "#fff",
+                                                }}>
+                                                    PO - Local
+                                                </span>
+
+                                                <i
+                                                    className="ri-arrow-right-s-line"
+                                                    style={{ fontSize: "27px", color: "#fff" }}
+                                                />
+                                            </div>
+
+                                            {/* PO INTERNAL */}
+
+                                            <div
+                                                role="button"
+                                                tabIndex={0}
+                                                onClick={() => navigate("/product/list/")}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter" || e.key === " ") {
+                                                        e.preventDefault();
+                                                        navigate("/product/list/");
+                                                    }
+                                                }}
+                                                className="d-flex justify-content-between align-items-center"
+                                                style={{
+                                                    background: "rgba(255,255,255,0.15)",
+                                                    border: "2px solid rgba(255,255,255,0.3)",
+                                                    borderRadius: "14px",
+                                                    padding: "17px 18px",
+                                                    cursor: "pointer",
+                                                }}
+                                            >
+                                                <span style={{
+                                                    fontSize: "17px",
+                                                    fontWeight: 700,
+                                                    color: "#fff",
+                                                }}>
+                                                    PO - Internal
+                                                </span>
+
+                                                <i
+                                                    className="ri-arrow-right-s-line"
+                                                    style={{ fontSize: "27px", color: "#fff" }}
+                                                />
+                                            </div>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+                            </Row>
+                        )}
+
+                        {/* SALES & LOGISTICS - ADMIN / COO / CEO / ACCOUNTS   */}
 
                         <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
                             <Card

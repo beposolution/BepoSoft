@@ -1059,6 +1059,15 @@ const ChartSection = () => {
     const [dgmError, setDgmError] = useState("");
 
 
+    // GST DASHBOARD STATES 
+    const [gstPeriod, setGstPeriod] = useState("today");
+    const [gstTodayByCompany, setGstTodayByCompany] = useState({});
+    const [gstMonthByCompany, setGstMonthByCompany] = useState({});
+    const [gstLoading, setGstLoading] = useState(false);
+    const [gstError, setGstError] = useState("");
+    const [gstRefreshKey, setGstRefreshKey] = useState(0);
+
+
     useEffect(() => {
         const role = localStorage.getItem("active");
         setRole(role);
@@ -1899,6 +1908,186 @@ const ChartSection = () => {
     }, [token, role]);
 
 
+    // ================= GST DASHBOARD API =================
+
+    const gstFormatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+
+        return `${year}-${month}-${day}`;
+    };
+
+    const gstFormatAmount = (value) => {
+        const amount = Number(value) || 0;
+
+        return `₹${amount.toLocaleString("en-IN", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        })}`;
+    };
+
+    const gstRefresh = () => {
+        setGstRefreshKey((prev) => prev + 1);
+    };
+
+    useEffect(() => {
+        if (!token) return;
+
+        const controller = new AbortController();
+
+        const loadGSTCompanyTotals = async (startDate, endDate) => {
+            const response = await axios.get(
+                `${import.meta.env.VITE_APP_KEY}orders/tax/report/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    params: {
+                        start_date: startDate,
+                        end_date: endDate,
+                    },
+                    signal: controller.signal,
+                    timeout: 30000,
+                }
+            );
+
+            if (
+                response.data?.status !== "success" ||
+                !Array.isArray(response.data?.data)
+            ) {
+                throw new Error("Invalid GST report response");
+            }
+
+            if (response.data?.next) {
+                throw new Error(
+                    "GST report contains additional pages. Cannot display partial totals."
+                );
+            }
+
+            const totals = {};
+
+            response.data.data.forEach((item) => {
+                const companyName = String(
+                    item.company_name || "Unnamed company"
+                ).trim();
+
+                if (companyName.toLowerCase() === "test company") {
+                    return;
+                }
+
+                const companyId = String(
+                    item.company_id ?? `name:${companyName}`
+                );
+
+                if (!totals[companyId]) {
+                    totals[companyId] = {
+                        name: companyName,
+                        net: 0,
+                        gst: 0,
+                        withoutTax: 0,
+                    };
+                }
+
+                const parseAmount = (value) => {
+                    const number = Number(
+                        String(value ?? "0").replace(/,/g, "")
+                    );
+                    return Number.isFinite(number) ? number : 0;
+                };
+
+                totals[companyId].net += parseAmount(
+                    item.net_amount
+                );
+
+                totals[companyId].gst += parseAmount(
+                    item.tax_amount
+                );
+
+                totals[companyId].withoutTax += parseAmount(
+                    item.amount_before_tax
+                );
+            });
+
+            return totals;
+        };
+
+        const fetchGSTDashboard = async () => {
+            setGstLoading(true);
+            setGstError("");
+
+            try {
+                const now = new Date();
+
+                const today = gstFormatDate(now);
+
+                const monthStart = gstFormatDate(
+                    new Date(now.getFullYear(), now.getMonth(), 1)
+                );
+
+                const [todayData, monthData] = await Promise.all([
+                    loadGSTCompanyTotals(today, today),
+                    loadGSTCompanyTotals(monthStart, today),
+                ]);
+
+                if (!controller.signal.aborted) {
+                    setGstTodayByCompany(todayData);
+                    setGstMonthByCompany(monthData);
+                }
+            } catch (error) {
+                if (!controller.signal.aborted) {
+                    console.error("GST DASHBOARD ERROR:", error);
+
+                    setGstError(
+                        error.response?.data?.message ||
+                        error.message ||
+                        "Unable to load GST summary"
+                    );
+                }
+            } finally {
+                if (!controller.signal.aborted) {
+                    setGstLoading(false);
+                }
+            }
+        };
+
+        fetchGSTDashboard();
+
+        return () => controller.abort();
+
+    }, [token, role, gstRefreshKey]);
+
+    // GST DISPLAY DATA 
+
+    const gstSelectedData =
+        gstPeriod === "month"
+            ? gstMonthByCompany
+            : gstTodayByCompany;
+
+    const gstCompanyNames = {};
+
+    companies.forEach((company) => {
+        const name = String(company.name || "").trim();
+
+        if (name && name.toLowerCase() !== "test company") {
+            gstCompanyNames[String(company.id)] = name;
+        }
+    });
+
+    Object.entries(gstMonthByCompany).forEach(([key, value]) => {
+        gstCompanyNames[key] = value.name;
+    });
+
+    Object.entries(gstTodayByCompany).forEach(([key, value]) => {
+        gstCompanyNames[key] = value.name;
+    });
+
+    const gstCompanyKeys = Object.keys(gstCompanyNames).sort(
+        (a, b) => gstCompanyNames[a].localeCompare(gstCompanyNames[b])
+    );
+
+
     if (loading) {
         return <p>Loading...</p>;
     }
@@ -2090,7 +2279,7 @@ const ChartSection = () => {
                     Accounts and COO it is placed in the same grid as the
                     Company Reports and Finance cards below. */}
                 <Row className="g-3 mb-3">
-                    {!(role === "ADMIN" || role === "Accounts / Accounting" || role === "COO") && (
+                    {!(role === "ADMIN" || role === "Accounts / Accounting" || role === "COO" || role === "CEO") && (
                         <Col xs={12} sm={6} md={6} lg={4} xl={3}>
                             <AttendanceCalendar token={token} />
                         </Col>
@@ -3068,7 +3257,7 @@ const ChartSection = () => {
 
                 {/* ADMIN & Accounts / Accounting dashboard */}
 
-                {(role === "ADMIN" || role === "Accounts / Accounting" || role === "COO") && (
+                {(role === "ADMIN" || role === "Accounts / Accounting" || role === "COO" || role === "CEO") && (
                     <Row className="g-3 mb-2">
 
                         {/* Calendar shares the same responsive row and gutters
@@ -3543,963 +3732,1246 @@ const ChartSection = () => {
                                     </Card>
                                 </Col>
 
+                                <Col xs={12} sm={12} lg={4}>
+                                    <div className="d-flex flex-column h-100" style={{ gap: "14px" }}>
 
-                                {/* ================= PURCHASE CARD ================= */}
+                                        {/* PURCHASE CARD */}
+                                        <Card
+                                            className="border-0 shadow-sm"
+                                            style={{
+                                                borderRadius: "16px",
+                                                background: "linear-gradient(135deg, #55adff 0%, #2878f7 100%)",
+                                                color: "#fff",
+                                            }}
+                                        >
+                                            <CardBody style={{ padding: "16px" }}>
+                                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                                    <div>
+                                                        <h5 className="fw-bold mb-1" style={{
+                                                            color: "#fff", fontSize: "17px"
+                                                        }}>
+                                                            Purchase
+                                                        </h5>
+                                                        <div style={{ fontSize: "11px", opacity: 0.9 }}>
+                                                            Purchase Order Management
+                                                        </div>
+                                                    </div>
+                                                    <div style={{
+                                                        width: "38px",
+                                                        height: "38px",
+                                                        borderRadius: "11px",
+                                                        background: "rgba(255,255,255,0.12)",
+                                                        border: "1px solid rgba(255,255,255,0.25)",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                    }}>
+                                                        <i
+                                                            className="ri-shopping-cart-2-line"
+                                                            style={{ fontSize: "20px", color: "#fff" }}
+                                                        />
+                                                    </div>
+                                                </div>
 
-                                <Col xs={12} sm={6} lg={4}>
-                                    <Card
-                                        className="border-0 shadow-sm h-100"
-                                        style={{
-                                            borderRadius: "16px",
-                                            background:
-                                                "linear-gradient(135deg, #55adff 0%, #2878f7 100%)",
-                                            color: "#fff",
-                                            overflow: "hidden",
-                                        }}
-                                    >
-                                        <CardBody style={{ padding: "18px" }}>
+                                                <Row className="g-2">
+                                                    {[
+                                                        ["PO - Local", "/lpo/all"],
+                                                        ["PO - Internal", "/product/list/"],
+                                                    ].map(([label, path]) => (
+                                                        <Col xs={6} key={label}>
+                                                            <div
+                                                                role="button"
+                                                                tabIndex={0}
+                                                                onClick={() => navigate(path)}
+                                                                onKeyDown={e => {
+                                                                    if (e.key === "Enter" || e.key === " ") {
+                                                                        e.preventDefault();
+                                                                        navigate(path);
+                                                                    }
+                                                                }}
+                                                                style={{
+                                                                    background: "rgba(255,255,255,0.14)",
+                                                                    border: "1px solid rgba(255,255,255,0.3)",
+                                                                    borderRadius: "11px",
+                                                                    padding: "15px 8px",
+                                                                    textAlign: "center",
+                                                                    fontSize: "14px",
+                                                                    fontWeight: 800,
+                                                                    cursor: "pointer",
+                                                                }}
+                                                            >
+                                                                {label}
+                                                            </div>
+                                                        </Col>
+                                                    ))}
+                                                </Row>
+                                            </CardBody>
+                                        </Card>
 
-                                            {/* HEADER */}
+                                        {/* GST CARD */}
 
-                                            <div className="d-flex justify-content-between align-items-center mb-4">
-                                                <div>
-                                                    <h5
-                                                        className="fw-bold mb-1"
+                                        {/* ================= GST CARD ================= */}
+
+                                        <Card
+                                            className="border-0 shadow-sm"
+                                            style={{
+                                                borderRadius: "16px",
+                                                background: "linear-gradient(135deg, #55adff 0%, #2878f7 100%)",
+                                                color: "#ffffff",
+                                                overflow: "hidden",
+                                            }}
+                                        >
+                                            <CardBody
+                                                className="d-flex flex-column"
+                                                style={{
+                                                    padding: "16px",
+                                                    gap: "12px",
+                                                }}
+                                            >
+                                                {/* ================= GST HEADER ================= */}
+
+                                                <div className="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <h5
+                                                            className="fw-bold mb-1"
+                                                            style={{
+                                                                color: "#ffffff",
+                                                                fontSize: "17px",
+                                                            }}
+                                                        >
+                                                            GST
+                                                        </h5>
+
+                                                        <div
+                                                            style={{
+                                                                fontSize: "11px",
+                                                                color: "#ffffff",
+                                                                opacity: 0.9,
+                                                            }}
+                                                        >
+                                                            Company Wise GST Summary
+                                                        </div>
+                                                    </div>
+
+                                                    {/* REFRESH BUTTON */}
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={gstRefresh}
+                                                        disabled={gstLoading}
+                                                        aria-label="Refresh GST"
                                                         style={{
-                                                            color: "#fff",
-                                                            fontSize: "20px",
+                                                            width: "36px",
+                                                            height: "36px",
+                                                            flexShrink: 0,
+                                                            borderRadius: "10px",
+                                                            border: "1px solid rgba(255,255,255,0.3)",
+                                                            background: "rgba(255,255,255,0.14)",
+                                                            color: "#ffffff",
+                                                            cursor: gstLoading ? "wait" : "pointer",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            justifyContent: "center",
                                                         }}
                                                     >
-                                                        Purchase
-                                                    </h5>
-                                                    <small style={{
-                                                        fontSize: "11px",
-                                                        opacity: 0.9,
-                                                    }}>
-                                                        Purchase Order Management
-                                                    </small>
+                                                        <i
+                                                            className="ri-refresh-line"
+                                                            style={{
+                                                                fontSize: "18px",
+                                                                color: "#ffffff",
+                                                            }}
+                                                        />
+                                                    </button>
                                                 </div>
 
-                                                <div style={{
-                                                    width: "48px",
-                                                    height: "48px",
-                                                    borderRadius: "14px",
-                                                    border: "1px solid rgba(255,255,255,0.4)",
-                                                    background: "rgba(255,255,255,0.12)",
-                                                    display: "flex",
+                                                {/* ================= PERIOD FILTER ================= */}
+
+                                                <div
+                                                    style={{
+                                                        display: "grid",
+                                                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                                                        gap: "7px",
+                                                        width: "100%",
+                                                    }}
+                                                >
+                                                    {[
+                                                        ["Today", "today"],
+                                                        ["This Month", "month"],
+                                                    ].map(([label, value]) => (
+                                                        <button
+                                                            key={value}
+                                                            type="button"
+                                                            onClick={() => setGstPeriod(value)}
+                                                            style={{
+                                                                border: "none",
+                                                                padding: "9px",
+                                                                borderRadius: "9px",
+                                                                fontSize: "12px",
+                                                                fontWeight: 800,
+                                                                cursor: "pointer",
+                                                                background:
+                                                                    gstPeriod === value
+                                                                        ? "#ffffff"
+                                                                        : "rgba(255,255,255,0.15)",
+                                                                color:
+                                                                    gstPeriod === value
+                                                                        ? "#2878f7"
+                                                                        : "#ffffff",
+                                                            }}
+                                                        >
+                                                            {label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+
+                                                {/* ================= GST CONTENT ================= */}
+
+                                                {gstLoading ? (
+                                                    <div className="text-center py-4">
+                                                        <div
+                                                            className="spinner-border spinner-border-sm text-white"
+                                                            role="status"
+                                                        />
+
+                                                        <div
+                                                            className="mt-2"
+                                                            style={{ fontSize: "12px" }}
+                                                        >
+                                                            Loading GST...
+                                                        </div>
+                                                    </div>
+                                                ) : gstError ? (
+                                                    <div className="text-center py-3">
+                                                        <div
+                                                            style={{
+                                                                fontSize: "12px",
+                                                                color: "#ffffff",
+                                                                overflowWrap: "anywhere",
+                                                            }}
+                                                        >
+                                                            {gstError}
+                                                        </div>
+
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-sm btn-light mt-2"
+                                                            onClick={gstRefresh}
+                                                        >
+                                                            Retry
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div
+                                                        className="d-flex flex-column"
+                                                        style={{
+                                                            gap: "10px",
+                                                            width: "100%",
+                                                        }}
+                                                    >
+                                                        {gstCompanyKeys.length === 0 ? (
+                                                            <div
+                                                                style={{
+                                                                    textAlign: "center",
+                                                                    padding: "15px",
+                                                                    fontSize: "12px",
+                                                                    color: "#ffffff",
+                                                                }}
+                                                            >
+                                                                No company data
+                                                            </div>
+                                                        ) : (
+                                                            gstCompanyKeys.map((companyId) => {
+                                                                const totals = gstSelectedData[companyId] || {};
+
+                                                                const amountRows = [
+                                                                    {
+                                                                        label: "Total Order Amount",
+                                                                        value: totals.net,
+                                                                    },
+                                                                    {
+                                                                        label: "Total GST",
+                                                                        value: totals.gst,
+                                                                    },
+                                                                    {
+                                                                        label: "Total Amount Without Tax",
+                                                                        value: totals.withoutTax,
+                                                                    },
+                                                                ];
+
+
+                                                                return (
+                                                                    <div
+                                                                        key={companyId}
+                                                                        role="button"
+                                                                        tabIndex={0}
+                                                                        aria-label={`Open GST report for ${gstCompanyNames[companyId]}`}
+                                                                        onClick={() => {
+                                                                            const now = new Date();
+
+                                                                            const formatDate = (date) => {
+                                                                                const year = date.getFullYear();
+                                                                                const month = String(
+                                                                                    date.getMonth() + 1
+                                                                                ).padStart(2, "0");
+                                                                                const day = String(
+                                                                                    date.getDate()
+                                                                                ).padStart(2, "0");
+
+                                                                                return `${year}-${month}-${day}`;
+                                                                            };
+
+                                                                            const today = formatDate(now);
+
+                                                                            const startDate =
+                                                                                gstPeriod === "month"
+                                                                                    ? formatDate(
+                                                                                        new Date(
+                                                                                            now.getFullYear(),
+                                                                                            now.getMonth(),
+                                                                                            1
+                                                                                        )
+                                                                                    )
+                                                                                    : today;
+
+                                                                            navigate(
+                                                                                `/company-gst-report/${encodeURIComponent(companyId)}`,
+                                                                                {
+                                                                                    state: {
+                                                                                        companyName:
+                                                                                            gstCompanyNames[companyId],
+                                                                                        startDate: startDate,
+                                                                                        endDate: today,
+                                                                                    },
+                                                                                }
+                                                                            );
+                                                                        }}
+                                                                        onKeyDown={(event) => {
+                                                                            if (
+                                                                                event.key === "Enter" ||
+                                                                                event.key === " "
+                                                                            ) {
+                                                                                event.preventDefault();
+                                                                                event.currentTarget.click();
+                                                                            }
+                                                                        }}
+                                                                        style={{
+                                                                            cursor: "pointer",
+                                                                            background: "rgba(15,65,150,0.16)",
+                                                                            border:
+                                                                                "1px solid rgba(255,255,255,0.25)",
+                                                                            borderRadius: "11px",
+                                                                            padding: "10px",
+                                                                            minWidth: 0,
+                                                                            display: "flex",
+                                                                            flexDirection: "column",
+                                                                            gap: "10px",
+                                                                        }}
+                                                                    >
+
+                                                                        {/* COMPANY NAME */}
+
+                                                                        <div
+                                                                            style={{
+                                                                                fontSize: "12px",
+                                                                                fontWeight: 800,
+                                                                                color: "#ffffff",
+                                                                                lineHeight: "1.4",
+                                                                                overflowWrap: "anywhere",
+                                                                            }}
+                                                                        >
+                                                                            {gstCompanyNames[companyId]}
+                                                                        </div>
+
+                                                                        {/* COMPANY GST VALUES - COLUMN WISE */}
+
+                                                                        <div
+                                                                            style={{
+                                                                                display: "grid",
+                                                                                gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                                                                                gap: "8px",
+                                                                                width: "100%",
+                                                                            }}
+                                                                        >
+                                                                            {amountRows.map((item) => (
+                                                                                <div
+                                                                                    key={item.label}
+                                                                                    style={{
+                                                                                        background: "rgba(255,255,255,0.12)",
+                                                                                        border: "1px solid rgba(255,255,255,0.15)",
+                                                                                        borderRadius: "8px",
+                                                                                        padding: "8px",
+                                                                                        minWidth: 0,
+                                                                                    }}
+                                                                                >
+                                                                                    <div
+                                                                                        style={{
+                                                                                            fontSize: "10px",
+                                                                                            color: "#ffffff",
+                                                                                            opacity: 0.9,
+                                                                                            marginBottom: "4px",
+                                                                                            lineHeight: "1.3",
+                                                                                            overflowWrap: "anywhere",
+                                                                                        }}
+                                                                                    >
+                                                                                        {item.label}
+                                                                                    </div>
+
+                                                                                    <div
+                                                                                        style={{
+                                                                                            fontSize: "13px",
+                                                                                            fontWeight: 800,
+                                                                                            color: "#ffffff",
+                                                                                            lineHeight: "1.4",
+                                                                                            overflowWrap: "anywhere",
+                                                                                        }}
+                                                                                    >
+                                                                                        {gstFormatAmount(item.value)}
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </CardBody>
+                                        </Card>
+
+                                    </div>
+                                </Col>
+                            </Row>
+                        )}
+
+                        {/* SALES & LOGISTICS - ADMIN / COO  / ACCOUNTS   */}
+                        {role !== "CEO" && (
+                            <>
+                                <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
+                                    <Card
+                                        onClick={() => navigate("/dashboard/todaysbill-details")}
+                                        className="h-100 border-0 shadow-sm"
+                                        style={{
+                                            cursor: "pointer",
+                                            borderRadius: "16px",
+                                            minHeight: "155px",
+                                            background: "#f8fbff",
+                                            borderLeft: "5px solid #3b82f6"
+                                        }}
+                                    >
+                                        <CardBody className="p-3 p-md-4">
+
+                                            <p
+                                                className="fw-semibold mb-2"
+                                                style={{
+                                                    color: "#475569",
+                                                    fontSize: "14px"
+                                                }}
+                                            >
+                                                Today's Bill
+                                            </p>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#1e3a8a",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {allTodayOrdersCount}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
                                                     alignItems: "center",
-                                                    justifyContent: "center",
-                                                }}>
-                                                    <i
-                                                        className="ri-shopping-cart-2-line"
-                                                        style={{ fontSize: "27px", color: "#fff" }}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {/* PO LOCAL */}
-
-                                            <div
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => navigate("/lpo/all")}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === "Enter" || e.key === " ") {
-                                                        e.preventDefault();
-                                                        navigate("/lpo/all");
-                                                    }
-                                                }}
-                                                className="d-flex justify-content-between align-items-center"
-                                                style={{
-                                                    background: "rgba(255,255,255,0.15)",
-                                                    border: "2px solid rgba(255,255,255,0.3)",
-                                                    borderRadius: "14px",
-                                                    padding: "17px 18px",
-                                                    marginBottom: "14px",
-                                                    cursor: "pointer",
+                                                    backgroundColor: "#dbeafe",
+                                                    color: "#1d4ed8",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
                                                 }}
                                             >
-                                                <span style={{
-                                                    fontSize: "17px",
-                                                    fontWeight: 700,
-                                                    color: "#fff",
-                                                }}>
-                                                    PO - Local
-                                                </span>
-
-                                                <i
-                                                    className="ri-arrow-right-s-line"
-                                                    style={{ fontSize: "27px", color: "#fff" }}
-                                                />
-                                            </div>
-
-                                            {/* PO INTERNAL */}
-
-                                            <div
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => navigate("/product/list/")}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === "Enter" || e.key === " ") {
-                                                        e.preventDefault();
-                                                        navigate("/product/list/");
-                                                    }
-                                                }}
-                                                className="d-flex justify-content-between align-items-center"
-                                                style={{
-                                                    background: "rgba(255,255,255,0.15)",
-                                                    border: "2px solid rgba(255,255,255,0.3)",
-                                                    borderRadius: "14px",
-                                                    padding: "17px 18px",
-                                                    cursor: "pointer",
-                                                }}
-                                            >
-                                                <span style={{
-                                                    fontSize: "17px",
-                                                    fontWeight: 700,
-                                                    color: "#fff",
-                                                }}>
-                                                    PO - Internal
-                                                </span>
-
-                                                <i
-                                                    className="ri-arrow-right-s-line"
-                                                    style={{ fontSize: "27px", color: "#fff" }}
-                                                />
-                                            </div>
+                                                Today's Orders
+                                            </span>
 
                                         </CardBody>
                                     </Card>
                                 </Col>
 
-                            </Row>
+                                {/* WAITING FOR APPROVAL */}
+                                <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
+                                    <Card
+                                        onClick={() => navigate("/orders/invoicecreated")}
+                                        className="h-100 border-0 shadow-sm"
+                                        style={{
+                                            cursor: "pointer",
+                                            borderRadius: "16px",
+                                            minHeight: "155px",
+                                            background: "#f8fbff",
+                                            borderLeft: "5px solid #3b82f6"
+                                        }}
+                                    >
+                                        <CardBody className="p-3 p-md-4">
+
+                                            <p
+                                                className="fw-semibold mb-2"
+                                                style={{
+                                                    color: "#475569",
+                                                    fontSize: "14px"
+                                                }}
+                                            >
+                                                Waiting For Approval
+                                            </p>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#1e3a8a",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {waitingForApprovalAll}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#dbeafe",
+                                                    color: "#1d4ed8",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                Today:&nbsp;
+                                                <strong style={{ fontWeight: "700" }}>
+                                                    {waitingForApprovalToday}
+                                                </strong>
+                                            </span>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+
+                                {/* INVOICE APPROVED */}
+                                <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
+                                    <Card
+                                        onClick={() => navigate("/orders/invoiceapproved")}
+                                        className="h-100 border-0 shadow-sm"
+                                        style={{
+                                            cursor: "pointer",
+                                            borderRadius: "16px",
+                                            minHeight: "155px",
+                                            background: "#f5fdff",
+                                            borderLeft: "5px solid #06b6d4"
+                                        }}
+                                    >
+                                        <CardBody className="p-3 p-md-4">
+
+                                            <p
+                                                className="fw-semibold mb-2"
+                                                style={{
+                                                    color: "#475569",
+                                                    fontSize: "14px"
+                                                }}
+                                            >
+                                                Invoice Approved
+                                            </p>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#155e75",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {invoiceApprovedAll}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#cffafe",
+                                                    color: "#0e7490",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                Today:&nbsp;
+                                                <strong style={{ fontWeight: "700" }}>
+                                                    {invoiceApprovedToday}
+                                                </strong>
+                                            </span>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+                                {/* Waiting For Confirmation */}
+                                <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
+                                    <Card
+                                        onClick={() => navigate("/orders/waitingforconfirmation")}
+                                        className="h-100 border-0 shadow-sm"
+                                        style={{
+                                            cursor: "pointer",
+                                            borderRadius: "16px",
+                                            minHeight: "155px",
+                                            background: "#fff7f7",
+                                            borderLeft: "5px solid #ef4444"
+                                        }}
+                                    >
+                                        <CardBody className="p-3 p-md-4">
+
+                                            <p
+                                                className="fw-semibold mb-2"
+                                                style={{
+                                                    color: "#475569",
+                                                    fontSize: "14px"
+                                                }}
+                                            >
+                                                Waiting For Confirmation
+                                            </p>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#155e75",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {waitingForConfirmationStatusAll}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#cffafe",
+                                                    color: "#0e7490",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                Today:&nbsp;
+                                                <strong style={{ fontWeight: "700" }}>
+                                                    {waitingForConfirmationStatusToday}
+                                                </strong>
+                                            </span>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+
+                                {/* Delivery Order */}
+                                <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
+                                    <Card
+                                        onClick={() => navigate("/orders/toprint")}
+                                        className="h-100 border-0 shadow-sm"
+                                        style={{
+                                            cursor: "pointer",
+                                            borderRadius: "16px",
+                                            minHeight: "155px",
+                                            background: "#fffaf3",
+                                            borderLeft: "5px solid #f59e0b"
+                                        }}
+                                    >
+                                        <CardBody className="p-3 p-md-4">
+
+                                            <p
+                                                className="fw-semibold mb-2"
+                                                style={{
+                                                    color: "#475569",
+                                                    fontSize: "14px"
+                                                }}
+                                            >
+                                                Delivery Order (DO)
+                                            </p>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#92400e",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {toPrintAll}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#fef3c7",
+                                                    color: "#b45309",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                Today:&nbsp;
+                                                <strong style={{ fontWeight: "700" }}>
+                                                    {toPrintToday}
+                                                </strong>
+                                            </span>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+                                {/* Packing Under Progress */}
+                                <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
+                                    <Card
+                                        onClick={() => navigate("/orders/packingunderprogress")}
+                                        className="h-100 border-0 shadow-sm"
+                                        style={{
+                                            cursor: "pointer",
+                                            borderRadius: "16px",
+                                            minHeight: "155px",
+                                            background: "#fffaf3",
+                                            borderLeft: "5px solid #f59e0b"
+                                        }}
+                                    >
+                                        <CardBody className="p-3 p-md-4">
+
+                                            <p
+                                                className="fw-semibold mb-2"
+                                                style={{
+                                                    color: "#475569",
+                                                    fontSize: "14px"
+                                                }}
+                                            >
+                                                Printed
+                                            </p>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#92400e",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {packingUnderProgressAll}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#fef3c7",
+                                                    color: "#b45309",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                Today:&nbsp;
+                                                <strong style={{ fontWeight: "700" }}>
+                                                    {packingUnderProgressToday}
+                                                </strong>
+                                            </span>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+
+                                {/* PACKED FOR DELIVERY */}
+                                <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
+                                    <Card
+                                        onClick={() => navigate("/orders/packed")}
+                                        className="h-100 border-0 shadow-sm"
+                                        style={{
+                                            cursor: "pointer",
+                                            borderRadius: "16px",
+                                            minHeight: "155px",
+                                            background: "#f5fdff",
+                                            borderLeft: "5px solid #06b6d4"
+                                        }}
+                                    >
+                                        <CardBody className="p-3 p-md-4">
+
+                                            <p
+                                                className="fw-semibold mb-2"
+                                                style={{
+                                                    color: "#475569",
+                                                    fontSize: "14px"
+                                                }}
+                                            >
+                                                Packed For Delivery (PFD)
+                                            </p>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#155e75",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {packedForDeliveryAll}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#cffafe",
+                                                    color: "#0e7490",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                Today:&nbsp;
+                                                <strong style={{ fontWeight: "700" }}>
+                                                    {packedForDeliveryToday}
+                                                </strong>
+                                            </span>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+                                {/* DGM */}
+                                <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
+                                    <Card
+                                        onClick={() => navigate("/daily/good/movment/")}
+                                        className="h-100 border-0 shadow-sm"
+                                        style={{
+                                            cursor: "pointer",
+                                            borderRadius: "16px",
+                                            minHeight: "155px",
+                                            background: "#fff7f7",
+                                            borderLeft: "5px solid #ef4444"
+                                        }}
+                                    >
+                                        <CardBody className="p-3 p-md-4">
+
+                                            <p
+                                                className="fw-semibold mb-2"
+                                                style={{
+                                                    color: "#475569",
+                                                    fontSize: "14px"
+                                                }}
+                                            >
+                                                Daily Goods Movement
+                                            </p>
+
+                                            <h2>DGM</h2>
+                                            <span>Check daily goods movement</span>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+
+                                {/* OUT FOR DELIVERY */}
+                                <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
+                                    <Card
+                                        onClick={() => navigate("/orders/readytoship")}
+                                        className="h-100 border-0 shadow-sm"
+                                        style={{
+                                            cursor: "pointer",
+                                            borderRadius: "16px",
+                                            minHeight: "155px",
+                                            background: "#fffaf3",
+                                            borderLeft: "5px solid #f59e0b"
+                                        }}
+                                    >
+                                        <CardBody className="p-3 p-md-4">
+
+                                            <p
+                                                className="fw-semibold mb-2"
+                                                style={{
+                                                    color: "#475569",
+                                                    fontSize: "14px"
+                                                }}
+                                            >
+                                                Out For Delivery (OFD)
+                                            </p>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#92400e",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {outForDeliveryAll}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#fef3c7",
+                                                    color: "#b45309",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                Today:&nbsp;
+                                                <strong style={{ fontWeight: "700" }}>
+                                                    {outForDeliveryToday}
+                                                </strong>
+                                            </span>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+
+                                {/* RETURN FROM DELIVERY */}
+                                <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
+                                    <Card
+                                        onClick={() => navigate("/orders/returnfromdelivery")}
+                                        className="h-100 border-0 shadow-sm"
+                                        style={{
+                                            cursor: "pointer",
+                                            borderRadius: "16px",
+                                            minHeight: "155px",
+                                            background: "#fff7f7",
+                                            borderLeft: "5px solid #ef4444"
+                                        }}
+                                    >
+                                        <CardBody className="p-3 p-md-4">
+
+                                            <p
+                                                className="fw-semibold mb-2"
+                                                style={{
+                                                    color: "#475569",
+                                                    fontSize: "14px"
+                                                }}
+                                            >
+                                                Return From Delivery (RFD)
+                                            </p>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#991b1b",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {returnFromDeliveryAll}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#fee2e2",
+                                                    color: "#b91c1c",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                Today:&nbsp;
+                                                <strong style={{ fontWeight: "700" }}>
+                                                    {returnFromDeliveryToday}
+                                                </strong>
+                                            </span>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+
+                                {/* SHIPPED */}
+                                <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
+                                    <Card
+                                        onClick={() => navigate("/orders/shipped")}
+                                        className="h-100 border-0 shadow-sm"
+                                        style={{
+                                            cursor: "pointer",
+                                            borderRadius: "16px",
+                                            minHeight: "155px",
+                                            background: "#f5fff8",
+                                            borderLeft: "5px solid #22c55e"
+                                        }}
+                                    >
+                                        <CardBody className="p-3 p-md-4">
+
+                                            <p
+                                                className="fw-semibold mb-2"
+                                                style={{
+                                                    color: "#475569",
+                                                    fontSize: "14px"
+                                                }}
+                                            >
+                                                Shipped
+                                            </p>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#166534",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {shippedAll}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#dcfce7",
+                                                    color: "#15803d",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                Today:&nbsp;
+                                                <strong style={{ fontWeight: "700" }}>
+                                                    {shippedToday}
+                                                </strong>
+                                            </span>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+                                <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
+                                    <Card
+                                        onClick={() => navigate("/orders/returnfromdelivery")}
+                                        className="h-100 border-0 shadow-sm"
+                                        style={{
+                                            cursor: "pointer",
+                                            borderRadius: "16px",
+                                            minHeight: "155px",
+                                            background: "#fff7f7",
+                                            borderLeft: "5px solid #ef4444"
+                                        }}
+                                    >
+                                        <CardBody className="p-3 p-md-4">
+
+                                            <p
+                                                className="fw-semibold mb-2"
+                                                style={{
+                                                    color: "#475569",
+                                                    fontSize: "14px"
+                                                }}
+                                            >
+                                                Pre Booked
+                                            </p>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#991b1b",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {preBookedAll}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#fee2e2",
+                                                    color: "#b91c1c",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                Today:&nbsp;
+                                                <strong style={{ fontWeight: "700" }}>
+                                                    {preBookedToday}
+                                                </strong>
+                                            </span>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+                                <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
+                                    <Card
+                                        onClick={() => navigate("/perfoma/invoices/")}
+                                        className="h-100 border-0 shadow-sm"
+                                        style={{
+                                            cursor: "pointer",
+                                            borderRadius: "16px",
+                                            minHeight: "155px",
+                                            background: "#f5fdff",
+                                            borderLeft: "5px solid #06b6d4"
+                                        }}
+                                    >
+                                        <CardBody className="p-3 p-md-4">
+
+                                            <p
+                                                className="fw-semibold mb-2"
+                                                style={{
+                                                    color: "#475569",
+                                                    fontSize: "14px"
+                                                }}
+                                            >
+                                                Proforma Invoices
+                                            </p>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#155e75",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {proformaCountAdmin}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#cffafe",
+                                                    color: "#0e7490",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                View Proforma
+                                            </span>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+                                <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
+                                    <Card
+                                        onClick={() => navigate("/beposoft/grv/view/")}
+                                        className="h-100 border-0 shadow-sm"
+                                        style={{
+                                            cursor: "pointer",
+                                            borderRadius: "16px",
+                                            minHeight: "155px",
+                                            background: "#fff7f7",
+                                            borderLeft: "5px solid #ef4444"
+                                        }}
+                                    >
+                                        <CardBody className="p-3 p-md-4">
+
+                                            <p
+                                                className="fw-semibold mb-2"
+                                                style={{
+                                                    color: "#475569",
+                                                    fontSize: "14px"
+                                                }}
+                                            >
+                                                Goods Return
+                                            </p>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#991b1b",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {goodsReturn?.order || 0}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#fee2e2",
+                                                    color: "#b91c1c",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                View Returns
+                                            </span>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+
+                                <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
+                                    <Card
+                                        onClick={() => navigate("/beposoft/grv/view/")}
+                                        className="h-100 border-0 shadow-sm"
+                                        style={{
+                                            cursor: "pointer",
+                                            borderRadius: "16px",
+                                            minHeight: "155px",
+                                            background: "#fffaf3",
+                                            borderLeft: "5px solid #f59e0b"
+                                        }}
+                                    >
+                                        <CardBody className="p-3 p-md-4">
+
+                                            <p
+                                                className="fw-semibold mb-2"
+                                                style={{
+                                                    color: "#475569",
+                                                    fontSize: "14px"
+                                                }}
+                                            >
+                                                GRV Waiting for Confirmation
+                                            </p>
+
+                                            <h2
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#92400e",
+                                                    fontSize: "30px"
+                                                }}
+                                            >
+                                                {(grvWaitingForConfirmation?.order || 0)}
+                                            </h2>
+
+                                            <span
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    backgroundColor: "#fef3c7",
+                                                    color: "#b45309",
+                                                    padding: "7px 12px",
+                                                    borderRadius: "8px",
+                                                    fontSize: "13px",
+                                                    fontWeight: "500"
+                                                }}
+                                            >
+                                                View Pending GRV
+                                            </span>
+
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+                            </>
                         )}
-
-                        {/* SALES & LOGISTICS - ADMIN / COO / CEO / ACCOUNTS   */}
-
-                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
-                            <Card
-                                onClick={() => navigate("/dashboard/todaysbill-details")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#f8fbff",
-                                    borderLeft: "5px solid #3b82f6"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Today's Bill
-                                    </p>
-
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#1e3a8a",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {allTodayOrdersCount}
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#dbeafe",
-                                            color: "#1d4ed8",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Today's Orders
-                                    </span>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-                        {/* WAITING FOR APPROVAL */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
-                            <Card
-                                onClick={() => navigate("/orders/invoicecreated")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#f8fbff",
-                                    borderLeft: "5px solid #3b82f6"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Waiting For Approval
-                                    </p>
-
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#1e3a8a",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {waitingForApprovalAll}
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#dbeafe",
-                                            color: "#1d4ed8",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Today:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {waitingForApprovalToday}
-                                        </strong>
-                                    </span>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-
-                        {/* INVOICE APPROVED */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
-                            <Card
-                                onClick={() => navigate("/orders/invoiceapproved")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#f5fdff",
-                                    borderLeft: "5px solid #06b6d4"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Invoice Approved
-                                    </p>
-
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#155e75",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {invoiceApprovedAll}
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#cffafe",
-                                            color: "#0e7490",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Today:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {invoiceApprovedToday}
-                                        </strong>
-                                    </span>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-                        {/* Waiting For Confirmation */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
-                            <Card
-                                onClick={() => navigate("/orders/waitingforconfirmation")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#fff7f7",
-                                    borderLeft: "5px solid #ef4444"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Waiting For Confirmation
-                                    </p>
-
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#155e75",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {waitingForConfirmationStatusAll}
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#cffafe",
-                                            color: "#0e7490",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Today:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {waitingForConfirmationStatusToday}
-                                        </strong>
-                                    </span>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-
-                        {/* Delivery Order */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
-                            <Card
-                                onClick={() => navigate("/orders/toprint")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#fffaf3",
-                                    borderLeft: "5px solid #f59e0b"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Delivery Order (DO)
-                                    </p>
-
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#92400e",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {toPrintAll}
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#fef3c7",
-                                            color: "#b45309",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Today:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {toPrintToday}
-                                        </strong>
-                                    </span>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-                        {/* Packing Under Progress */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
-                            <Card
-                                onClick={() => navigate("/orders/packingunderprogress")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#fffaf3",
-                                    borderLeft: "5px solid #f59e0b"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Printed
-                                    </p>
-
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#92400e",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {packingUnderProgressAll}
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#fef3c7",
-                                            color: "#b45309",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Today:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {packingUnderProgressToday}
-                                        </strong>
-                                    </span>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-
-                        {/* PACKED FOR DELIVERY */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
-                            <Card
-                                onClick={() => navigate("/orders/packed")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#f5fdff",
-                                    borderLeft: "5px solid #06b6d4"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Packed For Delivery (PFD)
-                                    </p>
-
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#155e75",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {packedForDeliveryAll}
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#cffafe",
-                                            color: "#0e7490",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Today:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {packedForDeliveryToday}
-                                        </strong>
-                                    </span>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-                        {/* DGM */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
-                            <Card
-                                onClick={() => navigate("/daily/good/movment/")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#fff7f7",
-                                    borderLeft: "5px solid #ef4444"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Daily Goods Movement
-                                    </p>
-
-                                    <h2>DGM</h2>
-                                    <span>Check daily goods movement</span>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-
-                        {/* OUT FOR DELIVERY */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
-                            <Card
-                                onClick={() => navigate("/orders/readytoship")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#fffaf3",
-                                    borderLeft: "5px solid #f59e0b"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Out For Delivery (OFD)
-                                    </p>
-
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#92400e",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {outForDeliveryAll}
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#fef3c7",
-                                            color: "#b45309",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Today:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {outForDeliveryToday}
-                                        </strong>
-                                    </span>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-
-                        {/* RETURN FROM DELIVERY */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
-                            <Card
-                                onClick={() => navigate("/orders/returnfromdelivery")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#fff7f7",
-                                    borderLeft: "5px solid #ef4444"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Return From Delivery (RFD)
-                                    </p>
-
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#991b1b",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {returnFromDeliveryAll}
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#fee2e2",
-                                            color: "#b91c1c",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Today:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {returnFromDeliveryToday}
-                                        </strong>
-                                    </span>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-
-                        {/* SHIPPED */}
-                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
-                            <Card
-                                onClick={() => navigate("/orders/shipped")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#f5fff8",
-                                    borderLeft: "5px solid #22c55e"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Shipped
-                                    </p>
-
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#166534",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {shippedAll}
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#dcfce7",
-                                            color: "#15803d",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Today:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {shippedToday}
-                                        </strong>
-                                    </span>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
-                            <Card
-                                onClick={() => navigate("/orders/returnfromdelivery")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#fff7f7",
-                                    borderLeft: "5px solid #ef4444"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Pre Booked
-                                    </p>
-
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#991b1b",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {preBookedAll}
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#fee2e2",
-                                            color: "#b91c1c",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        Today:&nbsp;
-                                        <strong style={{ fontWeight: "700" }}>
-                                            {preBookedToday}
-                                        </strong>
-                                    </span>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
-                            <Card
-                                onClick={() => navigate("/perfoma/invoices/")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#f5fdff",
-                                    borderLeft: "5px solid #06b6d4"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Proforma Invoices
-                                    </p>
-
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#155e75",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {proformaCountAdmin}
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#cffafe",
-                                            color: "#0e7490",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        View Proforma
-                                    </span>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
-                            <Card
-                                onClick={() => navigate("/beposoft/grv/view/")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#fff7f7",
-                                    borderLeft: "5px solid #ef4444"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        Goods Return
-                                    </p>
-
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#991b1b",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {goodsReturn?.order || 0}
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#fee2e2",
-                                            color: "#b91c1c",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        View Returns
-                                    </span>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-                        <Col xs={12} sm={6} md={6} lg={4} xl={true} xxl={true} className="dashboard-status-col">
-                            <Card
-                                onClick={() => navigate("/beposoft/grv/view/")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "155px",
-                                    background: "#fffaf3",
-                                    borderLeft: "5px solid #f59e0b"
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px"
-                                        }}
-                                    >
-                                        GRV Waiting for Confirmation
-                                    </p>
-
-                                    <h2
-                                        className="fw-bold mb-3"
-                                        style={{
-                                            color: "#92400e",
-                                            fontSize: "30px"
-                                        }}
-                                    >
-                                        {(grvWaitingForConfirmation?.order || 0)}
-                                    </h2>
-
-                                    <span
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            backgroundColor: "#fef3c7",
-                                            color: "#b45309",
-                                            padding: "7px 12px",
-                                            borderRadius: "8px",
-                                            fontSize: "13px",
-                                            fontWeight: "500"
-                                        }}
-                                    >
-                                        View Pending GRV
-                                    </span>
-
-                                </CardBody>
-                            </Card>
-                        </Col>
 
                     </Row>
                 )}
 
-                {(role === "Accounts / Accounting") && (
+                {(role === "Accounts / Accounting" || role === "ADMIN") && (
                     <Row className="mb-4">
                         <Col xs={12}>
                             <Card

@@ -493,6 +493,7 @@ import CustomerCompleteReport from "../pages/Customers/CustomerCompleteReport";
 import RejectedProformaInvoices from "../pages/PerfomaInvoive/RejectedProformaInvoices";
 import StaffCompleteReport from "../pages/Staff/StaffCompleteReport";
 import PendingProformaInvoices from "../pages/PerfomaInvoive/PendingProformaInvoices";
+import CompanyGstReport from "../pages/DashboardJob/CompanyGstReport";
 
 
 
@@ -508,6 +509,7 @@ const authProtectedRoutes = [
   { path: "/hourly-order-family/:familyId", component: <HourlyFamilyOrderDetails /> },
   { path: "/finance/company-report/:companyId", component: <CompanyFinanceReport /> },
   { path: "/staff/point/ranking/", component: <SalesPointRankingAllPage /> },
+  { path: "/company-gst-report/:companyId", component: <CompanyGstReport /> },
 
   { path: "/orders/family/date/summary", component: <FamilyDateSummary /> },
   { path: "/orders/family/:family_id/staff/summary/:start_date/:end_date", component: <FamilyStaffSummary /> },

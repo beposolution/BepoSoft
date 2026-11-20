@@ -2279,7 +2279,7 @@ const ChartSection = () => {
                     Accounts and COO it is placed in the same grid as the
                     Company Reports and Finance cards below. */}
                 <Row className="g-3 mb-3">
-                    {!(role === "ADMIN" || role === "Accounts / Accounting" || role === "COO" || role === "CEO") && (
+                    {!(role === "ADMIN" || role === "Accounts / Accounting" || role === "COO" || role === "CEO" || role === "CSO") && (
                         <Col xs={12} sm={6} md={6} lg={4} xl={3}>
                             <AttendanceCalendar token={token} />
                         </Col>
@@ -5376,225 +5376,462 @@ const ChartSection = () => {
 
 
                 {role === "CSO" && (
-                    <Row className="g-3 mb-3">
+                    <>
 
-                        {/* TODAY'S BILL */}
-                        <Col xs={12} sm={6} lg={3}>
-                            <Card
-                                onClick={() => navigate("/dashboard/todaysbill-details")}
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    cursor: "pointer",
-                                    borderRadius: "16px",
-                                    minHeight: "160px",
-                                    background: "#f8fbff",
-                                    borderLeft: "5px solid #3b82f6",
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-                                    <p
-                                        className="fw-semibold mb-2"
+                        <Row className="g-3 align-items-stretch">
+                            {/* ATTENDANCE CALENDAR */}
+                            <Col xs={12} sm={12} md={12} lg={4} xl={3}>
+                                <AttendanceCalendar token={token} />
+                            </Col>
+
+                            {/* SALES POINT RANKING */}
+                            <Col xs={12} sm={12} md={12} lg={8} xl={9}>
+                                <Card
+                                    className="border-0 h-100"
+                                    style={{
+                                        borderRadius: 18,
+                                        background: "linear-gradient(115deg,#4BA3FA,#2878F4)",
+                                        boxShadow: "0 6px 20px rgba(40,120,244,0.12)",
+                                        overflow: "hidden",
+                                        width: "100%",
+                                        minWidth: 0,
+                                    }}
+                                >
+                                    <CardBody
                                         style={{
-                                            color: "#475569",
-                                            fontSize: "14px",
+                                            padding: "clamp(14px, 2.5vw, 22px)",
                                         }}
                                     >
-                                        Today's Bill
-                                    </p>
+                                        {/* HEADER */}
+                                        <div
+                                            className="d-flex justify-content-between align-items-center flex-wrap"
+                                            style={{
+                                                gap: 12,
+                                                marginBottom: 20,
+                                            }}
+                                        >
+                                            <div
+                                                className="d-flex align-items-center"
+                                                style={{
+                                                    gap: 12,
+                                                    flex: "1 1 190px",
+                                                    minWidth: 0,
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        width: 44,
+                                                        height: 44,
+                                                        minWidth: 44,
+                                                        borderRadius: 12,
+                                                        background: "rgba(255,255,255,0.18)",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        color: "#FFFFFF",
+                                                        fontSize: 19,
+                                                    }}
+                                                >
+                                                    <FaTrophy />
+                                                </div>
 
-                                    <h2
-                                        className="fw-bold mb-0"
-                                        style={{
-                                            color: "#1e3a8a",
-                                            fontSize: "30px",
-                                        }}
-                                    >
-                                        {role === "CEO"
+                                                <div style={{ minWidth: 0 }}>
+                                                    <h5
+                                                        style={{
+                                                            color: "#FFFFFF",
+                                                            fontSize: "clamp(15px, 2vw, 17px)",
+                                                            fontWeight: 800,
+                                                            marginBottom: 4,
+                                                            overflowWrap: "anywhere",
+                                                        }}
+                                                    >
+                                                        Sales Point Ranking
+                                                    </h5>
+
+                                                    <div
+                                                        style={{
+                                                            color: "#E5F1FF",
+                                                            fontSize: 11,
+                                                        }}
+                                                    >
+                                                        Top 3 monthly performers
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <Button
+                                                onClick={goToAllSalesPointRanking}
+                                                style={{
+                                                    background: "rgba(255,255,255,0.18)",
+                                                    border: "1px solid rgba(255,255,255,0.30)",
+                                                    borderRadius: 10,
+                                                    color: "#FFFFFF",
+                                                    padding: "10px 16px",
+                                                    fontSize: 12,
+                                                    fontWeight: 700,
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    gap: 9,
+                                                    whiteSpace: "nowrap",
+                                                    flexShrink: 0,
+                                                    maxWidth: "100%",
+                                                }}
+                                            >
+                                                See More
+                                                <FaArrowRight size={11} />
+                                            </Button>
+                                        </div>
+
+                                        {/* CONTENT */}
+                                        {salesRankingLoading ? (
+                                            <div
+                                                className="d-flex justify-content-center align-items-center"
+                                                style={{ minHeight: 170 }}
+                                            >
+                                                <div className="spinner-border text-light" />
+                                            </div>
+                                        ) : salesRankingError ? (
+                                            <div
+                                                className="text-center py-4"
+                                                style={{ color: "#FFFFFF" }}
+                                            >
+                                                Unable to load sales ranking
+                                            </div>
+                                        ) : salesRankingData.length === 0 ? (
+                                            <div
+                                                className="text-center py-4"
+                                                style={{ color: "#FFFFFF" }}
+                                            >
+                                                <FaUsers size={25} className="mb-2" />
+                                                <div>No ranking data available</div>
+                                            </div>
+                                        ) : (
+                                            <Row className="g-3 align-items-stretch">
+                                                {[...salesRankingData]
+                                                    .sort((a, b) => a.displayRank - b.displayRank)
+                                                    .map((staff) => {
+                                                        const rank = staff.displayRank;
+
+                                                        const themeMap = {
+                                                            1: {
+                                                                icon: <FaCrown />,
+                                                                accent: "#C28B19",
+                                                                bg: "#FFF3D4",
+                                                                border: "#FDE68A",
+                                                            },
+                                                            2: {
+                                                                icon: <FaMedal />,
+                                                                accent: "#64748B",
+                                                                bg: "#F1F5F9",
+                                                                border: "#CBD5E1",
+                                                            },
+                                                            3: {
+                                                                icon: <FaAward />,
+                                                                accent: "#B76A40",
+                                                                bg: "#FFF0E5",
+                                                                border: "#FED7AA",
+                                                            },
+                                                        };
+
+                                                        const theme =
+                                                            themeMap[rank] || themeMap[3];
+
+                                                        const points = Number(
+                                                            staff.total_points || 0
+                                                        ).toLocaleString("en-IN", {
+                                                            minimumFractionDigits: 2,
+                                                            maximumFractionDigits: 2,
+                                                        });
+
+                                                        return (
+                                                            <Col
+                                                                xs={12}
+                                                                sm={6}
+                                                                md={6}
+                                                                lg={6}
+                                                                xl={4}
+                                                                key={staff.staff_id}
+                                                                className="d-flex"
+                                                            >
+                                                                <div
+                                                                    style={{
+                                                                        width: "100%",
+                                                                        height: "100%",
+                                                                        minHeight: 220,
+                                                                        minWidth: 0,
+                                                                        borderRadius: 15,
+                                                                        background: "#FFFFFF",
+                                                                        padding:
+                                                                            "clamp(14px, 2vw, 20px) clamp(12px, 1.5vw, 16px)",
+                                                                        border: `2px solid ${rank === 1
+                                                                                ? theme.border
+                                                                                : "transparent"
+                                                                            }`,
+                                                                        boxShadow:
+                                                                            rank === 1
+                                                                                ? "0 6px 18px rgba(15,23,42,0.12)"
+                                                                                : "0 3px 10px rgba(15,23,42,0.06)",
+                                                                        display: "flex",
+                                                                        flexDirection: "column",
+                                                                        alignItems: "center",
+                                                                        justifyContent: "center",
+                                                                        textAlign: "center",
+                                                                        gap: 9,
+                                                                    }}
+                                                                >
+                                                                    {/* MEDAL */}
+                                                                    <div
+                                                                        style={{
+                                                                            width: 52,
+                                                                            height: 52,
+                                                                            minWidth: 52,
+                                                                            borderRadius: "50%",
+                                                                            background: theme.bg,
+                                                                            display: "flex",
+                                                                            alignItems: "center",
+                                                                            justifyContent: "center",
+                                                                            color: theme.accent,
+                                                                            fontSize: 22,
+                                                                        }}
+                                                                    >
+                                                                        {theme.icon}
+                                                                    </div>
+
+                                                                    {/* RANK */}
+                                                                    <div
+                                                                        style={{
+                                                                            color: theme.accent,
+                                                                            fontSize: 12,
+                                                                            fontWeight: 800,
+                                                                            letterSpacing: 0.7,
+                                                                        }}
+                                                                    >
+                                                                        RANK {rank}
+                                                                    </div>
+
+                                                                    {/* POINTS */}
+                                                                    <div
+                                                                        style={{
+                                                                            color: "#153A73",
+                                                                            fontSize:
+                                                                                "clamp(22px, 3vw, 30px)",
+                                                                            fontWeight: 900,
+                                                                            lineHeight: 1.1,
+                                                                            maxWidth: "100%",
+                                                                            overflowWrap: "anywhere",
+                                                                            fontVariantNumeric:
+                                                                                "tabular-nums",
+                                                                        }}
+                                                                    >
+                                                                        {points}
+                                                                    </div>
+
+                                                                    <div
+                                                                        style={{
+                                                                            color: "#94A3B8",
+                                                                            fontSize: 10,
+                                                                            fontWeight: 700,
+                                                                            letterSpacing: 0.5,
+                                                                        }}
+                                                                    >
+                                                                        TOTAL POINTS
+                                                                    </div>
+
+                                                                    {/* DIVIDER */}
+                                                                    <div
+                                                                        style={{
+                                                                            width: "100%",
+                                                                            height: 1,
+                                                                            background: "#E8EDF5",
+                                                                            margin: "5px 0",
+                                                                        }}
+                                                                    />
+
+                                                                    {/* STAFF */}
+                                                                    <div
+                                                                        style={{
+                                                                            color: "#152C4C",
+                                                                            fontSize: 13,
+                                                                            fontWeight: 800,
+                                                                            overflowWrap: "anywhere",
+                                                                            maxWidth: "100%",
+                                                                        }}
+                                                                    >
+                                                                        {staff.staff_name}
+                                                                    </div>
+
+                                                                    <div
+                                                                        style={{
+                                                                            color: "#64748B",
+                                                                            fontSize: 11,
+                                                                            textTransform: "capitalize",
+                                                                            overflowWrap: "anywhere",
+                                                                            maxWidth: "100%",
+                                                                        }}
+                                                                    >
+                                                                        {staff.department}
+                                                                        {" · "}
+                                                                        {staff.family}
+                                                                    </div>
+                                                                </div>
+                                                            </Col>
+                                                        );
+                                                    })}
+                                            </Row>
+                                        )}
+                                    </CardBody>
+                                </Card>
+                            </Col>
+                        </Row>
+
+                        <Row className="g-3 mb-3">
+                            {[
+                                {
+                                    title: "Today's Bill",
+                                    value:
+                                        role === "CEO"
                                             ? allTodayOrdersCount
                                             : role === "CSO"
                                                 ? skatingAndCyclingTodayCount
-                                                : userFamilyTodayOrderCount}
-                                    </h2>
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-
-                        {/* SKATING */}
-                        <Col xs={12} sm={6} lg={3}>
-                            <Card
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    borderRadius: "16px",
-                                    minHeight: "160px",
-                                    background: "#f5fdff",
-                                    borderLeft: "5px solid #06b6d4",
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-                                    <p
-                                        className="fw-semibold mb-3"
+                                                : userFamilyTodayOrderCount,
+                                    onClick: () =>
+                                        navigate("/dashboard/todaysbill-details"),
+                                },
+                                {
+                                    title: "SKATING",
+                                    stats: [
+                                        {
+                                            label: "Today's Bill",
+                                            value: skatingTodayCount,
+                                        },
+                                        {
+                                            label: "Today's Volume",
+                                            value: `₹ ${totalSkatingTodayAmount?.toFixed(2)}`,
+                                        },
+                                    ],
+                                },
+                                {
+                                    title: "CYCLING",
+                                    stats: [
+                                        {
+                                            label: "Today's Bill",
+                                            value: cyclingTodayCount,
+                                        },
+                                        {
+                                            label: "Today's Volume",
+                                            value: `₹ ${totalCyclingTodayAmount?.toFixed(2)}`,
+                                        },
+                                    ],
+                                },
+                                {
+                                    title: "Today's Total Volume",
+                                    value: `₹ ${role === "CSO"
+                                        ? totalAmountSkatingAndCyclingToday
+                                        : totalAmountForCurrentUserFamilyToday
+                                        }`,
+                                },
+                            ].map((item, index) => (
+                                <Col xs={12} sm={6} lg={3} key={index}>
+                                    <Card
+                                        className="h-100 border-0"
+                                        onClick={item.onClick}
                                         style={{
-                                            color: "#475569",
-                                            fontSize: "14px",
+                                            minHeight: "200px",
+                                            borderRadius: "16px",
+                                            background:
+                                                "linear-gradient(135deg, #55AEFA 0%, #2874F8 100%)",
+                                            boxShadow:
+                                                "0 4px 10px rgba(0, 0, 0, 0.10)",
+                                            cursor: item.onClick
+                                                ? "pointer"
+                                                : "default",
+                                            overflow: "hidden",
                                         }}
                                     >
-                                        SKATING
-                                    </p>
+                                        <CardBody className="p-3">
+                                            <p
+                                                className="fw-bold mb-3"
+                                                style={{
+                                                    color: "#FFFFFF",
+                                                    fontSize: "15px",
+                                                }}
+                                            >
+                                                {item.title}
+                                            </p>
 
-                                    <div className="mb-2">
-                                        <span
-                                            style={{
-                                                color: "#64748b",
-                                                fontSize: "12px",
-                                                fontWeight: "600",
-                                            }}
-                                        >
-                                            Today's Bill
-                                        </span>
+                                            {item.stats ? (
+                                                <div
+                                                    style={{
+                                                        display: "flex",
+                                                        flexDirection: "column",
+                                                        gap: "10px",
+                                                    }}
+                                                >
+                                                    {item.stats.map((stat, statIndex) => (
+                                                        <div
+                                                            key={statIndex}
+                                                            style={{
+                                                                background:
+                                                                    "rgba(255, 255, 255, 0.12)",
+                                                                border:
+                                                                    "1px solid rgba(255, 255, 255, 0.18)",
+                                                                borderRadius: "9px",
+                                                                padding: "10px 12px",
+                                                            }}
+                                                        >
+                                                            <div
+                                                                style={{
+                                                                    color: "#EAF4FF",
+                                                                    fontSize: "11px",
+                                                                    fontWeight: "500",
+                                                                    marginBottom: "3px",
+                                                                }}
+                                                            >
+                                                                {stat.label}
+                                                            </div>
 
-                                        <h4
-                                            className="fw-bold mb-0"
-                                            style={{
-                                                color: "#155e75",
-                                            }}
-                                        >
-                                            {skatingTodayCount}
-                                        </h4>
-                                    </div>
-
-                                    <div>
-                                        <span
-                                            style={{
-                                                color: "#64748b",
-                                                fontSize: "12px",
-                                                fontWeight: "600",
-                                            }}
-                                        >
-                                            Today's Volume
-                                        </span>
-
-                                        <h5
-                                            className="fw-bold mb-0"
-                                            style={{
-                                                color: "#155e75",
-                                            }}
-                                        >
-                                            ₹ {totalSkatingTodayAmount?.toFixed(2)}
-                                        </h5>
-                                    </div>
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-
-                        {/* CYCLING */}
-                        <Col xs={12} sm={6} lg={3}>
-                            <Card
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    borderRadius: "16px",
-                                    minHeight: "160px",
-                                    background: "#fffaf3",
-                                    borderLeft: "5px solid #f59e0b",
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-                                    <p
-                                        className="fw-semibold mb-3"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px",
-                                        }}
-                                    >
-                                        CYCLING
-                                    </p>
-
-                                    <div className="mb-2">
-                                        <span
-                                            style={{
-                                                color: "#64748b",
-                                                fontSize: "12px",
-                                                fontWeight: "600",
-                                            }}
-                                        >
-                                            Today's Bill
-                                        </span>
-
-                                        <h4
-                                            className="fw-bold mb-0"
-                                            style={{
-                                                color: "#92400e",
-                                            }}
-                                        >
-                                            {cyclingTodayCount}
-                                        </h4>
-                                    </div>
-
-                                    <div>
-                                        <span
-                                            style={{
-                                                color: "#64748b",
-                                                fontSize: "12px",
-                                                fontWeight: "600",
-                                            }}
-                                        >
-                                            Today's Volume
-                                        </span>
-
-                                        <h5
-                                            className="fw-bold mb-0"
-                                            style={{
-                                                color: "#92400e",
-                                            }}
-                                        >
-                                            ₹ {totalCyclingTodayAmount?.toFixed(2)}
-                                        </h5>
-                                    </div>
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-
-                        {/* TODAY'S TOTAL VOLUME */}
-                        <Col xs={12} sm={6} lg={3}>
-                            <Card
-                                className="h-100 border-0 shadow-sm"
-                                style={{
-                                    borderRadius: "16px",
-                                    minHeight: "160px",
-                                    background: "#f5fff8",
-                                    borderLeft: "5px solid #22c55e",
-                                }}
-                            >
-                                <CardBody className="p-3 p-md-4">
-                                    <p
-                                        className="fw-semibold mb-2"
-                                        style={{
-                                            color: "#475569",
-                                            fontSize: "14px",
-                                        }}
-                                    >
-                                        Today's Total Volume
-                                    </p>
-
-                                    <h2
-                                        className="fw-bold mb-0"
-                                        style={{
-                                            color: "#166534",
-                                            fontSize: "27px",
-                                        }}
-                                    >
-                                        ₹{" "}
-                                        {role === "CSO"
-                                            ? totalAmountSkatingAndCyclingToday
-                                            : totalAmountForCurrentUserFamilyToday}
-                                    </h2>
-                                </CardBody>
-                            </Card>
-                        </Col>
-
-                    </Row>
+                                                            <div
+                                                                style={{
+                                                                    color: "#FFFFFF",
+                                                                    fontSize: "17px",
+                                                                    fontWeight: "700",
+                                                                }}
+                                                            >
+                                                                {stat.value}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div
+                                                    style={{
+                                                        background:
+                                                            "rgba(255, 255, 255, 0.12)",
+                                                        border:
+                                                            "1px solid rgba(255, 255, 255, 0.18)",
+                                                        borderRadius: "9px",
+                                                        padding: "15px 12px",
+                                                    }}
+                                                >
+                                                    <h2
+                                                        className="fw-bold mb-0"
+                                                        style={{
+                                                            color: "#FFFFFF",
+                                                            fontSize: "26px",
+                                                            overflowWrap: "anywhere",
+                                                        }}
+                                                    >
+                                                        {item.value}
+                                                    </h2>
+                                                </div>
+                                            )}
+                                        </CardBody>
+                                    </Card>
+                                </Col>
+                            ))}
+                        </Row>
+                    </>
                 )}
 
 

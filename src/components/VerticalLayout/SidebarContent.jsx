@@ -396,7 +396,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === 'HR' || role === 'OPERATIONS' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'BDO' || role === "BDM" || role === 'CEO' || role === 'CSO' || role === 'SD' || role === 'COO' ? (
+            {role === 'ADMIN' || role === 'HR' || role === 'OPERATIONS' || role === 'CMO' || role === "Accounts / Accounting" || role === 'IT' || role === 'BDO' || role === "BDM" || role === 'CEO' || role === 'CSO' || role === 'SD' || role === "Warehouse Admin" || role === 'COO' ? (
               <li>
                 <Link to="/#" className="has-arrow">
                   <FaUsers size={20} style={{ marginRight: '8px' }} />
@@ -408,9 +408,12 @@ const SidebarContent = (props) => {
                       <Link to="/create/perfoma/invoice/">{props.t("Create Proforma invoice")}</Link>
                     </li>
                   )}
-                  <li>
-                    <Link to="/perfoma/invoices/">{props.t("View Proforma invoices")}</Link>
-                  </li>
+
+                  {role !== 'Warehouse Admin' && (
+                    <li>
+                      <Link to="/perfoma/invoices/">{props.t("View Proforma invoices")}</Link>
+                    </li>
+                  )}
 
                   {role === 'ADMIN' || role === 'HR' || role === "Accounts / Accounting" || role === 'IT' || role === 'CEO' || role === 'CSO' || role === 'COO' ? (
                     <>
@@ -942,7 +945,7 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/product/rack/usability/report/">{props.t("Product Stock Rack Report")}</Link>
                   </li>
-                  
+
                 </ul>
               </li>
             )}

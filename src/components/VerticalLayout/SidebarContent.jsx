@@ -881,6 +881,9 @@ const SidebarContent = (props) => {
                   <li>
                     <Link to="/dispatched/pending/products/">{props.t("Pending & Dispatched Products Summary")}</Link>
                   </li>
+                  <li>
+                    <Link to="/state/wise/billing/wise/report/">{props.t("State & Billing Wise Report")}</Link>
+                  </li>
                   {role !== 'CSO' && (
                     <>
                       <li>
@@ -888,10 +891,6 @@ const SidebarContent = (props) => {
                       </li>
                       <li>
                         <Link to="/order/postoffice/">{props.t("Post Office Report")}</Link>
-                      </li>
-
-                      <li>
-                        <Link to="/state/wise/billing/wise/report/">{props.t("State & Billing Wise Report")}</Link>
                       </li>
                       <li>
                         <Link to="/orders/tracking/report/">{props.t("Order Tracking Report")}</Link>

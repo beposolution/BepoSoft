@@ -21,6 +21,14 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
 
     const [role, setRole] = useState(null);
     const token = localStorage.getItem("token");
+    const canViewLockedInvoices = [
+        "CEO",
+        "COO",
+        "ADMIN",
+        "IT",
+        "Accounts / Accounting",
+        "HR"
+    ].includes(role);
 
     const [lockedInvoices, setLockedInvoices] = useState({});
     const [expandedProductId, setExpandedProductId] = useState(null);
@@ -33,6 +41,9 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
 
     // products in invoices
     const fetchLockedInvoices = async (productId) => {
+
+        if (!canViewLockedInvoices) return;
+
         setLockedInvoicesLoading((prev) => ({
             ...prev,
             [productId]: true,
@@ -409,8 +420,14 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
 
                                             {/* PRODUCT ROW */}
                                             <tr
-                                                onClick={() => toggleProductDetails(product.id)}
-                                                style={{ cursor: "pointer" }}
+                                                onClick={() => {
+                                                    if (canViewLockedInvoices) {
+                                                        toggleProductDetails(product.id);
+                                                    }
+                                                }}
+                                                style={{
+                                                    cursor: canViewLockedInvoices ? "pointer" : "default"
+                                                }}
                                             >
                                                 <td>{index + 1}</td>
 
@@ -485,13 +502,15 @@ const AddProduct = ({ isOpen, toggle, ProductsFetch, warehouseId }) => {
                                             </tr>
 
                                             {/* LOCKED INVOICE DETAILS */}
-                                            {expandedProductId === product.id && (
+                                            {canViewLockedInvoices && expandedProductId === product.id && (
                                                 <tr>
                                                     <td
                                                         colSpan={
-                                                            role === "Accounts" ||
+                                                            role === "Accounts / Accounting" ||
                                                                 role === "CEO" ||
-                                                                role === "COO"
+                                                                role === "COO" ||
+                                                                role === "IT" ||
+                                                                role === "ADMIN"
                                                                 ? 8
                                                                 : 7
                                                         }

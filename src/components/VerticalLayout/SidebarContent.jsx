@@ -550,7 +550,7 @@ const SidebarContent = (props) => {
               </li>
             ) : null}
 
-            {role === 'ADMIN' || role === 'HR' || role === 'CMO' || role === "Accounts / Accounting" || role === 'CEO' || role === 'COO' ? (
+            {role === 'ADMIN' || role === 'HR' || role === 'CMO' || role === "Accounts / Accounting" || role === 'CEO' || role === 'COO' || role === 'IT' ? (
               <li>
                 <Link className="has-arrow" to="/#">
                   <FaReceipt size={20} style={{ marginRight: '8px' }} />

@@ -24,6 +24,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Breadcrumbs from "../../components/Common/Breadcrumb";
 import { createAuditLog } from "../../services/auditService";
+import * as XLSX from "xlsx-js-style";
 
 const SalesTeamDivisionDailyReportPage = () => {
     document.title = "Sales Team Division Daily Report | Beposoft";
@@ -33,6 +34,7 @@ const SalesTeamDivisionDailyReportPage = () => {
 
     const [loading, setLoading] = useState(true);
     const [tableLoading, setTableLoading] = useState(false);
+    const [excelLoading, setExcelLoading] = useState(false);
     const [filterLoading, setFilterLoading] = useState(false);
     const [pageError, setPageError] = useState("");
     const [familyId, setFamilyId] = useState(null);
@@ -567,6 +569,468 @@ const SalesTeamDivisionDailyReportPage = () => {
         return "-";
     };
 
+    const handleExportExcel = async () => {
+        if (excelLoading) return;
+
+        if (!familyId) {
+            toast.warning("Family not found");
+            return;
+        }
+
+        try {
+            setExcelLoading(true);
+
+            const allReports = [];
+            let page = 1;
+            let hasNextPage = true;
+            let excelSummary = null;
+
+            // Fetch all records with existing filters.
+            while (hasNextPage) {
+                const params = new URLSearchParams();
+
+                params.append("page", page);
+
+                if (searchText?.trim())
+                    params.append("search", searchText.trim());
+
+                if (callStatusFilter)
+                    params.append("call_status", callStatusFilter);
+
+                if (statusFilter)
+                    params.append("status", statusFilter);
+
+                if (createdByFilter?.trim())
+                    params.append("created_by", createdByFilter.trim());
+
+                if (stateFilter?.trim())
+                    params.append("state", stateFilter.trim());
+
+                if (districtFilter?.trim())
+                    params.append("district", districtFilter.trim());
+
+                if (startDateFilter)
+                    params.append("start_date", startDateFilter);
+
+                if (endDateFilter)
+                    params.append("end_date", endDateFilter);
+
+                const url =
+                    `${baseUrl}sales/team/division/daily/report/all/${familyId}/?${params.toString()}`;
+
+                const response = await axios.get(url, {
+                    headers: getAuthHeaders(),
+                });
+
+                const parsed = parsePaginatedResponse(response);
+
+                if (page === 1) {
+                    excelSummary = parsed.summary;
+                }
+
+                allReports.push(...parsed.rows);
+
+                hasNextPage = Boolean(parsed.next);
+                page += 1;
+            }
+
+            if (allReports.length === 0) {
+                toast.warning("No reports available to export");
+                return;
+            }
+
+            // Group reports by team.
+            const grouped = new Map();
+
+            allReports.forEach((item) => {
+                const teamName = item?.team_name?.trim() || "No Team";
+
+                if (!grouped.has(teamName)) {
+                    grouped.set(teamName, []);
+                }
+
+                grouped.get(teamName).push(item);
+            });
+
+            const excelData = [];
+            const teamHeaderRows = [];
+            const columnHeaderRows = [];
+            const merges = [];
+
+            // Report title.
+            excelData.push(["SALES TEAM DIVISION DAILY REPORT"]);
+
+            merges.push({
+                s: { r: 0, c: 0 },
+                e: { r: 0, c: 12 },
+            });
+
+            // Report summary.
+            excelData.push([
+                "Staff Count",
+                excelSummary?.staff_count ?? 0,
+            ]);
+
+            excelData.push([
+                "Total Call Duration",
+                excelSummary?.total_call_duration || "00:00:00",
+            ]);
+
+            excelData.push([
+                "Call Duration Average 8 Hours %",
+                Number(
+                    excelSummary?.call_duration_average_8hrs || 0
+                ) / 100,
+            ]);
+
+            excelData.push([
+                "Start Date",
+                startDateFilter || "All Dates",
+                "End Date",
+                endDateFilter || "All Dates",
+            ]);
+
+            excelData.push([
+                "Total Records",
+                allReports.length,
+            ]);
+
+            excelData.push([]);
+
+            let serialNumber = 1;
+
+            grouped.forEach((teamRows, teamName) => {
+                const teamRowIndex = excelData.length;
+
+                teamHeaderRows.push(teamRowIndex);
+
+                excelData.push([
+                    `TEAM: ${teamName} (${teamRows.length})`,
+                ]);
+
+                merges.push({
+                    s: { r: teamRowIndex, c: 0 },
+                    e: { r: teamRowIndex, c: 12 },
+                });
+
+                // Column headers.
+                columnHeaderRows.push(excelData.length);
+
+                excelData.push([
+                    "Sl No",
+                    "Team",
+                    "BDO",
+                    "State",
+                    "District",
+                    "Invoice Number",
+                    "Customer",
+                    "Phone",
+                    "Call Status",
+                    "Status",
+                    "Call Duration",
+                    "8 Hours %",
+                    "Created At",
+                ]);
+
+                teamRows.forEach((item) => {
+                    const percentage =
+                        item?.call_duration_percentage_8hrs;
+
+                    excelData.push([
+                        serialNumber++,
+                        teamName,
+                        item?.created_by_name || "-",
+                        item?.state_name || "-",
+                        item?.district_name || "-",
+                        String(getInvoiceText(item)),
+                        item?.customer_name || "-",
+                        String(item?.phone ?? "-"),
+                        formatStatusLabel(item?.call_status),
+                        formatStatusLabel(item?.status),
+                        item?.call_duration || "-",
+                        percentage !== null &&
+                            percentage !== undefined &&
+                            percentage !== "" &&
+                            Number.isFinite(Number(percentage))
+                            ? Number(percentage) / 100
+                            : "-",
+                        formatCreatedAt(item?.created_at),
+                    ]);
+                });
+
+                excelData.push([]);
+            });
+
+            // Create worksheet.
+            const worksheet = XLSX.utils.aoa_to_sheet(excelData);
+
+            worksheet["!merges"] = merges;
+
+            // Set column widths.
+            worksheet["!cols"] = [
+                { wch: 10 },
+                { wch: 25 },
+                { wch: 25 },
+                { wch: 22 },
+                { wch: 22 },
+                { wch: 22 },
+                { wch: 30 },
+                { wch: 18 },
+                { wch: 18 },
+                { wch: 20 },
+                { wch: 20 },
+                { wch: 15 },
+                { wch: 28 },
+            ];
+
+            // Set row heights.
+            worksheet["!rows"] = excelData.map((row, index) => ({
+                hpt:
+                    index === 0
+                        ? 35
+                        : teamHeaderRows.includes(index)
+                            ? 28
+                            : columnHeaderRows.includes(index)
+                                ? 25
+                                : row.length === 0
+                                    ? 10
+                                    : 23,
+            }));
+
+            const border = {
+                top: {
+                    style: "thin",
+                    color: { rgb: "D1D5DB" },
+                },
+                bottom: {
+                    style: "thin",
+                    color: { rgb: "D1D5DB" },
+                },
+                left: {
+                    style: "thin",
+                    color: { rgb: "D1D5DB" },
+                },
+                right: {
+                    style: "thin",
+                    color: { rgb: "D1D5DB" },
+                },
+            };
+
+            const range = XLSX.utils.decode_range(
+                worksheet["!ref"]
+            );
+
+            // Apply Excel styles.
+            for (let r = range.s.r; r <= range.e.r; r++) {
+                for (let c = range.s.c; c <= range.e.c; c++) {
+                    const cellAddress = XLSX.utils.encode_cell({
+                        r,
+                        c,
+                    });
+
+                    if (!worksheet[cellAddress]) {
+                        if (excelData[r]?.length === 0) continue;
+
+                        worksheet[cellAddress] = {
+                            t: "s",
+                            v: "",
+                        };
+                    }
+
+                    const cell = worksheet[cellAddress];
+
+                    cell.s = {
+                        font: {
+                            name: "Calibri",
+                            sz: 11,
+                            color: { rgb: "1F2937" },
+                        },
+                        alignment: {
+                            vertical: "center",
+                            horizontal: "left",
+                            wrapText: true,
+                        },
+                        border,
+                        fill: {
+                            patternType: "solid",
+                            fgColor: {
+                                rgb: r % 2 === 0
+                                    ? "F3F6FB"
+                                    : "FFFFFF",
+                            },
+                        },
+                    };
+
+                    // Main report title.
+                    if (r === 0) {
+                        cell.s = {
+                            ...cell.s,
+                            font: {
+                                name: "Calibri",
+                                sz: 18,
+                                bold: true,
+                                color: { rgb: "FFFFFF" },
+                            },
+                            fill: {
+                                patternType: "solid",
+                                fgColor: { rgb: "17365D" },
+                            },
+                            alignment: {
+                                horizontal: "center",
+                                vertical: "center",
+                            },
+                        };
+                    }
+
+                    // Summary section.
+                    else if (r >= 1 && r <= 5) {
+                        cell.s.font.bold = true;
+
+                        cell.s.fill = {
+                            patternType: "solid",
+                            fgColor: { rgb: "E8F0FE" },
+                        };
+
+                        if (r === 3 && c === 1) {
+                            cell.z = "0.00%";
+                        }
+                    }
+
+                    // Team heading.
+                    else if (teamHeaderRows.includes(r)) {
+                        cell.s.font = {
+                            name: "Calibri",
+                            sz: 13,
+                            bold: true,
+                            color: { rgb: "FFFFFF" },
+                        };
+
+                        cell.s.fill = {
+                            patternType: "solid",
+                            fgColor: { rgb: "244A73" },
+                        };
+                    }
+
+                    // Column heading.
+                    else if (columnHeaderRows.includes(r)) {
+                        cell.s.font = {
+                            name: "Calibri",
+                            sz: 11,
+                            bold: true,
+                            color: { rgb: "FFFFFF" },
+                        };
+
+                        cell.s.fill = {
+                            patternType: "solid",
+                            fgColor: { rgb: "4472C4" },
+                        };
+
+                        cell.s.alignment.horizontal = "center";
+                    }
+
+                    // Report data.
+                    else {
+                        if ([0, 7, 8, 9, 10, 11].includes(c)) {
+                            cell.s.alignment.horizontal = "center";
+                        }
+
+                        // Percentage formatting.
+                        if (c === 11 && cell.t === "n") {
+                            cell.z = "0.00%";
+                        }
+
+                        // Call status and DSR status colours.
+                        if (c === 8 || c === 9) {
+                            const status = String(cell.v || "")
+                                .trim()
+                                .toLowerCase();
+
+                            const statusColors = {
+                                active: {
+                                    bg: "FFF3CD",
+                                    text: "856404",
+                                },
+                                productive: {
+                                    bg: "D1E7DD",
+                                    text: "146C43",
+                                },
+                                "dsr created": {
+                                    bg: "E2E3E5",
+                                    text: "41464B",
+                                },
+                                "dsr approved": {
+                                    bg: "CFE2FF",
+                                    text: "084298",
+                                },
+                                "dsr confirmed": {
+                                    bg: "D1E7DD",
+                                    text: "146C43",
+                                },
+                                "dsr rejected": {
+                                    bg: "F8D7DA",
+                                    text: "842029",
+                                },
+                            };
+
+                            const colors = statusColors[status];
+
+                            if (colors) {
+                                cell.s.fill = {
+                                    patternType: "solid",
+                                    fgColor: { rgb: colors.bg },
+                                };
+
+                                cell.s.font = {
+                                    ...cell.s.font,
+                                    bold: true,
+                                    color: { rgb: colors.text },
+                                };
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Create workbook.
+            const workbook = XLSX.utils.book_new();
+
+            XLSX.utils.book_append_sheet(
+                workbook,
+                worksheet,
+                "Division Daily Report"
+            );
+
+            // Generate file name.
+            const today = new Date();
+
+            const date = [
+                today.getFullYear(),
+                String(today.getMonth() + 1).padStart(2, "0"),
+                String(today.getDate()).padStart(2, "0"),
+            ].join("-");
+
+            const fileName =
+                `Sales_Team_Division_Daily_Report_${date}.xlsx`;
+
+            // Download Excel.
+            XLSX.writeFile(workbook, fileName);
+
+            toast.success("Excel exported successfully");
+
+        } catch (error) {
+            console.error("Excel export error:", error);
+
+            toast.error(
+                error?.response?.data?.message ||
+                error?.response?.data?.detail ||
+                error?.message ||
+                "Failed to export Excel"
+            );
+        } finally {
+            setExcelLoading(false);
+        }
+    };
+
     const getStaffOptionLabel = (staff) => {
         return (
             staff?.name ||
@@ -818,6 +1282,24 @@ const SalesTeamDivisionDailyReportPage = () => {
                                             </CardTitle>
 
                                             <div className="d-flex gap-2 flex-wrap">
+                                                <Button
+                                                    color="success"
+                                                    onClick={handleExportExcel}
+                                                    disabled={excelLoading || tableLoading || !familyId}
+                                                >
+                                                    {excelLoading ? (
+                                                        <>
+                                                            <Spinner size="sm" className="me-2" />
+                                                            Exporting...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <i className="bx bx-download me-2" />
+                                                            Export Excel
+                                                        </>
+                                                    )}
+                                                </Button>
+
                                                 <Button
                                                     color="primary"
                                                     outline

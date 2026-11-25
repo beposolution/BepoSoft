@@ -222,13 +222,17 @@ const InternalTransferList = () => {
             return;
         }
 
-        if (!formData.amount) {
+        if (
+            formData.amount === "" ||
+            formData.amount === null ||
+            formData.amount === undefined
+        ) {
             toast.error("Please enter amount");
             return;
         }
 
-        if (Number(formData.amount) <= 0) {
-            toast.error("Amount must be greater than zero");
+        if (!Number.isFinite(Number(formData.amount)) || Number(formData.amount) < 0) {
+            toast.error("Please enter a valid non-negative amount");
             return;
         }
 
@@ -723,7 +727,7 @@ const InternalTransferList = () => {
                                     <Input
                                         type="number"
                                         name="amount"
-                                        value={formData.amount || ""}
+                                        value={formData.amount ?? ""}
                                         onChange={handleInputChange}
                                     />
                                 </FormGroup>

@@ -494,6 +494,7 @@ import RejectedProformaInvoices from "../pages/PerfomaInvoive/RejectedProformaIn
 import StaffCompleteReport from "../pages/Staff/StaffCompleteReport";
 import PendingProformaInvoices from "../pages/PerfomaInvoive/PendingProformaInvoices";
 import CompanyGstReport from "../pages/DashboardJob/CompanyGstReport";
+import InternationalPurchase from "../pages/InternationalPurchase/InternationalPurchase";
 
 
 
@@ -846,6 +847,9 @@ const authProtectedRoutes = [
   { path: "/lpo/all", component: <AllLPO /> },
   { path: "/lpo/edit/:id", component: <LPODetail /> },
 
+
+  // international purchase
+  {path: "/international/purchase/create/", component: <InternationalPurchase/>},
 
 
   // Seller details
